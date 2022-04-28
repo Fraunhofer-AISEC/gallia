@@ -45,7 +45,6 @@ class ECU(UDSClient):
     ) -> None:
 
         super().__init__(transport, timeout, max_retry)
-        self.logger = Logger(component="ecu", flush=True)
         self.power_supply = power_supply
         self.state = ECUState()
         self.db_handler: Optional[DBHandler] = None
