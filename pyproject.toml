@@ -1,0 +1,134 @@
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "gallia"
+version = "0.1.0"
+description = ""
+authors = ["AISEC Pentesting Team"]
+packages = [
+    { include = "gallia", from = "src" },
+]
+
+[tool.poetry.dependencies]
+python = ">=3.9,<3.11"
+aiofiles = "^0.8.0"
+aiosqlite = "^0.17.0"
+argcomplete = "^2.0.0"
+pypenlog = "^0.3.2"
+pyxcp = "^0.16.0"
+zstandard = "^0.17.0"
+python-can = "^4.0.0"
+tabulate = "^0.8.9"
+types-tabulate = "^0.8.8"
+pyopennetzteil = "^0.1.2"
+
+[tool.poetry.dev-dependencies]
+black = "^22.1.0"
+Sphinx = "^4.2.0"
+flake8 = "^4.0.1"
+isort = "^5.10.1"
+lxml-stubs = "^0.4.0"
+mypy = "^0.942"
+pylint = "2.13.7"
+pylsp-mypy = "^0.5.7"
+pylsp-rope = "^0.1.8"
+pytest = "^7.1.2"
+pytest-asyncio = "^0.18.0"
+python-lsp-black = "^1.1.0"
+python-lsp-server = "^1.3.3"
+types-aiofiles = "^0.8.8"
+myst-parser = "^0.17.0"
+sphinx-rtd-theme = "^1.0.0"
+
+[tool.poetry.scripts]
+"gallia" = "gallia.cli:main"
+"discover-xcp" = "gallia.udscan.scanner.find_xcp:main"
+"cursed-hr" = "gallia.cursed_hr.cursed_hr:main"
+
+[tool.poetry.plugins]
+[tool.poetry.plugins."gallia_ecus"]
+"default" = "gallia.udscan.core:ECU"
+
+[tool.poetry.plugins."gallia_scanner"]
+"discover-can-ids" = "gallia.udscan.scanner.find_can_ids:FindCanIDsScanner"
+"discover-iso-tp-addr" = "gallia.udscan.scanner.find_iso_tp_addr:FindISOTPAddrScanner"
+"discover-endpoints" = "gallia.udscan.scanner.find_endpoints:FindEndpoints"
+"scan-dump-seeds" = "gallia.udscan.scanner.scan_sa_dump_seeds:SaDumpSeeds"
+"scan-identifiers" = "gallia.udscan.scanner.scan_identifiers:ScanIdentifiers"
+"scan-memory-functions" = "gallia.udscan.scanner.scan_memory_functions:ScanWriteDataByAddress"
+"scan-reset" = "gallia.udscan.scanner.scan_reset:ScanReset"
+"scan-services" = "gallia.udscan.scanner.scan_services:ScanServices"
+"scan-sessions" = "gallia.udscan.scanner.scan_sessions:IterateSessions"
+"simple-dtc" = "gallia.udscan.scanner.simple_dtc:DTCScanner"
+"simple-ecu-reset" = "gallia.udscan.scanner.simple_ecu_reset:EcuReset"
+"simple-get-vin" = "gallia.udscan.scanner.simple_get_vin:GetVin"
+"simple-iocbi" = "gallia.udscan.scanner.simple_iocbi:IOCBI"
+"simple-ping" = "gallia.udscan.scanner.simple_ping:Ping"
+"simple-read-by-identifier" = "gallia.udscan.scanner.simple_read_by_identifier:ReadByIdentifier"
+"simple-read-error-log" = "gallia.udscan.scanner.simple_read_error_log:ReadErrorLog"
+"simple-rmba" = "gallia.udscan.scanner.simple_rmba:ReadMemoryByAddressScanner"
+"simple-rtcl" = "gallia.udscan.scanner.simple_rtcl:RTCL"
+"simple-send-pdu" = "gallia.udscan.scanner.simple_send_pdu:SendPDU"
+"simple-test-xcp" = "gallia.udscan.scanner.simple_test_xcp:TestXCP"
+"simple-wmba" = "gallia.udscan.scanner.simple_wmba:WriteMemoryByAddressScanner"
+"simple-write-by-identifier" = "gallia.udscan.scanner.simple_write_by_identifier:WriteByIdentifier"
+
+[tool.mypy]
+disallow_any_unimported = true
+check_untyped_defs = true
+ignore_missing_imports = true
+allow_redefinition = true
+warn_unreachable = true
+disallow_untyped_calls = true
+strict_equality = true
+disallow_untyped_defs = true
+warn_unused_ignores = true
+
+[tool.black]
+target-version = ['py39']
+
+[tool.isort]
+profile = "black"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+
+[tool.pylint.messages_control]
+disable = [
+    "C0326",
+    "C0330",
+    "R0801",
+    "broad-except",
+    "c-extension-no-member",
+    "fixme",
+    "invalid-name",
+    "line-too-long",
+    "missing-class-docstring",
+    "missing-class-docstring",
+    "missing-function-docstring",
+    "missing-module-docstring",
+    "multiple-statements",
+    "no-else-break",
+    "no-else-continue",
+    "no-else-return",
+    "no-name-in-module",
+    "no-self-use",
+    "simplifiable-if-expression",
+    "too-few-public-methods",
+    "too-many-arguments",
+    "too-many-branches",
+    "too-many-instance-attributes",
+    "too-many-lines",
+    "too-many-locals",
+    "too-many-nested-blocks",
+    "too-many-public-methods",
+    "too-many-return-statements",
+    "too-many-statements",
+    "unexpected-special-method-signature",
+    "unused-argument",
+    "unused-argument",
+    "use-dict-literal",
+    "use-list-literal",
+]
