@@ -76,12 +76,12 @@ class DiscoverDoIP(DiscoveryScanner):
             PayloadLength=7,
             PayloadTypeSpecificMessageContent=b"",
         )
-        payload = RoutingActivationRequest(
+        routing_req = RoutingActivationRequest(
             SourceAddress=src_addr,
             ActivationType=activation_type,
             Reserved=0x00,
         )
-        await conn.write_request_raw(hdr, payload)
+        await conn.write_request_raw(hdr, routing_req)
 
         req = DiagnosticSessionControlRequest(0x01)
         data = req.pdu

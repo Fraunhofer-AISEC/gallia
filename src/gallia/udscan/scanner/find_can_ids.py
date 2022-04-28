@@ -9,8 +9,8 @@ from typing import Optional
 
 from gallia.transports.base import TargetURI
 from gallia.transports.can import ISOTPTransport, RawCANTransport
-from gallia.uds.core.service import UDSRequest, NegativeResponse
 from gallia.uds.core.client import UDSClient
+from gallia.uds.core.service import NegativeResponse, UDSRequest
 from gallia.udscan.core import DiscoveryScanner
 from gallia.utils import auto_int, can_id_repr, g_repr, write_target_list
 

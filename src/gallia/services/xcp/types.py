@@ -7,26 +7,27 @@
 import enum
 from collections import namedtuple
 
-from construct import BitsInteger
-from construct import BitStruct
-from construct import Enum
-from construct import Flag
-from construct import GreedyBytes
-from construct import GreedyRange
-from construct import If
-from construct import IfThenElse
-from construct import Int16ub
-from construct import Int16ul
-from construct import Int32ub
-from construct import Int32ul
-from construct import Int64ub
-from construct import Int64ul
-from construct import Int8ul
-from construct import Padding
-from construct import Struct
-from construct import Switch
-from construct import this
-
+from construct import (
+    BitsInteger,
+    BitStruct,
+    Enum,
+    Flag,
+    GreedyBytes,
+    GreedyRange,
+    If,
+    IfThenElse,
+    Int8ul,
+    Int16ub,
+    Int16ul,
+    Int32ub,
+    Int32ul,
+    Int64ub,
+    Int64ul,
+    Padding,
+    Struct,
+    Switch,
+    this,
+)
 
 NumericType = (int, float)
 MtaType = namedtuple("MtaType", "address ext")

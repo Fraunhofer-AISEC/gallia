@@ -102,7 +102,7 @@ class SaDumpSeeds(UDSScanner):
         )
         return True
 
-    def log_size(self, path: os.PathLike, time_delta: float) -> None:
+    def log_size(self, path: os.PathLike[str], time_delta: float) -> None:
         size = os.path.getsize(path) / 1024
         size_unit = "KiB"
         rate = size / time_delta * 3600 if time_delta != 0 else 0

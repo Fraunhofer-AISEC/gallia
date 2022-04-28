@@ -8,7 +8,7 @@ import asyncio
 import io
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Optional
-from urllib.parse import parse_qs, urlparse, urlencode, urlunparse
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 from gallia.penlog import Logger
 from gallia.utils import join_host_port
@@ -123,26 +123,28 @@ class BaseTransport(ABC):
 
     def parse_args(self) -> None:
         # Check if a mandatory arg is missing.
-        for k, v in self.SPEC.items():
-            mandatory = v[1]
-            default = v[0]()
-            if k not in self.target.qs:
+        for spec_key, spec_value in self.SPEC.items():
+            mandatory = spec_value[1]
+            default = spec_value[0]()
+            if spec_key not in self.target.qs:
                 if mandatory:
-                    raise ValueError(f"mandatory argument {k} missing")
+                    raise ValueError(f"mandatory argument {spec_key} missing")
                 # Not mandatory, set default.
-                self._args[k] = default
+                self._args[spec_key] = default
 
         # Parse the arguments according to the spec.
-        for k, v in self.target.qs.items():
-            if k not in self.SPEC:
-                self.logger.log_warning(f"ignoring unknown argument: {k}:{v}")
+        for qs_key, qs_value in self.target.qs.items():
+            if qs_key not in self.SPEC:
+                self.logger.log_warning(
+                    f"ignoring unknown argument: {qs_key}:{qs_value}"
+                )
                 continue
 
-            self.logger.log_debug(f"got {k}:{v}")
-            parse_func = self.SPEC[k][0]
+            self.logger.log_debug(f"got {qs_key}:{qs_value}")
+            parse_func = self.SPEC[qs_key][0]
             # We do not support arg lists.
-            parsed_v = parse_func(v[0])
-            self._args[k] = parsed_v
+            parsed_v = parse_func(qs_value[0])
+            self._args[qs_key] = parsed_v
 
     @abstractmethod
     async def connect(self, timeout: Optional[float] = None) -> None:

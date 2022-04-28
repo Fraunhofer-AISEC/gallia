@@ -5,7 +5,7 @@
 import asyncio
 import sys
 from argparse import Namespace
-from typing import Union
+from typing import Any, Union
 
 from gallia.uds.core.client import UDSRequestConfig
 from gallia.uds.core.constants import UDSErrorCodes
@@ -86,7 +86,7 @@ class IterateSessions(UDSScanner):
 
         return resp
 
-    async def recover_stack(self, stack: list, use_hooks: bool) -> bool:
+    async def recover_stack(self, stack: list[int], use_hooks: bool) -> bool:
         for session in stack:
             try:
                 resp = await self.set_session_with_hooks_handling(session, use_hooks)
@@ -107,8 +107,8 @@ class IterateSessions(UDSScanner):
 
     async def main(self, args: Namespace) -> None:
         found: dict[int, list[list[int]]] = {0: [[0x01]]}
-        positive_results: list[dict] = []
-        negative_results: list[dict] = []
+        positive_results: list[dict[str, Any]] = []
+        negative_results: list[dict[str, Any]] = []
         activated_sessions: set[int] = set()
         search_sessions: list[int] = []
 
@@ -233,7 +233,7 @@ class IterateSessions(UDSScanner):
         self.logger.log_summary("Scan finished; Found the following sessions:")
         previous_session = 0
 
-        for res in sorted(positive_results, key=lambda x: x["session"]):
+        for res in sorted(positive_results, key=lambda x: x["session"]):  # type: ignore
             session = res["session"]
 
             if session != previous_session:
@@ -249,7 +249,7 @@ class IterateSessions(UDSScanner):
         )
         previous_session = 0
 
-        for res in sorted(negative_results, key=lambda x: x["session"]):
+        for res in sorted(negative_results, key=lambda x: x["session"]):  # type: ignore
             session = res["session"]
 
             if (
