@@ -67,7 +67,7 @@ class RunMeta(msgspec.Struct):
 
 
 def load_transport(target: TargetURI) -> BaseTransport:
-    transports = [
+    transports: list[type[BaseTransport]] = [
         ISOTPTransport,
         RawCANTransport,
         DoIPTransport,
@@ -86,7 +86,7 @@ def load_transport(target: TargetURI) -> BaseTransport:
         transports += transports_eps
 
     for transport in transports:
-        if target.scheme == transport.SCHEME:  # type: ignore
+        if target.scheme == transport.SCHEME:
             t = transport(target)
             return t
 
@@ -101,7 +101,12 @@ def load_ecu(vendor: str) -> type[ECU]:
     if "gallia_uds_ecus" in eps:
         for entry_point in eps["gallia_uds_ecus"]:
             if vendor == entry_point.name:
-                return entry_point.load()
+                cls = entry_point.load()
+                if not issubclass(cls, ECU):
+                    raise ValueError(
+                        f"entry_point {entry_point.name} is not derived from ECU"
+                    )
+                return cast(type[ECU], cls)
 
     raise ValueError(f"no such OEM: '{vendor}'")
 

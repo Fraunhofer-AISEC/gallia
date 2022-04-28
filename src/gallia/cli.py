@@ -13,7 +13,7 @@ from pathlib import Path
 from pprint import pprint
 from typing import Any, Optional
 
-import argcomplete
+import argcomplete  # type: ignore
 
 from gallia.command import BaseCommand
 from gallia.commands.discover.uds.doip import DoIPDiscoverer

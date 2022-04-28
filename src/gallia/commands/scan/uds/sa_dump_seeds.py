@@ -105,7 +105,7 @@ class SASeedsDumper(UDSScanner):
         )
         return True
 
-    def size(self, path: os.PathLike, time_delta: float) -> None:
+    def log_size(self, path: os.PathLike[str], time_delta: float) -> None:
         size = os.path.getsize(path) / 1024
         size_unit = "KiB"
         rate = size / time_delta * 3600 if time_delta != 0 else 0
@@ -143,7 +143,7 @@ class SASeedsDumper(UDSScanner):
             # include too much garbage…
             i = (i + 1) % 1000
             if i == 0:
-                self.size(seeds_file, time.time() - start_time)
+                self.log_size(seeds_file, time.time() - start_time)
             if args.check_session or reset:
                 if not await self.ecu.check_and_set_session(args.session):
                     self.logger.error(
@@ -208,5 +208,5 @@ class SASeedsDumper(UDSScanner):
                 await self.ecu.set_session(session)
 
         await file.close()
-        self.size(seeds_file, time.time() - start_time)
+        self.log_size(seeds_file, time.time() - start_time)
         await self.ecu.leave_session(session)

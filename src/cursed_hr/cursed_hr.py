@@ -95,7 +95,7 @@ class EntryCache:
     def __init__(
         self,
         file: Union[BinaryIO, mmap.mmap],
-        entry_positions: array,
+        entry_positions: array[int],
         cache_size: int = 20_000,
     ):
         self.file = file
@@ -166,7 +166,7 @@ class CursedHR:
         filters: Optional[list[str]] = None,
     ):
         self.in_file = in_file
-        self.level_pointers: list[array] = list(array("L") for _ in range(9))
+        self.level_pointers: list[array[int]] = list(array("L") for _ in range(9))
         self.entry_positions = array("L")
         self.configuration_history = [
             Configuration(
@@ -210,7 +210,7 @@ class CursedHR:
         curses.echo()
         curses.endwin()
 
-    def define_colors(self) -> dict:
+    def define_colors(self) -> dict[int, int]:
         prio_colors = {
             MessagePrio.EMERGENCY: (100, curses.COLOR_RED),
             MessagePrio.ALERT: (101, curses.COLOR_RED),
@@ -749,19 +749,19 @@ class CursedHR:
         :param entry_id: The index of the entry, to which the given pointer points, in self.entries.
         :return: The next priority pointer's index along the corresponding priority zone.
         """
-        zone, pointer = self.next_sufficient_pointer_without_filters(
+        zone, ptr = self.next_sufficient_pointer_without_filters(
             prio_zone, pointer, entry_id
         )
 
-        while pointer is not None and not self.check_filter(
-            self.level_pointers[zone.priority][pointer]
+        while ptr is not None and not self.check_filter(
+            self.level_pointers[zone.priority][ptr]
         ):
-            entry_id = self.level_pointers[zone.priority][pointer]
-            zone, pointer = self.next_sufficient_pointer_without_filters(
-                prio_zone, pointer, entry_id
+            entry_id = self.level_pointers[zone.priority][ptr]
+            zone, ptr = self.next_sufficient_pointer_without_filters(
+                prio_zone, ptr, entry_id
             )
 
-        return zone, pointer
+        return zone, ptr
 
     def previous_sufficient_pointer(
         self, prio_zone: Optional[PriorityZone], pointer: int, entry_id: int
@@ -778,19 +778,19 @@ class CursedHR:
         :param entry_id: The index of the entry, to which the given pointer points, in self.entries.
         :return: The previous priority pointer's index along the corresponding priority zone.
         """
-        zone, pointer = self.previous_sufficient_pointer_without_filters(
+        zone, ptr = self.previous_sufficient_pointer_without_filters(
             prio_zone, pointer, entry_id
         )
 
-        while pointer is not None and not self.check_filter(
-            self.level_pointers[zone.priority][pointer]
+        while ptr is not None and not self.check_filter(
+            self.level_pointers[zone.priority][ptr]
         ):
-            entry_id = self.level_pointers[zone.priority][pointer]
-            zone, pointer = self.previous_sufficient_pointer_without_filters(
-                prio_zone, pointer, entry_id
+            entry_id = self.level_pointers[zone.priority][ptr]
+            zone, ptr = self.previous_sufficient_pointer_without_filters(
+                prio_zone, ptr, entry_id
             )
 
-        return zone, pointer
+        return zone, ptr
 
     def next_sufficient_pointer_without_filters(
         self, prio_zone: Optional[PriorityZone], pointer: int, entry_id: int
