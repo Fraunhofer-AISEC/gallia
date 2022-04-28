@@ -32,7 +32,7 @@ argcomplete = "^2.0.0"
 zstandard = ">=0.17,<0.19"
 python-can = "^4.0.0"
 tabulate = "^0.8.9"
-construct = "^2.10.68"
+construct = "^2.10.67"
 xdg = "^5.1.1"
 tomlkit = "^0.11.0"
 msgspec = "^0.8.0"
@@ -56,6 +56,7 @@ types-tabulate = "^0.8.11"
 myst-parser = "^0.18.0"
 sphinx-rtd-theme = "^1.0.0"
 reuse = "^1.0.0"
+construct-typing = "^0.5.2"
 
 [tool.poetry.scripts]
 "gallia" = "gallia.cli:main"
@@ -64,15 +65,7 @@ reuse = "^1.0.0"
 "hr" = "hr:main"
 
 [tool.mypy]
-disallow_any_unimported = true
-check_untyped_defs = true
-ignore_missing_imports = true
-allow_redefinition = true
-warn_unreachable = true
-disallow_untyped_calls = true
-strict_equality = true
-disallow_untyped_defs = true
-warn_unused_ignores = true
+strict = true
 
 [tool.black]
 target-version = ['py39']

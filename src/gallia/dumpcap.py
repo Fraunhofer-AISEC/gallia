@@ -13,8 +13,8 @@ import struct
 from asyncio import subprocess
 from datetime import datetime
 from pathlib import Path
-from socket import SocketKind  # pylint: disable=no-name-in-module
-from typing import Optional
+from socket import SocketKind
+from typing import Optional, cast
 from urllib.parse import urlparse
 
 from gallia.log import Logger, get_logger
@@ -46,13 +46,14 @@ class Dumpcap:
     async def start(
         cls,
         target: TargetURI,
-        artifacts_dir: Optional[os.PathLike] = None,
+        artifacts_dir: Optional[Path] = None,
     ) -> Dumpcap:
         logger = get_logger("dumpcap")
 
-        if artifacts_dir:
-            artifacts_dir = Path(artifacts_dir)
-        elif path := os.environ.get("PENRUN_ARTIFACTS"):
+        if (
+            artifacts_dir is None
+            and (path := os.environ.get("PENRUN_ARTIFACTS")) is not None
+        ):
             artifacts_dir = Path(path)
         else:
             raise ValueError("no artifacts dir set")
@@ -118,7 +119,7 @@ class Dumpcap:
 
     @staticmethod
     def _swap_bytes_16(x: int) -> int:
-        return struct.unpack(">H", struct.pack("<H", x))[0]
+        return cast(int, struct.unpack(">H", struct.pack("<H", x))[0])
 
     @staticmethod
     def _can_cmd(

@@ -7,7 +7,7 @@ from __future__ import annotations
 import asyncio
 from asyncio import Task
 from datetime import datetime, timezone
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 from gallia.db.db_handler import DBHandler, LogMode
 from gallia.log import get_logger
@@ -60,7 +60,7 @@ class ECU(UDSClient):
 
         super().__init__(transport, timeout, max_retry)
         self.logger = get_logger("ecu")
-        self.tester_present_task: Optional[Task] = None
+        self.tester_present_task: Optional[Task[None]] = None
         self.power_supply = power_supply
         self.state = ECUState()
         self.db_handler: Optional[DBHandler] = None
@@ -70,7 +70,7 @@ class ECU(UDSClient):
 
     async def properties(
         self, fresh: bool = False, config: Optional[UDSRequestConfig] = None
-    ) -> dict:
+    ) -> dict[str, Any]:
         return {}
 
     async def ping(
@@ -208,7 +208,10 @@ class ECU(UDSClient):
             self.logger.debug("no power_supply available")
             return False
 
-        await self.power_supply.power_cycle(sleep, self.wait_for_ecu)
+        async def callback() -> None:
+            await self.wait_for_ecu()
+
+        await self.power_supply.power_cycle(sleep, callback)
         return True
 
     async def leave_session(
@@ -225,7 +228,7 @@ class ECU(UDSClient):
         Returns:
             True on success, False on error.
         """
-        resp = await self.ecu_reset(0x01)
+        resp: service.UDSResponse = await self.ecu_reset(0x01)
         if isinstance(resp, service.NegativeResponse):
             await self.power_cycle()
         else:
@@ -236,7 +239,7 @@ class ECU(UDSClient):
             return await self.power_cycle()
         return True
 
-    async def find_sessions(self, search: list, max_retry: int = 4) -> list[int]:
+    async def find_sessions(self, search: list[int], max_retry: int = 4) -> list[int]:
         sessions = []
         for sid in search:
             try:

@@ -10,8 +10,8 @@ from argparse import Namespace
 from gallia.command import UDSScanner
 from gallia.transports.base import TargetURI
 from gallia.transports.can import RawCANTransport
-from gallia.uds.core.client import UDSErrorCodes, UDSRequestConfig
-from gallia.uds.core.constants import UDSIsoServices
+from gallia.uds.core.client import UDSRequestConfig
+from gallia.uds.core.constants import UDSErrorCodes, UDSIsoServices
 from gallia.uds.core.exception import IllegalResponse
 from gallia.uds.core.service import NegativeResponse, UDSResponse
 from gallia.uds.helpers import suggests_identifier_not_supported

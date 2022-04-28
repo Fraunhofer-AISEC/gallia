@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import asyncio
 from functools import partial
-from typing import Callable, Optional, Union
+from typing import Awaitable, Callable, Optional, Union
 
 from gallia.log import get_logger
 from gallia.transports.base import TargetURI
@@ -63,11 +63,11 @@ class PowerSupply:
     async def power_cycle(
         self,
         sleep: float = 2.0,
-        callback: Optional[Callable] = None,
+        callback: Optional[Callable[[], Awaitable[None]]] = None,
     ) -> None:
         async with self.mutex:
             await self.power_down()
             await asyncio.sleep(sleep)
             await self.power_up()
-            if callback:
+            if callback is not None:
                 await callback()
