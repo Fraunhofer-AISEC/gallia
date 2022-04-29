@@ -44,7 +44,6 @@ sphinx-rtd-theme = "^1.0.0"
 
 [tool.poetry.scripts]
 "gallia" = "gallia.cli:main"
-"discover-xcp" = "gallia.udscan.scanner.find_xcp:main"
 "cursed-hr" = "gallia.cursed_hr.cursed_hr:main"
 
 [tool.poetry.plugins]
@@ -55,6 +54,7 @@ sphinx-rtd-theme = "^1.0.0"
 "discover-can-ids" = "gallia.udscan.scanner.find_can_ids:FindCanIDsScanner"
 "discover-iso-tp-addr" = "gallia.udscan.scanner.find_iso_tp_addr:FindISOTPAddrScanner"
 "discover-endpoints" = "gallia.udscan.scanner.find_endpoints:FindEndpoints"
+"discover-xcp" = "gallia.udscan.scanner.find_xcp:FindXCP"
 "scan-dump-seeds" = "gallia.udscan.scanner.scan_sa_dump_seeds:SaDumpSeeds"
 "scan-identifiers" = "gallia.udscan.scanner.scan_identifiers:ScanIdentifiers"
 "scan-memory-functions" = "gallia.udscan.scanner.scan_memory_functions:ScanWriteDataByAddress"
