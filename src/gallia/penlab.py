@@ -18,7 +18,7 @@ from urllib.parse import urlparse
 
 from opennetzteil import Netzteil
 
-from gallia.uds.helpers import split_host_port
+from gallia.utils import split_host_port
 from gallia.penlog import Logger
 from gallia.transports.base import TargetURI
 from gallia.transports.can import ISOTPTransport, RawCANTransport

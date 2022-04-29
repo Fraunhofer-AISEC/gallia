@@ -2,7 +2,7 @@
 
 import pytest
 from gallia.uds.core.utils import uds_memory_parameters, address_and_size_length
-from gallia.uds.helpers import cmd_output, split_host_port
+from gallia.utils import split_host_port
 
 
 def test_split_host_port_v4():
@@ -52,11 +52,6 @@ def test_split_host_port_default():
     host, port = split_host_port("foo")
     assert host == "foo"
     assert port is None
-
-
-@pytest.mark.asyncio
-async def test_cmd_output():
-    assert await cmd_output(["uname"]) == "Linux"
 
 
 def test_uds_memory_parameters():
