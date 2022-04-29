@@ -356,15 +356,17 @@ class UDSScanner(Scanner):
         )
 
     def load_ecu(self, vendor: str) -> type[ECU]:
-        for entry_point in entry_points()["gallia_ecus"]:
-            if vendor == entry_point.name:
-                self.logger.log_debug(f"Loading OEM-ECU {entry_point}")
-                return entry_point.load()
+        if vendor == "default":
+            return ECU
 
-        self.logger.log_warning(
-            f"Could not find ECU for OEM '{vendor}', using non-OEM-specific ECU"
-        )
-        return ECU
+        eps = entry_points()
+        if "gallia_ecus" in eps:
+            for entry_point in eps["gallia_ecus"]:
+                if vendor == entry_point.name:
+                    self.logger.log_debug(f"Loading OEM-ECU {entry_point}")
+                    return entry_point.load()
+
+        raise ValueError(f"no such OEM: '{vendor}'")
 
     async def _tester_present_worker(self, interval: int) -> None:
         assert self.transport
