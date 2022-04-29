@@ -137,6 +137,7 @@ class ScanServices(UDSScanner):
                     resp = await self.ecu.send_raw(
                         pdu, config=UDSRequestConfig(tags=["ANALYZE"])
                     )
+                    resp = UDSResponse.parse_dynamic(resp.pdu)
                 except asyncio.TimeoutError:
                     self.logger.log_info(f"0x{sid:02X}: timeout")
                     continue

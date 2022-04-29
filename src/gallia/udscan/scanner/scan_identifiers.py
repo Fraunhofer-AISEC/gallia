@@ -182,6 +182,7 @@ class ScanIdentifiers(UDSScanner):
                     resp = await self.ecu.send_raw(
                         pdu, config=UDSRequestConfig(tags=["ANALYZE"], max_retry=3)
                     )
+                    resp = UDSResponse.parse_dynamic(resp.pdu)
                 except asyncio.TimeoutError:
                     self.logger.log_summary(f"0x{DID:0x}: Retries exceeded")
                     timeout_DIDs += 1
