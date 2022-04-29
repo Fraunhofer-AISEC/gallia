@@ -35,9 +35,10 @@ class ECU(UDSClient):
         timeout: Optional[float] = None,
         max_retry: int = 1,
         power_supply: Optional[PowerSupply] = None,
+        tester_present_workaround: bool = False,
     ) -> None:
 
-        super().__init__(transport, timeout, max_retry)
+        super().__init__(transport, timeout, max_retry, tester_present_workaround)
         self.logger = Logger(component="ecu", flush=True)
         self.power_supply = power_supply
         self.state = ECUState()

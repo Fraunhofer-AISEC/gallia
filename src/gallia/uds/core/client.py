@@ -8,7 +8,7 @@ from typing import Optional, overload, Sequence, Union
 from gallia.uds.core import service
 from gallia.uds.core.constants import UDSErrorCodes, UDSIsoServices
 
-from gallia.uds.core.exception import MissingResponse
+from gallia.uds.core.exception import MissingResponse, RequestResponseMismatch
 from gallia.uds.helpers import parse_pdu
 from gallia.penlog import Logger
 from gallia.transports.base import BaseTransport
@@ -30,12 +30,14 @@ class UDSClient:
         transport: BaseTransport,
         timeout: Optional[float] = None,
         max_retry: int = 1,
+        tester_present_workaround: bool = False,
     ):
         self.transport = transport
         self.timeout = timeout
         self.max_retry = max_retry
         self.retry_wait = 0.2
         self.pending_timeout = 5
+        self.tester_present_workaround = tester_present_workaround
         self.logger = Logger("uds", flush=True)
 
     async def reconnect(self, timeout: Optional[int] = None) -> None:
@@ -48,6 +50,34 @@ class UDSClient:
         if timeout is None and self.timeout:
             timeout = self.timeout
         return await self.transport.read(timeout, tags)
+
+    def _parse_pdu(
+        self,
+        request: service.UDSRequest,
+        raw_resp: bytes,
+    ) -> Optional[service.UDSResponse]:
+        """
+        TesterPresent workaround due to misbehaving ECUs.
+        Sometimes ECUs ignore the supress response flag and
+        the UDS stack becomes desyncronized. If self.tester_present_workaround
+        is enabled, this special case is catched and the stack can resync.
+        """
+        if self.tester_present_workaround:
+            try:
+                resp = parse_pdu(raw_resp, request)
+            except RequestResponseMismatch:
+                if (
+                    request.service_id != UDSIsoServices.TesterPresent
+                    and resp.service_id == UDSIsoServices.TesterPresent
+                ):
+                    self.logger.log_warning(
+                        f"TesterPresent behaves incorrectly: {resp}"
+                    )
+                    return None
+                else:
+                    raise
+            return resp
+        return parse_pdu(raw_resp, request)
 
     async def request_unsafe(
         self, request: service.UDSRequest, config: Optional[UDSRequestConfig] = None
@@ -77,7 +107,10 @@ class UDSClient:
                 await asyncio.sleep(wait_time)
                 continue
 
-            resp = parse_pdu(raw_resp, request)
+            if (r := self._parse_pdu(request, raw_resp)) is not None:
+                resp = r
+            else:
+                continue
 
             if isinstance(resp, service.NegativeResponse):
                 if resp.response_code == UDSErrorCodes.busyRepeatRequest:
@@ -99,6 +132,10 @@ class UDSClient:
             ):
                 try:
                     raw_resp = await self._read(timeout=waiting_time, tags=config.tags)
+                    if (r := self._parse_pdu(request, raw_resp)) is not None:
+                        resp = r
+                    else:
+                        continue
                 except asyncio.TimeoutError as e:
                     # Send a tester present to indicate that
                     # we are still there.
@@ -108,7 +145,6 @@ class UDSClient:
                         last_exception = MissingResponse(request, str(e))
                         break
                     continue
-                resp = parse_pdu(raw_resp, request)
                 n_timeout = 0  # Only raise errors for consecutive timeouts
                 n_pending += 1
                 if n_pending >= 120:
