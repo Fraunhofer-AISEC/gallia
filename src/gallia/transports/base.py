@@ -78,7 +78,7 @@ def _int_spec(default: Optional[int]) -> Callable[..., Optional[int]]:
 class BaseTransport(ABC):
     SPEC: dict[str, tuple[Callable[..., Any], bool]] = {}
     SCHEME: str = ""
-    BUFSIZE = io.DEFAULT_BUFFER_SIZE
+    BUFSIZE: int = io.DEFAULT_BUFFER_SIZE
 
     def __init__(self, target: TargetURI) -> None:
         if target.scheme != self.SCHEME:
