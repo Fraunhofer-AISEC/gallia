@@ -30,12 +30,14 @@ class UDSClient:
         transport: BaseTransport,
         timeout: Optional[float] = None,
         max_retry: int = 1,
+        tester_present_workaround: bool = False,
     ):
         self.transport = transport
         self.timeout = timeout
         self.max_retry = max_retry
         self.retry_wait = 0.2
         self.pending_timeout = 5
+        self.tester_present_workaround = tester_present_workaround
         self.logger = Logger("uds", flush=True)
 
     async def reconnect(self, timeout: Optional[int] = None) -> None:
@@ -71,6 +73,12 @@ class UDSClient:
                 raw_resp = await self.transport.request_unsafe(
                     request.pdu, timeout, config.tags
                 )
+                if self.tester_present_workaround and raw_resp == b"\x7f\x3e\x22":
+                    self.logger.log_warning(
+                        f"tester_present behaves incorrectly: {raw_resp.hex()}"
+                    )
+                    continue
+
             except asyncio.TimeoutError as e:
                 self.logger.log_debug(f"{request} failed with: {type(e)}")
                 last_exception = MissingResponse(request, str(e))
@@ -99,6 +107,11 @@ class UDSClient:
             ):
                 try:
                     raw_resp = await self._read(timeout=waiting_time, tags=config.tags)
+                    if self.tester_present_workaround and raw_resp == b"\x7f\x3e\x22":
+                        self.logger.log_warning(
+                            f"tester_present behaves incorrectly: {raw_resp.hex()}"
+                        )
+                        continue
                 except asyncio.TimeoutError as e:
                     # Send a tester present to indicate that
                     # we are still there.
