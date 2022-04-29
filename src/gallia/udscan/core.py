@@ -27,6 +27,7 @@ from gallia.transports.base import BaseTransport, TargetURI
 from gallia.transports.can import ISOTPTransport, RawCANTransport
 from gallia.transports.doip import DoIPTransport
 from gallia.transports.tcp import TCPLineSepTransport
+from gallia.transports.udp import UDPTransport
 from gallia.uds.ecu import ECU
 from gallia.uds.helpers import camel_to_snake
 from gallia.udscan import __version__
@@ -251,6 +252,7 @@ class Scanner(GalliaBase):
             RawCANTransport,
             DoIPTransport,
             TCPLineSepTransport,
+            UDPTransport,
         ]
 
         def func(x: EntryPoint) -> type[BaseTransport]:
