@@ -7,7 +7,6 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   gallia.udscan.plugins
    gallia.udscan.scanner
 
 Submodules

@@ -2,7 +2,7 @@
 
 All scanner share the same basic connection args.
 The argument `--target` specifies **all** parameters which are required to establish a connection to the device under test.
-The argument to `--target` is specified as an URI.
+The argument to `--target` is specified as a URI.
 An URI consists of these components:
 
 ``` text
@@ -15,7 +15,7 @@ The relevant transport protocol is specified in the scheme.
 
 ## isotp
 
-The can interface is specified as a host, e.g. `can0.
+The can interface is specified as a host, e.g. `can0`.
 The following parameters are available (these are ISOTP transport settings):
 
 * `src_addr` (required): The ISOTP source address as int.

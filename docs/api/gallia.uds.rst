@@ -7,7 +7,7 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
- gallia.uds.core
+   gallia.uds.core
 
 Submodules
 ----------

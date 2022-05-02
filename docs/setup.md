@@ -1,7 +1,5 @@
 # Setup
 
-![tooling-architecture.png](tooling-architecture.png)
-
 ## Dependencies
 
 This project has the following system level dependencies:
@@ -12,7 +10,7 @@ This project has the following system level dependencies:
 
 Python dependencies are listed in `pyproject.toml`
 
-## Setup
+## Setup Environment
 
 ###  1) Clone repository
 
@@ -38,7 +36,7 @@ Install `bin/penrun` into your PATH.
 $ poetry install
 ```
 
-### 4) Shell completion
+### 4) Enable Shell Completion
 
 **bash**
 
@@ -56,7 +54,7 @@ $ cp misc/penrun.fish ~/.config/fish/completions
 ```
 
 ## Development
-We use the poetry build system to manage dependencies and to install the gallia packe.
+We use the poetry build system to manage dependencies and to install the gallia package.
 This section lists some useful commands to get started with poetry.
 
 **Install**
@@ -104,8 +102,8 @@ $ pip install .
 **IDE integration**
 
 `pycharm` offers native support for the `poetry` build system:
-https://www.jetbrains.com/help/pycharm/poetry.html
-You must mark the `src` folder of the project as `Sources Root`, 
+[https://www.jetbrains.com/help/pycharm/poetry.html](https://www.jetbrains.com/help/pycharm/poetry.html).
+You need to mark the `src` folder of the project as `Sources Root`,
 otherwise `pycharm` does not find the `gallia` package.
 
 For any IDE, which has no direct support for `poetry`, 

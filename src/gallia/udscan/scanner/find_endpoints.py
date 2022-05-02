@@ -13,7 +13,7 @@ from gallia.udscan.utils import auto_int, write_ecu_url_list
 
 
 class FindEndpoints(UDSScanner):
-    """cmd_find_endpoints"""
+    """This is a generic UDS endpoint discovery scanner. Currently only supports DoIP."""
 
     def __init__(self) -> None:
         super().__init__()

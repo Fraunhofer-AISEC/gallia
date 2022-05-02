@@ -12,14 +12,6 @@ gallia.db.db\_handler module
    :undoc-members:
    :show-inheritance:
 
-gallia.db.db\_importer module
------------------------------
-
-.. automodule:: gallia.db.db_importer
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 Module contents
 ---------------
 
