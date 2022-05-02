@@ -236,6 +236,7 @@ def range_diff(base: list[range], coverage: list[range]) -> list[range]:
     The main idea of this algorithm is to go through each range of the base and to iteratively shrink it by
     removing the ranges in the coverage. What's left is then the uncovered area.
     There are in principle five cases which are considered for a pair of ranges:
+
      - One or both are empty
      - They are disjoint
        -> In both cases nothing is removed from the base range
@@ -248,7 +249,7 @@ def range_diff(base: list[range], coverage: list[range]) -> list[range]:
 
     :param base: The base ranges.
     :param coverage: The coverage ranges.
-    :return The (sub-)ranges of the base ranges that are not covered by the coverage ranges.
+    :return: The (sub-)ranges of the base ranges that are not covered by the coverage ranges.
     """
     result: list[range] = []
     sorted_base = sorted(base, key=lambda r: r[0])

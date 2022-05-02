@@ -1,8 +1,8 @@
 # Power Supply
 
-Gallia supports the opennetzteil API (https://codeberg.org/rumpelsepp/opennetzteil) via a builtin client.
+Gallia supports the [opennetzteil API](https://codeberg.org/rumpelsepp/opennetzteil) via a builtin client.
 The location to the opennetzteil server is specified via `--power-supply`.
-The argument is an URI of the following form:
+The argument is a URI of the following form:
 
 ``` text
 (http|https)://example.org:1234?id=1&channel=1

@@ -7,15 +7,13 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   gallia.analyzer
-   gallia.complex_args
    gallia.cursed_hr
    gallia.db
    gallia.penlab
-   gallia.penreport
    gallia.transports
    gallia.uds
    gallia.udscan
+   gallia.services
 
 Submodules
 ----------
