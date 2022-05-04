@@ -10,7 +10,8 @@ This project has the following system level dependencies:
 
 Python dependencies are listed in `pyproject.toml`
 
-## Setup Environment
+## Install
+>>>>>>> fc8467f (doc: Fix outdated or otherwise broken parts)
 
 ###  1) Clone repository
 

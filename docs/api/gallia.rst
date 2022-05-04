@@ -9,11 +9,10 @@ Subpackages
 
    gallia.cursed_hr
    gallia.db
-   gallia.penlab
+   gallia.services
    gallia.transports
    gallia.uds
    gallia.udscan
-   gallia.services
 
 Submodules
 ----------
@@ -26,10 +25,26 @@ gallia.cli module
    :undoc-members:
    :show-inheritance:
 
+gallia.penlab module
+--------------------
+
+.. automodule:: gallia.penlab
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 gallia.penlog module
 --------------------
 
 .. automodule:: gallia.penlog
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+gallia.utils module
+-------------------
+
+.. automodule:: gallia.utils
    :members:
    :undoc-members:
    :show-inheritance:

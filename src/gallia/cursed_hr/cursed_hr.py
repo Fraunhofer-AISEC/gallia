@@ -272,6 +272,7 @@ class CursedHR:
         This process enables handling relatively large penlog entries efficiently by extracting information on the
         priority from each entry, which can later be used to quickly jump to adjacent entries of at least same priority.
         This is accomplished by the following two data structures:
+
             - self.entry_positions: Stores the absolute offsets of each penlog entry inside the input file.
                                     This offset can later be used to efficiently retrieve the data for a penlog entry
                                     from the input file without the need to store it in memory.
