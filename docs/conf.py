@@ -68,3 +68,14 @@ source_suffix = {
 # Prefix document path to section labels, to use:
 # `path/to/file:heading` instead of just `heading`
 autosectionlabel_prefix_document = True
+
+
+# -- Options for manual page output ---------------------------------------
+
+# One entry per manual page. List of tuples
+# (source start file, name, description, authors, manual section).
+man_pages = [
+    ('penrun.1', 'penrun',
+     'A configurable runner for commands which create artifacts',
+     ['AISEC Pentest Team'], 1),
+]
