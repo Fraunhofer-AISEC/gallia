@@ -1,6 +1,6 @@
 # https://github.com/actions/setup-python/issues/374
-
-name: linters
+#
+name: tests
 
 on:
   push:
@@ -13,7 +13,7 @@ on:
     - 'tests/**'
 
 jobs:
-  linters:
+  pytest:
     strategy:
       fail-fast: false
       matrix:
@@ -35,15 +35,6 @@ jobs:
     - name: Install Dependencies
       run: |
         poetry install
-    - name: Run flake8
+    - name: Run pytest
       run: |
-        poetry run flake8 src/gallia
-    - name: Run mypy
-      run: |
-        poetry run mypy src/gallia
-    - name: Run pylint
-      run: |
-        poetry run pylint src/gallia
-    - name: Run black
-      run: |
-        poetry run black --check --verbose src/gallia
+        poetry run python -m pytest -v tests/python
