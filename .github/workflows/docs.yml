@@ -1,36 +1,61 @@
+# https://github.com/actions/setup-python/issues/374
+
 name: docs
 
 on:
   push:
     branches:
     - master
+  pull_request:
+    paths:
+    - '.github/**'
+    - 'docs/**'
+    - 'src/**'
 
 jobs:
-  deploy-docs:
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ['3.10']
-
+  build-docs:
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v3
       with:
-        python-version: ${{ matrix.python-version }}
-    - uses: abatilo/actions-poetry@v2.0.0
+        python-version: '3.10'
+    - uses: Gr1N/setup-poetry@v7
+    - uses: actions/cache@v2
       with:
-        poetry-version: '1.1.13'
+        path: ~/.cache/pypoetry/virtualenvs
+        key: ${{ runner.os }}-poetry-${{ hashFiles('poetry.lock') }}
 
-    - name: prepare
+    - name: Install Dependencies
       run: |
         poetry install
-    - name: sphinx
+    - name: Invoke sphinx-build
       run: |
-        poetry run make docs
+        poetry run make -C docs SPHINXOPTS="-W" html
         touch docs/_build/html/.nojekyll
-    - name: Deploy docs
+    - name: Archive webpage
+      uses: actions/upload-artifact@v3
+      with:
+        path: |
+          docs/_build/html
+
+  deploy-docs:
+    runs-on: ubuntu-latest
+    needs: build-docs
+    if: github.ref == 'refs/heads/master'
+
+    steps:
+    - uses: Gr1N/setup-poetry@v7
+    - uses: actions/cache@v3
+      with:
+        path: ~/.cache/pypoetry/virtualenvs
+        key: ${{ runner.os }}-poetry-${{ hashFiles('poetry.lock') }}
+
+    - name: Download all workflow run artifacts
+      uses: actions/download-artifact@v3
+
+    - name: Deploy docs to Github Pages
       uses: JamesIves/github-pages-deploy-action@releases/v3
       with:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
