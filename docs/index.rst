@@ -14,6 +14,7 @@ gallia -- rebellion against the romans
    :maxdepth: 1
    :caption: API
 
+   penrun.1
    api/modules
 
 

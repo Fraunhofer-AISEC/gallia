@@ -10,7 +10,7 @@ BINDIR ?= "${HOME}/bin"
 .PHONY: install
 install:
 	pip install .
-	if [ ! -d "$(BINDIR)" ]; then mkdir -p "$(BINDIR)";fi
+	if [ ! -d "$(BINDIR)" ]; then mkdir -p "$(BINDIR)"; fi
 	cp bin/* "$(BINDIR)"
 	@echo "Don't forget to add '$(BINDIR)' to your PATH"
 
@@ -19,14 +19,9 @@ install-dev:
 	poetry install
 	@echo "Don't forget to add '$(PWD)/bin' to your PATH"
 
-export BUILDDIR ?= $(PWD)/bin
-
 .PHONY: docs
 docs:
 	$(MAKE) -C docs html
-
-man:
-	$(MAKE) -C docs/man man
 
 .PHONY: test
 test: pytest
@@ -38,4 +33,3 @@ pytest:
 .PHONY: clean
 clean:
 	$(MAKE) -C docs clean
-	$(MAKE) -C docs/man clean
