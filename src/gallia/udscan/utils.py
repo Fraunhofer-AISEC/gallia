@@ -237,15 +237,15 @@ def range_diff(base: list[range], coverage: list[range]) -> list[range]:
     removing the ranges in the coverage. What's left is then the uncovered area.
     There are in principle five cases which are considered for a pair of ranges:
 
-     - One or both are empty
-     - They are disjoint
-       -> In both cases nothing is removed from the base range
-     - The base range is a subrange of the coverage range
-       -> The base range becomes empty
-     - The coverage range reaches into base range
-       -> The base range gets smaller
-     - The coverage range is a subrange of the base range
-       -> The base range is split into two smaller ranges
+    - One or both are empty
+    - They are disjoint
+      -> In both cases nothing is removed from the base range
+    - The base range is a subrange of the coverage range
+      -> The base range becomes empty
+    - The coverage range reaches into base range
+      -> The base range gets smaller
+    - The coverage range is a subrange of the base range
+      -> The base range is split into two smaller ranges
 
     :param base: The base ranges.
     :param coverage: The coverage ranges.

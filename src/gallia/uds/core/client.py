@@ -453,7 +453,7 @@ class UDSClient:
 
         :param dtc_status_mask: Used to select a portion of the DTCs based on their state.
         :param suppress_response: If set to True, the server is advised to not send back a positive
-        response.
+         response.
         :param config: Passed on to request_pdu().
         :return: The response of the server.
         """
@@ -558,7 +558,7 @@ class UDSClient:
 
         :param dtc_status_mask: Used to select a portion of the DTCs based on their state.
         :param suppress_response: If set to True, the server is advised to not send back a positive
-        response.
+         response.
         :param config: Passed on to request_pdu().
         :return: The response of the server.
         """
