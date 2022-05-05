@@ -51,7 +51,7 @@ sphinx-rtd-theme = "^1.0.0"
 [tool.poetry.plugins."gallia_ecus"]
 "default" = "gallia.udscan.core:ECU"
 
-[tool.poetry.plugins."gallia_scanner"]
+[tool.poetry.plugins."gallia_scanners"]
 "discover-can-ids" = "gallia.udscan.scanner.find_can_ids:FindCanIDsScanner"
 "discover-iso-tp-addr" = "gallia.udscan.scanner.find_iso_tp_addr:FindISOTPAddrScanner"
 "discover-endpoints" = "gallia.udscan.scanner.find_endpoints:FindEndpoints"

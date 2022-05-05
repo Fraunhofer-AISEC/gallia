@@ -22,7 +22,7 @@ def main() -> None:
 
         # For completion only the names are required, which results in a noticeably faster response
         # compared to the full loading process, which is necessary for the help
-        for group in ("gallia_scanner", "gallia_scripts"):
+        for group in ("gallia_scanners", "gallia_scripts"):
             for entry in all_entries[group]:
                 _parser = sp.add_parser(entry.name)
 
@@ -39,7 +39,7 @@ def main() -> None:
             try:
                 entry_point = next(
                     i.load()
-                    for i in all_entries["gallia_scanner"]
+                    for i in all_entries["gallia_scanners"]
                     if i.name == chosen_entry
                 )
                 sys.exit(entry_point().run())
@@ -54,7 +54,7 @@ def main() -> None:
                 except StopIteration:
                     pass
     else:
-        for entry in all_entries["gallia_scanner"]:
+        for entry in all_entries["gallia_scanners"]:
             scanner_class = entry.load()
 
             _parser = sp.add_parser(
