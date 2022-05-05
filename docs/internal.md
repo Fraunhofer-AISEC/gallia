@@ -30,7 +30,7 @@ To see the scanner specific usage, the user can query the help of the specific s
 There are different plugin interfaces to extend gallia.
 All of them use the python `entry point` concept:
 
-1. Scanner API (`gallia_scanner`)
+1. Scanner API (`gallia_scanners`)
 2. ECU API (`gallia_ecus`)
 3. Transport protocols (`gallia_transports`)
 

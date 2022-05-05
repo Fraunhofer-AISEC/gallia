@@ -16,7 +16,7 @@ def main() -> None:
         if "udscan" in str(entry.module):
             check([entry.name, "-h"])
 
-    for group in ["gallia_scanner", "gallia_scripts"]:
+    for group in ["gallia_scanners", "gallia_scripts"]:
         for entry in all_entries[group]:
             check(["gallia", entry.name, "-h"])
 
