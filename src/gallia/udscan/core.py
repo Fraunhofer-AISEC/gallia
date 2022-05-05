@@ -244,7 +244,7 @@ class Scanner(GalliaBase):
         )
 
     @staticmethod
-    async def _setup_transport(target: TargetURI) -> BaseTransport:
+    async def load_transport(target: TargetURI) -> BaseTransport:
         transports = [
             ISOTPTransport,
             RawCANTransport,
@@ -258,8 +258,10 @@ class Scanner(GalliaBase):
                 raise ValueError(f"{type(x)} is not derived from BaseTransport")
             return cast(type[BaseTransport], t)
 
-        transports_eps = map(func, entry_points()["gallia_transports"])
-        transports += transports_eps
+        eps = entry_points()
+        if "gallia_transports" in eps:
+            transports_eps = map(func, eps["gallia_transports"])
+            transports += transports_eps
 
         for transport in transports:
             if target.scheme == transport.SCHEME:  # type: ignore
@@ -283,7 +285,7 @@ class Scanner(GalliaBase):
             self.dumpcap = await Dumpcap.start(args.target, self.artifacts_dir)
             await self.dumpcap.sync()
 
-        self.transport = await self._setup_transport(args.target)
+        self.transport = await self.load_transport(args.target)
 
     async def teardown(self, args: Namespace) -> None:
         if self.transport:
