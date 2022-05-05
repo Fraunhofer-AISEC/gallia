@@ -308,10 +308,16 @@ class UDSScanner(Scanner):
 
         group = self.parser.add_argument_group("UDS scanner related arguments")
 
+        eps = entry_points()
+        choices = (
+            [x.name for x in eps["gallia_ecus"]]
+            if "gallia_ecus" in eps
+            else ["default"]
+        )
         group.add_argument(
             "--oem",
             default=os.environ.get("GALLIA_OEM", "default"),
-            choices=[x.name for x in entry_points()["gallia_ecus"]],
+            choices=choices,
             metavar="OEM",
             help="The OEM of the ECU, used to choose a OEM specific ECU implementation",
         )
