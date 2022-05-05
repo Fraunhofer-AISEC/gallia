@@ -35,7 +35,6 @@ jobs:
     - name: Invoke sphinx-build
       run: |
         poetry run make -C docs SPHINXOPTS="-W" html
-        touch docs/_build/html/.nojekyll
     - name: Archive webpage
       uses: actions/upload-artifact@v3
       with:
@@ -58,8 +57,10 @@ jobs:
       uses: actions/download-artifact@v3
 
     - name: Deploy docs to Github Pages
-      uses: JamesIves/github-pages-deploy-action@releases/v3
+      uses: crazy-max/ghaction-github-pages@v2
       with:
+        target_branch: gh-pages
+        build_dir: artifact
+        jekyll: false
+      env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        BRANCH: gh-pages
-        FOLDER: docs/_build/html
