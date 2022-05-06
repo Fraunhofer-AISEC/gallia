@@ -11,7 +11,7 @@ from argparse import ArgumentDefaultsHelpFormatter, Namespace
 from asyncio import Task
 from datetime import datetime, timezone
 from enum import Enum, IntEnum
-from importlib.metadata import EntryPoint, entry_points
+from importlib.metadata import EntryPoint, entry_points, version
 from pathlib import Path
 from secrets import token_urlsafe
 from tempfile import gettempdir
@@ -29,7 +29,6 @@ from gallia.transports.can import ISOTPTransport, RawCANTransport
 from gallia.transports.doip import DoIPTransport
 from gallia.transports.tcp import TCPLineSepTransport
 from gallia.uds.ecu import ECU
-from gallia.udscan import __version__
 
 
 class ExitCodes(IntEnum):
@@ -183,7 +182,7 @@ class GalliaBase(ABC):
 
         self.logger.log_preamble(f"Storing artifacts at {self.artifacts_dir}")
         self.logger.log_preamble(
-            f'Starting "{sys.argv[0]}" ({__version__}) with [{" ".join(sys.argv)}]'
+            f'Starting "{sys.argv[0]}" ({version("gallia")}) with [{" ".join(sys.argv)}]'
         )
 
         try:
