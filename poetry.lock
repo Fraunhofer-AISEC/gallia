@@ -584,7 +584,7 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "pylint"
-version = "2.13.7"
+version = "2.13.8"
 description = "python code static checker"
 category = "dev"
 optional = false
@@ -1128,7 +1128,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9,<3.11"
-content-hash = "d3df00e22e99f1fa19bac5b32518b1f4b79c0e21b15843156268c569ba72527e"
+content-hash = "e66a492f3bc0d1a257c47f680b17e885677e94e7636b4164c9efc7b6d019ac63"
 
 [metadata.files]
 aiofiles = [
@@ -1718,8 +1718,8 @@ pygments = [
     {file = "Pygments-2.12.0.tar.gz", hash = "sha256:5eb116118f9612ff1ee89ac96437bb6b49e8f04d8a13b514ba26f620208e26eb"},
 ]
 pylint = [
-    {file = "pylint-2.13.7-py3-none-any.whl", hash = "sha256:13ddbbd8872c804574149e81197c28877eba75224ba6b76cd8652fc31df55c1c"},
-    {file = "pylint-2.13.7.tar.gz", hash = "sha256:911d3a97c808f7554643bcc5416028cfdc42eae34ed129b150741888c688d5d5"},
+    {file = "pylint-2.13.8-py3-none-any.whl", hash = "sha256:f87e863a0b08f64b5230e7e779bcb75276346995737b2c0dc2793070487b1ff6"},
+    {file = "pylint-2.13.8.tar.gz", hash = "sha256:ced8968c3b699df0615e2a709554dec3ddac2f5cd06efadb69554a69eeca364a"},
 ]
 pylsp-mypy = [
     {file = "pylsp-mypy-0.5.7.tar.gz", hash = "sha256:4a8e06e17a60db86bb35cdd2e0acbb8d05b9897b943c4c2ac4375c3e9f332b88"},
