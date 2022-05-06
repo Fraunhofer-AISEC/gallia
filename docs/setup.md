@@ -25,12 +25,21 @@ $ cd gallia
 **penlog**
 
 See https://github.com/Fraunhofer-AISEC/penlog
+```shell-session
+make
+```
 
 **penrun**
 
 Install `bin/penrun` into your PATH. 
+```shell-session
+export PATH="installpath/gallia/bin$PATH"
+```
+
 
 ### 3) Install gallia
+
+Poetry will create a unique venv with all the required dependencies:
 
 ```shell-session
 $ poetry install
@@ -56,14 +65,6 @@ $ cp misc/penrun.fish ~/.config/fish/completions
 ## Development
 We use the poetry build system to manage dependencies and to install the gallia package.
 This section lists some useful commands to get started with poetry.
-
-**Install**
-
-Poetry will create a unique venv with all the required dependencies:
-
-```shell-session
-$ poetry install
-```
 
 **shell**
 
