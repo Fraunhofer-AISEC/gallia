@@ -54,14 +54,25 @@ def main() -> None:
                 except StopIteration:
                     pass
     else:
-        for entry in all_entries["gallia_scanners"]:
-            scanner_class = entry.load()
+        if "gallia_scanners" in all_entries:
+            for entry in all_entries["gallia_scanners"]:
+                scanner_class = entry.load()
 
-            _parser = sp.add_parser(
-                entry.name,
-                help=scanner_class.__doc__,
-            )
-            _parser.set_defaults(func=scanner_class().run)
+                _parser = sp.add_parser(
+                    entry.name,
+                    help=scanner_class.__doc__,
+                )
+                _parser.set_defaults(func=scanner_class().run)
+
+        if "gallia_scripts" in all_entries:
+            for entry in all_entries["gallia_scripts"]:
+                entry_point = entry.load()
+
+                _parser = sp.add_parser(
+                    entry.name,
+                    help=entry_point.__doc__,
+                )
+                _parser.set_defaults(func=entry_point)
 
         # Only pass a single argument to the args parser, otherwise it gets confused
         # with arguments belonging to one of the subparsers.
