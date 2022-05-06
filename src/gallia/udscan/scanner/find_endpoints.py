@@ -3,8 +3,8 @@ from argparse import Namespace
 
 from gallia.uds.core.constants import UDSErrorCodes
 from gallia.uds.core.service import (
-    DiagnosticSessionControlResponse,
     DiagnosticSessionControlRequest,
+    DiagnosticSessionControlResponse,
     NegativeResponse,
 )
 from gallia.uds.helpers import raise_for_mismatch

@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-# The pylint ignores are false positives in the pylint tool.
-
 import asyncio
 import gzip
 import io
 import os
-import struct
 import shlex
+import struct
 from asyncio import subprocess
 from datetime import datetime
 from functools import partial
@@ -18,10 +16,10 @@ from urllib.parse import urlparse
 
 from opennetzteil import Netzteil
 
-from gallia.utils import split_host_port
 from gallia.penlog import Logger
 from gallia.transports.base import TargetURI
 from gallia.transports.can import ISOTPTransport, RawCANTransport
+from gallia.utils import split_host_port
 
 
 class PowerSupplyURI(TargetURI):

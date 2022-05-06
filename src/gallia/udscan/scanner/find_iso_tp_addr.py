@@ -2,7 +2,7 @@ import asyncio
 import sys
 from argparse import Namespace
 
-from gallia.transports.can import RawCANTransport, ISOTPTransport
+from gallia.transports.can import ISOTPTransport, RawCANTransport
 from gallia.udscan.core import DiscoveryScanner
 from gallia.udscan.utils import write_ecu_url_list
 

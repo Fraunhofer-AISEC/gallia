@@ -1,20 +1,20 @@
 import asyncio
-from argparse import Namespace, Action, ArgumentError, ArgumentParser
+from argparse import Action, ArgumentError, ArgumentParser, Namespace
+from pathlib import Path
 from subprocess import run
 from sys import stdout
-from pathlib import Path
-from urllib.parse import urlencode, ParseResult
-from typing import Any, Callable, Optional, Union, Sequence
+from typing import Any, Callable, Optional, Sequence, Union
+from urllib.parse import ParseResult, urlencode
 
 import aiofiles
 
 from gallia.db.db_handler import DBHandler
-from gallia.uds.ecu import ECU
 from gallia.penlog import Logger
-from gallia.uds.core.exception import UnexpectedNegativeResponse
-from gallia.uds.core.client import UDSRequestConfig
-from gallia.uds.helpers import suggests_identifier_not_supported
 from gallia.uds.core import service
+from gallia.uds.core.client import UDSRequestConfig
+from gallia.uds.core.exception import UnexpectedNegativeResponse
+from gallia.uds.ecu import ECU
+from gallia.uds.helpers import suggests_identifier_not_supported
 
 
 def auto_int(arg: str) -> int:

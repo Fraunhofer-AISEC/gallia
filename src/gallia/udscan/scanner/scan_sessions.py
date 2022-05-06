@@ -3,11 +3,11 @@ import sys
 from argparse import Namespace
 from typing import Union
 
-from gallia.uds.core.constants import UDSErrorCodes
 from gallia.uds.core.client import UDSRequestConfig
+from gallia.uds.core.constants import UDSErrorCodes
 from gallia.uds.core.service import (
-    NegativeResponse,
     DiagnosticSessionControlResponse,
+    NegativeResponse,
     UDSResponse,
 )
 from gallia.udscan.core import UDSScanner

@@ -1,6 +1,6 @@
 from binascii import hexlify
 from math import ceil
-from typing import Optional, Any
+from typing import Any, Optional
 
 from gallia.uds.core.constants import UDSIsoServices
 

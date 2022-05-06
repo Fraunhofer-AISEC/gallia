@@ -6,7 +6,6 @@ from typing import Optional, TypedDict
 
 from gallia.transports.base import BaseTransport, TargetURI
 
-
 _TCP_SPEC_TYPE = TypedDict("_TCP_SPEC_TYPE", {})
 tcp_spec: dict = {}
 assertion_str = "bug: transport is not connected"

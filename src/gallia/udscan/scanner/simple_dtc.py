@@ -4,7 +4,7 @@ from functools import partial
 
 from tabulate import tabulate
 
-from gallia.uds.core.constants import CDTCSSubFuncs, UDSErrorCodes, DSCSubFuncs
+from gallia.uds.core.constants import CDTCSSubFuncs, DSCSubFuncs, UDSErrorCodes
 from gallia.uds.core.service import NegativeResponse
 from gallia.udscan.core import UDSScanner
 from gallia.udscan.utils import auto_int

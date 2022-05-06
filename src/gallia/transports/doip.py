@@ -4,10 +4,10 @@ import asyncio
 import struct
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import cast, Optional, TypedDict, Union
+from typing import Optional, TypedDict, Union, cast
 
 from gallia.penlog import Logger
-from gallia.transports.base import BaseTransport, _int_spec, TargetURI
+from gallia.transports.base import BaseTransport, TargetURI, _int_spec
 
 
 class ProtocolVersions(IntEnum):

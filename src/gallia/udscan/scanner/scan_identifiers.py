@@ -4,17 +4,17 @@ import reprlib
 from argparse import Namespace
 from itertools import product
 
-from gallia.uds.core.constants import UDSErrorCodes, RCSubFuncs, UDSIsoServices
 from gallia.uds.core.client import UDSRequestConfig
+from gallia.uds.core.constants import RCSubFuncs, UDSErrorCodes, UDSIsoServices
 from gallia.uds.core.exception import IllegalResponse
 from gallia.uds.core.service import NegativeResponse, UDSResponse
 from gallia.uds.helpers import suggests_service_not_supported
 from gallia.udscan.core import UDSScanner
 from gallia.udscan.utils import (
-    auto_int,
-    find_sessions,
-    check_and_set_session,
     ParseSkips,
+    auto_int,
+    check_and_set_session,
+    find_sessions,
 )
 
 
