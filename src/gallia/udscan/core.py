@@ -20,7 +20,6 @@ from typing import Any, Optional, cast
 import aiofiles
 import argcomplete
 
-from gallia.utils import camel_to_snake
 from gallia.db.db_handler import DBHandler
 from gallia.penlab import Dumpcap, PowerSupply, PowerSupplyURI
 from gallia.penlog import Logger
@@ -29,6 +28,7 @@ from gallia.transports.can import ISOTPTransport, RawCANTransport
 from gallia.transports.doip import DoIPTransport
 from gallia.transports.tcp import TCPLineSepTransport
 from gallia.uds.ecu import ECU
+from gallia.utils import camel_to_snake
 
 
 class ExitCodes(IntEnum):

@@ -2,10 +2,10 @@ import asyncio
 import sys
 from argparse import Namespace
 
-from gallia.uds.core.service import NegativeResponse
-from gallia.uds.ecu import ECU
 from gallia.transports.base import TargetURI
 from gallia.transports.can import ISOTPTransport, RawCANTransport
+from gallia.uds.core.service import NegativeResponse
+from gallia.uds.ecu import ECU
 from gallia.udscan.core import DiscoveryScanner
 from gallia.udscan.utils import auto_int, write_ecu_url_list
 

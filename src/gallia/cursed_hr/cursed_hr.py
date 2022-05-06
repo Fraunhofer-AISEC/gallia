@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import curses
 import curses.ascii
-import json
 import gzip
+import json
 import mmap
 import shutil
 import tempfile
@@ -19,12 +19,12 @@ from datetime import datetime
 from enum import IntEnum
 from math import ceil
 from pathlib import Path
-from typing import Optional, Any, BinaryIO, Union
+from typing import Any, BinaryIO, Optional, Union
 
 import zstandard as zstd
 from penlog import MessagePrio, RecordType
 
-from gallia.uds.core.service import UDSResponse, UDSRequest, NegativeResponse
+from gallia.uds.core.service import NegativeResponse, UDSRequest, UDSResponse
 
 
 class InterpretationColor(IntEnum):

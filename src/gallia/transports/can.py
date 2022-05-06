@@ -2,15 +2,14 @@ from __future__ import annotations
 
 import asyncio
 import errno
-import time
 import socket as s
 import struct
-from typing import cast, Optional, TypedDict
+import time
+from typing import Optional, TypedDict, cast
 
 from can import Message
 
-from gallia.transports.base import BaseTransport, _int_spec, _bool_spec, TargetURI
-
+from gallia.transports.base import BaseTransport, TargetURI, _bool_spec, _int_spec
 
 CANFD_MTU = 72
 CAN_MTU = 16

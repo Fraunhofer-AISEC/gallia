@@ -4,13 +4,13 @@ import os
 import socket
 import struct
 import sys
-from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, Namespace
+from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser, Namespace
 from subprocess import CalledProcessError, run
 
-from gallia.uds.core.utils import shorten
 from gallia.penlog import Logger
 from gallia.transports.base import TargetURI
 from gallia.transports.can import RawCANTransport
+from gallia.uds.core.utils import shorten
 
 
 class FindXCP:

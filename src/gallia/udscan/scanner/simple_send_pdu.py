@@ -6,10 +6,10 @@ from gallia.uds.core.client import UDSRequestConfig
 from gallia.uds.core.exception import UDSException
 from gallia.uds.core.service import (
     NegativeResponse,
-    UDSResponse,
-    UDSRequest,
     RawRequest,
     RawResponse,
+    UDSRequest,
+    UDSResponse,
 )
 from gallia.uds.helpers import raise_for_error
 from gallia.udscan.core import UDSScanner

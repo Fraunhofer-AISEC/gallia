@@ -1,7 +1,6 @@
-from ctypes import byref, c_char_p, c_uint, c_int, CDLL, create_string_buffer, POINTER
+from ctypes import CDLL, POINTER, byref, c_char_p, c_int, c_uint, create_string_buffer
 from ctypes.util import find_library
 from typing import Callable, Union
-
 
 DEFAULT_BUFFER_LIMIT = 2**28
 UCL_UNAVAILABLE = "libucl is not available!"

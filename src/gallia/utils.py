@@ -1,5 +1,5 @@
-import re
 import ipaddress
+import re
 from typing import Optional
 from urllib.parse import urlparse
 
