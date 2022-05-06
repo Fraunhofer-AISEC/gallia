@@ -1,6 +1,5 @@
 import asyncio
 from argparse import Namespace, Action, ArgumentError, ArgumentParser
-from subprocess import run
 from sys import stdout
 from pathlib import Path
 from urllib.parse import urlencode, ParseResult
@@ -15,10 +14,6 @@ from gallia.uds.core.exception import UnexpectedNegativeResponse
 from gallia.uds.core.client import UDSRequestConfig
 from gallia.uds.helpers import suggests_identifier_not_supported
 from gallia.uds.core import service
-
-
-def auto_int(arg: str) -> int:
-    return int(arg, 0)
 
 
 async def poll_service(
@@ -130,21 +125,6 @@ async def check_and_set_session(
         f"Failed to switch to session 0x{expected_session:02x} after {retries} attempts"
     )
     return False
-
-
-def get_command_output(command: list[str]) -> str:
-    """get_command_output runs the command given as a list and returns a string
-    of the corresponding output from STDOUT. If any error occurs, the error
-    string is returned instead.
-
-    :param command: A list of strings without whitespace which specify the command
-    :return: A string of the command's output from STDOUT, or an error string"""
-    try:
-        process = run(command, capture_output=True, check=True)
-    except Exception as e:
-        return f"Error: {e}"
-
-    return process.stdout.decode().strip()
 
 
 def unravel(listing: str) -> list[int]:

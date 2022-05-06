@@ -4,6 +4,10 @@ from typing import Optional
 from urllib.parse import urlparse
 
 
+def auto_int(arg: str) -> int:
+    return int(arg, 0)
+
+
 def split_host_port(
     hostport: str,
     default_port: Optional[int] = None,
