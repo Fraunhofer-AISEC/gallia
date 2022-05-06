@@ -5,7 +5,11 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry]
 name = "gallia"
 version = "0.1.0"
-description = ""
+description = "Extendable Pentesting Framework"
+license = "Apache-2.0"
+readme = "README.md"
+documentation = "https://fraunhofer-aisec.github.io/gallia"
+repository = "https://github.com/Fraunhofer-AISEC/gallia"
 authors = ["AISEC Pentesting Team"]
 packages = [
     { include = "gallia", from = "src" },
