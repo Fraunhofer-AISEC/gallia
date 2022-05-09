@@ -28,7 +28,7 @@ test: pytest
 
 .PHONY: pytest
 pytest:
-	python -m pytest --asyncio-mode=auto -v tests/python -W error::UserWarning
+	python -m pytest -v tests/python -W error::UserWarning
 
 .PHONY: clean
 clean:
