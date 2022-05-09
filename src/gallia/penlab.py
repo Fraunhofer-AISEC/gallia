@@ -131,19 +131,22 @@ class Dumpcap:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.DEVNULL,
             )
+            await asyncio.sleep(0.2)
         except Exception as e:
             logger.log_error(f"Could not start dumpcap: ({e.__class__.__name__}) {e}")
             raise
 
         if proc.returncode:
-            raise RuntimeError(f"Could not start dumpcap with: [{cmd_str}]")
+            raise RuntimeError(
+                f"dumpcap terminated with exit code: [{proc.returncode}]"
+            )
 
         logger.log_preamble(f'Started "dumpcap": {cmd_str}')
 
         return cls(proc, logger, artifacts_dir, outfile)
 
-    async def sync(self) -> None:
-        await self.ready_event.wait()
+    async def sync(self, timeout: float = 1) -> None:
+        await asyncio.wait_for(self.ready_event.wait(), timeout)
 
     async def stop(self) -> None:
         await asyncio.sleep(self.cleanup)
