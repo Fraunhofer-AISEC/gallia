@@ -2778,6 +2778,10 @@ class InputOutputControlByIdentifier(
         Response = FreezeCurrentStateResponse
         Request = FreezeCurrentStateRequest
 
+    class ShortTermAdjustment:
+        Response = ShortTermAdjustmentResponse
+        Request = ShortTermAdjustmentRequest
+
 
 # *******************
 # * Routine control *
@@ -2785,11 +2789,11 @@ class InputOutputControlByIdentifier(
 
 
 T_RoutineControlResponse = TypeVar(
-    "T_RoutineControlResponse", bound="_RoutineControlResponse"
+    "T_RoutineControlResponse", bound="RoutineControlResponse"
 )
 
 
-class _RoutineControlResponse(
+class RoutineControlResponse(
     SpecializedSubFunctionResponse,
     ABC,
     service_id=UDSIsoServices.RoutineControl,
@@ -2829,23 +2833,23 @@ class _RoutineControlResponse(
 
     def matches(self, request: UDSRequest) -> bool:
         return (
-            isinstance(request, _RoutineControlRequest)
+            isinstance(request, RoutineControlRequest)
             and self.routine_control_type == request.routine_control_type
             and self.routine_identifier == request.routine_identifier
         )
 
 
 T_RoutineControlRequest = TypeVar(
-    "T_RoutineControlRequest", bound="_RoutineControlRequest"
+    "T_RoutineControlRequest", bound="RoutineControlRequest"
 )
 
 
-class _RoutineControlRequest(
+class RoutineControlRequest(
     SpecializedSubFunctionRequest,
     ABC,
     service_id=UDSIsoServices.RoutineControl,
     sub_function_id=0,
-    response_type=_RoutineControlResponse,
+    response_type=RoutineControlResponse,
     minimal_length=4,
     maximal_length=None,
 ):
@@ -2889,7 +2893,7 @@ class _RoutineControlRequest(
 
 
 class StartRoutineResponse(
-    _RoutineControlResponse,
+    RoutineControlResponse,
     service_id=UDSIsoServices.RoutineControl,
     sub_function_id=RCSubFuncs.STR,
     minimal_length=4,
@@ -2899,7 +2903,7 @@ class StartRoutineResponse(
 
 
 class StartRoutineRequest(
-    _RoutineControlRequest,
+    RoutineControlRequest,
     service_id=UDSIsoServices.RoutineControl,
     sub_function_id=RCSubFuncs.STR,
     response_type=StartRoutineResponse,
@@ -2927,7 +2931,7 @@ class StartRoutineRequest(
 
 
 class StopRoutineResponse(
-    _RoutineControlResponse,
+    RoutineControlResponse,
     service_id=UDSIsoServices.RoutineControl,
     sub_function_id=RCSubFuncs.STPR,
     minimal_length=4,
@@ -2937,7 +2941,7 @@ class StopRoutineResponse(
 
 
 class StopRoutineRequest(
-    _RoutineControlRequest,
+    RoutineControlRequest,
     service_id=UDSIsoServices.RoutineControl,
     sub_function_id=RCSubFuncs.STPR,
     response_type=StopRoutineResponse,
@@ -2965,7 +2969,7 @@ class StopRoutineRequest(
 
 
 class RequestRoutineResultsResponse(
-    _RoutineControlResponse,
+    RoutineControlResponse,
     minimal_length=4,
     maximal_length=None,
     service_id=UDSIsoServices.RoutineControl,
@@ -2975,7 +2979,7 @@ class RequestRoutineResultsResponse(
 
 
 class RequestRoutineResultsRequest(
-    _RoutineControlRequest,
+    RoutineControlRequest,
     service_id=UDSIsoServices.RoutineControl,
     sub_function_id=RCSubFuncs.RRR,
     response_type=RequestRoutineResultsResponse,

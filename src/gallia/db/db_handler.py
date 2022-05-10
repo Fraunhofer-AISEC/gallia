@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS scan_run (
   properties_post json check(properties_post is null or json_valid(properties_post)),
   meta int references run_meta(id) on update cascade on delete cascade
 );
+CREATE INDEX IF NOT EXISTS ix_scan_run_request_pdu ON scan_run(request_pdu);
 CREATE TABLE IF NOT EXISTS discovery_result (
   id integer primary key,
   run int not null references discovery_run(id) on update cascade on delete cascade,

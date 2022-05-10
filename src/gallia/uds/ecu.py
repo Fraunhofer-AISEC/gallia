@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Optional, Union
 
@@ -17,10 +16,17 @@ from gallia.uds.core.utils import from_bytes
 from gallia.uds.helpers import as_exception, raise_for_error
 
 
-@dataclass
 class ECUState:
-    session: int = 1
-    security_access_level: Optional[int] = None
+    def __init__(self) -> None:
+        self.session = 1
+        self.security_access_level: Optional[int] = None
+
+    def reset(self) -> None:
+        self.session = 1
+        self.security_access_level = None
+
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}({", ".join(f"{key}={repr(value)}" for key, value in self.__dict__.items())})'
 
 
 class ECU(UDSClient):
@@ -249,7 +255,7 @@ class ECU(UDSClient):
             self.state.security_access_level = response.security_access_type - 1
 
         if isinstance(response, service.ECUResetResponse):
-            self.state = ECUState()
+            self.state.reset()
 
     async def _request(
         self, request: service.UDSRequest, config: Optional[UDSRequestConfig] = None

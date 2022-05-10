@@ -186,6 +186,19 @@ class RDTCISubFuncs(IntEnum):
     RDTCWPS = 0x15
 
 
+class ERSubFuncs(IntEnum):
+    # hardReset
+    HR = 0x01
+    # keyOffOnReset
+    KOFFONR = 0x02
+    # softReset
+    SR = 0x03
+    # enableRapidPowerShutDown
+    ERPSD = 0x04
+    # disableRapidPowerShutDown
+    DRPSD = 0x05
+
+
 class InputOutputControlParameter(IntEnum):
     # returnControlToECU
     RCTECU = 0x00

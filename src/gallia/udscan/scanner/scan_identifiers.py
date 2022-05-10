@@ -86,6 +86,11 @@ class ScanIdentifiers(UDSScanner):
                  Multiple session specific skips are separated by space.
                  """,
         )
+        self.parser.add_argument(
+            "--skip-not-supported",
+            action="store_true",
+            help="Stop scanning in session if service seems to be not available",
+        )
 
     async def main(self, args: Namespace) -> None:
         if args.sessions is None:
@@ -128,8 +133,9 @@ class ScanIdentifiers(UDSScanner):
             if args.sid == UDSIsoServices.RoutineControl:
                 if not args.payload:
                     self.logger.log_warning(
-                        "Scanning RoutineControl with empty payload might start some routines "
-                        "and change the state of the ECU!"
+                        "Scanning RoutineControl with empty payload can successfully execute some "
+                        + "routines, such as switching from plant mode to field mode, which can only "
+                        + "be reversed with a valid token!"
                     )
 
                 # Scan all three subfunctions (startRoutine, stopRoutine, requestRoutineResults)
@@ -195,6 +201,9 @@ class ScanIdentifiers(UDSScanner):
                             f"0x{DID:0x}: {resp}; does session 0x{session:02x} "
                             f"support service 0x{args.sid:02x}?"
                         )
+
+                        if args.skip_not_supported:
+                            break
 
                     # RequestOutOfRange is a common reply for invalid DataIdentifiers
                     elif resp.response_code == UDSErrorCodes.requestOutOfRange:
