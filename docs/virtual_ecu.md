@@ -3,7 +3,7 @@
 For testing purposes, there exists the possibility to spawn virtual ECUs, against which the scanners can be run.
 The virtual ECUs can however also be used independently of the remaining Gallia tools.
 
-The generic command to create a virtual ECUs is as follows:
+The generic command to create a virtual ECU is as follows:
 
 ```shell-session
 gallia vecu [vecu-arguments] <transport> <model> [model-arguments]
