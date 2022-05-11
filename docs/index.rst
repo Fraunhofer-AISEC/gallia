@@ -19,6 +19,7 @@ Gallia is a comprehensive and extendable automotive testing toolchain.
    database
    transports
    power_supply
+   virtual_ecu
 
 .. toctree::
    :maxdepth: 1

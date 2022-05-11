@@ -74,6 +74,7 @@ sphinx-rtd-theme = "^1.0.0"
 "simple-test-xcp" = "gallia.udscan.scanner.simple_test_xcp:TestXCP"
 "simple-wmba" = "gallia.udscan.scanner.simple_wmba:WriteMemoryByAddressScanner"
 "simple-write-by-identifier" = "gallia.udscan.scanner.simple_write_by_identifier:WriteByIdentifier"
+"vecu" = "gallia.virtual_ecu:VirtualECU"
 
 [tool.mypy]
 disallow_any_unimported = true

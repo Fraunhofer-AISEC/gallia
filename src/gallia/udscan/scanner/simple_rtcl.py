@@ -4,7 +4,7 @@ import sys
 from argparse import Namespace
 from typing import Union
 
-from gallia.uds.core.service import NegativeResponse, _RoutineControlResponse
+from gallia.uds.core.service import NegativeResponse, RoutineControlResponse
 from gallia.udscan.core import UDSScanner
 from gallia.udscan.utils import auto_int, check_and_set_session
 
@@ -90,7 +90,7 @@ class RTCL(UDSScanner):
 
         if args.start:
             resp: Union[
-                NegativeResponse, _RoutineControlResponse
+                NegativeResponse, RoutineControlResponse
             ] = await self.ecu.routine_control_start_routine(
                 args.routine_identifier, args.start_parameters
             )
