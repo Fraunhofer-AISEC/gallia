@@ -6,13 +6,13 @@ The virtual ECUs can however also be used independently of the remaining Gallia 
 The generic command to create a virtual ECU is as follows:
 
 ```shell-session
-gallia vecu [vecu-arguments] <transport> <model> [model-arguments]
+$ gallia vecu [vecu-arguments] <transport> <model> [model-arguments]
 ```
 
 For an improved output and logging the command can optionally be run under *penrun*:
 
 ```shell-session
-penrun gallia vecu ...
+$ penrun gallia vecu ...
 ```
 
 The virtual ECUs support different transport schemes and answering models, 
