@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS scan_result (
   response_data json check(response_data is null or json_valid(response_data)),
   exception text
 );
-CREATE INDEX IF NOT EXISTS ix_scan_run_request_pdu ON scan_run(request_pdu);
+CREATE INDEX IF NOT EXISTS ix_scan_result_request_pdu ON scan_result(request_pdu);
 
 INSERT OR IGNORE INTO version VALUES('main', '{schema_version}');
 """
