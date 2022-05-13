@@ -1,3 +1,4 @@
+import asyncio
 import json
 from datetime import datetime
 from enum import Enum
@@ -8,6 +9,7 @@ import aiosqlite
 
 from gallia.uds.core import service
 from gallia.uds.core.utils import bytes_repr as bytes_repr_
+from gallia.penlog import Logger
 
 
 def bytes_repr(data: bytes) -> str:
@@ -97,11 +99,13 @@ class LogMode(Enum):
 
 class DBHandler:
     def __init__(self, database: Path):
+        self.tasks: list[asyncio.Task] = []
         self.path = database
         self.connection: Optional[aiosqlite.Connection] = None
         self.scan_run: Optional[int] = None
         self.discovery_run: Optional[int] = None
         self.meta: Optional[int] = None
+        self.logger = Logger("db", flush=True)
 
     async def connect(self) -> None:
         assert self.connection is None, "Already connected to the database"
@@ -114,15 +118,25 @@ class DBHandler:
         # See https://www.sqlite.org/wal.html for further information
         await self.connection.execute("PRAGMA journal_mode = WAL")
 
+        await self.connection.execute("PRAGMA busy_timeout = 10000")
+
         await self.connection.executescript(DB_SCHEMA)
         await self.check_version()
 
     async def disconnect(self) -> None:
         assert self.connection is not None, "Not connected to the database"
 
-        await self.connection.commit()
-        await self.connection.close()
-        self.connection = None
+        for task in self.tasks:
+            try:
+                await task
+            except Exception as e:
+                self.logger.log_error(f"Inside task: {repr(e)}")
+
+        try:
+            await self.connection.commit()
+        finally:
+            await self.connection.close()
+            self.connection = None
 
     async def check_version(self) -> None:
         assert self.connection is not None, "Not connected to the database"
@@ -298,26 +312,40 @@ class DBHandler:
             "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         )
 
-        await self.connection.execute(
-            query,
-            (
-                self.scan_run,
-                json.dumps(state),
-                bytes_repr(request.pdu),
-                send_time.timestamp(),
-                send_time.tzname(),
-                json.dumps(request_attributes),
-                bytes_repr(response.pdu) if response is not None else None,
-                receive_time.timestamp()
-                if response is not None and receive_time is not None
-                else None,
-                receive_time.tzname()
-                if response is not None and receive_time is not None
-                else None,
-                json.dumps(response_attributes) if response is not None else None,
-                repr(exception) if exception is not None else None,
-                log_mode.name,
-            ),
+        # This has do be done here, in order to make sure, that only "immutable" objects are passed to a different task
+        query_parameter = (
+            self.scan_run,
+            json.dumps(state),
+            bytes_repr(request.pdu),
+            send_time.timestamp(),
+            send_time.tzname(),
+            json.dumps(request_attributes),
+            bytes_repr(response.pdu) if response is not None else None,
+            receive_time.timestamp()
+            if response is not None and receive_time is not None
+            else None,
+            receive_time.tzname()
+            if response is not None and receive_time is not None
+            else None,
+            json.dumps(response_attributes) if response is not None else None,
+            repr(exception) if exception is not None else None,
+            log_mode.name,
         )
 
-        await self.connection.commit()
+        async def execute() -> None:
+            assert self.connection is not None
+
+            done = False
+
+            while not done:
+                try:
+                    await self.connection.execute(query, query_parameter)
+                    done = True
+                except aiosqlite.OperationalError:
+                    self.logger.log_warning(
+                        f"Could not log message for {query_parameter[5]} to database. Retrying ..."
+                    )
+
+            await self.connection.commit()
+
+        self.tasks.append(asyncio.create_task(execute()))

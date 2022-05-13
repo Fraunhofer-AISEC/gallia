@@ -130,21 +130,22 @@ class GalliaBase(ABC):
             exit_code = se.code
             raise
         finally:
-            if self.db_handler is not None:
-                try:
-                    await self.db_handler.complete_run_meta(
-                        datetime.now(timezone.utc).astimezone(), exit_code
-                    )
-                except Exception as e:
-                    self.logger.log_warning(
-                        f"Could not write the run meta to the database: {repr(e)}"
-                    )
+            if self.db_handler is not None and self.db_handler.connection is not None:
+                if self.db_handler.meta is not None:
+                    try:
+                        await self.db_handler.complete_run_meta(
+                            datetime.now(timezone.utc).astimezone(), exit_code
+                        )
+                    except Exception as e:
+                        self.logger.log_warning(
+                            f"Could not write the run meta to the database: {repr(e)}"
+                        )
 
                 try:
                     await self.db_handler.disconnect()
                 except Exception as e:
-                    self.logger.log_debug(
-                        f"Could not close the database connection {repr(e)}"
+                    self.logger.log_error(
+                        f"Could not close the database connection properly: {repr(e)}"
                     )
 
     def _add_class_parser(self) -> None:
