@@ -1,3 +1,4 @@
+import asyncio
 import json
 from datetime import datetime
 from enum import Enum
@@ -97,6 +98,7 @@ class LogMode(Enum):
 
 class DBHandler:
     def __init__(self, database: Path):
+        self.tasks = []
         self.path = database
         self.connection: Optional[aiosqlite.Connection] = None
         self.scan_run: Optional[int] = None
@@ -113,12 +115,16 @@ class DBHandler:
         # This setting is persistent for the database and leads to the creation of extra files
         # See https://www.sqlite.org/wal.html for further information
         await self.connection.execute("PRAGMA journal_mode = WAL")
+        await self.connection.execute("PRAGMA busy_timeout = 10000")
 
         await self.connection.executescript(DB_SCHEMA)
         await self.check_version()
 
     async def disconnect(self) -> None:
         assert self.connection is not None, "Not connected to the database"
+
+        for task in self.tasks:
+            await task
 
         await self.connection.commit()
         await self.connection.close()
@@ -298,26 +304,29 @@ class DBHandler:
             "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         )
 
-        await self.connection.execute(
-            query,
-            (
-                self.scan_run,
-                json.dumps(state),
-                bytes_repr(request.pdu),
-                send_time.timestamp(),
-                send_time.tzname(),
-                json.dumps(request_attributes),
-                bytes_repr(response.pdu) if response is not None else None,
-                receive_time.timestamp()
-                if response is not None and receive_time is not None
-                else None,
-                receive_time.tzname()
-                if response is not None and receive_time is not None
-                else None,
-                json.dumps(response_attributes) if response is not None else None,
-                repr(exception) if exception is not None else None,
-                log_mode.name,
-            ),
-        )
+        async def execute() -> None:
+            await self.connection.execute(
+                query,
+                (
+                    self.scan_run,
+                    json.dumps(state),
+                    bytes_repr(request.pdu),
+                    send_time.timestamp(),
+                    send_time.tzname(),
+                    json.dumps(request_attributes),
+                    bytes_repr(response.pdu) if response is not None else None,
+                    receive_time.timestamp()
+                    if response is not None and receive_time is not None
+                    else None,
+                    receive_time.tzname()
+                    if response is not None and receive_time is not None
+                    else None,
+                    json.dumps(response_attributes) if response is not None else None,
+                    repr(exception) if exception is not None else None,
+                    log_mode.name,
+                ),
+            )
 
-        await self.connection.commit()
+            await self.connection.commit()
+
+        self.tasks.append(asyncio.create_task(execute()))
