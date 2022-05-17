@@ -199,7 +199,7 @@ class ISOTPTransport(BaseTransport, scheme="isotp", spec=isotp_spec):
     ) -> tuple[int, bytes]:
         raise NotImplementedError()
 
-    async def terminate(self) -> None:
+    async def close(self) -> None:
         pass
 
     async def reconnect(self, timeout: Optional[float] = None) -> None:
@@ -403,7 +403,7 @@ class RawCANTransport(BaseTransport, scheme="can-raw", spec=spec_can_raw):
             )
         return msg.arbitration_id, msg.data
 
-    async def terminate(self) -> None:
+    async def close(self) -> None:
         pass
 
     async def reconnect(self, timeout: Optional[float] = None) -> None:

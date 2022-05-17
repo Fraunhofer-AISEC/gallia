@@ -290,7 +290,7 @@ class Scanner(GalliaBase):
 
     async def teardown(self, args: Namespace) -> None:
         if self.transport:
-            await self.transport.terminate()
+            await self.transport.close()
         if self.dumpcap:
             await self.dumpcap.stop()
 
