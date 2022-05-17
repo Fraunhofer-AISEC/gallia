@@ -137,7 +137,7 @@ class BaseTransport(ABC):
         ...
 
     @abstractmethod
-    async def terminate(self) -> None:
+    async def close(self) -> None:
         ...
 
     @abstractmethod

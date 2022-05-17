@@ -31,10 +31,10 @@ class TCPTransport(BaseTransport, scheme="tcp", spec=tcp_spec):
         )
 
     async def reconnect(self, timeout: Optional[float] = None) -> None:
-        await self.terminate()
+        await self.close()
         await self.connect(timeout)
 
-    async def terminate(self) -> None:
+    async def close(self) -> None:
         assert self.reader is not None and self.writer is not None, assertion_str
 
         self.writer.close()

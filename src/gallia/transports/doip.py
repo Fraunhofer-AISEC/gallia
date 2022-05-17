@@ -530,10 +530,10 @@ class DoIPTransport(BaseTransport, scheme="doip", spec=doip_spec):
         assert self.target.hostname is not None, "bug: no hostname"
 
         async with self.mutex:
-            await self.terminate()
+            await self.close()
             await asyncio.wait_for(self._connect(), timeout)
 
-    async def terminate(self) -> None:
+    async def close(self) -> None:
         assert self.connection is not None, assertion_str
 
         await self.connection.close()
