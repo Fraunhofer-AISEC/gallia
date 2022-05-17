@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import asyncio
+import functools
 import io
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Optional
+from dataclasses import dataclass, asdict
+from typing import Any, Callable, ClassVar, Generic, Optional, TypeVar, NewType
 from urllib.parse import parse_qs, urlparse
 
 from gallia.penlog import Logger
@@ -52,93 +54,131 @@ class TargetURI:
         return self.raw
 
 
-def _bool_spec(default: Optional[bool]) -> Callable[..., Optional[bool]]:
-    def func(*args: str) -> Optional[bool]:
-        if len(args) == 0:
-            return default
-        s_low = args[0].lower()
-        if s_low == "true":
-            return True
-        elif s_low == "false":
-            return False
-        raise ValueError(f"invalid bool value: {args[0]}")
-
-    return func
+T = TypeVar("T")
 
 
-def _int_spec(default: Optional[int]) -> Callable[..., Optional[int]]:
-    def func(*args: str) -> Optional[int]:
-        if len(args) == 0:
-            return default
-        return int(args[0], base=0)
+@dataclass
+class ArgumentContainer:
 
-    return func
+    def to_dict(self) -> dict[str, Argument]:
+        d = asdict(self)
+        for k, v in d.items():
+            if issubclass(type(v), Argument) is False:
+                raise ValueError(f"field {k} is not a subclass of `Argument`: {type(v)}")
+        return d
 
 
-class BaseTransport(ABC):
-    SPEC: dict[str, tuple[Callable[..., Any], bool]] = {}
-    SCHEME: str = ""
-    BUFSIZE: int = io.DEFAULT_BUFFER_SIZE
+ArgumentContainerT = TypeVar("ArgumentContainerT", bound="ArgumentContainer")
 
-    def __init__(self, target: TargetURI) -> None:
+
+class Argument(Generic[T]):
+    TYPE: Callable[..., T]
+
+    def __init__(self, *, mandatory: bool, default: T):
+        self.mandatory = mandatory
+        self.default = default
+        self._val: Optional[T] = None
+
+    def __init_subclass__(
+        cls,
+        /,
+        type: Callable[..., Optional[T]],
+        **kwargs: Any,
+    ) -> None:
+        super().__init_subclass__(**kwargs)
+        cls.TYPE = type
+
+    def parse(self, str_val: str) -> None:
+        self._val = self.TYPE(str_val)
+
+    @property
+    def val(self) -> T:
+        if self._val is None:
+            return self.default
+        return self._val
+
+
+class IntArg(Argument[int], type=functools.partial(int, base=0)):
+    pass
+
+
+def _bool_type(str_val: str) -> bool:
+    s_low = str_val.lower()
+    if s_low == "true":
+        return True
+    elif s_low == "false":
+        return False
+    raise ValueError(f"invalid bool value: {str_val}")
+
+
+class BoolArg(Argument[int], type=_bool_type):
+    pass
+
+
+# TODO: Replace this with Self type: Python 3.11
+TransportT = TypeVar("TransportT")
+
+
+class BaseTransport(ABC, Generic[ArgumentContainerT]):
+    SCHEME: ClassVar[str] = ""
+    BUFSIZE: ClassVar[int] = io.DEFAULT_BUFFER_SIZE
+
+    def __init__(self, target: TargetURI, args: ArgumentContainerT) -> None:
         if target.scheme != self.SCHEME:
             raise ValueError(
                 f"invalid scheme: {target.scheme}; expected: {self.SCHEME}"
             )
 
-        self._args: dict[str, Any] = {}
         self.mutex = asyncio.Lock()
         self.logger = Logger(self.SCHEME, flush=True)
         self.target = target
+        self.args = args
         self.parse_args()
 
     def __init_subclass__(
         cls,
         /,
         scheme: str,
-        spec: dict[str, tuple[Callable[..., Any], bool]],
         bufsize: int = io.DEFAULT_BUFFER_SIZE,
         **kwargs: Any,
     ) -> None:
         super().__init_subclass__(**kwargs)
         cls.SCHEME = scheme
-        cls.SPEC = spec
         cls.BUFSIZE = bufsize
 
     def parse_args(self) -> None:
         # Check if a mandatory arg is missing.
-        for k, v in self.SPEC.items():
-            mandatory = v[1]
-            default = v[0]()
+        for k, v in self.args.items():
             if k not in self.target.qs:
-                if mandatory:
+                if v.mandatory:
                     raise ValueError(f"mandatory argument {k} missing")
-                # Not mandatory, set default.
-                self._args[k] = default
 
         # Parse the arguments according to the spec.
         for k, v in self.target.qs.items():
-            if k not in self.SPEC:
+            if k not in self.args:
                 self.logger.log_warning(f"ignoring unknown argument: {k}:{v}")
                 continue
 
-            self.logger.log_debug(f"got {k}:{v}")
-            parse_func = self.SPEC[k][0]
+            self.logger.log_debug(f"parsing argument {k}:{v}")
             # We do not support arg lists.
-            parsed_v = parse_func(v[0])
-            self._args[k] = parsed_v
+            self.args[k].parse(v[0])
 
     @abstractmethod
-    async def connect(self, timeout: Optional[float] = None) -> None:
+    async def connect(
+        self,
+        target: TargetURI,
+        timeout: Optional[float] = None,
+    ) -> TransportT:
         ...
 
     @abstractmethod
-    async def reconnect(self, timeout: Optional[float] = None) -> None:
+    async def close(self) -> None:
         ...
 
-    @abstractmethod
-    async def terminate(self) -> None:
-        ...
+    async def reconnect(self, timeout: Optional[float] = None) -> TransportT:
+        async with self.mutex:
+            await self.close()
+            return await self.connect(self.target)
 
     @abstractmethod
     async def read(
