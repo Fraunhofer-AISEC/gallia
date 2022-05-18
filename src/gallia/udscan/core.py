@@ -280,6 +280,9 @@ class Scanner(GalliaBase):
         elif args.power_cycle is not None:
             self.parser.error("--power-cycle needs --power-supply")
 
+        if args.target is None:
+            self.parser.error("--target required")
+
         # Start dumpcap as the first subprocess; otherwise network
         # traffic might be missing.
         if args.dumpcap:

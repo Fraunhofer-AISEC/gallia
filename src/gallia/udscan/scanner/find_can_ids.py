@@ -50,7 +50,7 @@ class FindCanIDsScanner(DiscoveryScanner):
         )
 
     async def setup(self, args: Namespace) -> None:
-        if not args.target.scheme == RawCANTransport.SCHEME:
+        if args.target is not None and not args.target.scheme == RawCANTransport.SCHEME:
             self.logger.log_error(
                 f"Unsupported transport schema {args.target.scheme}; must be can-raw!"
             )
