@@ -87,6 +87,28 @@ CREATE TABLE IF NOT EXISTS scan_result (
 );
 CREATE INDEX IF NOT EXISTS ix_scan_result_request_pdu ON scan_result(request_pdu);
 
+CREATE VIEW IF NOT EXISTS run_stats AS
+SELECT
+  ru.id AS run,
+  ecu.name AS ECU,
+  rm.script,
+  rm.arguments,
+  strftime('%Y-%m-%d %H:%M:%f', rm.start_time, 'unixepoch', 'localtime') AS start,
+  strftime('%Y-%m-%d %H:%M:%f', rm.end_time, 'unixepoch', 'localtime') AS end,
+  cast((CASE WHEN end_time IS NULL THEN strftime('%s','now') ELSE end_time END - start_time) / 86400 AS int) || ' ' ||
+    time(CASE WHEN end_time IS NULL THEN strftime('%s','now') ELSE end_time END - start_time, 'unixepoch') AS duration,
+  exit_code,
+  ru.properties_pre = ru.properties_post AS equal_props,
+  n_msgs
+FROM
+  run_meta rm,
+  scan_run ru LEFT JOIN (SELECT run, count(*) AS n_msgs FROM scan_result GROUP BY run) sc ON ru.id = sc.run,
+  address ad LEFT JOIN ecu ON ecu.id = ad.ecu
+WHERE ru.meta = rm.id
+AND ad.id = ru.address
+GROUP BY ru.id;
+
+
 INSERT OR IGNORE INTO version VALUES('main', '{schema_version}');
 """
 
