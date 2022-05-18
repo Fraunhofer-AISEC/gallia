@@ -261,6 +261,8 @@ class CursedHR:
             else:
                 file = self.in_file.open("rb")
 
+            file.flush()
+
             return file  # type: ignore
         except Exception as e:
             raise ValueError("Unsupported file format") from e
