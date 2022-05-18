@@ -478,7 +478,9 @@ class RandomUDSServer(UDSServer):
                 if self._is_sub_function_service(supported_service):
                     # For SecurityAccess there are always two consecutive sub functions, the uneven one for RequestSeed,
                     # the even one (+1) for SendKey
-                    if supported_service == UDSIsoServices.DiagnosticSessionControl:
+                    if supported_service == UDSIsoServices.TesterPresent:
+                        supported_sub_functions = [0]
+                    elif supported_service == UDSIsoServices.DiagnosticSessionControl:
                         supported_sub_functions = sorted(session_specific_transitions)
                     elif supported_service == UDSIsoServices.SecurityAccess:
                         supported_sub_functions_tmp = list(
