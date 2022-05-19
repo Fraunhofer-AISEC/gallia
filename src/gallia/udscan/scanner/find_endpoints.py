@@ -8,12 +8,12 @@ from gallia.uds.core.service import (
     NegativeResponse,
 )
 from gallia.uds.helpers import raise_for_mismatch
-from gallia.udscan.core import UDSScanner
+from gallia.udscan.core import DiscoveryScanner
 from gallia.udscan.utils import auto_int, write_ecu_url_list
 
 
-class FindEndpoints(UDSScanner):
-    """This is a generic UDS endpoint discovery scanner. Currently only supports DoIP."""
+class FindEndpoints(DiscoveryScanner):
+    """A generic UDS endpoint discovery scanner"""
 
     def __init__(self) -> None:
         super().__init__()
@@ -22,8 +22,12 @@ class FindEndpoints(UDSScanner):
         self.log_scan_run = False
 
     def add_parser(self) -> None:
-        self.parser.set_defaults(tester_present=False)
-
+        self.parser.add_argument(
+            "--timeout",
+            type=float,
+            default=0.2,
+            help="specify timeout for recvfrom",
+        )
         self.parser.add_argument(
             "--reversed",
             action="store_true",
@@ -37,7 +41,11 @@ class FindEndpoints(UDSScanner):
             help="set start address",
         )
         self.parser.add_argument(
-            "--end", metavar="INT", type=auto_int, default=0xFF, help="set end address"
+            "--end",
+            metavar="INT",
+            type=auto_int,
+            default=0xFF,
+            help="set end address",
         )
 
     async def setup(self, args: Namespace) -> None:

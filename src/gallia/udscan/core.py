@@ -102,7 +102,8 @@ class GalliaBase(ABC):
                 await self.setup(args)
             except BrokenPipeError as e:
                 exit_code = ExitCodes.GENERIC_ERROR
-                self.logger.log_critical(str(e))
+                # self.logger.log_critical(str(e))
+                raise
             except Exception as e:
                 self.logger.log_critical(f"setup failed: {e.__class__.__name__}: {e}")
                 sys.exit(ExitCodes.SETUP_FAILED)
