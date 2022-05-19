@@ -50,7 +50,7 @@ can-raw://can1?is_fd=true
 
 ## doip
 
-The BCP address is specified in the location.
+The DoIP gateway address is specified in the location.
 
 * `src_addr` (required): The source address as int.
 * `dst_addr` (required): The destination address as int.
