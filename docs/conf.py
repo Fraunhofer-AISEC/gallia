@@ -21,7 +21,7 @@
 
 project = "gallia"
 author = "AISEC Pentest Team"
-copyright = f"2020 -- 2022, {author}"
+copyright = f"2018 -- 2022, {author}"
 
 
 # -- General configuration ---------------------------------------------------
@@ -33,9 +33,10 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autodoc.typehints",
     "sphinx.ext.autosummary",
+    "sphinx.ext.githubpages",
     "sphinx.ext.napoleon",
-    'sphinx.ext.viewcode',
     'sphinx.ext.autosectionlabel',
+    'sphinx.ext.viewcode',
     "myst_parser",
 ]
 
