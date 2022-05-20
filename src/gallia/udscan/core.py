@@ -56,7 +56,6 @@ class GalliaBase(ABC):
     """Base class for all gallia tasks"""
 
     def __init__(self) -> None:
-        self.artifacts_dir: Path
         self.description = self.__class__.__doc__
         self.logger = Logger(component="gallia", flush=True)
         self.db_handler: Optional[DBHandler] = None
@@ -64,24 +63,155 @@ class GalliaBase(ABC):
             description=self.description, formatter_class=Formatter
         )
         self.id = camel_to_snake(self.__class__.__name__)
-        self._add_class_parser()
+        self.add_class_parser()
         self.add_parser()
 
-    @abstractmethod
+    def add_class_parser(self) -> None:
+        ...
+
     def add_parser(self) -> None:
         ...
+
+    @abstractmethod
+    def run(self) -> int:
+        ...
+
+
+class Script(GalliaBase, ABC):
+    @abstractmethod
+    def main(self, args: Namespace) -> None:
+        ...
+
+    def run(self) -> int:
+        argcomplete.autocomplete(self.parser)
+        args = self.parser.parse_args()
+
+        try:
+            self.main(args)
+            return 0
+        except KeyboardInterrupt:
+            return 128 + signal.SIGINT
+
+
+class AsyncScript(GalliaBase, ABC):
+    @abstractmethod
+    async def main(self, args: Namespace) -> None:
+        ...
+
+    def run(self) -> int:
+        argcomplete.autocomplete(self.parser)
+        args = self.parser.parse_args()
+
+        try:
+            asyncio.run(self.main(args))
+            return 0
+        except KeyboardInterrupt:
+            return 128 + signal.SIGINT
+
+
+class Scanner(GalliaBase, ABC):
+    """Base class for all scanner tasks"""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.artifacts_dir: Path
+        self.transport: Optional[BaseTransport] = None
+        self.power_supply: Optional[PowerSupply] = None
+        self.dumpcap: Optional[Dumpcap] = None
 
     @abstractmethod
     async def main(self, args: Namespace) -> None:
         ...
 
-    @abstractmethod
     async def setup(self, args: Namespace) -> None:
-        ...
+        if args.power_supply is not None:
+            self.power_supply = await PowerSupply.connect(args.power_supply)
+            if (time_ := args.power_cycle) is not None:
+                await self.power_supply.power_cycle(time_, lambda: asyncio.sleep(2))
+        elif args.power_cycle is not None:
+            self.parser.error("--power-cycle needs --power-supply")
 
-    @abstractmethod
+        if args.target is None:
+            self.parser.error("--target required")
+
+        # Start dumpcap as the first subprocess; otherwise network
+        # traffic might be missing.
+        if args.dumpcap:
+            self.dumpcap = await Dumpcap.start(args.target, self.artifacts_dir)
+            await self.dumpcap.sync()
+
+        self.transport = await self.load_transport(args.target)
+
     async def teardown(self, args: Namespace) -> None:
-        ...
+        if self.transport:
+            await self.transport.close()
+        if self.dumpcap:
+            await self.dumpcap.stop()
+
+    def add_class_parser(self) -> None:
+        group = self.parser.add_argument_group("generic gallia arguments")
+        group.add_argument(
+            "--data-dir",
+            default=os.environ.get("PENRUN_ARTIFACTS"),
+            type=Path,
+            help="Folder for artifacts",
+        )
+        group.add_argument(
+            "--db",
+            default=os.environ.get("GALLIA_DB"),
+            type=Path,
+            help="Path to sqlite3 database",
+        )
+
+        group = self.parser.add_argument_group("transport mode related arguments")
+        group.add_argument(
+            "--target",
+            metavar="TARGET",
+            default=os.environ.get("GALLIA_TARGET"),
+            type=TargetURI,
+            help="URI that describes the target",
+        )
+
+        group = self.parser.add_argument_group("power supply related arguments")
+        group.add_argument(
+            "--power-supply",
+            metavar="URI",
+            default=os.environ.get("GALLIA_POWER_SUPPLY"),
+            type=PowerSupplyURI,
+            help="URI specifying the location of the relevant opennetzteil server",
+        )
+        group.add_argument(
+            "--power-cycle",
+            default=os.environ.get("GALLIA_POWER_CYCLE"),
+            const=5.0,
+            nargs="?",
+            type=float,
+            help=(
+                "trigger a powercycle before starting the scan; "
+                "optional argument specifies the sleep time in secs"
+            ),
+        )
+        group.add_argument(
+            "--dumpcap",
+            action=argparse.BooleanOptionalAction,
+            default=True,
+            help="Enable/Disable creating a pcap file",
+        )
+
+    def prepare_artifactsdir(self, path: Optional[Path]) -> Path:
+        if path is None:
+            base = Path(gettempdir())
+            p = base.joinpath(
+                f'{self.id}_{time.strftime("%Y%m%d-%H%M%S")}_{token_urlsafe(6)}'
+            )
+            p.mkdir(parents=True)
+            return p
+
+        if path.is_dir():
+            return path
+
+        self.logger.log_error(f"Data directory {p} is not an existing directory.")
+        sys.exit(1)
 
     async def _run(self, args: Namespace) -> int:
         exit_code: int = ExitCodes.SUCCESS
@@ -148,39 +278,11 @@ class GalliaBase(ABC):
                         f"Could not close the database connection properly: {repr(e)}"
                     )
 
-    def _add_class_parser(self) -> None:
-        group = self.parser.add_argument_group("generic gallia arguments")
-        group.add_argument(
-            "--data-dir",
-            default=os.environ.get("PENRUN_ARTIFACTS"),
-            type=Path,
-            help="Folder for artifacts",
-        )
-        group.add_argument(
-            "--db",
-            default=os.environ.get("GALLIA_DB"),
-            type=Path,
-            help="Path to sqlite3 database",
-        )
-
     def run(self) -> int:
         argcomplete.autocomplete(self.parser)
         args = self.parser.parse_args()
 
-        if args.data_dir is None:
-            base = Path(gettempdir())
-            self.artifacts_dir = base.joinpath(
-                f'{self.id}_{time.strftime("%Y%m%d-%H%M%S")}_{token_urlsafe(6)}'
-            )
-            self.artifacts_dir.mkdir(parents=True)
-        else:
-            if not args.data_dir.is_dir():
-                self.logger.log_error(
-                    f"Data directory {args.data_dir} is not an existing directory."
-                )
-                sys.exit(1)
-            self.artifacts_dir = args.data_dir
-
+        self.artifacts_dir = self.prepare_artifactsdir(args.data_dir)
         self.logger.log_preamble(f"Storing artifacts at {self.artifacts_dir}")
         self.logger.log_preamble(
             f'Starting "{sys.argv[0]}" ({version("gallia")}) with [{" ".join(sys.argv)}]'
@@ -195,54 +297,6 @@ class GalliaBase(ABC):
             self.logger.log_info(
                 f"The scan results are located at: {self.artifacts_dir}"
             )
-
-
-class Scanner(GalliaBase):
-    """Base class for all scanner tasks"""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.transport: Optional[BaseTransport] = None
-        self.power_supply: Optional[PowerSupply] = None
-        self.dumpcap: Optional[Dumpcap] = None
-
-    def _add_class_parser(self) -> None:
-        super()._add_class_parser()
-
-        group = self.parser.add_argument_group("transport mode related arguments")
-        group.add_argument(
-            "--target",
-            metavar="TARGET",
-            default=os.environ.get("GALLIA_TARGET"),
-            type=TargetURI,
-            help="URI that describes the target",
-        )
-
-        group = self.parser.add_argument_group("power supply related arguments")
-        group.add_argument(
-            "--power-supply",
-            metavar="URI",
-            default=os.environ.get("GALLIA_POWER_SUPPLY"),
-            type=PowerSupplyURI,
-            help="URI specifying the location of the relevant opennetzteil server",
-        )
-        group.add_argument(
-            "--power-cycle",
-            default=os.environ.get("GALLIA_POWER_CYCLE"),
-            const=5.0,
-            nargs="?",
-            type=float,
-            help=(
-                "trigger a powercycle before starting the scan; "
-                "optional argument specifies the sleep time in secs"
-            ),
-        )
-        group.add_argument(
-            "--dumpcap",
-            action=argparse.BooleanOptionalAction,
-            default=True,
-            help="Enable/Disable creating a pcap file",
-        )
 
     @staticmethod
     async def load_transport(target: TargetURI) -> BaseTransport:
@@ -272,31 +326,6 @@ class Scanner(GalliaBase):
 
         raise ValueError(f"no transport for {target}")
 
-    async def setup(self, args: Namespace) -> None:
-        if args.power_supply is not None:
-            self.power_supply = await PowerSupply.connect(args.power_supply)
-            if (time_ := args.power_cycle) is not None:
-                await self.power_supply.power_cycle(time_, lambda: asyncio.sleep(2))
-        elif args.power_cycle is not None:
-            self.parser.error("--power-cycle needs --power-supply")
-
-        if args.target is None:
-            self.parser.error("--target required")
-
-        # Start dumpcap as the first subprocess; otherwise network
-        # traffic might be missing.
-        if args.dumpcap:
-            self.dumpcap = await Dumpcap.start(args.target, self.artifacts_dir)
-            await self.dumpcap.sync()
-
-        self.transport = await self.load_transport(args.target)
-
-    async def teardown(self, args: Namespace) -> None:
-        if self.transport:
-            await self.transport.close()
-        if self.dumpcap:
-            await self.dumpcap.stop()
-
 
 class UDSScanner(Scanner):
     """Base class for all UDS scanner tasks"""
@@ -308,9 +337,7 @@ class UDSScanner(Scanner):
         self._implicit_logging = True
         self.log_scan_run = True  # TODO: Remove this as soon as find-endpoint is fixed
 
-    def _add_class_parser(self) -> None:
-        super()._add_class_parser()
-
+    def add_class_parser(self) -> None:
         group = self.parser.add_argument_group("UDS scanner related arguments")
 
         eps = entry_points()

@@ -18,12 +18,12 @@ from gallia.uds.core.server import (
     UDSServer,
     UDSServerTransport,
 )
-from gallia.udscan.core import GalliaBase
+from gallia.udscan.core import AsyncScript
 
 dynamic_attr_prefix = "dynamic_attr_"
 
 
-class VirtualECU(GalliaBase):
+class VirtualECU(AsyncScript):
     def add_parser(self) -> None:
         self.parser.add_argument(
             "target",
@@ -107,9 +107,3 @@ class VirtualECU(GalliaBase):
             await transport.run()
         finally:
             await server.teardown()
-
-    async def setup(self, args: Namespace) -> None:
-        pass
-
-    async def teardown(self, args: Namespace) -> None:
-        pass
