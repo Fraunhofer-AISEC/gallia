@@ -53,7 +53,16 @@ class Formatter(ArgumentDefaultsHelpFormatter):
 
 
 class GalliaBase(ABC):
-    """Base class for all gallia tasks"""
+    """GalliaBase is a baseclass for all gallia commands.
+    In order to register cli arguments:
+
+    - `add_class_parser()` can be overwritten to create
+       e.g. scanner related arguments shared by all scanners
+    - `add_parser()` can be overwritten to create specific
+      arguments for a specific scanner.
+
+    The main entry_point is `run()`.
+    """
 
     def __init__(self) -> None:
         self.description = self.__class__.__doc__
@@ -78,6 +87,10 @@ class GalliaBase(ABC):
 
 
 class Script(GalliaBase, ABC):
+    """Script is a base class for a syncronous gallia command.
+    To implement a script, create a subclass and implement the
+    .main() method."""
+
     @abstractmethod
     def main(self, args: Namespace) -> None:
         ...
@@ -94,6 +107,10 @@ class Script(GalliaBase, ABC):
 
 
 class AsyncScript(GalliaBase, ABC):
+    """AsyncScript is a base class for a asyncronous gallia command.
+    To implement an async script, create a subclass and implement
+    the .main() method."""
+
     @abstractmethod
     async def main(self, args: Namespace) -> None:
         ...
@@ -110,7 +127,21 @@ class AsyncScript(GalliaBase, ABC):
 
 
 class Scanner(GalliaBase, ABC):
-    """Base class for all scanner tasks"""
+    """Scanner is a base class for all scanning related commands.
+    A scanner has the following properties:
+
+    - It is async.
+    - It loads transports via TargetURIs; available via `self.transport`.
+    - Controlling PowerSupplies via the opennetzteil API is supported.
+    - `setup()` can be overwritten (do not forget to call `super().setup()`)
+      for preparation tasks, such as estabshling a network connection or
+      starting background tasks.
+    - pcap logfiles can be recorded via a Dumpcap background task.
+    - `teardown()` can be overwritten (do not forget to call `super().teardown()`)
+      for cleanup tasks, such as terminating a network connection or background
+      tasks.
+    - `main()` is the relevant entry_point for the scanner and must be implemented.
+    """
 
     def __init__(self) -> None:
         super().__init__()
@@ -328,7 +359,12 @@ class Scanner(GalliaBase, ABC):
 
 
 class UDSScanner(Scanner):
-    """Base class for all UDS scanner tasks"""
+    """UDSScanner is a baseclass, particularly for scanning tasks
+    related to the UDS protocol. The differences to Scanner are:
+
+    - `self.ecu` contains a OEM specific UDS client object.
+    - A background tasks sends TesterPresent regularly to avoid timeouts.
+    """
 
     def __init__(self) -> None:
         super().__init__()
