@@ -22,9 +22,8 @@ def main() -> None:
 
         # For completion only the names are required, which results in a noticeably faster response
         # compared to the full loading process, which is necessary for the help
-        for group in ("gallia_scanners", "gallia_scripts"):
-            for entry in all_entries[group]:
-                _parser = sp.add_parser(entry.name)
+        for entry in all_entries["gallia_scanners"]:
+            _parser = sp.add_parser(entry.name)
 
         if len(comp_line.lstrip().split(" ")) < 3:
             argcomplete.autocomplete(parser)
@@ -44,15 +43,7 @@ def main() -> None:
                 )
                 sys.exit(entry_point().run())
             except StopIteration:
-                try:
-                    entry_point = next(
-                        i.load()
-                        for i in all_entries["gallia_scripts"]
-                        if i.name == chosen_entry
-                    )
-                    sys.exit(entry_point())
-                except StopIteration:
-                    pass
+                pass
     else:
         if "gallia_scanners" in all_entries:
             for entry in all_entries["gallia_scanners"]:
