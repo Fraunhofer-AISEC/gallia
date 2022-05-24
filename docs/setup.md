@@ -7,6 +7,8 @@ This project has the following system level dependencies:
 * Linux >= 5.10
 * Python 3.9
 * poetry
+* dumpcap (optional)
+* jq (for `penrun`)
 
 Python dependencies are listed in `pyproject.toml`
 
