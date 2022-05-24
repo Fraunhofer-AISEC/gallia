@@ -373,7 +373,7 @@ class DoIPConnection:
             self.logger.log_warning(
                 f"ack: unexpected dst_addr: {payload.TargetAddress:#04x}"
             )
-        if len(prev_data) > 0 and prev_data != payload.PreviousDiagnosticMessageData:
+        if len(payload.PreviousDiagnosticMessageData) > 0 and prev_data != payload.PreviousDiagnosticMessageData:
             self.logger.log_warning("ack: previous data differs from request")
             self.logger.log_warning(
                 f"ack: got: {payload.PreviousDiagnosticMessageData.hex()} expected {prev_data.hex()}"
