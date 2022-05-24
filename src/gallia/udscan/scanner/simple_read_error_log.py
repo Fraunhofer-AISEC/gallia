@@ -3,7 +3,7 @@ from argparse import Namespace
 
 from gallia.uds.core.service import NegativeResponse
 from gallia.udscan.core import UDSScanner
-from gallia.udscan.utils import auto_int, find_sessions
+from gallia.udscan.utils import auto_int
 
 
 class ReadErrorLog(UDSScanner):
@@ -28,7 +28,7 @@ class ReadErrorLog(UDSScanner):
         sessions = args.sessions
         if sessions is None or len(sessions) == 0:
             sessions = list(range(1, 0x80))
-            sessions = await find_sessions(self.ecu, sessions)
+            sessions = await self.ecu.find_sessions(sessions)
             msg = f'Found {len(sessions)} sessions: {" ".join([hex(i) for i in sessions])}'
             self.logger.log_summary(msg)
 

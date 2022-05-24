@@ -41,22 +41,6 @@ async def poll_service(
     return resp
 
 
-async def find_sessions(ecu: ECU, search: list, max_retry: int = 4) -> list[int]:
-    sessions = []
-    for sid in search:
-        try:
-            resp = await ecu.set_session(
-                sid, config=UDSRequestConfig(max_retry=max_retry)
-            )
-            if isinstance(resp, service.NegativeResponse):
-                continue
-        except Exception:
-            continue
-        sessions.append(sid)
-        await ecu.leave_session(sid)
-    return sessions
-
-
 async def check_and_set_session(
     ecu: ECU, expected_session: int, retries: int = 3
 ) -> bool:  # pylint: disable=R0911

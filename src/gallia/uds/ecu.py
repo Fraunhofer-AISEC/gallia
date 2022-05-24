@@ -145,6 +145,21 @@ class ECU(UDSClient):
             return await self.power_cycle()
         return True
 
+    async def find_sessions(self, search: list, max_retry: int = 4) -> list[int]:
+        sessions = []
+        for sid in search:
+            try:
+                resp = await self.set_session(
+                    sid, config=UDSRequestConfig(max_retry=max_retry)
+                )
+                if isinstance(resp, service.NegativeResponse):
+                    continue
+            except Exception:
+                continue
+            sessions.append(sid)
+            await self.leave_session(sid)
+        return sessions
+
     async def set_session(
         self, level: int, config: Optional[UDSRequestConfig] = None
     ) -> Union[service.NegativeResponse, service.DiagnosticSessionControlResponse]:
