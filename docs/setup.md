@@ -25,17 +25,15 @@ $ cd gallia
 **penlog**
 
 See https://github.com/Fraunhofer-AISEC/penlog
+
 ```shell-session
-make
+$ make
 ```
 
 **penrun**
 
-Install `bin/penrun` into your PATH. 
-```shell-session
-export PATH="installpath/gallia/bin$PATH"
-```
-
+Install `bin/penrun` into `$PATH`.
+[`$HOME/.local/bin`](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html) might be a good candidate.
 
 ### 3) Install gallia
 
@@ -102,8 +100,7 @@ $ pip install .
 
 **IDE integration**
 
-`pycharm` offers native support for the `poetry` build system:
-[https://www.jetbrains.com/help/pycharm/poetry.html](https://www.jetbrains.com/help/pycharm/poetry.html).
+`pycharm` offers [native support](https://www.jetbrains.com/help/pycharm/poetry.html) for the `poetry` build system.
 You need to mark the `src` folder of the project as `Sources Root`,
 otherwise `pycharm` does not find the `gallia` package.
 
