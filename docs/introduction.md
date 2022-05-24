@@ -3,9 +3,6 @@
 Gallia is a comprehensive penetration testing toolchain for cars.
 The scope of the toolchain is conducting penetration tests from a single ECU up to whole cars, with the main focus on the UDS interface.
 
-The initial development was publicly sponsored by the German Federal Ministry of Education and Research, as part of the SecForCARs Project ([https://www.secforcars.de/](https://www.secforcars.de/)).
-A short presentation and demo video can be found at: [https://www.secforcars.de/demos/10-automotive-scanning-framework.html](https://www.secforcars.de/demos/10-automotive-scanning-framework.html)
-
 ## Artifacts Folder Structure
 
 Gallia uses its own folder structure to store its scan results (called artifacts).
