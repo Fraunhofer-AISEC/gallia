@@ -22,3 +22,8 @@ $ gallia simple-dtc --target "isotp://can0?src_addr=0x123&dst_addr=0x312&tx_padd
 ```
 
 For specifying the `--target` argument see the [transports documentation](https://fraunhofer-aisec.github.io/gallia/transports.html).
+
+## Acknowledgements
+
+This work was partly funded by the German Federal Ministry of Education and Research (BMBF) as part of the [SecForCARs](https://www.secforcars.de/) project (grant no. 16KIS0790).
+A short presentation and demo video is available at this [demo page](https://www.secforcars.de/demos/10-automotive-scanning-framework.html).
