@@ -180,6 +180,8 @@ class Scanner(GalliaBase, ABC):
             await self.dumpcap.stop()
 
     def add_class_parser(self) -> None:
+        super().add_class_parser()
+
         group = self.parser.add_argument_group("generic gallia arguments")
         group.add_argument(
             "--data-dir",
@@ -374,6 +376,8 @@ class UDSScanner(Scanner):
         self.log_scan_run = True  # TODO: Remove this as soon as find-endpoint is fixed
 
     def add_class_parser(self) -> None:
+        super().add_class_parser()
+
         group = self.parser.add_argument_group("UDS scanner related arguments")
 
         eps = entry_points()
