@@ -14,7 +14,6 @@ from gallia.udscan.utils import (
     ParseSkips,
     auto_int,
     check_and_set_session,
-    find_sessions,
 )
 
 
@@ -83,7 +82,7 @@ class ScanServices(UDSScanner):
                 for s in range(1, 0x80)
                 if s not in args.skip or args.skip[s] is not None
             )
-            sessions = await find_sessions(self.ecu, sessions)
+            sessions = await self.ecu.find_sessions(sessions)
             self.logger.log_summary(
                 f'Found {len(sessions)} sessions: {" ".join([hex(i) for i in sessions])}'
             )
