@@ -25,7 +25,6 @@ pyxcp = "^0.16.0"
 zstandard = "^0.17.0"
 python-can = "^4.0.0"
 tabulate = "^0.8.9"
-types-tabulate = "^0.8.8"
 pyopennetzteil = "^0.1.2"
 
 [tool.poetry.dev-dependencies]
@@ -43,6 +42,7 @@ pytest-asyncio = "^0.18.0"
 python-lsp-black = "^1.1.0"
 python-lsp-server = "^1.3.3"
 types-aiofiles = "^0.8.8"
+types-tabulate = "^0.8.8"
 myst-parser = "^0.17.0"
 sphinx-rtd-theme = "^1.0.0"
 
