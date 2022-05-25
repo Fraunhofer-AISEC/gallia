@@ -408,6 +408,12 @@ class UDSScanner(Scanner):
             help="Number of maximum retries while sending UDS requests",
         )
         group.add_argument(
+            "--ping",
+            action=argparse.BooleanOptionalAction,
+            default=True,
+            help="Enable/Disable initial TesterPresent request",
+        )
+        group.add_argument(
             "--tester-present-interval",
             default=0.5,
             type=float,
@@ -515,7 +521,8 @@ class UDSScanner(Scanner):
 
         # Handles connecting to the target and waits
         # until it is ready.
-        await self.ecu.wait_for_ecu()
+        if args.ping:
+            await self.ecu.wait_for_ecu()
         await self.ecu.connect()
 
         if args.tester_present:
