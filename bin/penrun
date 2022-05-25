@@ -76,16 +76,16 @@ search_and_source_config() {
 
 lock_or_wait() {
 	if [[ -n "${PENRUN_LOCK-}" ]]; then
-                mkdir -p "$(dirname "${PENRUN_LOCK}")" && touch "${PENRUN_LOCK}" 2> /dev/null
-                exec 87<"${PENRUN_LOCK}"
+		mkdir -p "$(dirname "${PENRUN_LOCK}")" && touch "${PENRUN_LOCK}" 2>/dev/null
+		exec 87<"${PENRUN_LOCK}"
 
-                if ! flock -n 87; then
-                        echo "Could not aquire lock ${PENRUN_LOCK}"
-                        echo "Waiting ..."
-                        flock 87 || die "Lock cannot be aquired"
-                        echo "... aquired lock"
-                fi
-    	fi
+		if ! flock -n 87; then
+			echo "Could not aquire lock ${PENRUN_LOCK}"
+			echo "Waiting ..."
+			flock 87 || die "Lock cannot be aquired"
+			echo "... aquired lock"
+		fi
+	fi
 }
 
 # $1: path
