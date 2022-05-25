@@ -7,8 +7,7 @@ from tabulate import tabulate
 from gallia.uds.core.constants import CDTCSSubFuncs, DSCSubFuncs, UDSErrorCodes
 from gallia.uds.core.service import NegativeResponse
 from gallia.udscan.core import UDSScanner
-from gallia.udscan.utils import auto_int
-from gallia.utils import g_repr
+from gallia.utils import auto_int, g_repr
 
 
 class DTCScanner(UDSScanner):

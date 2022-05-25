@@ -5,8 +5,8 @@ from pathlib import Path
 
 from gallia.uds.core.service import NegativeResponse
 from gallia.udscan.core import UDSScanner
-from gallia.udscan.utils import auto_int, check_and_set_session
-from gallia.utils import g_repr
+from gallia.udscan.utils import check_and_set_session
+from gallia.utils import auto_int, g_repr
 
 
 class WriteMemoryByAddressScanner(UDSScanner):

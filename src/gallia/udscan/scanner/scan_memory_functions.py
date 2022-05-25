@@ -8,8 +8,8 @@ from gallia.uds.core.constants import UDSErrorCodes
 from gallia.uds.core.service import NegativeResponse
 from gallia.uds.core.utils import uds_memory_parameters
 from gallia.udscan.core import UDSScanner
-from gallia.udscan.utils import auto_int, check_and_set_session
-from gallia.utils import g_repr
+from gallia.udscan.utils import check_and_set_session
+from gallia.utils import auto_int, g_repr
 
 
 class ScanWriteDataByAddress(UDSScanner):

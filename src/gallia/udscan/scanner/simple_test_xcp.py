@@ -2,7 +2,7 @@ from argparse import Namespace
 
 from gallia.services.xcp import XCPService
 from gallia.udscan.core import Scanner
-from gallia.udscan.utils import catch_and_log_exception
+from gallia.utils import catch_and_log_exception
 
 
 class TestXCP(Scanner):

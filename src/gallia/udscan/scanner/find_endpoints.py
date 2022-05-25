@@ -9,8 +9,7 @@ from gallia.uds.core.service import (
 )
 from gallia.uds.helpers import raise_for_mismatch
 from gallia.udscan.core import UDSScanner
-from gallia.udscan.utils import auto_int, write_ecu_url_list
-from gallia.utils import g_repr
+from gallia.utils import auto_int, g_repr, write_target_list
 
 
 class FindEndpoints(UDSScanner):
@@ -99,4 +98,4 @@ class FindEndpoints(UDSScanner):
         self.logger.log_summary(f"Finished scan; found {len(found)} endpoints")
         ecus_file = self.artifacts_dir.joinpath("ECUs.txt")
         self.logger.log_summary(f"Writing urls to file: {ecus_file}")
-        await write_ecu_url_list(ecus_file, found, self.db_handler)
+        await write_target_list(ecus_file, found, self.db_handler)
