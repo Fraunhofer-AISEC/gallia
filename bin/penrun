@@ -321,6 +321,12 @@ main() {
 	done
 	shift $((OPTIND - 1))
 
+	if [[ -n "$template" ]]; then
+		if [[ "$template" =~ .*\" || "$template" =~ .*\' ]]; then
+			die "-T must not contain any quotes!"
+		fi
+	fi
+
 	local cmds
 	if [[ ! -t 0 ]]; then
 		mapfile -t cmds </dev/stdin
