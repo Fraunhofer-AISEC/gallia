@@ -23,12 +23,6 @@ Gallia is a comprehensive and extendable automotive testing toolchain.
 
 .. toctree::
    :maxdepth: 1
-   :caption: Meta
-
-   contributing
-
-.. toctree::
-   :maxdepth: 1
    :caption: API
 
    penrun.1
