@@ -432,6 +432,12 @@ class UDSScanner(Scanner):
             action=argparse.BooleanOptionalAction,
             help="Compare properties before and after the scan",
         )
+        group.add_argument(
+            "--tester-present-workaround",
+            action=argparse.BooleanOptionalAction,
+            default=False,
+            help="Enable/Disable tester present workaround",
+        )
 
     def load_ecu(self, vendor: str) -> type[ECU]:
         if vendor == "default":
@@ -502,6 +508,7 @@ class UDSScanner(Scanner):
             timeout=args.timeout,
             max_retry=args.max_retries,
             power_supply=self.power_supply,
+            tester_present_workaround=args.tester_present_workaround,
         )
 
         if self.db_handler is not None and self.log_scan_run:
