@@ -116,22 +116,22 @@ class ISOTPTransport(BaseTransport, scheme="isotp", spec=isotp_spec):
         rx_ext_address: Optional[int] = None,
         flags: int = 0,
     ) -> None:
-        if ext_address:
+        if ext_address is not None:
             flags |= self.CAN_ISOTP_EXTEND_ADDR
         else:
             ext_address = 0
 
-        if rx_ext_address:
+        if rx_ext_address is not None:
             flags |= self.CAN_ISOTP_RX_EXT_ADDR
         else:
             rx_ext_address = 0
 
-        if tx_padding:
+        if tx_padding is not None:
             flags |= self.CAN_ISOTP_TX_PADDING
         else:
             tx_padding = 0
 
-        if rx_padding:
+        if rx_padding is not None:
             flags |= self.CAN_ISOTP_RX_PADDING
         else:
             rx_padding = 0
