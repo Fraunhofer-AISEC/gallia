@@ -7,8 +7,7 @@ from gallia.transports.can import ISOTPTransport, RawCANTransport
 from gallia.uds.core.service import NegativeResponse
 from gallia.uds.ecu import ECU
 from gallia.udscan.core import DiscoveryScanner
-from gallia.udscan.utils import auto_int, write_ecu_url_list
-from gallia.utils import can_id_repr, g_repr
+from gallia.utils import auto_int, can_id_repr, g_repr, write_target_list
 
 
 class FindCanIDsScanner(DiscoveryScanner):
@@ -132,7 +131,7 @@ class FindCanIDsScanner(DiscoveryScanner):
         self.logger.log_summary(f"finished; found {len(found)} UDS endpoints")
         ecus_file = self.artifacts_dir.joinpath("ECUs.txt")
         self.logger.log_summary(f"Writing urls to file: {ecus_file}")
-        connection_strings = await write_ecu_url_list(ecus_file, found, self.db_handler)
+        connection_strings = await write_target_list(ecus_file, found, self.db_handler)
 
         self.logger.log_info("reading info DID from all discovered endpoints")
         did = args.info_did

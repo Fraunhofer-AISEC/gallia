@@ -4,8 +4,7 @@ from argparse import Namespace
 
 from gallia.transports.can import ISOTPTransport, RawCANTransport
 from gallia.udscan.core import DiscoveryScanner
-from gallia.udscan.utils import write_ecu_url_list
-from gallia.utils import can_id_repr, isotp_addr_repr
+from gallia.utils import can_id_repr, isotp_addr_repr, write_target_list
 
 
 class FindISOTPAddrScanner(DiscoveryScanner):
@@ -122,4 +121,4 @@ class FindISOTPAddrScanner(DiscoveryScanner):
         self.logger.log_summary(f"Found {len(found)} ISO-TP endpoints")
         ecus_file = self.artifacts_dir.joinpath("ECUs.txt")
         self.logger.log_summary(f"Writing urls to file: {ecus_file}")
-        await write_ecu_url_list(ecus_file, found, self.db_handler)
+        await write_target_list(ecus_file, found, self.db_handler)

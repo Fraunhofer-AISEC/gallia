@@ -13,8 +13,7 @@ from gallia.uds.core.service import (
 )
 from gallia.uds.helpers import raise_for_error
 from gallia.udscan.core import UDSScanner
-from gallia.udscan.utils import auto_int
-from gallia.utils import g_repr
+from gallia.utils import auto_int, g_repr
 
 
 class SendPDU(UDSScanner):
