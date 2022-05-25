@@ -61,6 +61,7 @@ reuse = "^1.0.0"
 [tool.poetry.plugins."gallia_scanners"]
 "discover-can-ids" = "gallia.udscan.scanner.find_can_ids:FindCanIDsScanner"
 "discover-doip" = "gallia.udscan.scanner.discover_doip:DiscoverDoIP"
+"fuzz-payloads" = "gallia.udscan.scanner.fuzz_payloads:FuzzPayloads"
 "scan-dump-seeds" = "gallia.udscan.scanner.scan_sa_dump_seeds:SaDumpSeeds"
 "scan-identifiers" = "gallia.udscan.scanner.scan_identifiers:ScanIdentifiers"
 "scan-memory-functions" = "gallia.udscan.scanner.scan_memory_functions:ScanWriteDataByAddress"
