@@ -1,7 +1,6 @@
 import asyncio
 from argparse import Action, ArgumentError, ArgumentParser, Namespace
 from pathlib import Path
-from subprocess import run
 from sys import stdout
 from typing import Any, Callable, Optional, Sequence, Union
 from urllib.parse import ParseResult, urlencode
@@ -20,26 +19,6 @@ from gallia.utils import g_repr
 
 def auto_int(arg: str) -> int:
     return int(arg, 0)
-
-
-async def poll_service(
-    ecu: ECU, sid: int, check: Optional[int] = None
-) -> Union[service.NegativeResponse, service.PositiveResponse]:
-    if check:
-        cur_session = await ecu.read_session()
-        if cur_session != check:
-            ecu.logger.log_warning("ecu lost session")
-            ecu.logger.log_warning(f"expected: {check:x}; read: {cur_session:x}")
-            await ecu.set_session(check)
-
-    resp = await ecu.send_raw(bytes([sid]))
-
-    if check:
-        cur_session = await ecu.read_session()
-        if cur_session != check:
-            await ecu.set_session(check)
-            ecu.logger.log_warning(f"expected: {check:x}; read: {cur_session:x}")
-    return resp
 
 
 async def check_and_set_session(
@@ -115,21 +94,6 @@ async def check_and_set_session(
         f"Failed to switch to session {g_repr(expected_session)} after {retries} attempts"
     )
     return False
-
-
-def get_command_output(command: list[str]) -> str:
-    """get_command_output runs the command given as a list and returns a string
-    of the corresponding output from STDOUT. If any error occurs, the error
-    string is returned instead.
-
-    :param command: A list of strings without whitespace which specify the command
-    :return: A string of the command's output from STDOUT, or an error string"""
-    try:
-        process = run(command, capture_output=True, check=True)
-    except Exception as e:
-        return f"Error: {g_repr(e)}"
-
-    return process.stdout.decode().strip()
 
 
 def unravel(listing: str) -> list[int]:
@@ -212,70 +176,6 @@ class ANSIEscapes:
         BOLD = ITALIC = UNDERSCORE = BLINK = CROSSED = ""
         BLACK = RED = GREEN = YELLOW = BLUE = MAGENTA = CYAN = WHITE = ""
         RESET = ""
-
-
-def range_diff(base: list[range], coverage: list[range]) -> list[range]:
-    """This function computes ranges of the base, that are not contained
-    in the coverage.
-
-    The main idea of this algorithm is to go through each range of the base and to iteratively shrink it by
-    removing the ranges in the coverage. What's left is then the uncovered area.
-    There are in principle five cases which are considered for a pair of ranges:
-
-    - One or both are empty
-    - They are disjoint
-      -> In both cases nothing is removed from the base range
-    - The base range is a subrange of the coverage range
-      -> The base range becomes empty
-    - The coverage range reaches into base range
-      -> The base range gets smaller
-    - The coverage range is a subrange of the base range
-      -> The base range is split into two smaller ranges
-
-    :param base: The base ranges.
-    :param coverage: The coverage ranges.
-    :return: The (sub-)ranges of the base ranges that are not covered by the coverage ranges.
-    """
-    result: list[range] = []
-    sorted_base = sorted(base, key=lambda r: r[0])
-    i = 0
-
-    # We are looping with a while statement, because we may insert new elements into the list
-    while i < len(sorted_base):
-        base_r = sorted_base[i]
-
-        for cover_r in sorted(coverage, key=lambda r: r[0]):
-            # None is empty and they are not disjoint
-            if not (
-                len(base_r) == 0
-                or len(cover_r) == 0
-                or cover_r[-1] < base_r[0]
-                or cover_r[0] > base_r[-1]
-            ):
-                # The base range is a subrange of the coverage range
-                if cover_r[0] <= base_r[0] and cover_r[-1] >= base_r[-1]:
-                    base_r = range(0)
-                # The coverage range reaches into base range from the left
-                elif cover_r[0] <= base_r[0]:
-                    base_r = range(cover_r[-1] + 1, base_r[-1] + 1)
-                # The coverage range reaches into base range from the right
-                elif cover_r[-1] >= base_r[-1]:
-                    base_r = range(base_r[0], cover_r[0])
-                # The coverage range is a subrange of the base range
-                # In this case the base range is divided by the coverage range into two ranges.
-                # The first of them will take the place of the current base range and the second will be handled
-                # separately in another iteration.
-                else:
-                    sorted_base.insert(i + 1, range(cover_r[-1] + 1, base_r[-1] + 1))
-                    base_r = range(base_r[0], cover_r[0])
-
-        # If an uncovered range is left after all elements of the coverage have been removed from the base range
-        if len(base_r) > 0:
-            result.append(base_r)
-
-        i += 1
-
-    return result
 
 
 async def write_ecu_url_list(
