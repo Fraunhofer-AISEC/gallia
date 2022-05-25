@@ -507,6 +507,16 @@ class UDSScanner(Scanner):
 
 
 class DiscoveryScanner(Scanner):
+    def _add_class_parser(self) -> None:
+        super()._add_class_parser()
+
+        self.parser.add_argument(
+            "--timeout",
+            type=float,
+            default=0.2,
+            help="specify timeout for recvfrom",
+        )
+
     async def setup(self, args: Namespace) -> None:
         # Setting up mcp and dumpcap is already implemented in the parent class.
         await super().setup(args)
