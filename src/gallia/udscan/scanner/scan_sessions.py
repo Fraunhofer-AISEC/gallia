@@ -12,6 +12,7 @@ from gallia.uds.core.service import (
 )
 from gallia.udscan.core import UDSScanner
 from gallia.udscan.utils import auto_int
+from gallia.utils import g_repr
 
 
 class IterateSessions(UDSScanner):
@@ -58,7 +59,7 @@ class IterateSessions(UDSScanner):
         ):
             if not use_hooks:
                 self.logger.log_warning(
-                    f"Session {session:02x} is potentially available but could not be entered. "
+                    f"Session {g_repr(session)} is potentially available but could not be entered. "
                     f"Use --with-hooks to try to enter the session using hooks to scan for "
                     f"transitions available from that session."
                 )
@@ -70,7 +71,7 @@ class IterateSessions(UDSScanner):
 
             if isinstance(resp, NegativeResponse):
                 self.logger.log_notice(
-                    f"Received conditionsNotCorrect for session {session:02x}. "
+                    f"Received conditionsNotCorrect for session {g_repr(session)}. "
                     f"Successfully changed to the session with hooks."
                 )
                 resp = resp_
@@ -84,13 +85,13 @@ class IterateSessions(UDSScanner):
 
                 if isinstance(resp, NegativeResponse):
                     self.logger.log_error(
-                        f"Could not change to session 0x{session:02x} as part of stack: {resp}. "
+                        f"Could not change to session {g_repr(session)} as part of stack: {resp}. "
                         f"Try with --reset to reset between each iteration."
                     )
                     return False
             except Exception as e:
                 self.logger.log_error(
-                    f"Could not change to session 0x{session:02x} as part of stack: {e.__class__.__name__}. "
+                    f"Could not change to session {g_repr(session)} as part of stack: {g_repr(e)}. "
                     f"Try with --reset to reset between each iteration."
                 )
                 return False
@@ -114,12 +115,14 @@ class IterateSessions(UDSScanner):
 
             for stack in found[depth - 1]:
                 if stack:
-                    self.logger.log_summary(f"Starting from session: 0x{stack[-1]:02x}")
+                    self.logger.log_summary(
+                        f"Starting from session: {g_repr(stack[-1])}"
+                    )
 
                 for session in sessions:
                     if session in args.skip:
                         self.logger.log_info(
-                            f"Skipping session 0x{session:02x} as requested"
+                            f"Skipping session {g_repr(session)} as requested"
                         )
                         continue
 
@@ -157,7 +160,7 @@ class IterateSessions(UDSScanner):
                             sys.exit(1)
                     except Exception as e:
                         self.logger.log_error(
-                            f"Could not change to default session: {e.__class__.__name__}"
+                            f"Could not change to default session: {g_repr(e)}"
                         )
                         sys.exit(1)
 
@@ -181,12 +184,12 @@ class IterateSessions(UDSScanner):
                             == UDSErrorCodes.subFunctionNotSupported
                         ):
                             self.logger.log_info(
-                                f"Could not change to session 0x{session:02x}: {resp}"
+                                f"Could not change to session {g_repr(session)}: {resp}"
                             )
                             continue
 
                         self.logger.log_summary(
-                            f"Found session: 0x{session:02x} via stack: {stack}; {resp}"
+                            f"Found session: {g_repr(session)} via stack: {g_repr(stack)}; {resp}"
                         )
 
                         if not isinstance(resp, NegativeResponse):
@@ -209,7 +212,7 @@ class IterateSessions(UDSScanner):
 
                     except asyncio.TimeoutError:
                         self.logger.log_warning(
-                            f"Could not change to session 0x{session:02x}: Timeout"
+                            f"Could not change to session {g_repr(session)}: Timeout"
                         )
                         continue
 
@@ -221,10 +224,10 @@ class IterateSessions(UDSScanner):
 
             if session != previous_session:
                 previous_session = session
-                self.logger.log_summary(f"* Session {session:02x} ")
+                self.logger.log_summary(f"* Session {g_repr(session)} ")
 
             self.logger.log_summary(
-                f"\tvia stack: {'->'.join([f'{i:02x}' for i in res['stack']])}"
+                f"\tvia stack: {'->'.join([f'{g_repr(i)}' for i in res['stack']])}"
             )
 
         self.logger.log_summary(
@@ -241,9 +244,9 @@ class IterateSessions(UDSScanner):
             ):
                 if session != previous_session:
                     previous_session = session
-                    self.logger.log_summary(f"* Session {session:02x} ")
+                    self.logger.log_summary(f"* Session {g_repr(session)} ")
 
                 self.logger.log_summary(
-                    f"\tvia stack: {'->'.join([f'{i:02x}' for i in res['stack']])} "
+                    f"\tvia stack: {'->'.join([f'{g_repr(i)}' for i in res['stack']])} "
                     f"(NRC: {res['error']})"
                 )

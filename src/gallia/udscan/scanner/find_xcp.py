@@ -10,7 +10,7 @@ from subprocess import CalledProcessError, run
 from gallia.penlog import Logger
 from gallia.transports.base import TargetURI
 from gallia.transports.can import RawCANTransport
-from gallia.uds.core.utils import shorten
+from gallia.utils import bytes_repr, can_id_repr, g_repr
 
 
 class FindXCP:
@@ -93,7 +93,7 @@ class FindXCP:
                 check=True,
             )
         except CalledProcessError as e:
-            self.logger.log_warning(f"could not get version: {e}")
+            self.logger.log_warning(f"could not get version: {g_repr(e)}")
         else:
             git_version = process.stdout.decode().strip()
             self.logger.log_preamble(f"version: {git_version}")
@@ -139,29 +139,25 @@ class FindXCP:
             try:
                 self.socket.connect(server)
             except Exception as e:
-                self.logger.log_info(
-                    f"Connect: {e.__class__.__name__} on TCP port {port:d} {e}"
-                )
+                self.logger.log_info(f"Connect: {g_repr(e)} on TCP port {port}")
                 continue
 
             try:
                 self.socket.send(self.pack_xcp_eth(data))
                 _, _, data_ret = self.unpack_xcp_eth(self.socket.recv(1024))
-                ret = data_ret.hex()
+                ret = bytes_repr(data_ret)
                 self.logger.log_info(f"Receive data on TCP port {port}: {ret}")
-                if ret.startswith("ff"):
+                if len(data_ret) > 0 and data_ret[0] == 0xFF:
                     self.logger.log_summary(
                         f"XCP Slave on TCP port {port}, data: {ret}"
                     )
                     endpoints.append(port)
                 else:
                     self.logger.log_info(
-                        f"TCP port {port} is no XCP slave, data: {shorten(ret)}"
+                        f"TCP port {port} is no XCP slave, data: {ret}"
                     )
             except Exception as e:
-                self.logger.log_info(
-                    f"send/recv: {e.__class__.__name__} on TCP port {port:d} {e}"
-                )
+                self.logger.log_info(f"send/recv: {g_repr(e)} on TCP port {port:d}")
                 continue
 
             self.xcp_disconnect(server)
@@ -192,16 +188,16 @@ class FindXCP:
             self.socket.sendto(self.pack_xcp_eth(data), server)
             try:
                 _, _, data_ret = self.unpack_xcp_eth(self.socket.recv(1024))
-                ret = data_ret.hex()
-                self.logger.log_info(f"Receive data on UDP port {port}: {ret}")
-                if ret.startswith("ff"):
+                ret = bytes_repr(data_ret)
+                self.logger.log_info(f"Receive data on TCP port {port}: {ret}")
+                if len(data_ret) > 0 and data_ret[0] == 0xFF:
                     self.logger.log_summary(
                         f"XCP Slave on UDP port {port}, data: {ret}"
                     )
                     endpoints.append(port)
                 else:
                     self.logger.log_info(
-                        f"UDP port {port} is no XCP slave, data: {shorten(ret)}"
+                        f"UDP port {port} is no XCP slave, data: {ret}"
                     )
 
             except socket.timeout:
@@ -234,7 +230,7 @@ class FindXCP:
         await transport.get_idle_traffic(2)
 
         for can_id in range(0x800):
-            self.logger.log_info(f"Testing CAN ID: {can_id:03x}")
+            self.logger.log_info(f"Testing CAN ID: {can_id_repr(can_id)}")
             pdu = bytes([0xFF, 0x00])
             await transport.sendto(pdu, can_id, timeout=0.1)
 
@@ -242,12 +238,16 @@ class FindXCP:
                 while True:
                     master, data = await transport.recvfrom(timeout=0.1)
                     if data[0] == 0xFF:
-                        msg = f"Found XCP endpoint [master:slave]: CAN: {master:x}:{can_id:x} data: {data.hex()}"
+                        msg = (
+                            f"Found XCP endpoint [master:slave]: CAN: {can_id_repr(master)}:{can_id_repr(can_id)} "
+                            f"data: {bytes_repr(data)}"
+                        )
                         self.logger.log_summary(msg)
                         endpoints.append((can_id, master))
                     else:
                         self.logger.log_info(
-                            f"Received non XCP answer for CAN-ID {can_id:x}: {master:x}:{data.hex()}"
+                            f"Received non XCP answer for CAN-ID {can_id_repr(can_id)}: {can_id_repr(master)}:"
+                            f"{bytes_repr(data)}"
                         )
             except asyncio.TimeoutError:
                 pass
@@ -286,7 +286,7 @@ class FindXCP:
                 if not data:
                     break
 
-                self.logger.log_summary(f"Found XCP slave: {slave} {data.hex()}")
+                self.logger.log_summary(f"Found XCP slave: {slave} {bytes_repr(data)}")
                 endpoints.append(slave)
         except socket.timeout:
             self.logger.log_info("Timeout")

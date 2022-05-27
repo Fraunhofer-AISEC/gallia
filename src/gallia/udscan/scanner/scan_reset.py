@@ -14,6 +14,7 @@ from gallia.udscan.utils import (
     auto_int,
     check_and_set_session,
 )
+from gallia.utils import g_repr
 
 
 class ScanReset(UDSScanner):
@@ -64,7 +65,7 @@ class ScanReset(UDSScanner):
             )
             sessions = await self.ecu.find_sessions(sessions)
             self.logger.log_summary(
-                f'Found {len(sessions)} sessions: {" ".join([hex(i) for i in sessions])}'
+                f"Found {len(sessions)} sessions: {g_repr(sessions)}"
             )
         else:
             sessions = list(
@@ -73,19 +74,21 @@ class ScanReset(UDSScanner):
                 if s not in args.skip or args.skip[s] is not None
             )
 
-        self.logger.log_info(f"testing sessions {sessions}")
+        self.logger.log_info(f"testing sessions {g_repr(sessions)}")
+
+        # TODO: Unified shortened output necessary here
         self.logger.log_info(f"skipping identifiers {reprlib.repr(args.skip)}")
 
         for session in sessions:  # pylint: disable=too-many-nested-blocks
-            self.logger.log_notice(f"Switching to session 0x{session:02x}")
+            self.logger.log_notice(f"Switching to session {g_repr(session)}")
             resp: UDSResponse = await self.ecu.set_session(session)
             if isinstance(resp, NegativeResponse):
                 self.logger.log_warning(
-                    f"Switching to session 0x{session:02x} failed: {resp}"
+                    f"Switching to session {g_repr(session)} failed: {resp}"
                 )
                 continue
 
-            self.logger.log_summary(f"Scanning in session: 0x{session:02x}")
+            self.logger.log_summary(f"Scanning in session: {g_repr(session)}")
             l_ok[session] = list()
             l_timeout[session] = list()
             l_error[session] = list()
@@ -93,7 +96,7 @@ class ScanReset(UDSScanner):
             for sub_func in range(0x01, 0x80):
                 if session in args.skip and sub_func in args.skip[session]:
                     self.logger.log_notice(
-                        f"skipping subFunc: 0x{sub_func:02x} because of --skip"
+                        f"skipping subFunc: {g_repr(sub_func)} because of --skip"
                     )
                     continue
 
@@ -101,7 +104,7 @@ class ScanReset(UDSScanner):
                     # Check session and try to recover from wrong session (max 3 times), else skip session
                     if not await check_and_set_session(self.ecu, session):
                         self.logger.log_error(
-                            f"Aborting scan on session 0x{session:02x}; current sub-func was 0x{sub_func:02x}"
+                            f"Aborting scan on session {g_repr(session)}; current sub-func was {g_repr(sub_func)}"
                         )
                         break
 
@@ -112,16 +115,16 @@ class ScanReset(UDSScanner):
                         )
                         if isinstance(resp, NegativeResponse):
                             if suggests_sub_function_not_supported(resp):
-                                self.logger.log_info(f"0x{sub_func:02x}: {resp}")
+                                self.logger.log_info(f"{g_repr(sub_func)}: {resp}")
                             else:
                                 l_error[session].append({sub_func: resp.response_code})
-                                msg = f"0x{sub_func:02x}: with error code: {resp}"
+                                msg = f"{g_repr(sub_func)}: with error code: {resp}"
                                 self.logger.log_summary(msg)
                             continue
                     except IllegalResponse as e:
-                        self.logger.log_warning(f"{repr(e)}")
+                        self.logger.log_warning(f"{g_repr(e)}")
 
-                    self.logger.log_summary(f"0x{sub_func:02x}: reset level found!")
+                    self.logger.log_summary(f"{g_repr(sub_func)}: reset level found!")
                     l_ok[session].append(sub_func)
                     self.logger.log_info("Waiting for the ECU to recover…")
                     await self.ecu.wait_for_ecu()
@@ -130,18 +133,18 @@ class ScanReset(UDSScanner):
                     resp = await self.ecu.ecu_reset(0x01)
                     if isinstance(resp, NegativeResponse):
                         self.logger.log_warning(
-                            f"Could not reboot ECU after testing reset level 0x{sub_func:02x}"
+                            f"Could not reboot ECU after testing reset level {g_repr(sub_func)}"
                         )
                     else:
                         await self.ecu.wait_for_ecu()
 
                 except asyncio.TimeoutError:
                     self.logger.log_error(
-                        f"ECU did not respond after reset level 0x{sub_func:02x}; exiting…"
+                        f"ECU did not respond after reset level {g_repr(sub_func)}; exiting…"
                     )
                     sys.exit(1)
                 except ConnectionError:
-                    msg = f"0x{sub_func:02x}: lost connection to ECU (post), current session: 0x{session:0x}"
+                    msg = f"{g_repr(sub_func)}: lost connection to ECU (post), current session: {g_repr(session)}"
                     self.logger.log_warning(msg)
                     await self.ecu.reconnect()
                     continue
@@ -151,14 +154,15 @@ class ScanReset(UDSScanner):
                     try:
                         current_session = await self.ecu.read_session()
                         self.logger.log_summary(
-                            f"0x{sub_func:02x}: Currently in session 0x{current_session:02x}, should be 0x{session:02x}"
+                            f"{g_repr(sub_func)}: Currently in session {g_repr(current_session)}, "
+                            f"should be {g_repr(session)}"
                         )
                     except UnexpectedNegativeResponse as e:
                         self.logger.log_warning(
                             f"Could not read current session: {e.RESPONSE_CODE.name}"
                         )
 
-                self.logger.log_info(f"Setting session 0x{session:02x}")
+                self.logger.log_info(f"Setting session {g_repr(session)}")
                 await self.ecu.set_session(session)
 
             await self.ecu.leave_session(session)

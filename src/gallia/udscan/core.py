@@ -28,7 +28,7 @@ from gallia.transports.can import ISOTPTransport, RawCANTransport
 from gallia.transports.doip import DoIPTransport
 from gallia.transports.tcp import TCPLineSepTransport
 from gallia.uds.ecu import ECU
-from gallia.utils import camel_to_snake
+from gallia.utils import camel_to_snake, g_repr
 
 
 class ExitCodes(IntEnum):
@@ -265,9 +265,9 @@ class Scanner(GalliaBase, ABC):
                 await self.setup(args)
             except BrokenPipeError as e:
                 exit_code = ExitCodes.GENERIC_ERROR
-                self.logger.log_critical(str(e))
+                self.logger.log_critical(g_repr(e))
             except Exception as e:
-                self.logger.log_critical(f"setup failed: {e.__class__.__name__}: {e}")
+                self.logger.log_critical(f"setup failed: {g_repr(e)}")
                 sys.exit(ExitCodes.SETUP_FAILED)
 
             try:
@@ -275,15 +275,13 @@ class Scanner(GalliaBase, ABC):
                     await self.main(args)
                 except Exception as e:
                     exit_code = ExitCodes.GENERIC_ERROR
-                    self.logger.log_critical(str(e))
+                    self.logger.log_critical(g_repr(e))
                     traceback.print_exc()
             finally:
                 try:
                     await self.teardown(args)
                 except Exception as e:
-                    self.logger.log_critical(
-                        f"teardown failed: {e.__class__.__name__}: {e}"
-                    )
+                    self.logger.log_critical(f"teardown failed: {g_repr(e)}")
                     sys.exit(ExitCodes.TEARDOWN_FAILED)
             return exit_code
         except KeyboardInterrupt:
@@ -301,14 +299,14 @@ class Scanner(GalliaBase, ABC):
                         )
                     except Exception as e:
                         self.logger.log_warning(
-                            f"Could not write the run meta to the database: {repr(e)}"
+                            f"Could not write the run meta to the database: {g_repr(e)}"
                         )
 
                 try:
                     await self.db_handler.disconnect()
                 except Exception as e:
                     self.logger.log_error(
-                        f"Could not close the database connection properly: {repr(e)}"
+                        f"Could not close the database connection properly: {g_repr(e)}"
                     )
 
     def run(self) -> int:
@@ -478,7 +476,7 @@ class UDSScanner(Scanner):
                 self.logger.log_debug("tester present worker terminated")
                 break
             except Exception as e:
-                self.logger.log_debug(f"tester present got {type(e)}")
+                self.logger.log_debug(f"tester present got {g_repr(e)}")
                 # Wait until the stack recovers, but not for too long…
                 await asyncio.sleep(1)
 
@@ -516,7 +514,7 @@ class UDSScanner(Scanner):
                 self._apply_implicit_logging_setting()
             except Exception as e:
                 self.logger.log_warning(
-                    f"Could not write the scan run to the database: {repr(e)}"
+                    f"Could not write the scan run to the database: {g_repr(e)}"
                 )
 
         # Handles connecting to the target and waits
@@ -548,7 +546,7 @@ class UDSScanner(Scanner):
                 self._apply_implicit_logging_setting()
             except Exception as e:
                 self.logger.log_warning(
-                    f"Could not write the properties_pre to the database: {repr(e)}"
+                    f"Could not write the properties_pre to the database: {g_repr(e)}"
                 )
 
     async def teardown(self, args: Namespace) -> None:
@@ -572,7 +570,7 @@ class UDSScanner(Scanner):
                 )
             except Exception as e:
                 self.logger.log_warning(
-                    f"Could not write the scan run to the database: {repr(e)}"
+                    f"Could not write the scan run to the database: {g_repr(e)}"
                 )
 
         if self.tester_present_task:
@@ -592,5 +590,5 @@ class DiscoveryScanner(Scanner):
                 await self.db_handler.insert_discovery_run(args.target.url.scheme)
             except Exception as e:
                 self.logger.log_warning(
-                    f"Could not write the discovery run to the database: {repr(e)}"
+                    f"Could not write the discovery run to the database: {g_repr(e)}"
                 )

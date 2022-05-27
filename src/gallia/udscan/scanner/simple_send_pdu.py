@@ -14,6 +14,7 @@ from gallia.uds.core.service import (
 from gallia.uds.helpers import raise_for_error
 from gallia.udscan.core import UDSScanner
 from gallia.udscan.utils import auto_int
+from gallia.utils import g_repr
 
 
 class SendPDU(UDSScanner):
@@ -59,7 +60,7 @@ class SendPDU(UDSScanner):
                 pdu, config=UDSRequestConfig(max_retry=args.max_retry)
             )
         except UDSException as e:
-            self.logger.log_error(repr(e))
+            self.logger.log_error(g_repr(e))
             sys.exit(1)
 
         if isinstance(response, NegativeResponse):

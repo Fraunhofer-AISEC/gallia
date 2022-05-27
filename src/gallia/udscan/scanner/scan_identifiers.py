@@ -8,6 +8,7 @@ from gallia.uds.core.client import UDSRequestConfig
 from gallia.uds.core.constants import RCSubFuncs, UDSErrorCodes, UDSIsoServices
 from gallia.uds.core.exception import IllegalResponse
 from gallia.uds.core.service import NegativeResponse, UDSResponse
+from gallia.uds.core.utils import service_repr
 from gallia.uds.helpers import suggests_service_not_supported
 from gallia.udscan.core import UDSScanner
 from gallia.udscan.utils import (
@@ -15,6 +16,7 @@ from gallia.udscan.utils import (
     auto_int,
     check_and_set_session,
 )
+from gallia.utils import g_repr
 
 
 class ScanIdentifiers(UDSScanner):
@@ -102,7 +104,7 @@ class ScanIdentifiers(UDSScanner):
             )
             sessions = await self.ecu.find_sessions(sessions)
             self.logger.log_summary(
-                f'Found {len(sessions)} sessions: {" ".join([hex(i) for i in sessions])}'
+                f"Found {len(sessions)} sessions: {g_repr(sessions)}"
             )
         else:
             sessions = list(
@@ -111,19 +113,21 @@ class ScanIdentifiers(UDSScanner):
                 if s not in args.skip or args.skip[s] is not None
             )
 
-        self.logger.log_info(f"testing sessions {sessions}")
+        self.logger.log_info(f"testing sessions {g_repr(sessions)}")
+
+        # TODO: Unified shortened output necessary here
         self.logger.log_info(f"skipping identifiers {reprlib.repr(args.skip)}")
 
         for session in sessions:
-            self.logger.log_notice(f"Switching to session 0x{session:02x}")
+            self.logger.log_notice(f"Switching to session {g_repr(session)}")
             resp: UDSResponse = await self.ecu.set_session(session)
             if isinstance(resp, NegativeResponse):
                 self.logger.log_warning(
-                    f"Switching to session 0x{session:02x} failed: {resp}"
+                    f"Switching to session {g_repr(session)} failed: {resp}"
                 )
                 continue
 
-            self.logger.log_summary(f"Starting scan in session: 0x{session:02x}")
+            self.logger.log_summary(f"Starting scan in session: {g_repr(session)}")
             positive_DIDs = 0
             abnormal_DIDs = 0
             timeout_DIDs = 0
@@ -143,8 +147,8 @@ class ScanIdentifiers(UDSScanner):
             if args.sid == UDSIsoServices.SecurityAccess:
                 if args.end > 0xFF:
                     self.logger.log_warning(
-                        "Service 0x27 SecurityAccess only accepts 1-byte identifiers; "
-                        + f"limiting END to 0xff instead of 0x{args.end:0x}"
+                        "Service 0x27 SecurityAccess only accepts subFunctions (1-byte identifiers); "
+                        + f"limiting END to {g_repr(0xff)} instead of {g_repr(args.end)}"
                     )
                     args.end = 0xFF
 
@@ -152,14 +156,14 @@ class ScanIdentifiers(UDSScanner):
                 range(args.start, args.end + 1), sub_functions
             ):
                 if session in args.skip and DID in args.skip[session]:
-                    self.logger.log_info(f"0x{DID:0x}: skipped")
+                    self.logger.log_info(f"{g_repr(DID)}: skipped")
                     continue
 
                 if args.check_session and DID % args.check_session == 0:
                     # Check session and try to recover from wrong session (max 3 times), else skip session
                     if not await check_and_set_session(self.ecu, session):
                         self.logger.log_error(
-                            f"Aborting scan on session 0x{session:02x}; current DID was 0x{DID:0x}"
+                            f"Aborting scan on session {g_repr(session)}; current DID was {g_repr(DID)}"
                         )
                         break
 
@@ -167,7 +171,7 @@ class ScanIdentifiers(UDSScanner):
                     if DID & 0b10000000:
                         self.logger.log_info(
                             "Keep in mind that you set the SuppressResponse Bit (8th bit): "
-                            + f"0x{DID:0x} = 0b{DID:b}"
+                            + f"{g_repr(DID)} = 0b{DID:b}"
                         )
                     pdu = bytes([args.sid, DID])
 
@@ -188,17 +192,17 @@ class ScanIdentifiers(UDSScanner):
                         pdu, config=UDSRequestConfig(tags=["ANALYZE"], max_retry=3)
                     )
                 except asyncio.TimeoutError:
-                    self.logger.log_summary(f"0x{DID:0x}: Retries exceeded")
+                    self.logger.log_summary(f"{g_repr(DID)}: Retries exceeded")
                     timeout_DIDs += 1
                     continue
                 except IllegalResponse as e:
-                    self.logger.log_warning(f"{repr(e)}")
+                    self.logger.log_warning(g_repr(e))
 
                 if isinstance(resp, NegativeResponse):
                     if suggests_service_not_supported(resp):
                         self.logger.log_info(
-                            f"0x{DID:0x}: {resp}; does session 0x{session:02x} "
-                            f"support service 0x{args.sid:02x}?"
+                            f"{g_repr(DID)}: {resp}; does session {g_repr(session)} "
+                            f"support service {service_repr(args.sid)}?"
                         )
 
                         if args.skip_not_supported:
@@ -206,19 +210,19 @@ class ScanIdentifiers(UDSScanner):
 
                     # RequestOutOfRange is a common reply for invalid DataIdentifiers
                     elif resp.response_code == UDSErrorCodes.requestOutOfRange:
-                        self.logger.log_info(f"0x{DID:0x}: {resp}")
+                        self.logger.log_info(f"{g_repr(DID)}: {resp}")
 
                     else:
-                        self.logger.log_summary(f"0x{DID:0x}: {resp}")
+                        self.logger.log_summary(f"{g_repr(DID)}: {resp}")
                         abnormal_DIDs += 1
                 else:
-                    self.logger.log_summary(f"0x{DID:0x}: {resp}")
+                    self.logger.log_summary(f"{g_repr(DID)}: {resp}")
                     positive_DIDs += 1
 
-            self.logger.log_summary(f"Scan in session 0x{session:0x} is complete!")
+            self.logger.log_summary(f"Scan in session {g_repr(session)} is complete!")
             self.logger.log_summary(f"Positive replies: {positive_DIDs}")
             self.logger.log_summary(f"Abnormal replies: {abnormal_DIDs}")
             self.logger.log_summary(f"Timeouts: {timeout_DIDs}")
 
-            self.logger.log_info(f"Leaving session 0x{session:02x} via hook")
+            self.logger.log_info(f"Leaving session {g_repr(session)} via hook")
             await self.ecu.leave_session(session)
