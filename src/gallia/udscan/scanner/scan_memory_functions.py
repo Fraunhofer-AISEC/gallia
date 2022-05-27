@@ -9,6 +9,7 @@ from gallia.uds.core.service import NegativeResponse
 from gallia.uds.core.utils import uds_memory_parameters
 from gallia.udscan.core import UDSScanner
 from gallia.udscan.utils import auto_int, check_and_set_session
+from gallia.utils import g_repr
 
 
 class ScanWriteDataByAddress(UDSScanner):
@@ -80,8 +81,8 @@ class ScanWriteDataByAddress(UDSScanner):
                 # Check session and try to recover from wrong session (max 3 times), else skip session
                 if not await check_and_set_session(self.ecu, args.session):
                     self.logger.log_error(
-                        f"Aborting scan on session 0x{args.session:02x}; "
-                        + f"current memory address was 0x{addr:0x}"
+                        f"Aborting scan on session {g_repr(args.session)}; "
+                        + f"current memory address was {g_repr(addr)}"
                     )
                     sys.exit(1)
 
@@ -90,13 +91,13 @@ class ScanWriteDataByAddress(UDSScanner):
                     pdu, config=UDSRequestConfig(tags=["ANALYZE"])
                 )
             except asyncio.TimeoutError:
-                self.logger.log_summary(f"Address 0x{addr_bytes.hex()}: timeout")
+                self.logger.log_summary(f"Address {g_repr(addr)}: timeout")
                 continue
 
             if isinstance(resp, NegativeResponse):
                 if resp.response_code is UDSErrorCodes.requestOutOfRange:
-                    self.logger.log_info(f"Address 0x{addr_bytes.hex()}: {resp}")
+                    self.logger.log_info(f"Address {g_repr(addr)}: {resp}")
                 else:
-                    self.logger.log_summary(f"Address 0x{addr_bytes.hex()}: {resp}")
+                    self.logger.log_summary(f"Address {g_repr(addr)}: {resp}")
             else:
-                self.logger.log_summary(f"Address 0x{addr_bytes.hex()}: {resp}")
+                self.logger.log_summary(f"Address {g_repr(addr)}: {resp}")

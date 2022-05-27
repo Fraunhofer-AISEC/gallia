@@ -14,6 +14,7 @@ from gallia.uds.core.constants import DataIdentifier
 from gallia.uds.core.exception import ResponseException
 from gallia.uds.core.utils import from_bytes
 from gallia.uds.helpers import as_exception, raise_for_error
+from gallia.utils import g_repr
 
 
 class ECUState:
@@ -205,7 +206,9 @@ class ECU(UDSClient):
         """transmit_data splits the data to be sent in several blocks of size block_length,
         transfers all of them and concludes the transmission with RequestTransferExit"""
         if block_length > max_block_length:
-            self.logger.log_warning(f"Limiting block size to 0x{max_block_length:x}")
+            self.logger.log_warning(
+                f"Limiting block size to {g_repr(max_block_length)}"
+            )
             block_length = max_block_length
         # block_length includes the service identifier and block counter; payload must be smaller
         payload_size = block_length - 2
@@ -214,13 +217,13 @@ class ECU(UDSClient):
             counter += 1
             payload = data[i : i + payload_size]
             self.logger.log_debug(
-                f"Transferring block 0x{counter:02x} "
-                f"with payload size 0x{len(payload):x}"
+                f"Transferring block {g_repr(counter)} "
+                f"with payload size {g_repr(len(payload))}"
             )
             resp: service.UDSResponse = await self.transfer_data(
                 counter & 0xFF, payload, config=config
             )
-            raise_for_error(resp, f"Transmitting data failed at index 0x{i:x}")
+            raise_for_error(resp, f"Transmitting data failed at index {g_repr(i)}")
         resp = await self.request_transfer_exit(config=config)
         raise_for_error(resp)
 
@@ -250,7 +253,7 @@ class ECU(UDSClient):
             except OSError:
                 raise
             except Exception as e:
-                self.logger.log_debug(f"ECU not ready: {e.__class__.__name__} {e}")
+                self.logger.log_debug(f"ECU not ready: {g_repr(e)}")
         self.logger.log_info("ECU ready")
 
     async def update_state(
@@ -321,7 +324,9 @@ class ECU(UDSClient):
                         log_mode,
                     )
             except Exception as e:
-                self.logger.log_warning(f"Could not log messages to database: {e}")
+                self.logger.log_warning(
+                    f"Could not log messages to database: {g_repr(e)}"
+                )
 
             if response is not None:
                 await self.update_state(request, response)

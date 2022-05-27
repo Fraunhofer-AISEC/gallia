@@ -10,6 +10,7 @@ from gallia.uds.core.service import (
 from gallia.uds.helpers import raise_for_mismatch
 from gallia.udscan.core import UDSScanner
 from gallia.udscan.utils import auto_int, write_ecu_url_list
+from gallia.utils import g_repr
 
 
 class FindEndpoints(UDSScanner):
@@ -48,7 +49,7 @@ class FindEndpoints(UDSScanner):
                 await self.db_handler.insert_discovery_run(args.target.url.scheme)
             except Exception as e:
                 self.logger.log_warning(
-                    f"Could not write the discovery run to the database: {repr(e)}"
+                    f"Could not write the discovery run to the database: {g_repr(e)}"
                 )
 
     async def main(self, args: Namespace) -> None:
@@ -57,7 +58,7 @@ class FindEndpoints(UDSScanner):
                 await self.db_handler.insert_discovery_run(args.target.url.scheme)
             except Exception as e:
                 self.logger.log_warning(
-                    f"Could not write the discovery run to the database: {repr(e)}"
+                    f"Could not write the discovery run to the database: {g_repr(e)}"
                 )
 
         assert self.transport is not None

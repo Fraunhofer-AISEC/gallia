@@ -1,7 +1,11 @@
 import ipaddress
 import re
-from typing import Optional
+from enum import Enum
+from typing import Optional, Any
 from urllib.parse import urlparse
+
+from gallia.uds.core.utils import bytes_repr, int_repr
+from gallia.uds.core.service import NegativeResponse
 
 
 def split_host_port(
@@ -40,3 +44,41 @@ def camel_to_snake(s: str) -> str:
 def camel_to_dash(s: str) -> str:
     """Convert a CamelCase string to a dash-case string."""
     return camel_to_snake(s).replace("_", "-")
+
+
+def isotp_addr_repr(a: int) -> str:
+    """
+    Default string representation of a CAN id.
+    """
+    return f"{a:02x}"
+
+
+def can_id_repr(i: int) -> str:
+    """
+    Default string representation of a CAN id.
+    """
+    return f"{i:03x}"
+
+
+def g_repr(x: Any) -> str:
+    """
+    Object string representation with default gallia output settings.
+    """
+    if isinstance(x, Enum):
+        return x.name
+    if isinstance(x, bool):
+        return repr(x)
+    if isinstance(x, int):
+        return int_repr(x)
+    elif isinstance(x, str):
+        return x
+    elif isinstance(x, (bytes, bytearray)):
+        return bytes_repr(x)
+    elif isinstance(x, list):
+        return f'[{", ".join(g_repr(y) for y in x)}]'
+    elif isinstance(x, dict):
+        return f'{{{", ".join(f"{g_repr(k)}: {g_repr(v)}" for k, v in x.items())}}}'
+    elif isinstance(x, NegativeResponse):
+        return str(x)
+    else:
+        return repr(x)

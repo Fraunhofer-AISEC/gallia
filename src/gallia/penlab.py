@@ -19,7 +19,7 @@ from opennetzteil import Netzteil
 from gallia.penlog import Logger
 from gallia.transports.base import TargetURI
 from gallia.transports.can import ISOTPTransport, RawCANTransport
-from gallia.utils import split_host_port
+from gallia.utils import split_host_port, g_repr
 
 
 class PowerSupplyURI(TargetURI):
@@ -133,7 +133,7 @@ class Dumpcap:
             )
             await asyncio.sleep(0.2)
         except Exception as e:
-            logger.log_error(f"Could not start dumpcap: ({e.__class__.__name__}) {e}")
+            logger.log_error(f"Could not start dumpcap: ({g_repr(e)})")
             raise
 
         if proc.returncode:

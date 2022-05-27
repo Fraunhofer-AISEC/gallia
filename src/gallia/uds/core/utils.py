@@ -88,15 +88,6 @@ def service_repr(service_id: int) -> str:
         return f"Unknown service {int_repr(service_id)}"
 
 
-def shorten(string: str, width: int = 16) -> str:
-    """Shorten a given string to a specified number of characters.
-    An ellipsis `…` as added if the string is truncated.
-    """
-    if len(string) <= width:
-        return string
-    return f"{string[:width - 1]}…"
-
-
 def uds_memory_parameters(
     memory_address: int, memory_size: int, address_and_length_fmt: Optional[int] = None
 ) -> tuple[int, bytes, bytes]:

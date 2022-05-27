@@ -8,6 +8,7 @@ from gallia.uds.core.constants import CDTCSSubFuncs, DSCSubFuncs, UDSErrorCodes
 from gallia.uds.core.service import NegativeResponse
 from gallia.udscan.core import UDSScanner
 from gallia.udscan.utils import auto_int
+from gallia.utils import g_repr
 
 
 class DTCScanner(UDSScanner):
@@ -97,7 +98,7 @@ class DTCScanner(UDSScanner):
 
                         if sub_mask > 0:
                             self.logger.log_info(
-                                f"Trying to fetch with mask {sub_mask}"
+                                f"Trying to fetch with mask {g_repr(sub_mask)}"
                             )
                             dtcs.update(await self.fetch_error_codes(sub_mask, False))
             else:
@@ -187,9 +188,12 @@ class DTCScanner(UDSScanner):
     async def clear(self, args: Namespace) -> None:
         group_of_dtc: int = args.group_of_dtc
 
-        if not 0 <= group_of_dtc <= 0xFFFFFF:
+        min_group_of_dtc = 0
+        max_group_of_dtc = 0xFFFFFF
+
+        if not min_group_of_dtc <= group_of_dtc <= max_group_of_dtc:
             self.logger.log_error(
-                "The parameter group_of_dtc must be in the range 0x000000-0xffffff"
+                f"The parameter group_of_dtc must be in the range {g_repr(min_group_of_dtc)}-{g_repr(max_group_of_dtc)}"
             )
 
         resp = await self.ecu.clear_diagnostic_information(group_of_dtc)

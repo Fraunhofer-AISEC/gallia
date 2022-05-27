@@ -7,6 +7,7 @@ from typing import Union
 from gallia.uds.core.service import NegativeResponse, RoutineControlResponse
 from gallia.udscan.core import UDSScanner
 from gallia.udscan.utils import auto_int, check_and_set_session
+from gallia.utils import g_repr
 
 
 class RTCL(UDSScanner):
@@ -81,7 +82,7 @@ class RTCL(UDSScanner):
             await check_and_set_session(self.ecu, args.session)
         except Exception as e:
             self.logger.log_critical(
-                f"Could not change to session: 0x{args.session:02x}: {e.__class__.__name__} {e}"
+                f"Could not change to session: {g_repr(args.session)}: {g_repr(e)}"
             )
             sys.exit(1)
 

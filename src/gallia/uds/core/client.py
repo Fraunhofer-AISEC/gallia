@@ -71,7 +71,7 @@ class UDSClient:
                     request.pdu, timeout, config.tags
                 )
             except asyncio.TimeoutError as e:
-                self.logger.log_debug(f"{request} failed with: {type(e)}")
+                self.logger.log_debug(f"{request} failed with: {repr(e)}")
                 last_exception = MissingResponse(request, str(e))
                 await asyncio.sleep(wait_time)
                 continue

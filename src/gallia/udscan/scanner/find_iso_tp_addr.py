@@ -5,6 +5,7 @@ from argparse import Namespace
 from gallia.transports.can import ISOTPTransport, RawCANTransport
 from gallia.udscan.core import DiscoveryScanner
 from gallia.udscan.utils import write_ecu_url_list
+from gallia.utils import can_id_repr, isotp_addr_repr
 
 
 class FindISOTPAddrScanner(DiscoveryScanner):
@@ -53,7 +54,7 @@ class FindISOTPAddrScanner(DiscoveryScanner):
         self.logger.log_summary("Starting with search")
         tester_id = int(args.target.qs["src_addr"][0], 0)
         for ID in range(0x100):
-            self.logger.log_info(f"Testing ISO-TP address: {ID:02x}")
+            self.logger.log_info(f"Testing ISO-TP address: {isotp_addr_repr(ID)}")
             is_broadcast = False
 
             await self.transport.sendto(
@@ -63,7 +64,7 @@ class FindISOTPAddrScanner(DiscoveryScanner):
                 addr_old, data = await self.transport.recvfrom(timeout=0.2)
                 if addr_old == ID:
                     self.logger.log_warning(
-                        f"{ID:02x}: wtf!? The same ID answered. Skipping..."
+                        f"{isotp_addr_repr(ID)}: wtf!? The same ID answered. Skipping..."
                     )
                     continue
             except asyncio.TimeoutError:
@@ -78,27 +79,28 @@ class FindISOTPAddrScanner(DiscoveryScanner):
                     if new_addr != addr_old:
                         if not is_broadcast:
                             self.logger.log_summary(
-                                f"found broadcast endpoint on ID {ID:02x}; "
-                                f"response from CAN ID [src:dst] {tester_id:03x}:{addr_old:03x} "
-                                f"ISO-TP [tx:rx] {ID:02x}:{data[0]:02x}"
+                                f"found broadcast endpoint on ID {isotp_addr_repr(ID)}; "
+                                f"response from CAN ID [src:dst] {can_id_repr(tester_id)}:{can_id_repr(addr_old)} "
+                                f"ISO-TP [tx:rx] {isotp_addr_repr(ID)}:{isotp_addr_repr(data[0])}"
                             )
                         self.logger.log_summary(
-                            f"found broadcast endpoint on ID {ID:02x}; "
-                            f"response from CAN ID [src:dst] {tester_id:03x}:{new_addr:03x} "
-                            f"ISO-TP [tx:rx] {ID:02x}:{data[0]:02x}"
+                            f"found broadcast endpoint on ID {isotp_addr_repr(ID)}; "
+                            f"response from CAN ID [src:dst] {can_id_repr(tester_id)}:{can_id_repr(new_addr)} "
+                            f"ISO-TP [tx:rx] {isotp_addr_repr(ID)}:{isotp_addr_repr(data[0])}"
                         )
                         is_broadcast = True
                     else:
                         self.logger.log_summary(
-                            f"{tester_id:03x}:{new_addr:03x}: seems like "
-                            f"a large ISO-TP packet was received on ISO-TP address: {ID:02x}"
+                            f"{can_id_repr(tester_id)}:{can_id_repr(new_addr)}: seems like "
+                            f"a large ISO-TP packet was received on ISO-TP address: {isotp_addr_repr(ID)}"
                         )
                 except asyncio.TimeoutError:
                     if new_addr is None:
                         if is_broadcast is False and data is not None:
                             msg = (
-                                f"found endpoint: CAN [src:dst]: {tester_id:03x}:{addr_old:03x} "
-                                f"ISO-TP [tx:rx]: {data[0]:02x}:{ID:02x}, entire payload: {data.hex()}"
+                                f"found endpoint: CAN [src:dst]: {can_id_repr(tester_id)}:{can_id_repr(addr_old)} "
+                                f"ISO-TP [tx:rx]: {isotp_addr_repr(data[0])}:{isotp_addr_repr(ID)}, "
+                                f"entire payload: {data.hex()}"
                             )
                             self.logger.log_summary(msg)
                             found.append(

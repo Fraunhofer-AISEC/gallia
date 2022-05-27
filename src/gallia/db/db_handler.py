@@ -10,6 +10,7 @@ import aiosqlite
 from gallia.uds.core import service
 from gallia.uds.core.utils import bytes_repr as bytes_repr_
 from gallia.penlog import Logger
+from gallia.utils import g_repr
 
 
 def bytes_repr(data: bytes) -> str:
@@ -152,7 +153,7 @@ class DBHandler:
             try:
                 await task
             except Exception as e:
-                self.logger.log_error(f"Inside task: {repr(e)}")
+                self.logger.log_error(f"Inside task: {g_repr(e)}")
 
         try:
             await self.connection.commit()

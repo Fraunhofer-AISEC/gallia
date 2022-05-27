@@ -13,6 +13,7 @@ from gallia.uds.core.client import UDSRequestConfig
 from gallia.uds.core.service import NegativeResponse
 from gallia.udscan.core import UDSScanner
 from gallia.udscan.utils import auto_int, check_and_set_session
+from gallia.utils import g_repr
 
 
 class SaDumpSeeds(UDSScanner):
@@ -94,7 +95,7 @@ class SaDumpSeeds(UDSScanner):
             self.logger.log_debug(f"Key was rejected: {resp}")
             return False
         self.logger.log_summary(
-            f'Unlocked SA level 0x{level:02x} with key "{key.hex()}"! resp: {resp}'
+            f'Unlocked SA level {g_repr(level)} with key "{key.hex()}"! resp: {resp}'
         )
         return True
 
@@ -115,7 +116,7 @@ class SaDumpSeeds(UDSScanner):
 
     async def main(self, args: Namespace) -> None:
         session = args.session
-        self.logger.log_info(f"scanning in session: {session:02x}")
+        self.logger.log_info(f"scanning in session: {g_repr(session)}")
 
         resp = await self.ecu.set_session(session)
         if isinstance(resp, NegativeResponse):
@@ -140,7 +141,7 @@ class SaDumpSeeds(UDSScanner):
             if args.check_session or reset:
                 if not await check_and_set_session(self.ecu, args.session):
                     self.logger.log_error(
-                        f"ECU persistently lost session {args.session}"
+                        f"ECU persistently lost session {g_repr(args.session)}"
                     )
                     sys.exit(1)
 
@@ -152,7 +153,7 @@ class SaDumpSeeds(UDSScanner):
                 self.logger.log_error("Timeout while requesting seed")
                 continue
             except Exception as e:
-                self.logger.log_critical(f"Error while requesting seed: {e}")
+                self.logger.log_critical(f"Error while requesting seed: {g_repr(e)}")
                 sys.exit(1)
 
             if seed is None:
@@ -173,7 +174,7 @@ class SaDumpSeeds(UDSScanner):
                     self.logger.log_warning("Timeout while sending key")
                     continue
                 except Exception as e:
-                    self.logger.log_critical(f"Error while sending key: {e}")
+                    self.logger.log_critical(f"Error while sending key: {g_repr(e)}")
                     sys.exit(1)
 
             runs_since_last_reset += 1

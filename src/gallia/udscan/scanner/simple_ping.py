@@ -38,7 +38,7 @@ class Ping(UDSScanner):
                 break
             ret = await self.ecu.ping()
             if isinstance(ret, NegativeResponse):
-                self.logger.log_warning(f"{ret}")
+                self.logger.log_warning(ret)
             self.logger.log_summary("ECU is alive!")
             await asyncio.sleep(args.interval)
             i += 1

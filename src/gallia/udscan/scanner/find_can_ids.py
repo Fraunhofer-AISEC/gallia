@@ -8,6 +8,7 @@ from gallia.uds.core.service import NegativeResponse
 from gallia.uds.ecu import ECU
 from gallia.udscan.core import DiscoveryScanner
 from gallia.udscan.utils import auto_int, write_ecu_url_list
+from gallia.utils import can_id_repr, g_repr
 
 
 class FindCanIDsScanner(DiscoveryScanner):
@@ -71,7 +72,7 @@ class FindCanIDsScanner(DiscoveryScanner):
         self.transport.set_filter(addr_idle, inv_filter=True)
 
         for ID in range(args.start, args.end + 1):
-            self.logger.log_info(f"Testing CAN ID {ID:03x}")
+            self.logger.log_info(f"Testing CAN ID {can_id_repr(ID)}")
             is_broadcast = False
 
             await self.transport.sendto(
@@ -83,7 +84,7 @@ class FindCanIDsScanner(DiscoveryScanner):
                 addr, _ = await self.transport.recvfrom(timeout=0.1)
                 if addr == ID:
                     self.logger.log_info(
-                        f"wtf!? The same CAN ID {ID:03x} answered. Skipping..."
+                        f"wtf!? The same CAN ID {can_id_repr(ID)} answered. Skipping..."
                     )
                     continue
             except asyncio.TimeoutError:
@@ -97,22 +98,22 @@ class FindCanIDsScanner(DiscoveryScanner):
                     if new_addr != addr:
                         is_broadcast = True
                         self.logger.log_summary(
-                            f"seems that broadcast was triggered on CAN ID {ID:03x}, "
-                            f"got answer from {new_addr:03x}"
+                            f"seems that broadcast was triggered on CAN ID {can_id_repr(ID)}, "
+                            f"got answer from {can_id_repr(new_addr)}"
                         )
                     else:
                         self.logger.log_info(
-                            f"seems like a large ISO-TP packet was received on CAN ID {ID:03x}"
+                            f"seems like a large ISO-TP packet was received on CAN ID {can_id_repr(ID)}"
                         )
                 except asyncio.TimeoutError:
                     if is_broadcast:
                         self.logger.log_summary(
-                            f"seems that broadcast was triggered on CAN ID {ID:03x}, "
-                            f"got answer from {addr:03x}"
+                            f"seems that broadcast was triggered on CAN ID {can_id_repr(ID)}, "
+                            f"got answer from {can_id_repr(addr)}"
                         )
                     else:
                         self.logger.log_summary(
-                            f"found endpoint on CAN ID [src:dst]: {ID:03x}:{addr:03x}"
+                            f"found endpoint on CAN ID [src:dst]: {can_id_repr(ID)}:{can_id_repr(addr)}"
                         )
                         found.append(
                             (
@@ -142,15 +143,13 @@ class FindCanIDsScanner(DiscoveryScanner):
             transport = ISOTPTransport(target)
             await transport.connect(None)
             ecu = ECU(transport, timeout=2)
-            self.logger.log_summary(f"reading device description at 0x{did:04x}")
+            self.logger.log_summary(f"reading device description at {g_repr(did)}")
             try:
                 resp = await ecu.read_data_by_identifier(did)
                 if isinstance(resp, NegativeResponse):
                     self.logger.log_summary(f"could not read did: {resp}")
                 else:
-                    self.logger.log_summary(f"response was: {resp.data_record!r}")
+                    self.logger.log_summary(f"response was: {resp}")
             except Exception as e:
-                self.logger.log_summary(
-                    f"reading description failed: {e.__class__.__name__} {e}"
-                )
+                self.logger.log_summary(f"reading description failed: {g_repr(e)}")
                 await asyncio.sleep(0.1)

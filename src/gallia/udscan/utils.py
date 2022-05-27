@@ -15,6 +15,7 @@ from gallia.uds.core.client import UDSRequestConfig
 from gallia.uds.core.exception import UnexpectedNegativeResponse
 from gallia.uds.ecu import ECU
 from gallia.uds.helpers import suggests_identifier_not_supported
+from gallia.utils import g_repr
 
 
 def auto_int(arg: str) -> int:
@@ -51,7 +52,7 @@ async def check_and_set_session(
     or if read_session is not supported by the ECU or in the current session."""
 
     ecu.logger.log_debug(
-        f"Checking current session, expecting 0x{expected_session:02x}"
+        f"Checking current session, expecting {g_repr(expected_session)}"
     )
 
     try:
@@ -71,30 +72,30 @@ async def check_and_set_session(
         )
         return True
 
-    ecu.logger.log_debug(f"Current session is 0x{current_session:02x}")
+    ecu.logger.log_debug(f"Current session is {g_repr(current_session)}")
     if current_session == expected_session:
         return True
 
     for i in range(retries):
         ecu.logger.log_warning(
-            f"Not in session 0x{expected_session:02x}, ECU replied with 0x{current_session:02x}"
+            f"Not in session {g_repr(expected_session)}, ECU replied with {g_repr(current_session)}"
         )
 
         ecu.logger.log_info(
-            f"Switching to session 0x{expected_session:02x}; attempt {i + 1} of {retries}"
+            f"Switching to session {g_repr(expected_session)}; attempt {i + 1} of {retries}"
         )
         resp = await ecu.set_session(expected_session)
 
         if isinstance(resp, service.NegativeResponse):
             ecu.logger.log_warning(
-                f"Switching to session 0x{expected_session:02x} failed: {resp}"
+                f"Switching to session {g_repr(expected_session)} failed: {resp}"
             )
 
         try:
             current_session = await ecu.read_session(
                 config=UDSRequestConfig(max_retry=retries)
             )
-            ecu.logger.log_debug(f"Current session is 0x{current_session:02x}")
+            ecu.logger.log_debug(f"Current session is {g_repr(current_session)}")
             if current_session == expected_session:
                 return True
         except UnexpectedNegativeResponse as e:
@@ -111,7 +112,7 @@ async def check_and_set_session(
             return True
 
     ecu.logger.log_warning(
-        f"Failed to switch to session 0x{expected_session:02x} after {retries} attempts"
+        f"Failed to switch to session {g_repr(expected_session)} after {retries} attempts"
     )
     return False
 
@@ -126,7 +127,7 @@ def get_command_output(command: list[str]) -> str:
     try:
         process = run(command, capture_output=True, check=True)
     except Exception as e:
-        return f"Error: {e}"
+        return f"Error: {g_repr(e)}"
 
     return process.stdout.decode().strip()
 
@@ -314,4 +315,4 @@ async def catch_and_log_exception(
     try:
         return await func(*args, **kwargs)
     except Exception as e:
-        logger.log_error(f"func {func.__name__} failed: {repr(e)}")
+        logger.log_error(f"func {func.__name__} failed: {g_repr(e)}")
