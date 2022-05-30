@@ -21,7 +21,7 @@ $ paru -S gallia
 
 ### Manual
 
-```
+``` shell-session
 $ pip install gallia
 ```
 
