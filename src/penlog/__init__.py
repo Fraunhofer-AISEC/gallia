@@ -118,10 +118,10 @@ class HRFormatter:
         return data
 
     def format(self, msg: RecordType) -> str:
-        assert (
-            self.output_type == OutputType.HR
-            or self.output_type == OutputType.HR_TINY
-            or self.output_type == OutputType.HR_NANO
+        assert self.output_type in (
+            OutputType.HR,
+            OutputType.HR_TINY,
+            OutputType.HR_NANO,
         )
 
         out = ""
@@ -201,13 +201,13 @@ class Logger:
                 try:
                     level_int = int(level, 0)
                     self.loglevel = MessagePrio(level_int)
-                except ValueError:
+                except ValueError as e:
                     for level_enum in MessagePrio:
                         if level == level_enum.name.lower():
                             self.loglevel = level_enum
                             break
                     else:
-                        raise ValueError("invalid loglevel")
+                        raise ValueError("invalid loglevel") from e
 
         if output_type:
             self.output_type = output_type
@@ -248,10 +248,10 @@ class Logger:
             print(json.dumps(asdict(msg)), file=self.file, flush=self.flush)
         elif self.output_type == OutputType.JSON_PRETTY:
             print(json.dumps(asdict(msg), indent=2), file=self.file, flush=self.flush)
-        elif (
-            self.output_type == OutputType.HR
-            or self.output_type == OutputType.HR_TINY
-            or self.output_type == OutputType.HR_NANO
+        elif self.output_type in (
+            OutputType.HR,
+            OutputType.HR_TINY,
+            OutputType.HR_NANO,
         ):
             out = self.hr_formatter.format(msg)
             print(out, file=self.file, flush=self.flush)
