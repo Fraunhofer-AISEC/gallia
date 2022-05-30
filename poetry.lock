@@ -658,14 +658,6 @@ python-versions = ">=3.6.8"
 diagrams = ["railroad-diagrams", "jinja2"]
 
 [[package]]
-name = "pypenlog"
-version = "0.3.2"
-description = "Library implementing AISEC's penlog specification"
-category = "main"
-optional = false
-python-versions = ">=3.9,<4.0"
-
-[[package]]
 name = "pyserial"
 version = "3.5"
 description = "Python Serial Port Extension"
@@ -1129,7 +1121,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9,<3.11"
-content-hash = "6d8124d39506fea6b2dd6386d7b84b40418a2c09840e9f412bae99d84978157f"
+content-hash = "c82621f6db649f4be4b7f00ae73c95ea41fec25e602a7c04738763ce700896c1"
 
 [metadata.files]
 aiofiles = [
@@ -1737,10 +1729,6 @@ pyopennetzteil = [
 pyparsing = [
     {file = "pyparsing-3.0.9-py3-none-any.whl", hash = "sha256:5026bae9a10eeaefb61dab2f09052b9f4307d44aee4eda64b309723d8d206bbc"},
     {file = "pyparsing-3.0.9.tar.gz", hash = "sha256:2b020ecf7d21b687f219b71ecad3631f644a47f01403fa1d1036b0c6416d70fb"},
-]
-pypenlog = [
-    {file = "pypenlog-0.3.2-py3-none-any.whl", hash = "sha256:478d47d81c1ff99adc17520a1cea4c7c1f1c987caad315bf7c5b836f0bbf7bb5"},
-    {file = "pypenlog-0.3.2.tar.gz", hash = "sha256:de94068e52328695234395853950f3a7e1867ebe9b7ff84bd96a74ab54c8c87c"},
 ]
 pyserial = [
     {file = "pyserial-3.5-py2.py3-none-any.whl", hash = "sha256:c4451db6ba391ca6ca299fb3ec7bae67a5c55dde170964c7a14ceefec02f2cf0"},
