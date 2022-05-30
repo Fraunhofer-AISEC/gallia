@@ -14,6 +14,7 @@ authors = ["AISEC Pentesting Team"]
 packages = [
     { include = "gallia", from = "src" },
     { include = "cursed_hr", from = "src" },
+    { include = "penlog", from = "src" },
 ]
 
 [tool.poetry.dependencies]
@@ -21,7 +22,6 @@ python = ">=3.9,<3.11"
 aiofiles = "^0.8.0"
 aiosqlite = "^0.17.0"
 argcomplete = "^2.0.0"
-pypenlog = "^0.3.2"
 pyxcp = "^0.16.0"
 zstandard = "^0.17.0"
 python-can = "^4.0.0"
