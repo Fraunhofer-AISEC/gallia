@@ -243,7 +243,7 @@ class Scanner(GalliaBase, ABC):
         if path.is_dir():
             return path
 
-        self.logger.log_error(f"Data directory {p} is not an existing directory.")
+        self.logger.log_error(f"Data directory {path} is not an existing directory.")
         sys.exit(1)
 
     async def _run(self, args: Namespace) -> int:
