@@ -4,7 +4,6 @@ from argparse import Namespace
 
 from gallia.uds.core.service import NegativeResponse
 from gallia.udscan.core import UDSScanner
-from gallia.udscan.utils import check_and_set_session
 from gallia.utils import auto_int, g_repr
 
 
@@ -56,7 +55,7 @@ class IOCBI(UDSScanner):
 
     async def main(self, args: Namespace) -> None:
         try:
-            await check_and_set_session(self.ecu, args.session)
+            await self.ecu.check_and_set_session(args.session)
         except Exception as e:
             self.logger.log_critical(
                 f"Could not change to session: {g_repr(args.session)}: {g_repr(e)}"

@@ -9,7 +9,6 @@ from gallia.uds.core.exception import IllegalResponse, UnexpectedNegativeRespons
 from gallia.uds.core.service import NegativeResponse, UDSResponse
 from gallia.uds.helpers import suggests_sub_function_not_supported
 from gallia.udscan.core import UDSScanner
-from gallia.udscan.utils import check_and_set_session
 from gallia.utils import ParseSkips, auto_int, g_repr
 
 
@@ -98,7 +97,7 @@ class ScanReset(UDSScanner):
 
                 if not args.skip_check_session:
                     # Check session and try to recover from wrong session (max 3 times), else skip session
-                    if not await check_and_set_session(self.ecu, session):
+                    if not await self.ecu.check_and_set_session(session):
                         self.logger.log_error(
                             f"Aborting scan on session {g_repr(session)}; current sub-func was {g_repr(sub_func)}"
                         )

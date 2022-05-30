@@ -11,7 +11,6 @@ from gallia.uds.core.service import NegativeResponse, UDSResponse
 from gallia.uds.core.utils import service_repr
 from gallia.uds.helpers import suggests_service_not_supported
 from gallia.udscan.core import UDSScanner
-from gallia.udscan.utils import check_and_set_session
 from gallia.utils import ParseSkips, auto_int, g_repr
 
 
@@ -157,7 +156,7 @@ class ScanIdentifiers(UDSScanner):
 
                 if args.check_session and DID % args.check_session == 0:
                     # Check session and try to recover from wrong session (max 3 times), else skip session
-                    if not await check_and_set_session(self.ecu, session):
+                    if not await self.ecu.check_and_set_session(session):
                         self.logger.log_error(
                             f"Aborting scan on session {g_repr(session)}; current DID was {g_repr(DID)}"
                         )

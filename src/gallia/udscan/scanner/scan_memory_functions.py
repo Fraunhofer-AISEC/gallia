@@ -8,7 +8,6 @@ from gallia.uds.core.constants import UDSErrorCodes
 from gallia.uds.core.service import NegativeResponse
 from gallia.uds.core.utils import uds_memory_parameters
 from gallia.udscan.core import UDSScanner
-from gallia.udscan.utils import check_and_set_session
 from gallia.utils import auto_int, g_repr
 
 
@@ -79,7 +78,7 @@ class ScanWriteDataByAddress(UDSScanner):
 
             if args.check_session and i % args.check_session == 0:
                 # Check session and try to recover from wrong session (max 3 times), else skip session
-                if not await check_and_set_session(self.ecu, args.session):
+                if not await self.ecu.check_and_set_session(args.session):
                     self.logger.log_error(
                         f"Aborting scan on session {g_repr(args.session)}; "
                         + f"current memory address was {g_repr(addr)}"

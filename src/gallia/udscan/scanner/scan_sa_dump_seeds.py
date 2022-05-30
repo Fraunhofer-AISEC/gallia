@@ -12,7 +12,6 @@ import aiofiles
 from gallia.uds.core.client import UDSRequestConfig
 from gallia.uds.core.service import NegativeResponse
 from gallia.udscan.core import UDSScanner
-from gallia.udscan.utils import check_and_set_session
 from gallia.utils import auto_int, g_repr
 
 
@@ -139,7 +138,7 @@ class SaDumpSeeds(UDSScanner):
             if i == 0:
                 self.log_size(seeds_file, time.time() - start_time)
             if args.check_session or reset:
-                if not await check_and_set_session(self.ecu, args.session):
+                if not await self.ecu.check_and_set_session(args.session):
                     self.logger.log_error(
                         f"ECU persistently lost session {g_repr(args.session)}"
                     )
