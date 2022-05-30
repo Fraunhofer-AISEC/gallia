@@ -4,15 +4,17 @@ from argparse import Action, ArgumentError, ArgumentParser, Namespace
 from enum import Enum
 from pathlib import Path
 from sys import stdout
-from typing import Any, Callable, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence, Union
 from urllib.parse import ParseResult, urlencode, urlparse
 
 import aiofiles
 
-from gallia.db.db_handler import DBHandler
 from gallia.penlog import Logger
 from gallia.uds.core.service import NegativeResponse
 from gallia.uds.core.utils import bytes_repr, int_repr
+
+if TYPE_CHECKING:
+    from gallia.db.db_handler import DBHandler
 
 
 def auto_int(arg: str) -> int:
@@ -199,7 +201,7 @@ class ANSIEscapes:
 async def write_target_list(
     ecus_file: Path,
     ecus: list[tuple[ParseResult, dict[str, Any]]],
-    db_handler: Optional[DBHandler] = None,
+    db_handler: Optional["DBHandler"] = None,
 ) -> list[str]:
     """Write a list of ECU connection strings (urls) into file
 
