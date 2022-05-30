@@ -1,8 +1,8 @@
 .PHONY: lint
 lint:
-	flake8 --config setup.cfg src/gallia
-	mypy --config-file pyproject.toml src/gallia
-	pylint --rcfile pyproject.toml src/gallia
+	flake8 --config setup.cfg src
+	mypy --config-file pyproject.toml src
+	pylint --rcfile pyproject.toml src
 	shellcheck ./bin/penrun
 
 BINDIR ?= "${HOME}/bin"

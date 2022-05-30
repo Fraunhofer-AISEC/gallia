@@ -39,13 +39,13 @@ jobs:
         poetry install
     - name: Run flake8
       run: |
-        poetry run flake8 src/gallia
+        poetry run flake8 src
     - name: Run mypy
       run: |
-        poetry run mypy src/gallia
+        poetry run mypy src
     - name: Run pylint
       run: |
-        poetry run pylint src/gallia
+        poetry run pylint src
     - name: Run black
       run: |
-        poetry run black --check --verbose src/gallia
+        poetry run black --check --verbose src
