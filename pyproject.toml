@@ -13,6 +13,7 @@ repository = "https://github.com/Fraunhofer-AISEC/gallia"
 authors = ["AISEC Pentesting Team"]
 packages = [
     { include = "gallia", from = "src" },
+    { include = "cursed_hr", from = "src" },
 ]
 
 [tool.poetry.dependencies]
@@ -49,7 +50,7 @@ sphinx-rtd-theme = "^1.0.0"
 [tool.poetry.scripts]
 "gallia" = "gallia.cli:main"
 "discover-xcp" = "gallia.udscan.scanner.find_xcp:main"
-"cursed-hr" = "gallia.cursed_hr.cursed_hr:main"
+"cursed-hr" = "cursed_hr.cursed_hr:main"
 
 [tool.poetry.plugins."gallia_scanners"]
 "discover-can-ids" = "gallia.udscan.scanner.find_can_ids:FindCanIDsScanner"
