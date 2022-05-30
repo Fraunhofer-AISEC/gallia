@@ -26,6 +26,7 @@ Gallia is a comprehensive and extendable automotive testing toolchain.
    :caption: API
 
    penrun.1
+   penlog.7
    api/modules
 
 
