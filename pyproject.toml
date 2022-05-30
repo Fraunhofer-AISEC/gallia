@@ -14,11 +14,13 @@ authors = ["AISEC Pentesting Team"]
 packages = [
     { include = "gallia", from = "src" },
     { include = "cursed_hr", from = "src" },
+    { include = "opennetzteil", from = "src" },
     { include = "penlog", from = "src" },
 ]
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.11"
+aiohttp = "^3.8.1"
 aiofiles = "^0.8.0"
 aiosqlite = "^0.17.0"
 argcomplete = "^2.0.0"
@@ -26,7 +28,6 @@ pyxcp = "^0.16.0"
 zstandard = "^0.17.0"
 python-can = "^4.0.0"
 tabulate = "^0.8.9"
-pyopennetzteil = "^0.1.2"
 
 [tool.poetry.dev-dependencies]
 black = "^22.1.0"

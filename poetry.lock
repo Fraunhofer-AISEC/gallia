@@ -636,17 +636,6 @@ dev = ["build", "pytest", "twine"]
 test = ["pytest"]
 
 [[package]]
-name = "pyopennetzteil"
-version = "0.1.2"
-description = "A python client for the opennetzteil specification"
-category = "main"
-optional = false
-python-versions = ">=3.9,<4.0"
-
-[package.dependencies]
-aiohttp = ">=3.8.1,<4.0.0"
-
-[[package]]
 name = "pyparsing"
 version = "3.0.9"
 description = "pyparsing module - Classes and methods to define and execute parsing grammars"
@@ -1121,7 +1110,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9,<3.11"
-content-hash = "c82621f6db649f4be4b7f00ae73c95ea41fec25e602a7c04738763ce700896c1"
+content-hash = "754cdc0c9fa912b402617871dcc440c328fc3f48236789d681f4da75de7069cc"
 
 [metadata.files]
 aiofiles = [
@@ -1721,10 +1710,6 @@ pylsp-mypy = [
 pylsp-rope = [
     {file = "pylsp-rope-0.1.9.tar.gz", hash = "sha256:67ae55aeea2d60e2d77c5713445fa780e78b7ce543d76e88cfc5a958168b4664"},
     {file = "pylsp_rope-0.1.9-py3-none-any.whl", hash = "sha256:3ace980a1f8abc1d68f5d06f01d37cce2055fd62795fa4ef257fc03bb96651cc"},
-]
-pyopennetzteil = [
-    {file = "pyopennetzteil-0.1.2-py3-none-any.whl", hash = "sha256:54acd4a36ab8aee28718b3c196b7adbac60e400b7bb00a964d4021f08d04ee2c"},
-    {file = "pyopennetzteil-0.1.2.tar.gz", hash = "sha256:4fea62e22cf60a9eed077feb844730972b8864af48ba76077ace3103ed554cb2"},
 ]
 pyparsing = [
     {file = "pyparsing-3.0.9-py3-none-any.whl", hash = "sha256:5026bae9a10eeaefb61dab2f09052b9f4307d44aee4eda64b309723d8d206bbc"},
