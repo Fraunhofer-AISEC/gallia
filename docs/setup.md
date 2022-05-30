@@ -71,7 +71,7 @@ $ poetry run gallia
 #### pip
 
 Poetry and the [`pyproject.toml` approach](https://pip.pypa.io/en/stable/reference/build-system/pyproject-toml/) is compatible to the classic `pip` way.
-Caveat: Version pinning is ignored py this approach.
+Caveat: Version pinning is ignored by this approach.
 
 ```shell-session
 $ python -m venv venv
