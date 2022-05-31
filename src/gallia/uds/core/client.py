@@ -117,6 +117,8 @@ class UDSClient:
             else:
                 # We reach this code here once all response pending
                 # and similar busy stuff is resolved.
+                self.logger.log_write(request.pdu.hex(), tags=config.tags)
+                self.logger.log_read(resp.pdu.hex(), tags=config.tags)
                 return resp
 
         self.logger.log_debug(f"{request} failed after retry loop")

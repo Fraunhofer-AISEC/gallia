@@ -50,7 +50,7 @@ class TCPTransport(BaseTransport, scheme="tcp", spec=tcp_spec):
     ) -> int:
         assert self.reader is not None and self.writer is not None, assertion_str
 
-        self.logger.log_write(data.hex(), tags=tags)
+        self.logger.log_trace(data.hex(), tags=tags)
         self.writer.write(data)
         await asyncio.wait_for(self.writer.drain(), timeout)
         return len(data)
@@ -63,7 +63,7 @@ class TCPTransport(BaseTransport, scheme="tcp", spec=tcp_spec):
         assert self.reader is not None and self.writer is not None, assertion_str
 
         data = await asyncio.wait_for(self.reader.read(self.BUFSIZE), timeout)
-        self.logger.log_read(data.hex(), tags=tags)
+        self.logger.log_trace(data.hex(), tags=tags)
         return data
 
     async def sendto(
@@ -93,7 +93,7 @@ class TCPLineSepTransport(TCPTransport, scheme="tcp-lines", spec=tcp_spec):
         assert self.reader is not None and self.writer is not None, assertion_str
 
         d = binascii.hexlify(data)
-        self.logger.log_write(data.hex(), tags=tags)
+        self.logger.log_trace(data.hex(), tags=tags)
         self.writer.write(d + b"\n")
         await asyncio.wait_for(self.writer.drain(), timeout)
         return len(data)
@@ -107,5 +107,5 @@ class TCPLineSepTransport(TCPTransport, scheme="tcp-lines", spec=tcp_spec):
 
         data = await asyncio.wait_for(self.reader.readline(), timeout)
         d = data.decode().strip()
-        self.logger.log_read(d, tags=tags)
+        self.logger.log_trace(d, tags=tags)
         return binascii.unhexlify(d)

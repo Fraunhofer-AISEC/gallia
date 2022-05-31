@@ -544,7 +544,7 @@ class DoIPTransport(BaseTransport, scheme="doip", spec=doip_spec):
         assert self.connection is not None, assertion_str
 
         data = await asyncio.wait_for(self.connection.read_diag_request(), timeout)
-        self.logger.log_read(data.hex(), tags)
+        self.logger.log_trace(data.hex(), tags)
         return data
 
     async def write(
@@ -556,7 +556,7 @@ class DoIPTransport(BaseTransport, scheme="doip", spec=doip_spec):
         assert self.connection is not None, assertion_str
 
         await asyncio.wait_for(self.connection.write_diag_request(data), timeout)
-        self.logger.log_write(data.hex(), tags)
+        self.logger.log_trace(data.hex(), tags)
         return len(data)
 
     async def sendto(
@@ -578,7 +578,7 @@ class DoIPTransport(BaseTransport, scheme="doip", spec=doip_spec):
             SourceAddress=self.args["src_addr"], TargetAddress=dst, UserData=data
         )
         await asyncio.wait_for(self.connection.write_request_raw(hdr, payload), timeout)
-        self.logger.log_write(f"{dst:x}#{data.hex()}", tags)
+        self.logger.log_trace(f"{dst:x}#{data.hex()}", tags)
 
         return len(data)
 
@@ -590,7 +590,7 @@ class DoIPTransport(BaseTransport, scheme="doip", spec=doip_spec):
         _, payload = await asyncio.wait_for(
             self.connection.read_diag_request_raw(), timeout
         )
-        self.logger.log_read(
+        self.logger.log_trace(
             f"{payload.SourceAddress:x}#{payload.UserData.hex()}", tags
         )
         return payload.SourceAddress, payload.UserData
