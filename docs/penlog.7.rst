@@ -176,4 +176,4 @@ A ``bool`` is a special string consisting of either ``t, T, true, TRUE, 1`` or `
 See Also
 --------
 
-:manpage:``hr(1)``
+:manpage:`hr(1)`
