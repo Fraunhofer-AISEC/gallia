@@ -5,7 +5,7 @@ from enum import Enum
 from pathlib import Path
 from sys import stdout
 from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence, Union
-from urllib.parse import ParseResult, urlencode, urlparse
+from urllib.parse import urlparse
 
 import aiofiles
 
@@ -15,6 +15,7 @@ from gallia.uds.core.utils import bytes_repr, int_repr
 
 if TYPE_CHECKING:
     from gallia.db.db_handler import DBHandler
+    from gallia.transports.base import TargetURI
 
 
 def auto_int(arg: str) -> int:
@@ -39,7 +40,7 @@ def split_host_port(
     except ValueError:
         pass
 
-    # Only parse of hostport is not a valid ip address.
+    # Only parse if hostport is not a valid ip address.
     if host == "":
         # urlparse() and urlsplit() insists on absolute URLs starting with "//".
         url = urlparse(f"//{hostport}")
@@ -205,24 +206,23 @@ class ANSIEscapes:
 
 
 async def write_target_list(
-    ecus_file: Path,
-    ecus: list[tuple[ParseResult, dict[str, Any]]],
+    path: Path,
+    targets: list["TargetURI"],
     db_handler: Optional["DBHandler"] = None,
 ) -> list[str]:
     """Write a list of ECU connection strings (urls) into file
 
-    :param ecus_file: output file
-    :param ecus: list of ECUs with ECU specific url and params as dict
+    :param path: output file
+    :param targets: list of ECUs with ECU specific url and params as dict
     :params db_handler: if given, urls are also written to the database as discovery results
     :return: None
     """
-    urls: list[str] = list()
-    async with aiofiles.open(ecus_file, "w") as file:
-        for url, ecu in ecus:
-            url_result = f"{url.scheme}://{url.netloc}?{urlencode(ecu)}"
-            urls.append(url_result)
-            await file.write(f"{url_result}\n")
+    urls = []
+    async with aiofiles.open(path, "w") as f:
+        for target in targets:
+            urls.append(str(target))
+            await f.write(f"{target}\n")
 
             if db_handler is not None:
-                await db_handler.insert_discovery_result(url_result)
+                await db_handler.insert_discovery_result(str(target))
     return urls
