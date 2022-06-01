@@ -1,5 +1,4 @@
 import asyncio
-import sys
 from argparse import Namespace
 
 from gallia.transports.base import TargetURI
@@ -18,8 +17,6 @@ class FindCanIDsScanner(DiscoveryScanner):
     Typically, there is also a broadcast destination ID to address all endpoints."""
 
     def add_parser(self) -> None:
-        self.parser.set_defaults(tester_present=False)
-
         self.parser.add_argument(
             "--start",
             metavar="INT",
@@ -51,10 +48,9 @@ class FindCanIDsScanner(DiscoveryScanner):
 
     async def setup(self, args: Namespace) -> None:
         if args.target is not None and not args.target.scheme == RawCANTransport.SCHEME:
-            self.logger.log_error(
+            self.parser.error(
                 f"Unsupported transport schema {args.target.scheme}; must be can-raw!"
             )
-            sys.exit(1)
         await super().setup(args)
 
     async def main(self, args: Namespace) -> None:
@@ -152,4 +148,3 @@ class FindCanIDsScanner(DiscoveryScanner):
                     self.logger.log_summary(f"response was: {resp.data_record!r}")
             except Exception as e:
                 self.logger.log_summary(f"reading description failed: {g_repr(e)}")
-                await asyncio.sleep(0.1)
