@@ -185,20 +185,6 @@ class ISOTPTransport(BaseTransport, scheme="isotp", spec=isotp_spec):
         self.logger.log_read(data.hex(), tags=tags)
         return data
 
-    async def sendto(
-        self,
-        data: bytes,
-        dst: int,
-        timeout: Optional[float] = None,
-        tags: Optional[list[str]] = None,
-    ) -> int:
-        raise NotImplementedError()
-
-    async def recvfrom(
-        self, timeout: Optional[float] = None, tags: Optional[list[str]] = None
-    ) -> tuple[int, bytes]:
-        raise NotImplementedError()
-
     async def close(self) -> None:
         pass
 

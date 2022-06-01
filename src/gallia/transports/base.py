@@ -169,24 +169,6 @@ class BaseTransport(ABC):
     ) -> int:
         ...
 
-    @abstractmethod
-    async def sendto(
-        self,
-        data: bytes,
-        dst: int,
-        timeout: Optional[float] = None,
-        tags: Optional[list[str]] = None,
-    ) -> int:
-        ...
-
-    @abstractmethod
-    async def recvfrom(
-        self,
-        timeout: Optional[float] = None,
-        tags: Optional[list[str]] = None,
-    ) -> tuple[int, bytes]:
-        ...
-
     async def request(
         self,
         data: bytes,
