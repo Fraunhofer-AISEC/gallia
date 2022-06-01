@@ -148,7 +148,7 @@ class FindCanIDsScanner(DiscoveryScanner):
                 if isinstance(resp, NegativeResponse):
                     self.logger.log_summary(f"could not read did: {resp}")
                 else:
-                    self.logger.log_summary(f"response was: {resp}")
+                    self.logger.log_summary(f"response was: {resp.data_record!r}")
             except Exception as e:
                 self.logger.log_summary(f"reading description failed: {g_repr(e)}")
                 await asyncio.sleep(0.1)
