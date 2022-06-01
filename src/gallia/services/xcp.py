@@ -12,6 +12,7 @@ class XCPService:
         self.logger = Logger("xcp", flush=True)
         self.timeout = timeout
         self.transport = transport
+        self.transport.bind()
         # This uses construct types which would result in a new
         # dependency. Let's go with Any for this attribute.
         self.byte_order: Any

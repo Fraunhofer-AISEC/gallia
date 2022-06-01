@@ -10,6 +10,7 @@ from subprocess import CalledProcessError, run
 from gallia.penlog import Logger
 from gallia.transports.base import TargetURI
 from gallia.transports.can import RawCANTransport
+from gallia.udscan.utils import auto_int
 from gallia.utils import bytes_repr, can_id_repr, g_repr
 
 
@@ -33,14 +34,11 @@ class FindXCP:
 
         sp = subparsers.add_parser("can")
         sp.add_argument(
-            "--xcp-can-iface",
-            type=str,
+            "--target",
+            type=TargetURI,
             default="",
             required=True,
-            help="CAN interface used for XCP communication",
-        )
-        sp.add_argument(
-            "--can-fd", action="store_true", default=False, help="use can FD"
+            help="CAN-RAW transport URL",
         )
         sp.add_argument(
             "--sniff-time",
@@ -48,6 +46,18 @@ class FindXCP:
             type=int,
             metavar="SECONDS",
             help="Time in seconds to sniff on bus for current traffic",
+        )
+        sp.add_argument(
+            "--start",
+            type=auto_int,
+            default=0,
+            help="Start CAN ID for iteration",
+        )
+        sp.add_argument(
+            "--end",
+            type=auto_int,
+            default=0x800,
+            help="End CAN ID for iteration",
         )
 
         sp = subparsers.add_parser("tcp")
@@ -211,11 +221,7 @@ class FindXCP:
         )
 
     async def test_can(self, args: Namespace) -> None:
-        target = TargetURI(
-            f"{RawCANTransport.SCHEME}://{args.xcp_can_iface}"
-            + ("?is_fd=true" if args.can_fd else "")
-        )
-        transport = RawCANTransport(target)
+        transport = RawCANTransport(args.target)
         await transport.connect()
         endpoints = list()
 
@@ -229,28 +235,29 @@ class FindXCP:
         # flush receive queue
         await transport.get_idle_traffic(2)
 
-        for can_id in range(0x800):
+        for can_id in range(args.start, args.end):
             self.logger.log_info(f"Testing CAN ID: {can_id_repr(can_id)}")
             pdu = bytes([0xFF, 0x00])
             await transport.sendto(pdu, can_id, timeout=0.1)
 
-            try:
-                while True:
-                    master, data = await transport.recvfrom(timeout=0.1)
-                    if data[0] == 0xFF:
-                        msg = (
-                            f"Found XCP endpoint [master:slave]: CAN: {can_id_repr(master)}:{can_id_repr(can_id)} "
-                            f"data: {bytes_repr(data)}"
-                        )
-                        self.logger.log_summary(msg)
-                        endpoints.append((can_id, master))
-                    else:
-                        self.logger.log_info(
-                            f"Received non XCP answer for CAN-ID {can_id_repr(can_id)}: {can_id_repr(master)}:"
-                            f"{bytes_repr(data)}"
-                        )
-            except asyncio.TimeoutError:
-                pass
+            if (can_id % 100) == 0:
+                try:
+                    while True:
+                        master, data = await transport.recvfrom(timeout=0.1)
+                        if data[0] == 0xFF:
+                            msg = (
+                                f"Found XCP endpoint [master:slave]: CAN: {can_id_repr(master)}:{can_id_repr(can_id)} "
+                                f"data: {bytes_repr(data)}"
+                            )
+                            self.logger.log_summary(msg)
+                            endpoints.append((can_id, master))
+                        else:
+                            self.logger.log_info(
+                                f"Received non XCP answer for CAN-ID {can_id_repr(can_id)}: {can_id_repr(master)}:"
+                                f"{bytes_repr(data)}"
+                            )
+                except asyncio.TimeoutError:
+                    pass
 
         self.logger.log_summary(
             f"Finished; Found {len(endpoints)} XCP endpoints via CAN"

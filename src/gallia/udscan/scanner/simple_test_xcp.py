@@ -15,6 +15,7 @@ class TestXCP(Scanner):
         assert self.transport
         service = XCPService(self.transport)
 
+        await service.connect()
         await catch_and_log_exception(self.logger, service.connect)
         await catch_and_log_exception(self.logger, service.get_status)
         await catch_and_log_exception(self.logger, service.get_comm_mode_info)
