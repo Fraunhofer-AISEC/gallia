@@ -146,7 +146,6 @@ class Scanner(GalliaBase, ABC):
     def __init__(self) -> None:
         super().__init__()
         self.artifacts_dir: Path
-        self.transport: Optional[BaseTransport] = None
         self.power_supply: Optional[PowerSupply] = None
         self.dumpcap: Optional[Dumpcap] = None
 
@@ -162,20 +161,13 @@ class Scanner(GalliaBase, ABC):
         elif args.power_cycle is not None:
             self.parser.error("--power-cycle needs --power-supply")
 
-        if args.target is None:
-            self.parser.error("--target required")
-
         # Start dumpcap as the first subprocess; otherwise network
         # traffic might be missing.
         if args.dumpcap:
             self.dumpcap = await Dumpcap.start(args.target, self.artifacts_dir)
             await self.dumpcap.sync()
 
-        self.transport = await self.load_transport(args.target)
-
     async def teardown(self, args: Namespace) -> None:
-        if self.transport:
-            await self.transport.close()
         if self.dumpcap:
             await self.dumpcap.stop()
 
@@ -329,34 +321,6 @@ class Scanner(GalliaBase, ABC):
                 f"The scan results are located at: {self.artifacts_dir}"
             )
 
-    @staticmethod
-    async def load_transport(target: TargetURI) -> BaseTransport:
-        transports = [
-            ISOTPTransport,
-            RawCANTransport,
-            DoIPTransport,
-            TCPLineSepTransport,
-        ]
-
-        def func(x: EntryPoint) -> type[BaseTransport]:
-            t = x.load()
-            if not issubclass(t, BaseTransport):
-                raise ValueError(f"{type(x)} is not derived from BaseTransport")
-            return cast(type[BaseTransport], t)
-
-        eps = entry_points()
-        if "gallia_transports" in eps:
-            transports_eps = map(func, eps["gallia_transports"])
-            transports += transports_eps
-
-        for transport in transports:
-            if target.scheme == transport.SCHEME:  # type: ignore
-                t = transport(target)
-                await t.connect(None)
-                return t
-
-        raise ValueError(f"no transport for {target}")
-
 
 class UDSScanner(Scanner):
     """UDSScanner is a baseclass, particularly for scanning tasks
@@ -369,6 +333,7 @@ class UDSScanner(Scanner):
     def __init__(self) -> None:
         super().__init__()
         self.ecu: ECU
+        self.transport: BaseTransport
         self.tester_present_task: Optional[Task] = None
         self._implicit_logging = True
         self.log_scan_run = True  # TODO: Remove this as soon as find-endpoint is fixed
@@ -437,6 +402,34 @@ class UDSScanner(Scanner):
             help="Compare properties before and after the scan",
         )
 
+    @staticmethod
+    async def load_transport(target: TargetURI) -> BaseTransport:
+        transports = [
+            ISOTPTransport,
+            RawCANTransport,
+            DoIPTransport,
+            TCPLineSepTransport,
+        ]
+
+        def func(x: EntryPoint) -> type[BaseTransport]:
+            t = x.load()
+            if not issubclass(t, BaseTransport):
+                raise ValueError(f"{type(x)} is not derived from BaseTransport")
+            return cast(type[BaseTransport], t)
+
+        eps = entry_points()
+        if "gallia_transports" in eps:
+            transports_eps = map(func, eps["gallia_transports"])
+            transports += transports_eps
+
+        for transport in transports:
+            if target.scheme == transport.SCHEME:  # type: ignore
+                t = transport(target)
+                await t.connect(None)
+                return t
+
+        raise ValueError(f"no transport for {target}")
+
     def load_ecu(self, vendor: str) -> type[ECU]:
         if vendor == "default":
             return ECU
@@ -500,7 +493,7 @@ class UDSScanner(Scanner):
     async def setup(self, args: Namespace) -> None:
         await super().setup(args)
 
-        assert self.transport is not None
+        self.transport = await self.load_transport(args.target)
         self.ecu = self.load_ecu(args.oem)(
             self.transport,
             timeout=args.timeout,
@@ -576,13 +569,25 @@ class UDSScanner(Scanner):
         if self.tester_present_task:
             self.tester_present_task.cancel()
             await self.tester_present_task
+
+        await self.transport.close()
+
         # This must be the last one.
         await super().teardown(args)
 
 
 class DiscoveryScanner(Scanner):
+    def add_class_parser(self) -> None:
+        super().add_class_parser()
+
+        self.parser.add_argument(
+            "--timeout",
+            type=float,
+            default=0.5,
+            help="timeout value for request"
+        )
+
     async def setup(self, args: Namespace) -> None:
-        # Setting up mcp and dumpcap is already implemented in the parent class.
         await super().setup(args)
 
         if self.db_handler is not None:
