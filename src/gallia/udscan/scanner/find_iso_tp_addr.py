@@ -1,5 +1,4 @@
 import asyncio
-import sys
 from argparse import Namespace
 
 from gallia.transports.base import TargetURI
@@ -27,13 +26,11 @@ class FindISOTPAddrScanner(DiscoveryScanner):
 
     async def setup(self, args: Namespace) -> None:
         if not args.target.scheme == RawCANTransport.SCHEME:
-            self.logger.log_error(
+            self.parser.error(
                 f"Unsupported transport schema {args.target.scheme}; must be can-raw!"
             )
-            sys.exit(1)
         if "src_addr" not in args.target.qs:
-            self.logger.log_error("CAN source ID (test-id) must be set!")
-            sys.exit(1)
+            self.parser.error("CAN source ID (test-id) must be set!")
         await super().setup(args)
 
     async def main(self, args: Namespace) -> None:
@@ -57,7 +54,9 @@ class FindISOTPAddrScanner(DiscoveryScanner):
             is_broadcast = False
 
             await self.transport.sendto(
-                bytes([ID, 0x02, 0x10, 0x01]), tester_id, timeout=0.1
+                bytes([ID, 0x02, 0x10, 0x01]),
+                tester_id,
+                timeout=0.1,
             )
             try:
                 addr_old, data = await self.transport.recvfrom(timeout=0.2)
