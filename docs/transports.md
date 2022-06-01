@@ -22,7 +22,7 @@ The following parameters are available (these are ISOTP transport settings):
 * `dst_addr` (required): The ISOTP destination address as int.
 * `is_extended` (optional): Use extended CAN identifiers.
 * `is_fd` (optional): Use CAN-FD frames.
-* `frame_textime` (optional): The time in milliseconds the kernel waits before sending a ISOTP consecutive frame.
+* `frame_txtime` (optional): The time in milliseconds the kernel waits before sending a ISOTP consecutive frame.
 * `ext_address` (optional): The extended ISOTP address as int.
 * `rx_ext_address` (optional): The extended ISOTP rx address.
 * `tx_padding` (optional): Use padding in sent frames.
