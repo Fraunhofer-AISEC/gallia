@@ -275,14 +275,12 @@ class DoIPConnection:
         writer: asyncio.StreamWriter,
         src_addr: Optional[int],
         target_addr: Optional[int],
-        activation_type: RoutingActivationRequestTypes,
     ):
         self.logger = Logger(component="doip", flush=True)
         self.reader = reader
         self.writer = writer
         self.src_addr = src_addr
         self.target_addr = target_addr
-        self.activation_type = activation_type
         self._read_queue: asyncio.Queue[DoIPFrame] = asyncio.Queue()
         self._read_task = asyncio.create_task(self._read_worker())
         self._closed = False
@@ -295,10 +293,9 @@ class DoIPConnection:
         port: int,
         src_addr: int,
         target_addr: int,
-        activation_type: RoutingActivationRequestTypes,
     ) -> DoIPConnection:
         reader, writer = await asyncio.open_connection(host, port)
-        return cls(reader, writer, src_addr, target_addr, activation_type)
+        return cls(reader, writer, src_addr, target_addr)
 
     async def _read_frame(self) -> DoIPFrame:
         # Header is fixed size 8 byte.
@@ -452,7 +449,10 @@ class DoIPConnection:
         )
         await self.write_request_raw(hdr, payload)
 
-    async def write_routing_activation_request(self) -> None:
+    async def write_routing_activation_request(
+        self,
+        activation_type: RoutingActivationRequestTypes,
+    ) -> None:
         assert self.src_addr, "src_addr is not set"
         assert self.target_addr, "target_addr is not set"
 
@@ -464,7 +464,7 @@ class DoIPConnection:
         )
         payload = RoutingActivationRequest(
             SourceAddress=self.src_addr,
-            ActivationType=self.activation_type,
+            ActivationType=activation_type,
             Reserved=0x00,
         )
         await self.write_request_raw(hdr, payload)
@@ -528,9 +528,10 @@ class DoIPTransport(BaseTransport, scheme="doip", spec=doip_spec):
             self.port,
             self.args["src_addr"],
             self.args["dst_addr"],
-            RoutingActivationRequestTypes(self.args["activation_type"]),
         )
-        await self.connection.write_routing_activation_request()
+        await self.connection.write_routing_activation_request(
+            RoutingActivationRequestTypes(self.args["activation_type"])
+        )
 
     async def connect(self, timeout: Optional[float] = None) -> None:
         assert self.target.hostname is not None, "bug: no hostname"
