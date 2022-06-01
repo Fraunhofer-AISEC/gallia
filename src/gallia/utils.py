@@ -48,6 +48,12 @@ def split_host_port(
     return host, port
 
 
+def join_host_port(host: str, port: int) -> str:
+    if ":" in host:
+        return f"[{host}]:port"
+    return f"{host}:{port}"
+
+
 def camel_to_snake(s: str) -> str:
     """Convert a CamelCase string to a snake_case string."""
     # https://stackoverflow.com/a/12867228
