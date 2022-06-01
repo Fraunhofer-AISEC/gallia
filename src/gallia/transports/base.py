@@ -4,9 +4,10 @@ import asyncio
 import io
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Optional
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlparse, urlencode, urlunparse
 
 from gallia.penlog import Logger
+from gallia.utils import join_host_port
 
 
 class TargetURI:
@@ -14,6 +15,17 @@ class TargetURI:
         self.raw = raw
         self.url = urlparse(raw)
         self.qs = parse_qs(self.url.query)
+
+    @classmethod
+    def from_parts(
+        cls,
+        scheme: str,
+        host: str,
+        port: Optional[int],
+        args: dict[str, Any],
+    ) -> TargetURI:
+        netloc = host if port is None else join_host_port(host, port)
+        return TargetURI(urlunparse((scheme, netloc, "", "", urlencode(args), "")))
 
     @property
     def scheme(self) -> str:
