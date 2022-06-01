@@ -60,7 +60,6 @@ class FindCanIDsScanner(DiscoveryScanner):
     async def main(self, args: Namespace) -> None:
         assert isinstance(self.transport, RawCANTransport)
         found = []
-        can_url = args.target.url._replace(scheme=ISOTPTransport.SCHEME)
 
         sniff_time: int = args.sniff_time
         self.logger.log_summary(
@@ -115,8 +114,10 @@ class FindCanIDsScanner(DiscoveryScanner):
                             f"found endpoint on CAN ID [src:dst]: {can_id_repr(ID)}:{can_id_repr(addr)}"
                         )
                         found.append(
-                            (
-                                can_url,
+                            TargetURI.from_parts(
+                                ISOTPTransport.SCHEME,
+                                args.target.host,
+                                None,
                                 {
                                     "src_addr": hex(ID),
                                     "dst_addr": hex(addr),

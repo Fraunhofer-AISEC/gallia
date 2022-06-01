@@ -2,6 +2,7 @@ import asyncio
 import sys
 from argparse import Namespace
 
+from gallia.transports.base import TargetURI
 from gallia.transports.can import ISOTPTransport, RawCANTransport
 from gallia.udscan.core import DiscoveryScanner
 from gallia.utils import can_id_repr, isotp_addr_repr, write_target_list
@@ -38,7 +39,6 @@ class FindISOTPAddrScanner(DiscoveryScanner):
     async def main(self, args: Namespace) -> None:
         assert isinstance(self.transport, RawCANTransport)
         found = []
-        url = args.target.url._replace(scheme=ISOTPTransport.SCHEME)
 
         sniff_time: int = args.sniff_time
         self.logger.log_summary(
@@ -103,8 +103,10 @@ class FindISOTPAddrScanner(DiscoveryScanner):
                             )
                             self.logger.log_summary(msg)
                             found.append(
-                                (
-                                    url,
+                                TargetURI.from_parts(
+                                    ISOTPTransport.SCHEME,
+                                    args.target.host,
+                                    None,
                                     {
                                         "src_addr": hex(tester_id),
                                         "dst_addr": hex(addr_old),
