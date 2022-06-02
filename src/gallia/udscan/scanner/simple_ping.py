@@ -1,4 +1,5 @@
 import asyncio
+import sys
 from argparse import Namespace
 
 from gallia.uds.core.service import NegativeResponse
@@ -30,7 +31,10 @@ class Ping(UDSScanner):
         )
 
     async def main(self, args: Namespace) -> None:
-        await self.ecu.set_session(args.session)
+        resp = await self.ecu.set_session(args.session)
+        if isinstance(resp, NegativeResponse):
+            self.logger.log_error(f"Could not change to requested session: {resp}")
+            sys.exit(1)
 
         i = 1
         while True:
