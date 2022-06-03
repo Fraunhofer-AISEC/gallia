@@ -1,4 +1,5 @@
 import asyncio
+import argparse
 import json
 import os
 import socket
@@ -28,6 +29,7 @@ class FindXCP:
         self.add_parser()
         self.can_id = 0
         self.can_recv_event = None
+        self.can_send_event = None
 
     def add_parser(self) -> None:
         subparsers = self.parser.add_subparsers(
@@ -60,6 +62,12 @@ class FindXCP:
             type=auto_int,
             default=0x800,
             help="End CAN ID for iteration",
+        )
+        sp.add_argument(
+            "--synchronize",
+            default=True,
+            action=argparse.BooleanOptionalAction,
+            help="Compare properties before and after the scan",
         )
 
         sp = subparsers.add_parser("tcp")
@@ -222,8 +230,7 @@ class FindXCP:
             f"Finished; Found {len(endpoints)} XCP endpoints via UDP"
         )
 
-    async def test_can_receiver(self, transport: RawCANTransport):
-        endpoints = list()
+    async def _test_can_recv_loop(self, transport: RawCANTransport,endpoints: list):
         while True:
             try:
                 master, data = await transport.recvfrom(timeout=1)
@@ -240,17 +247,30 @@ class FindXCP:
                         f"{bytes_repr(data)}"
                     )
             except asyncio.TimeoutError:
-                pass
-            except asyncio.CancelledError:
-                self.logger.log_info("Receiver task cancelled")
                 break
             finally:
                 self.can_recv_event.set()
 
+    async def test_can_receiver(self, transport: RawCANTransport, synchronize: bool):
+        endpoints = list()
+        self.can_recv_event.set()
+        try:
+            while True:
+                if synchronize:
+                    await self.can_send_event.wait()
+                    self.can_send_event.clear()
+                await self._test_can_recv_loop(transport, endpoints)
+
+        except asyncio.CancelledError:
+            self.logger.log_info("Receiver task cancelled")
+
+        await self._test_can_recv_loop(transport, endpoints)
         self.logger.log_summary(f"Finished; Found {len(endpoints)} XCP endpoints via CAN")
 
     async def test_can(self, args: Namespace) -> None:
         self.can_recv_event = asyncio.Event()
+        self.can_send_event = asyncio.Event()
+
         transport = RawCANTransport(args.target)
         await transport.connect()
 
@@ -263,15 +283,21 @@ class FindXCP:
         transport.set_filter(addr_idle, inv_filter=True)
         # flush receive queue
         await transport.get_idle_traffic(2)
-        recv_task = asyncio.create_task(self.test_can_receiver(transport))
+        recv_task = asyncio.create_task(self.test_can_receiver(transport, args.synchronize))
+        await self.can_recv_event.wait()
+        self.can_recv_event.clear()
 
         for can_id in range(args.start, args.end):
             self.logger.log_info(f"Testing CAN ID: {can_id_repr(can_id)}")
             pdu = bytes([0xFF, 0x00])
             await transport.sendto(pdu, can_id, timeout=0.1)
-            await self.can_recv_event.wait()
+            if args.synchronize:
+                self.can_send_event.set()
+                await self.can_recv_event.wait()
+                self.can_recv_event.clear()
 
         recv_task.cancel()
+        await recv_task
 
     def test_eth_broadcast(self, args: Namespace) -> None:
         # TODO: rewrite as async
