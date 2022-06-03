@@ -209,7 +209,7 @@ async def write_target_list(
     path: Path,
     targets: list["TargetURI"],
     db_handler: Optional["DBHandler"] = None,
-) -> list[str]:
+) -> None:
     """Write a list of ECU connection strings (urls) into file
 
     :param path: output file
@@ -225,4 +225,3 @@ async def write_target_list(
 
             if db_handler is not None:
                 await db_handler.insert_discovery_result(str(target))
-    return urls
