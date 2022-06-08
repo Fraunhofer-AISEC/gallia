@@ -5,6 +5,7 @@ import os
 import socket
 import struct
 import sys
+import time
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser, Namespace
 from subprocess import CalledProcessError, run
 
@@ -233,7 +234,7 @@ class FindXCP:
     async def _test_can_recv_loop(self, transport: RawCANTransport,endpoints: list):
         while True:
             try:
-                master, data = await transport.recvfrom(timeout=1)
+                master, data = await transport.recvfrom(timeout=0.1)
                 if data[0] == 0xFF:
                     msg = (
                         f"Found XCP endpoint [master:slave]: CAN: {can_id_repr(master)}:{can_id_repr(self.can_id)} "
@@ -242,8 +243,8 @@ class FindXCP:
                     self.logger.log_summary(msg)
                     endpoints.append((self.can_id, master))
                 else:
-                    self.logger.log_info(
-                        f"Received non XCP answer for CAN-ID {can_id_repr(self.can_id)}: {can_id_repr(master)}:"
+                    self.logger.log_summary(
+                        f"Received non XCP answer for CAN-ID {can_id_repr(self.can_id)}:{can_id_repr(master)} data:"
                         f"{bytes_repr(data)}"
                     )
             except asyncio.TimeoutError:
@@ -287,14 +288,23 @@ class FindXCP:
         await self.can_recv_event.wait()
         self.can_recv_event.clear()
 
+        t0 = time.time()
+        scan_speed = 0.001
+        eta = 0
         for can_id in range(args.start, args.end):
-            self.logger.log_info(f"Testing CAN ID: {can_id_repr(can_id)}")
+            self.can_id = can_id
+            self.logger.log_info(f"Testing CAN ID: {can_id_repr(can_id)} speed: {1/scan_speed:.0f} IDs/sec eta: {eta/60:.2f} min")
             pdu = bytes([0xFF, 0x00])
             await transport.sendto(pdu, can_id, timeout=0.1)
             if args.synchronize:
                 self.can_send_event.set()
                 await self.can_recv_event.wait()
                 self.can_recv_event.clear()
+            else:
+                await asyncio.sleep(0.001)
+            dt = time.time() - t0
+            scan_speed = dt / (can_id - args.start+1)
+            eta = (args.end - can_id) * scan_speed
 
         recv_task.cancel()
         await recv_task
