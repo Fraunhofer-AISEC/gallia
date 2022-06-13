@@ -87,7 +87,7 @@ class FindCanIDsScanner(DiscoveryScanner):
             self.parser.error(
                 f"Unsupported transport schema {args.target.scheme}; must be can-raw!"
             )
-        if args.extended_addr and (args.start > 0xff or args.stop > 0xff):
+        if args.extended_addr and (args.start > 0xFF or args.stop > 0xFF):
             self.parser.error("--start/--stop maximum value is 0xFF")
         await super().setup(args)
 
@@ -207,11 +207,13 @@ class FindCanIDsScanner(DiscoveryScanner):
                         )
                         target_args = {}
                         target_args["is_fd"] = str(transport.args["is_fd"]).lower()
-                        target_args["is_extended"] = str(transport.args["is_extended"]).lower()
+                        target_args["is_extended"] = str(
+                            transport.args["is_extended"]
+                        ).lower()
 
                         if args.extended_addr:
                             target_args["ext_address"] = hex(ID)
-                            target_args["rx_ext_address"] = args.tester_addr & 0xff
+                            target_args["rx_ext_address"] = args.tester_addr & 0xFF
                             target_args["src_addr"] = args.tester_addr
                             target_args["dst_addr"] = hex(addr)
                         else:
