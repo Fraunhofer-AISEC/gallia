@@ -19,6 +19,18 @@ class ReadMemoryByAddressScanner(UDSScanner):
             help="The session in which the requests are made",
         )
         self.parser.add_argument(
+            "--format",
+            type=auto_int,
+            default=None,
+            help="Optional: addressAndLengthFormatIdentifier",
+        )
+        self.parser.add_argument(
+            "--dump",
+            type=bool,
+            default=False,
+            help="Optional: Enable Dump mode to dump memory starting at address",
+        )
+        self.parser.add_argument(
             "address",
             type=auto_int,
             help="The start address from which data should be read",
@@ -36,12 +48,24 @@ class ReadMemoryByAddressScanner(UDSScanner):
             )
             sys.exit(1)
 
-        resp = await self.ecu.read_memory_by_address(args.address, args.length)
+        address_and_length_format_identifier = args.format
+        address = args.address
+        dump_path = self.artifacts_dir.joinpath('dump.bin')
+        dump_f = dump_path.open('wb')
+        while True:
+            resp = await self.ecu.read_memory_by_address(address, args.length, address_and_length_format_identifier)
 
-        if isinstance(resp, NegativeResponse):
-            self.logger.log_error(resp)
-        else:
-            self.logger.log_summary("Positive response:")
+            if isinstance(resp, NegativeResponse):
+                self.logger.log_error(resp)
+                break
+            else:
+                self.logger.log_summary("Positive response:")
+                self.logger.log_summary(f"hex: {resp.data_record.hex()}")
+                self.logger.log_summary(f"raw: {repr(resp.data_record)}")
+                dump_f.write(resp.data_record)
 
-            self.logger.log_summary(f"hex: {resp.data_record.hex()}")
-            self.logger.log_summary(f"raw: {repr(resp.data_record)}")
+            address += args.length
+            if not args.dump:
+                break
+
+        dump_f.close()
