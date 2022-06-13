@@ -13,6 +13,10 @@ def die(msg: str) -> NoReturn:
     sys.exit(1)
 
 
+def git_pull() -> None:
+    run(["git", "pull"], check=True)
+
+
 def check_project() -> None:
     p = run(
         ["git", "rev-parse", "--abbrev-ref", "HEAD"],
@@ -27,8 +31,6 @@ def check_project() -> None:
     )
     if p.returncode != 0:
         die("commit your changes first!")
-
-    run(["git", "pull"], check=True)
 
 
 def get_current_version(path: Path) -> str:
@@ -63,10 +65,12 @@ def commit_bump(path: Path, version: str) -> None:
 def github_release(version: str) -> None:
     run(["git", "push", "--follow-tags"], check=True)
 
-    cmd = ["gh", "release", "create", f"v{version}", "--generate-notes"]
-    draft = True if any(x in version.lower() for x in ("a", "b", "rc")) else False
-    if draft:
-        cmd += ["--draft"]
+    cmd = ["gh", "release", "create", "--generate-notes"]
+    pre = True if any(x in version.lower() for x in ("a", "b", "rc")) else False
+    if pre:
+        cmd += ["--prerelease"]
+    cmd += [f"v{version}"]
+
     run(cmd, check=True)
 
 
@@ -79,6 +83,7 @@ def parse_args() -> Namespace:
 def main() -> None:
     args = parse_args()
     check_project()
+    git_pull()
 
     cur_version = get_current_version(args.path)
     new_version = read_new_version(cur_version)
@@ -86,6 +91,7 @@ def main() -> None:
     bump_version(args.path, cur_version, new_version)
     commit_bump(args.path, new_version)
     github_release(new_version)
+    git_pull()
 
 
 if __name__ == "__main__":
