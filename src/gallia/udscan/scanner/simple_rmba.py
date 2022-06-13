@@ -26,8 +26,7 @@ class ReadMemoryByAddressScanner(UDSScanner):
         )
         self.parser.add_argument(
             "--dump",
-            type=bool,
-            default=False,
+            action="store_true",
             help="Optional: Enable Dump mode to dump memory starting at address",
         )
         self.parser.add_argument(
