@@ -52,6 +52,46 @@ class Formatter(ArgumentDefaultsHelpFormatter):
         super().__init__(*args, **kwargs)
 
 
+def load_transport(target: TargetURI) -> BaseTransport:
+    transports = [
+        ISOTPTransport,
+        RawCANTransport,
+        DoIPTransport,
+        TCPLineSepTransport,
+    ]
+
+    def func(x: EntryPoint) -> type[BaseTransport]:
+        t = x.load()
+        if not issubclass(t, BaseTransport):
+            raise ValueError(f"{type(x)} is not derived from BaseTransport")
+        return cast(type[BaseTransport], t)
+
+    eps = entry_points()
+    if "gallia_transports" in eps:
+        transports_eps = map(func, eps["gallia_transports"])
+        transports += transports_eps
+
+    for transport in transports:
+        if target.scheme == transport.SCHEME:  # type: ignore
+            t = transport(target)
+            return t
+
+    raise ValueError(f"no transport for {target}")
+
+
+def load_ecu(vendor: str) -> type[ECU]:
+    if vendor == "default":
+        return ECU
+
+    eps = entry_points()
+    if "gallia_ecus" in eps:
+        for entry_point in eps["gallia_ecus"]:
+            if vendor == entry_point.name:
+                return entry_point.load()
+
+    raise ValueError(f"no such OEM: '{vendor}'")
+
+
 class GalliaBase(ABC):
     """GalliaBase is a baseclass for all gallia commands.
     In order to register cli arguments:
@@ -402,47 +442,6 @@ class UDSScanner(Scanner):
             help="Compare properties before and after the scan",
         )
 
-    @staticmethod
-    async def load_transport(target: TargetURI) -> BaseTransport:
-        transports = [
-            ISOTPTransport,
-            RawCANTransport,
-            DoIPTransport,
-            TCPLineSepTransport,
-        ]
-
-        def func(x: EntryPoint) -> type[BaseTransport]:
-            t = x.load()
-            if not issubclass(t, BaseTransport):
-                raise ValueError(f"{type(x)} is not derived from BaseTransport")
-            return cast(type[BaseTransport], t)
-
-        eps = entry_points()
-        if "gallia_transports" in eps:
-            transports_eps = map(func, eps["gallia_transports"])
-            transports += transports_eps
-
-        for transport in transports:
-            if target.scheme == transport.SCHEME:  # type: ignore
-                t = transport(target)
-                await t.connect(None)
-                return t
-
-        raise ValueError(f"no transport for {target}")
-
-    def load_ecu(self, vendor: str) -> type[ECU]:
-        if vendor == "default":
-            return ECU
-
-        eps = entry_points()
-        if "gallia_ecus" in eps:
-            for entry_point in eps["gallia_ecus"]:
-                if vendor == entry_point.name:
-                    self.logger.log_debug(f"Loading OEM-ECU {entry_point}")
-                    return entry_point.load()
-
-        raise ValueError(f"no such OEM: '{vendor}'")
-
     async def _tester_present_worker(self, interval: int) -> None:
         assert self.transport
         self.logger.log_debug("tester present worker started")
@@ -493,8 +492,10 @@ class UDSScanner(Scanner):
     async def setup(self, args: Namespace) -> None:
         await super().setup(args)
 
-        self.transport = await self.load_transport(args.target)
-        self.ecu = self.load_ecu(args.oem)(
+        self.transport = load_transport(args.target)
+        await self.transport.connect(None)
+
+        self.ecu = load_ecu(args.oem)(
             self.transport,
             timeout=args.timeout,
             max_retry=args.max_retries,
@@ -584,7 +585,7 @@ class DiscoveryScanner(Scanner):
             "--timeout",
             type=float,
             default=0.5,
-            help="timeout value for request"
+            help="timeout value for request",
         )
 
     async def setup(self, args: Namespace) -> None:
