@@ -1778,7 +1778,7 @@ class ClearDiagnosticInformationResponse(
         return ClearDiagnosticInformationResponse()
 
     def matches(self, request: UDSRequest) -> bool:
-        return isinstance(request, CommunicationControlRequest)
+        return isinstance(request, ClearDiagnosticInformationRequest)
 
 
 class ClearDiagnosticInformationRequest(
