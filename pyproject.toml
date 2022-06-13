@@ -100,8 +100,6 @@ asyncio_mode = "auto"
 
 [tool.pylint.messages_control]
 disable = [
-    "C0326",
-    "C0330",
     "R0801",
     "broad-except",
     "c-extension-no-member",
@@ -117,7 +115,6 @@ disable = [
     "no-else-continue",
     "no-else-return",
     "no-name-in-module",
-    "no-self-use",
     "simplifiable-if-expression",
     "too-few-public-methods",
     "too-many-arguments",
