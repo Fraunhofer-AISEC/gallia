@@ -28,4 +28,4 @@ For specifying the `--target` argument see the [transports documentation](https:
 ## Acknowledgments
 
 This work was partly funded by the German Federal Ministry of Education and Research (BMBF) as part of the [SecForCARs](https://www.secforcars.de/) project (grant no. 16KIS0790).
-A short presentation and demo video is available at this [demo page](https://www.secforcars.de/demos/10-automotive-scanning-framework.html).
+A short presentation and demo video is available at this [page](https://www.secforcars.de/demos/10-automotive-scanning-framework.html).
