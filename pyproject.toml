@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "gallia"
-version = "1.0.0a11"
+version = "1.0.0"
 description = "Extendable Pentesting Framework"
 license = "Apache-2.0"
 readme = "README.md"
