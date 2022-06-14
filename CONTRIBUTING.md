@@ -13,3 +13,7 @@ The relevant tools and their versions are specified in the `pyproject.toml`.
 [Github Actions](https://docs.github.com/en/actions) are configured to run against all merge requests.
 
 To run these checks locally, use `make lint` and `make test`.
+
+## Commit Messages
+
+We use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for structured commit messages.
