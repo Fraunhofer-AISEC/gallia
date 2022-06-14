@@ -1935,7 +1935,7 @@ class _ReadDTCType1Response(
                 check_range(dtc, "DTC", 0, 0xFFFFFF)
                 check_range(status, "DTC Status", 0, 0xFF)
 
-            self.dtc_status_record = dtc_and_status_record
+            self.dtc_and_status_record = dtc_and_status_record
 
         self.dtc_status_availability_mask = dtc_status_availability_mask
 
