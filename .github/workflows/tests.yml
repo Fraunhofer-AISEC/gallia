@@ -64,7 +64,7 @@ jobs:
 
     - name: Spawn vECU
       run: |
-        poetry run gallia vecu "tcp-lines://127.0.0.1:20162" rng --seed 3 --mandatory_sessions "[1, 2, 3]" --mandatory_services "[DiagnosticSessionControl, EcuReset, ReadDataByIdentifier, WriteDataByIdentifier, RoutineControl, SecurityAccess, ReadMemoryByAddress, WriteMemoryByAddress, RequestDownload, RequestUpload, TesterPresent]" &
+        poetry run gallia vecu "tcp-lines://127.0.0.1:20162" rng --seed 3 --mandatory_sessions "[1, 2, 3]" --mandatory_services "[DiagnosticSessionControl, EcuReset, ReadDataByIdentifier, WriteDataByIdentifier, RoutineControl, SecurityAccess, ReadMemoryByAddress, WriteMemoryByAddress, RequestDownload, RequestUpload, TesterPresent, ClearDiagnosticInformation, InputOutputControlByIdentifier]" &
 
     - name: Test scan-services
       run: |
@@ -102,4 +102,9 @@ jobs:
         poetry run gallia simple-ping --count 2 --target "tcp-lines://127.0.0.1:20162" --no-dumpcap 
         poetry run gallia simple-read-by-identifier --data-id 0x108d --target "tcp-lines://127.0.0.1:20162" --no-dumpcap 
         poetry run gallia simple-send-pdu 1001 --target "tcp-lines://127.0.0.1:20162" --no-dumpcap 
-        poetry run gallia simple-write-by-identifier --data-id 0x2266 --data 00 --target "tcp-lines://127.0.0.1:20162" --no-dumpcap 
+        poetry run gallia simple-write-by-identifier --data-id 0x2266 --data 00 --target "tcp-lines://127.0.0.1:20162" --no-dumpcap
+        poetry run gallia simple-dtc --target "tcp-lines://127.0.0.1:20162" --no-dumpcap read
+        poetry run gallia simple-dtc --target "tcp-lines://127.0.0.1:20162" --no-dumpcap clear
+        poetry run gallia simple-dtc --target "tcp-lines://127.0.0.1:20162" --no-dumpcap control --stop
+        poetry run gallia simple-dtc --target "tcp-lines://127.0.0.1:20162" --no-dumpcap control --resume
+        poetry run gallia simple-iocbi --target "tcp-lines://127.0.0.1:20162" --no-dumpcap 0x1000 reset-to-default
