@@ -68,15 +68,22 @@ Run a single command inside the venv without changing the shell environment:
 $ poetry run gallia
 ```
 
-#### pip
+## Development with Plugins
 
-Poetry and the [`pyproject.toml` approach](https://pip.pypa.io/en/stable/reference/build-system/pyproject-toml/) is compatible to the classic `pip` way.
-Caveat: Version pinning is ignored by this approach.
+If you want to develop gallia and plugins at the same time, then you need to manage your `gallia` (e.g. in `~/.venvs/gallia`) virtual python environment by yourself.
+You can use `poetry install` to install multiple plugin repos into the `gallia` venv.
 
-```shell-session
-$ python -m venv venv
-$ . venv/bin/activate.sh
-$ pip install .
+``` shell-session
+$ python -m venv ~/.venvs/gallia
+$ source ~/.venvs/gallia/activate
+$ cd /path/to/gallia && poetry install
+$ cd /path/to/gallia-plugins && poetry install
+```
+
+If it does not work, you might try deleting the venvs managed by `poetry` via:
+
+``` shell-session
+$ rm -rf ~/.cache/pypoetry/virtualenvs/*
 ```
 
 ### Shell Completion
