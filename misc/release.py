@@ -100,16 +100,16 @@ def parse_args() -> Namespace:
     parser.add_argument("path", type=Path, help="path to pyproject.toml")
     parser.add_argument(
         "-d",
-        "--dry-run_wrapper",
+        "--dry-run",
         action="store_true",
-        help="dry run_wrapper, do not change anything",
+        help="dry run, do not change anything",
     )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    if args.dry_run_wrapper:
+    if args.dry_run:
         global DRY_RUN
         DRY_RUN = True
 
