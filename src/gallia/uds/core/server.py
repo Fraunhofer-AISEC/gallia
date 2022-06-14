@@ -19,6 +19,7 @@ from gallia.uds.core.constants import (
     DataIdentifier,
     ERSubFuncs,
     RCSubFuncs,
+    RDTCISubFuncs,
     UDSErrorCodes,
     UDSIsoServices,
 )
@@ -395,6 +396,7 @@ class RandomUDSServer(UDSServer):
         self.p_sub_function = 0.05
         self.p_identifier = 0.005
         self.p_correct_payload_format = 0.1
+        self.p_dtc_status_mask = 0.9
 
     async def setup(self) -> None:
         self.randomize()
@@ -495,6 +497,9 @@ class RandomUDSServer(UDSServer):
                             supported_sub_functions.append(sf + 1)
                     elif supported_service == UDSIsoServices.RoutineControl:
                         supported_sub_functions = list(sf.value for sf in RCSubFuncs)
+                    # Currently only this sub function is supported so it doesn't make sense to gamble a lot here
+                    elif supported_service == UDSIsoServices.ReadDTCInformation:
+                        supported_sub_functions = [RDTCISubFuncs.RDTCBSM]
                     else:
                         supported_sub_functions = list(
                             sf
@@ -539,6 +544,10 @@ class RandomUDSServer(UDSServer):
             return self.write_data_by_identifier(request)
         elif isinstance(request, service.InputOutputControlByIdentifierRequest):
             return self.input_output_control_by_identifier(request)
+        elif isinstance(request, service.ClearDiagnosticInformationRequest):
+            return self.clear_diagnostic_information(request)
+        elif request.service_id == UDSIsoServices.ReadDTCInformation:
+            return self.read_dtc_information(request)
 
         return None
 
@@ -670,6 +679,44 @@ class RandomUDSServer(UDSServer):
             )
 
         return request.RESPONSE_TYPE(request.data_identifier, rng.random_payload(min_len=1))  # type: ignore
+
+    def clear_diagnostic_information(
+        self, request: service.ClearDiagnosticInformationRequest
+    ) -> service.UDSResponse:
+        rng = self.stateful_rng(request.service_id, request.group_of_dtc)
+
+        if not rng.random_bool(self.p_dtc_status_mask):
+            return service.NegativeResponse(
+                request.service_id, UDSErrorCodes.requestOutOfRange
+            )
+
+        return service.ClearDiagnosticInformationResponse()
+
+    def read_dtc_information(self, request: service.UDSRequest) -> service.UDSResponse:
+        assert request.service_id == UDSIsoServices.ReadDTCInformation
+
+        # Currently only this sub function is supported
+        if isinstance(request, service.ReportDTCByStatusMaskRequest):
+            # The supported dtc status bits should be equal for all requests
+            # and only differ among different ECUs and states
+            dtc_status_availability_mask = self.stateful_rng().randint(0, 255)
+
+            rng = self.stateful_rng(request.service_id, request.dtc_status_mask)
+            dtc_and_status_record = {}
+
+            # On average around 50 dtcs should be fine
+            for _ in range(int(rng.expovariate(1 / 50) + 0.5)):
+                dtc_and_status_record[rng.randint(0, 256**3 - 1)] = (
+                    rng.randint(0, 255) & dtc_status_availability_mask
+                )
+
+            return service.ReportDTCByStatusMaskResponse(
+                dtc_status_availability_mask, dtc_and_status_record
+            )
+
+        return service.NegativeResponse(
+            request.service_id, UDSErrorCodes.subFunctionNotSupported
+        )
 
 
 class DBUDSServer(UDSServer):
