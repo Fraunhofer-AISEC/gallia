@@ -64,7 +64,7 @@ jobs:
 
     - name: Spawn vECU
       run: |
-        poetry run gallia vecu "tcp-lines://127.0.0.1:20162" rng --seed 3 --mandatory_sessions "[1, 2, 3]" --mandatory_services "[DiagnosticSessionControl, EcuReset, ReadDataByIdentifier, WriteDataByIdentifier, RoutineControl, SecurityAccess, ReadMemoryByAddress, WriteMemoryByAddress, RequestDownload, RequestUpload, TesterPresent, ClearDiagnosticInformation, InputOutputControlByIdentifier]" &
+        poetry run gallia vecu "tcp-lines://127.0.0.1:20162" rng --seed 3 --mandatory_sessions "[1, 2, 3]" --mandatory_services "[DiagnosticSessionControl, EcuReset, ReadDataByIdentifier, WriteDataByIdentifier, RoutineControl, SecurityAccess, ReadMemoryByAddress, WriteMemoryByAddress, RequestDownload, RequestUpload, TesterPresent, ReadDTCInformation, ClearDiagnosticInformation, InputOutputControlByIdentifier]" &
 
     - name: Test scan-services
       run: |
