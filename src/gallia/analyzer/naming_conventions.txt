@@ -1,0 +1,53 @@
+
+# ========================================================== #
+#
+# [Data type naming conventions]
+#
+# <suffix>
+# _ls: python list
+# _dict: python dictionary
+# _sql: SQL string
+# _vec: numpy n-dimentional array
+# _ser: pandas Series
+# _df: pandas Data Frame
+# _cond: partial SQL string for condition
+# _on: python boolean
+#
+# <prefix>
+# cond_: pandas Series of conditional expressions
+#
+# [Abbreviations]
+#
+# abn: abnormal
+# aem: all ECU modes
+# aio: all-in-one
+# alwd: allowed
+# col: column
+# cond: condition
+# cur: current
+# err: error
+# iden: identifier
+# lu: lookup
+# neg: negative
+# nm: name
+# oi: of interest
+# op: operation
+# pos: positive
+# prec: precision
+# psb: possible
+# resp: response
+# sbfn: sub-function
+# serv: service
+# sess: session
+# sht: sheet
+# sid: service id
+# src: source
+# supp: supported
+# tbl: table
+# tra: reaction time
+# trg: target
+# ven: vendor
+# wi: with
+# wo: without
+#
+# ========================================================== #
