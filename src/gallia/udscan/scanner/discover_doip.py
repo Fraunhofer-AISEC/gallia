@@ -58,6 +58,7 @@ class DiscoverDoIP(DiscoveryScanner):
 
     async def probe(
         self,
+        conn: DoIPConnection,
         host: str,
         port: int,
         src_addr: int,
@@ -65,12 +66,6 @@ class DiscoverDoIP(DiscoveryScanner):
         activation_type: RoutingActivationRequestTypes,
         timeout: float,
     ) -> TargetURI:
-        conn = await DoIPConnection.connect(
-            host,
-            port,
-            src_addr,
-            target_addr,
-        )
         hdr = GenericHeader(
             ProtocolVersion=ProtocolVersions.ISO_13400_2_2012,
             PayloadType=PayloadTypes.RoutingActivationRequest,
@@ -105,8 +100,6 @@ class DiscoverDoIP(DiscoveryScanner):
         resp = DiagnosticSessionControlResponse.parse_static(diag_msg.UserData)
         raise_for_mismatch(req, resp)
 
-        await conn.close()
-
         return TargetURI.from_parts(
             "doip",
             host,
@@ -128,9 +121,16 @@ class DiscoverDoIP(DiscoveryScanner):
 
         for target_addr in src_gen:
             self.logger.log_info(f"testing target {target_addr:#02x}")
+            conn = await DoIPConnection.connect(
+                args.target.hostname,
+                args.target.port,
+                args.src_addr,
+                target_addr,
+            )
 
             try:
                 target = await self.probe(
+                    conn,
                     args.target.hostname,
                     args.target.port,
                     args.src_addr,
@@ -138,10 +138,10 @@ class DiscoverDoIP(DiscoveryScanner):
                     args.request_type,
                     args.timeout,
                 )
-            except BrokenPipeError:
+            except (BrokenPipeError, asyncio.TimeoutError):
                 continue
-            except asyncio.TimeoutError:
-                continue
+            finally:
+                await conn.close()
 
             self.logger.log_info(f"found {target_addr:#02x}")
             found.append(target)
