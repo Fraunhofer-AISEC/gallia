@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: AISEC Pentesting Team
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # pylint: disable=too-many-lines,eval-used
 
 from __future__ import annotations

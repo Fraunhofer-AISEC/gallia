@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: AISEC Pentesting Team
+#
+# SPDX-License-Identifier: Apache-2.0
+
 from __future__ import annotations
 
 from urllib.parse import urljoin

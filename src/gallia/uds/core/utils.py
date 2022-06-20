@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: AISEC Pentesting Team
+#
+# SPDX-License-Identifier: Apache-2.0
+
 from binascii import hexlify
 from math import ceil
 from typing import Any, Optional

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: AISEC Pentesting Team
+#
+# SPDX-License-Identifier: Apache-2.0
+
 from argparse import Namespace
 
 from gallia.uds.core.service import NegativeResponse

@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: AISEC Pentesting Team
+
+SPDX-License-Identifier: CC0-1.0
+-->
+
 # Contributing
 
 Just create an [issue](https://docs.github.com/en/issues) or a [pull request](https://docs.github.com/en/pull-requests) on Github.

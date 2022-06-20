@@ -1,5 +1,9 @@
 #!/usr/bin/env bats
 
+# SPDX-FileCopyrightText: AISEC Pentesting Team
+#
+# SPDX-License-Identifier: Apache-2.0
+
 load lib-helpers
 
 @test "invoke penrun without parameters" {
