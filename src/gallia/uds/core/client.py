@@ -31,7 +31,7 @@ class UDSClient:
     def __init__(
         self,
         transport: BaseTransport,
-        timeout: Optional[float] = None,
+        timeout: float,
         max_retry: int = 1,
     ):
         self.transport = transport
