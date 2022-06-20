@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: AISEC Pentesting Team
+#
+# SPDX-License-Identifier: CC0-1.0
+
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
@@ -47,6 +51,7 @@ types-aiofiles = "^0.8.8"
 types-tabulate = "^0.8.8"
 myst-parser = "^0.18.0"
 sphinx-rtd-theme = "^1.0.0"
+reuse = "^1.0.0"
 
 [tool.poetry.scripts]
 "gallia" = "gallia.cli:main"

@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: AISEC Pentesting Team
+
+SPDX-License-Identifier: CC0-1.0
+-->
+
 # Internal
 
 This documentation describes the inner design concepts of gallia.

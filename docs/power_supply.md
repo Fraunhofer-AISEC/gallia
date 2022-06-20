@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: AISEC Pentesting Team
+
+SPDX-License-Identifier: CC0-1.0
+-->
+
 # Power Supply
 
 Gallia supports the [opennetzteil API](https://codeberg.org/rumpelsepp/opennetzteil) via a builtin client.

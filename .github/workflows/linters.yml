@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: AISEC Pentesting Team
+#
+# SPDX-License-Identifier: CC0-1.0
+
 # https://github.com/actions/setup-python/issues/374
 
 name: linters
@@ -49,3 +53,6 @@ jobs:
     - name: Run black
       run: |
         poetry run black --check --verbose src
+    - name: Run reuse lint
+      run: |
+        poetry run reuse lint
