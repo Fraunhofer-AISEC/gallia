@@ -115,10 +115,7 @@ class UDSScanner(Scanner):
             self._apply_implicit_logging_setting()
 
     def _apply_implicit_logging_setting(self) -> None:
-        if self._implicit_logging:
-            self.ecu.db_handler = self.db_handler
-        else:
-            self.ecu.db_handler = None
+        self.ecu.implicit_logging = self._implicit_logging
 
     async def setup(self, args: Namespace) -> None:
         await super().setup(args)
@@ -131,6 +128,8 @@ class UDSScanner(Scanner):
             max_retry=args.max_retries,
             power_supply=self.power_supply,
         )
+
+        self.ecu.db_handler = self.db_handler
 
         if self.db_handler is not None:
             try:
