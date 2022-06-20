@@ -44,6 +44,11 @@ class IterateSessions(UDSScanner):
         self.parser.add_argument(
             "--reset", action="store_true", help="Reset the ECU after each iteration"
         )
+        self.parser.add_argument(
+            "--fast",
+            action="store_true",
+            help="Only search for new sessions once in a particular session, i.e. ignore different stacks",
+        )
 
     async def set_session_with_hooks_handling(
         self, session: int, use_hooks: bool
@@ -101,6 +106,7 @@ class IterateSessions(UDSScanner):
         positive_results: list[dict] = []
         negative_results: list[dict] = []
         activated_sessions: set[int] = set()
+        search_sessions: list[int] = []
 
         sessions = list(range(1, 0x80))
         depth = 0
@@ -113,6 +119,11 @@ class IterateSessions(UDSScanner):
             self.logger.log_summary(f"Depth: {depth}")
 
             for stack in found[depth - 1]:
+                if args.fast and stack[-1] in search_sessions:
+                    continue
+
+                search_sessions.append(stack[-1])
+
                 if stack:
                     self.logger.log_summary(
                         f"Starting from session: {g_repr(stack[-1])}"
