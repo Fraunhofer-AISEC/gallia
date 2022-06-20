@@ -69,7 +69,7 @@ test = ["coverage", "flake8", "pexpect", "wheel"]
 
 [[package]]
 name = "astroid"
-version = "2.11.5"
+version = "2.11.6"
 description = "An abstract syntax tree for Python with inference support."
 category = "dev"
 optional = false
@@ -186,7 +186,7 @@ colorama = {version = "*", markers = "platform_system == \"Windows\""}
 
 [[package]]
 name = "colorama"
-version = "0.4.4"
+version = "0.4.5"
 description = "Cross-platform colored terminal text."
 category = "dev"
 optional = false
@@ -584,15 +584,15 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "pylint"
-version = "2.14.1"
+version = "2.14.3"
 description = "python code static checker"
 category = "dev"
 optional = false
 python-versions = ">=3.7.2"
 
 [package.dependencies]
-astroid = ">=2.11.5,<=2.12.0-dev0"
-colorama = {version = "*", markers = "sys_platform == \"win32\""}
+astroid = ">=2.11.6,<=2.12.0-dev0"
+colorama = {version = ">=0.4.5", markers = "sys_platform == \"win32\""}
 dill = ">=0.2"
 isort = ">=4.2.5,<6"
 mccabe = ">=0.6,<0.8"
@@ -1120,7 +1120,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9,<3.11"
-content-hash = "9d2374a2735f4ceff256ff3482a1a93d371d9e696a4725d0349cb443cba80989"
+content-hash = "f29fd27a218e2c6d909fdecee8827442539020c7780d82191063015a0000f9e2"
 
 [metadata.files]
 aiofiles = [
@@ -1218,8 +1218,8 @@ argcomplete = [
     {file = "argcomplete-2.0.0.tar.gz", hash = "sha256:6372ad78c89d662035101418ae253668445b391755cfe94ea52f1b9d22425b20"},
 ]
 astroid = [
-    {file = "astroid-2.11.5-py3-none-any.whl", hash = "sha256:14ffbb4f6aa2cf474a0834014005487f7ecd8924996083ab411e7fa0b508ce0b"},
-    {file = "astroid-2.11.5.tar.gz", hash = "sha256:f4e4ec5294c4b07ac38bab9ca5ddd3914d4bf46f9006eb5c0ae755755061044e"},
+    {file = "astroid-2.11.6-py3-none-any.whl", hash = "sha256:ba33a82a9a9c06a5ceed98180c5aab16e29c285b828d94696bf32d6015ea82a9"},
+    {file = "astroid-2.11.6.tar.gz", hash = "sha256:4f933d0bf5e408b03a6feb5d23793740c27e07340605f236496cd6ce552043d6"},
 ]
 async-timeout = [
     {file = "async-timeout-4.0.2.tar.gz", hash = "sha256:2163e1640ddb52b7a8c80d0a67a08587e5d245cc9c553a74a847056bc2976b15"},
@@ -1327,8 +1327,8 @@ click = [
     {file = "click-8.1.3.tar.gz", hash = "sha256:7682dc8afb30297001674575ea00d1814d808d6a36af415a82bd481d37ba7b8e"},
 ]
 colorama = [
-    {file = "colorama-0.4.4-py2.py3-none-any.whl", hash = "sha256:9f47eda37229f68eee03b24b9748937c7dc3868f906e8ba69fbcbdd3bc5dc3e2"},
-    {file = "colorama-0.4.4.tar.gz", hash = "sha256:5941b2b48a20143d2267e95b1c2a7603ce057ee39fd88e7329b0c292aa16869b"},
+    {file = "colorama-0.4.5-py2.py3-none-any.whl", hash = "sha256:854bf444933e37f5824ae7bfc1e98d5bce2ebe4160d46b5edf346a89358e99da"},
+    {file = "colorama-0.4.5.tar.gz", hash = "sha256:e6c6b4334fc50988a639d9b98aa429a0b57da6e17b9a44f0451f930b6967b7a4"},
 ]
 construct = [
     {file = "construct-2.10.68.tar.gz", hash = "sha256:7b2a3fd8e5f597a5aa1d614c3bd516fa065db01704c72a1efaaeec6ef23d8b45"},
@@ -1710,8 +1710,8 @@ pygments = [
     {file = "Pygments-2.12.0.tar.gz", hash = "sha256:5eb116118f9612ff1ee89ac96437bb6b49e8f04d8a13b514ba26f620208e26eb"},
 ]
 pylint = [
-    {file = "pylint-2.14.1-py3-none-any.whl", hash = "sha256:bb71e6d169506de585edea997e48d9ff20c0dc0e2fbc1d166bad6b640120326b"},
-    {file = "pylint-2.14.1.tar.gz", hash = "sha256:549261e0762c3466cc001024c4419c08252cb8c8d40f5c2c6966fea690e7fe2a"},
+    {file = "pylint-2.14.3-py3-none-any.whl", hash = "sha256:6757a027e15816be23625b079ebc45464e4c9d9dde0c826d18beee53fe22a2e7"},
+    {file = "pylint-2.14.3.tar.gz", hash = "sha256:4e1378f815c63e7e44590d0d339ed6435f5281d0a0cc357d29a86ea0365ef868"},
 ]
 pylsp-mypy = [
     {file = "pylsp-mypy-0.5.8.tar.gz", hash = "sha256:79f4ce6eb69d767801cb47f3d12f2be2c9cf65c21acfc5868a81c094d8087eb5"},
