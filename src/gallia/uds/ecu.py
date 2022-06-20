@@ -355,6 +355,20 @@ class ECU(UDSClient):
         if isinstance(response, service.ECUResetResponse):
             self.state.reset()
 
+    async def refresh_state(self, reset_state: bool = False) -> None:
+        """
+        Refresh the attributes of the ECU states, if possible.
+        By, default, old values are only overwritten in case the corresponding
+        information can be requested from the ECU and could be retrieved from a
+        positive response from the ECU.
+
+        :param reset_state: If True, the ECU state is reset before updating it.
+        """
+        if reset_state:
+            self.state.reset()
+
+        await self.read_session()
+
     async def _request(
         self, request: service.UDSRequest, config: Optional[UDSRequestConfig] = None
     ) -> service.UDSResponse:
