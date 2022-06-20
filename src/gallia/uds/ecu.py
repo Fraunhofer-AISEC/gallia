@@ -101,6 +101,8 @@ class ECU(UDSClient):
         Returns:
             True on success, False on error.
         """
+        await self.diagnostic_session_control(0x01, config=config)
+        return True
 
     async def set_session_post(
         self, level: int, config: Optional[UDSRequestConfig] = None
