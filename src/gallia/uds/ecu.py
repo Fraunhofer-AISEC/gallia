@@ -48,7 +48,7 @@ class ECU(UDSClient):
     def __init__(
         self,
         transport: BaseTransport,
-        timeout: Optional[float] = None,
+        timeout: float,
         max_retry: int = 1,
         power_supply: Optional[PowerSupply] = None,
     ) -> None:
@@ -311,24 +311,13 @@ class ECU(UDSClient):
         resp = await self.request_transfer_exit(config=config)
         raise_for_error(resp)
 
-    async def wait_for_ecu(self, timeout: float = 60) -> bool:
-        """wait for ecu to be alive again (eg. after reset)
-        Wait at most timeout"""
-        ret = False
-        try:
-            await asyncio.wait_for(self._wait_for_ecu(), timeout=timeout)
-            ret = True
-        except asyncio.TimeoutError:
-            self.logger.log_critical("Timeout while waiting for ECU!")
-        return ret
-
-    async def _wait_for_ecu(self) -> None:
+    async def _wait_for_ecu(self, sleep_time: float) -> None:
         """wait for ecu to be alive again (eg. after reset)
         Internal method without timeout"""
         self.logger.log_info("waiting for ECU…")
         while True:
             try:
-                await asyncio.sleep(1)
+                await asyncio.sleep(sleep_time)
                 await self.reconnect()
                 await self.ping()
                 break
@@ -339,6 +328,18 @@ class ECU(UDSClient):
             except Exception as e:
                 self.logger.log_debug(f"ECU not ready: {g_repr(e)}")
         self.logger.log_info("ECU ready")
+
+    async def wait_for_ecu(
+        self,
+        timeout: Optional[float] = None,
+    ) -> None:
+        """wait for ecu to be alive again (eg. after reset)
+        Wait at most timeout"""
+        t = timeout if timeout is not None else self.timeout
+        try:
+            await asyncio.wait_for(self._wait_for_ecu(t * 0.8), timeout=t)
+        except asyncio.TimeoutError:
+            self.logger.log_critical("Timeout while waiting for ECU!")
 
     async def update_state(
         self, request: service.UDSRequest, response: service.UDSResponse
