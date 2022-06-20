@@ -393,6 +393,7 @@ class UDSScanner(Scanner):
             if "gallia_ecus" in eps
             else ["default"]
         )
+        choices = ["default"] + choices
         group.add_argument(
             "--oem",
             default=os.environ.get("GALLIA_OEM", "default"),
