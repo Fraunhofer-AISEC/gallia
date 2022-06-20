@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: AISEC Pentesting Team
+#
+# SPDX-License-Identifier: CC0-1.0
+
 .PHONY: lint
 lint:
 	flake8 --config setup.cfg src

@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: AISEC Pentesting Team
+
+SPDX-License-Identifier: CC0-1.0
+-->
+
 # Virtual ECUs
 
 For testing purposes, there exists the possibility to spawn virtual ECUs, against which the scanners can be run.

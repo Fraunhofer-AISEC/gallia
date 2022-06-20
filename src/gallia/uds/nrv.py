@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: AISEC Pentesting Team
+#
+# SPDX-License-Identifier: Apache-2.0
+
 from ctypes import CDLL, POINTER, byref, c_char_p, c_int, c_uint, create_string_buffer
 from ctypes.util import find_library
 from typing import Callable, Union
