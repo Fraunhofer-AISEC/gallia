@@ -62,7 +62,7 @@ class SessionsScanner(UDSScanner):
         self, session: int, use_hooks: bool
     ) -> NegativeResponse | DiagnosticSessionControlResponse:
         resp = await self.ecu.set_session(
-            session, config=UDSRequestConfig(skip_hooks=True)
+            session, config=UDSRequestConfig(skip_hooks=True), use_db=False
         )
 
         if (
@@ -78,7 +78,7 @@ class SessionsScanner(UDSScanner):
                 return resp
 
             resp_ = await self.ecu.set_session(
-                session, config=UDSRequestConfig(skip_hooks=False)
+                session, config=UDSRequestConfig(skip_hooks=False), use_db=False
             )
 
             if isinstance(resp, NegativeResponse):
@@ -168,7 +168,7 @@ class SessionsScanner(UDSScanner):
                             await self.ecu.reconnect()
 
                     try:
-                        resp = await self.ecu.set_session(0x01)
+                        resp = await self.ecu.set_session(0x01, use_db=False)
                         if isinstance(resp, NegativeResponse):
                             self.logger.error(
                                 f"Could not change to default session: {resp}"
@@ -240,6 +240,11 @@ class SessionsScanner(UDSScanner):
                 previous_session = session
                 self.logger.result(f"* Session {g_repr(session)} ")
 
+                if self.db_handler is not None:
+                    await self.db_handler.insert_session_transition(
+                        session, res["stack"]
+                    )
+
             self.logger.result(
                 f"\tvia stack: {'->'.join([f'{g_repr(i)}' for i in res['stack']])}"
             )
@@ -259,6 +264,11 @@ class SessionsScanner(UDSScanner):
                 if session != previous_session:
                     previous_session = session
                     self.logger.result(f"* Session {g_repr(session)} ")
+
+                    if self.db_handler is not None:
+                        await self.db_handler.insert_session_transition(
+                            session, res["stack"]
+                        )
 
                 self.logger.result(
                     f"\tvia stack: {'->'.join([f'{g_repr(i)}' for i in res['stack']])} "

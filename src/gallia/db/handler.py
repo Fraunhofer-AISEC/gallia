@@ -97,6 +97,11 @@ CREATE TABLE IF NOT EXISTS scan_result (
   exception text
 );
 CREATE INDEX IF NOT EXISTS ix_scan_result_request_pdu ON scan_result(request_pdu);
+CREATE TABLE IF NOT EXISTS session_transition (
+  run int not null references scan_run(id) on update cascade on delete cascade,
+  destination int not null,
+  steps json check(json_valid(steps))
+);
 
 CREATE VIEW IF NOT EXISTS run_stats AS
 SELECT
@@ -364,7 +369,7 @@ class DBHandler:
         )
 
         async def execute() -> None:
-            assert self.connection is not None
+            assert self.connection is not None, "Not connected to the database"
 
             done = False
 
@@ -381,3 +386,26 @@ class DBHandler:
                 await self.connection.commit()
 
         self.tasks.append(asyncio.create_task(execute()))
+
+    async def insert_session_transition(
+        self, destination: int, steps: list[int]
+    ) -> None:
+        assert self.connection is not None, "Not connected to the database"
+
+        query = "INSERT INTO session_transition VALUES(?, ?, ?)"
+        parameters = (self.scan_run, destination, json.dumps(steps))
+        await self.connection.execute(query, parameters)
+
+    async def get_session_transition(self, destination: int) -> list[int] | None:
+        assert self.connection is not None, "Not connected to the database"
+
+        query = "SELECT steps FROM session_transition WHERE destination = ?"
+        parameters = (destination,)
+        cursor: aiosqlite.Cursor = await self.connection.execute(query, parameters)
+        row = await cursor.fetchone()
+
+        if row is None:
+            return None
+
+        result: list[int] = json.loads(row[0])
+        return result
