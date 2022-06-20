@@ -31,7 +31,7 @@ tabulate = "^0.8.9"
 
 [tool.poetry.dev-dependencies]
 black = "^22.1.0"
-Sphinx = "^4.2.0"
+Sphinx = "^5.0.2"
 flake8 = "^4.0.1"
 isort = "^5.10.1"
 lxml-stubs = "^0.4.0"
