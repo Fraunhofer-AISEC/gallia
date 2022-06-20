@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 * Fixed bug causing leaking TCP connections in DoIP discover scanner (#165)
+* Fixed missing recognition of `--oem default` in the cli (#171)
 
 ## 1.0.0 (2022-06-14)
 
