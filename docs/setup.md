@@ -97,7 +97,7 @@ $ rm -rf ~/.cache/pypoetry/virtualenvs/*
 #### fish
 
 ```shell-session
-$ test ! -d ~/.config/fish/completions && mkdir -p ~/.config/fish/completions
+$ mkdir -p ~/.config/fish/completions
 $ register-python-argcomplete --shell fish gallia > ~/.config/fish/completions/gallia.fish
 $ cp misc/penrun.fish ~/.config/fish/completions
 ```
