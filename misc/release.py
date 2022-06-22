@@ -4,15 +4,21 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import re
 import sys
 from argparse import ArgumentParser, Namespace
-from pathlib import Path
+from enum import Enum, unique
 from subprocess import run
 from typing import Any, NoReturn
 
 
 DRY_RUN = False
+
+
+@unique
+class BumpMode(Enum):
+    PATCH = "patch"
+    MINOR = "minor"
+    MAJOR = "major"
 
 
 def die(msg: str) -> NoReturn:
@@ -30,14 +36,20 @@ def git_pull() -> None:
     run_wrapper(["git", "pull"], check=True)
 
 
-def check_project() -> None:
+def check_project(mode: BumpMode) -> None:
     p = run(
         ["git", "rev-parse", "--abbrev-ref", "HEAD"],
         check=True,
         capture_output=True,
     )
-    if p.stdout.decode().strip() != "master":
-        die("releases must be cut from master branch!")
+    current_branch = p.stdout.decode().strip()
+
+    if mode == BumpMode.PATCH or mode == BumpMode.MINOR:
+        if not current_branch.endswith("-maint"):
+            die("minor or patch releases must be cut from master branch!")
+    elif mode == BumpMode.MAJOR:
+        if current_branch != "master":
+            die("major releases must be cut from master branch!")
 
     p = run(
         ["git", "diff", "--no-ext-diff", "--quiet", "--exit-code"],
@@ -46,39 +58,21 @@ def check_project() -> None:
         die("commit your changes first!")
 
 
-def get_current_version(path: Path) -> str:
-    data = path.read_text()
-    m = re.search(r'version = "(.+)"', data)
-    if not m:
-        die("pyproject.toml is broken")
-    return m.group(1)
+def get_current_version() -> str:
+    p = run(["poetry", "version"], check=True, capture_output=True)
+    version_str = p.stdout.decode().strip()
+    return version_str.split(" ", 2)[1]
 
 
-def read_new_version(current: str) -> str:
-    print(f"Current version: {current}")
-    return input("New version: ")
-
-
-def convert_version_sem(version: str) -> str:
-    if "a" in version:
-        return version.replace("a", "-alpha")
-    if "b" in version:
-        return version.replace("b", "-beta")
-    if "rc" in version:
-        return version.replace("rc", "-rc")
-    return version
-
-
-def bump_version(path: Path, old: str, new: str) -> None:
+def bump_version(mode: BumpMode) -> None:
     if DRY_RUN:
-        return print(f"would bump: {old}->{new}")
-    content = path.read_text()
-    path.write_text(content.replace(old, new))
+        return print(f"would bump: {mode}")
+    run(["poetry", "version", mode.value])
 
 
-def commit_bump(path: Path, version: str) -> None:
+def commit_bump(version: str) -> None:
     run_wrapper(
-        ["git", "commit", "-m", f"chore: Bump v{version} release", str(path)],
+        ["git", "commit", "-a", "-m", f"chore: Bump v{version} release"],
         check=True,
     )
     run_wrapper(
@@ -101,14 +95,35 @@ def github_release(version: str) -> None:
 
 def parse_args() -> Namespace:
     parser = ArgumentParser()
-    parser.add_argument("path", type=Path, help="path to pyproject.toml")
+    group = parser.add_mutually_exclusive_group()
     parser.add_argument(
         "-d",
         "--dry-run",
         action="store_true",
         help="dry run, do not change anything",
     )
-    return parser.parse_args()
+    group.add_argument(
+        "-M",
+        "--major",
+        action="store_true",
+        help="bump to next major version",
+    )
+    group.add_argument(
+        "-m",
+        "--minor",
+        action="store_true",
+        help="bump to next minor version",
+    )
+    group.add_argument(
+        "-p",
+        "--patch",
+        action="store_true",
+        help="bump to next patch version",
+    )
+    args = parser.parse_args()
+    if args.patch is False and args.minor is False and args.major is False:
+        parser.error("please set -M, -m, or -p!")
+    return args
 
 
 def main() -> None:
@@ -117,16 +132,21 @@ def main() -> None:
         global DRY_RUN
         DRY_RUN = True
 
-    check_project()
+    if args.patch is True:
+        mode = BumpMode.PATCH
+    elif args.patch is True:
+        mode = BumpMode.MINOR
+    elif args.patch is True:
+        mode = BumpMode.MAJOR
+
+    check_project(mode)
     git_pull()
 
-    cur_version = get_current_version(args.path)
-    new_version = read_new_version(cur_version)
-    sem_new_version = convert_version_sem(new_version)
+    bump_version(mode)
+    new_version = get_current_version()
 
-    bump_version(args.path, cur_version, new_version)
-    commit_bump(args.path, sem_new_version)
-    github_release(sem_new_version)
+    commit_bump(new_version)
+    github_release(new_version)
     git_pull()
 
 
