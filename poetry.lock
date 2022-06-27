@@ -1043,7 +1043,7 @@ python-versions = "*"
 
 [[package]]
 name = "types-tabulate"
-version = "0.8.9"
+version = "0.8.11"
 description = "Typing stubs for tabulate"
 category = "dev"
 optional = false
@@ -1135,7 +1135,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9,<3.11"
-content-hash = "6a52e9907a4f307752610f8db543215b24f7230b4b60c71b3f4fac1228f94352"
+content-hash = "bd66b56deb42468130e029ddeab0ce894a4a82cf1596dc1d25b41cd2c301d474"
 
 [metadata.files]
 aiofiles = [
@@ -1928,8 +1928,8 @@ types-aiofiles = [
     {file = "types_aiofiles-0.8.8-py3-none-any.whl", hash = "sha256:64846425bc267beec45ddf50b14fb532e6612b9d74c976761cc5e1c47a88a06b"},
 ]
 types-tabulate = [
-    {file = "types-tabulate-0.8.9.tar.gz", hash = "sha256:2fc3fa4fe1853ac987cf50e8d4599e3fe446dd53064fe86a46a407a98e9fc04f"},
-    {file = "types_tabulate-0.8.9-py3-none-any.whl", hash = "sha256:7971ed0cd40454eb18d82c01e2f18bcd09ca23cc9eb901c62d2b04e5d1f57f84"},
+    {file = "types-tabulate-0.8.11.tar.gz", hash = "sha256:17a5fa3b5ca453815778fc9865e8ecd0118b07b2b9faff3e2b06fe448174dd5e"},
+    {file = "types_tabulate-0.8.11-py3-none-any.whl", hash = "sha256:af811268241e8fb87b63c052c87d1e329898a93191309d5d42111372232b2e0e"},
 ]
 typing-extensions = [
     {file = "typing_extensions-4.2.0-py3-none-any.whl", hash = "sha256:6657594ee297170d19f67d55c05852a874e7eb634f4f753dbd667855e07c1708"},
