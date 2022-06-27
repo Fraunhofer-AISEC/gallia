@@ -12,8 +12,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+
+## 1.0.1 (2022-06-27)
+
+### Changed
+
+* Make gallia [REUSE](https://reuse.software/) compliant (#175)
+
 ### Fixed
 
+* Fixed failing CI by removing the pyxcp dependency and vendor the only relevant module (#187)
 * Fixed bug causing leaking TCP connections in DoIP discover scanner (#165)
 * Fixed missing recognition of `--oem default` in the cli (#171)
 
