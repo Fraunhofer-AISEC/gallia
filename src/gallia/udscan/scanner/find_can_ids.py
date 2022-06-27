@@ -8,7 +8,7 @@ from binascii import unhexlify
 from typing import Optional
 
 from gallia.transports.base import TargetURI
-from gallia.transports.can import ISOTPTransport, RawCANTransport
+from gallia.transports.can import ISOTPTransport, RawCANTransport, CANMessage
 from gallia.uds.core.service import UDSRequest, NegativeResponse
 from gallia.uds.core.client import UDSClient
 from gallia.udscan.core import DiscoveryScanner
@@ -54,6 +54,11 @@ class FindCanIDsScanner(DiscoveryScanner):
             type=float,
             default=0.01,
             help="set sleeptime between loop iterations",
+        )
+        self.parser.add_argument(
+            "--extended-ids",
+            action="store_true",
+            help="use extended can identifiers",
         )
         self.parser.add_argument(
             "--extended-addr",
@@ -110,7 +115,7 @@ class FindCanIDsScanner(DiscoveryScanner):
                 if isinstance(resp, NegativeResponse):
                     self.logger.log_summary(f"could not read did: {resp}")
                 else:
-                    self.logger.log_summary(f"response was: {resp}")
+                    self.logger.log_summary(f"response was: {resp.data_records}")
             except Exception as e:
                 self.logger.log_summary(f"reading description failed: {g_repr(e)}")
 
@@ -155,10 +160,11 @@ class FindCanIDsScanner(DiscoveryScanner):
 
         sniff_time: int = args.sniff_time
         self.logger.log_summary(f"Recording idle bus communication for {sniff_time}s")
-        addr_idle = await transport.get_idle_traffic(sniff_time)
+        idle_msgs = await transport.get_idle_traffic(sniff_time)
 
-        self.logger.log_summary(f"Found {len(addr_idle)} CAN Addresses on idle Bus")
-        transport.set_filter(addr_idle, inv_filter=True)
+        self.logger.log_summary(f"Found {len(idle_msgs)} CAN Messages on idle Bus")
+        transport.set_filter(idle_msgs, inv_filter=True)
+        await transport.flush_receiver(2)
 
         req = UDSRequest.parse_dynamic(args.pdu)
         pdu = self.build_isotp_frame(req, padding=args.padding)
@@ -166,17 +172,22 @@ class FindCanIDsScanner(DiscoveryScanner):
         for ID in range(args.start, args.stop + 1):
             await asyncio.sleep(args.sleep)
 
-            dst_addr = args.tester_addr if args.extended_addr else ID
+            arbitration_id = args.tester_addr if args.extended_addr else ID
             if args.extended_addr:
                 pdu = self.build_isotp_frame(req, ID, padding=args.padding)
 
             self.logger.log_info(f"Testing ID {can_id_repr(ID)}")
             is_broadcast = False
 
-            await transport.sendto(pdu, timeout=0.1, dst=dst_addr)
+            msg = CANMessage(
+                arbitration_id=arbitration_id,
+                data=pdu,
+                is_extended_id=args.extended_ids,
+            )
+            await transport.write_frame(msg, timeout=0.1)
             try:
-                addr, _ = await transport.recvfrom(timeout=0.1)
-                if addr == ID:
+                msg = await transport.read_frame(timeout=0.1)
+                if msg.arbitration_id == ID:
                     self.logger.log_info(
                         f"The same CAN ID {can_id_repr(ID)} answered. Skipping…"
                     )
@@ -188,12 +199,12 @@ class FindCanIDsScanner(DiscoveryScanner):
                 # The recv buffer needs to be flushed to avoid
                 # wrong results...
                 try:
-                    new_addr, _ = await transport.recvfrom(timeout=0.1)
-                    if new_addr != addr:
+                    new_msg = await transport.read_frame(timeout=0.1)
+                    if new_msg.arbitration_id != msg.arbitration_id:
                         is_broadcast = True
                         self.logger.log_summary(
                             f"seems that broadcast was triggered on CAN ID {can_id_repr(ID)}, "
-                            f"got answer from {can_id_repr(new_addr)}"
+                            f"got answer from {can_id_repr(new_msg.arbitration_id)}"
                         )
                     else:
                         self.logger.log_info(
@@ -203,26 +214,24 @@ class FindCanIDsScanner(DiscoveryScanner):
                     if is_broadcast:
                         self.logger.log_summary(
                             f"seems that broadcast was triggered on CAN ID {can_id_repr(ID)}, "
-                            f"got answer from {can_id_repr(addr)}"
+                            f"got answer from {can_id_repr(new_msg.arbitration_id)}"
                         )
                     else:
                         self.logger.log_summary(
-                            f"found endpoint on CAN ID [src:dst]: {can_id_repr(ID)}:{can_id_repr(addr)}"
+                            f"found endpoint [src:dst]: {can_id_repr(ID)}:{can_id_repr(msg.arbitration_id)}"
                         )
                         target_args = {}
                         target_args["is_fd"] = str(transport.args["is_fd"]).lower()
-                        target_args["is_extended"] = str(
-                            transport.args["is_extended"]
-                        ).lower()
+                        target_args["is_extended"] = str(msg.is_extended_id).lower()
 
                         if args.extended_addr:
                             target_args["ext_address"] = hex(ID)
                             target_args["rx_ext_address"] = args.tester_addr & 0xFF
                             target_args["src_addr"] = args.tester_addr
-                            target_args["dst_addr"] = hex(addr)
+                            target_args["dst_addr"] = hex(msg.arbitration_id)
                         else:
                             target_args["src_addr"] = hex(ID)
-                            target_args["dst_addr"] = hex(addr)
+                            target_args["dst_addr"] = hex(msg.arbitration_id)
 
                         if args.padding is not None:
                             target_args["tx_padding"] = f"{args.padding}"

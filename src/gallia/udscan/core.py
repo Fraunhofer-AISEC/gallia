@@ -28,7 +28,7 @@ from gallia.db.db_handler import DBHandler
 from gallia.penlab import Dumpcap, PowerSupply, PowerSupplyURI
 from gallia.penlog import Logger
 from gallia.transports.base import BaseTransport, TargetURI
-from gallia.transports.can import ISOTPTransport, RawCANTransport
+from gallia.transports.can import ISOTPTransport
 from gallia.transports.doip import DoIPTransport
 from gallia.transports.tcp import TCPLineSepTransport
 from gallia.uds.ecu import ECU
@@ -59,7 +59,6 @@ class Formatter(ArgumentDefaultsHelpFormatter):
 def load_transport(target: TargetURI) -> BaseTransport:
     transports = [
         ISOTPTransport,
-        RawCANTransport,
         DoIPTransport,
         TCPLineSepTransport,
     ]
