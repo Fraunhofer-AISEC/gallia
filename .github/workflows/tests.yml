@@ -77,6 +77,7 @@ jobs:
     - name: Test scan-sessions
       run: |
         poetry run gallia scan-sessions --target "tcp-lines://127.0.0.1:20162" --no-dumpcap --depth 2
+        poetry run gallia scan-sessions --target "tcp-lines://127.0.0.1:20162" --no-dumpcap --fast
 
     - name: Test scan-identifiers
       run: |
