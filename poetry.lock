@@ -388,22 +388,6 @@ python-versions = "*"
 test = ["coverage[toml] (==5.2)", "pytest (>=6.0.0)", "pytest-mypy-plugins (==1.9.3)"]
 
 [[package]]
-name = "mako"
-version = "1.2.0"
-description = "A super-fast templating language that borrows the best ideas from the existing templating languages."
-category = "main"
-optional = false
-python-versions = ">=3.7"
-
-[package.dependencies]
-MarkupSafe = ">=0.9.2"
-
-[package.extras]
-babel = ["babel"]
-lingua = ["lingua"]
-testing = ["pytest"]
-
-[[package]]
 name = "markdown-it-py"
 version = "2.1.0"
 description = "Python port of markdown-it. Markdown parsing, done right!"
@@ -428,7 +412,7 @@ testing = ["coverage", "pytest", "pytest-cov", "pytest-regressions"]
 name = "markupsafe"
 version = "2.1.1"
 description = "Safely add untrusted strings to HTML/XML markup."
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -593,17 +577,6 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
-name = "pybind11"
-version = "2.9.2"
-description = "Seamless operability between C++11 and Python"
-category = "main"
-optional = false
-python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,>=2.7"
-
-[package.extras]
-global = ["pybind11-global (==2.9.2)"]
-
-[[package]]
 name = "pycodestyle"
 version = "2.8.0"
 description = "Python style guide checker"
@@ -700,17 +673,6 @@ python-versions = ">=3.6.8"
 
 [package.extras]
 diagrams = ["railroad-diagrams", "jinja2"]
-
-[[package]]
-name = "pyserial"
-version = "3.5"
-description = "Python Serial Port Extension"
-category = "main"
-optional = false
-python-versions = "*"
-
-[package.extras]
-cp2110 = ["hidapi"]
 
 [[package]]
 name = "pytest"
@@ -850,41 +812,12 @@ optional = false
 python-versions = "*"
 
 [[package]]
-name = "pyusb"
-version = "1.2.1"
-description = "Python USB access module"
-category = "main"
-optional = false
-python-versions = ">=3.6.0"
-
-[[package]]
 name = "pywin32"
 version = "304"
 description = "Python for Window Extensions"
 category = "main"
 optional = false
 python-versions = "*"
-
-[[package]]
-name = "pyxcp"
-version = "0.18.51"
-description = "Universal Calibration Protocol for Python"
-category = "main"
-optional = false
-python-versions = ">=3.7"
-
-[package.dependencies]
-construct = ">=2.10.67,<3.0.0"
-Mako = ">=1.1.6,<2.0.0"
-pyserial = ">=3.5,<4.0"
-python-can = ">=4.0.0"
-pyusb = ">=1.2.1,<2.0.0"
-setuptools-cpp = ">=0.1.0,<1.0.0"
-toml = ">=0.10.2,<1.0.0"
-uptime = ">=3.0.1"
-
-[package.extras]
-doc = ["sphinx", "sphinxcontrib-napoleon"]
 
 [[package]]
 name = "pyyaml"
@@ -938,17 +871,6 @@ python-versions = ">=3"
 
 [package.extras]
 dev = ["build", "pytest", "pytest-timeout"]
-
-[[package]]
-name = "setuptools-cpp"
-version = "0.1.0"
-description = "Simplified packaging for pybind11-based C++ extensions"
-category = "main"
-optional = false
-python-versions = ">=3.6,<4.0"
-
-[package.dependencies]
-pybind11 = "*"
 
 [[package]]
 name = "snowballstemmer"
@@ -1091,7 +1013,7 @@ widechars = ["wcwidth"]
 name = "toml"
 version = "0.10.2"
 description = "Python Library for Tom's Obvious, Minimal Language"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
 
@@ -1142,14 +1064,6 @@ description = "Ultra fast JSON encoder and decoder for Python"
 category = "dev"
 optional = false
 python-versions = ">=3.7"
-
-[[package]]
-name = "uptime"
-version = "3.0.1"
-description = "Cross-platform uptime library"
-category = "main"
-optional = false
-python-versions = "*"
 
 [[package]]
 name = "urllib3"
@@ -1221,7 +1135,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9,<3.11"
-content-hash = "0cf7ca4acaeb73096642f036fc9d4563734a215a2729a205c977ca42f9f95b0b"
+content-hash = "47291223d92801cbbb903b0c657ce3b1078c401aa396b76eb2402982fd568218"
 
 [metadata.files]
 aiofiles = [
@@ -1594,10 +1508,6 @@ lxml-stubs = [
     {file = "lxml-stubs-0.4.0.tar.gz", hash = "sha256:184877b42127256abc2b932ba8bd0ab5ea80bd0b0fee618d16daa40e0b71abee"},
     {file = "lxml_stubs-0.4.0-py3-none-any.whl", hash = "sha256:3b381e9e82397c64ea3cc4d6f79d1255d015f7b114806d4826218805c10ec003"},
 ]
-mako = [
-    {file = "Mako-1.2.0-py3-none-any.whl", hash = "sha256:23aab11fdbbb0f1051b93793a58323ff937e98e34aece1c4219675122e57e4ba"},
-    {file = "Mako-1.2.0.tar.gz", hash = "sha256:9a7c7e922b87db3686210cf49d5d767033a41d4010b284e747682c92bddd8b39"},
-]
 markdown-it-py = [
     {file = "markdown-it-py-2.1.0.tar.gz", hash = "sha256:cf7e59fed14b5ae17c0006eff14a2d9a00ed5f3a846148153899a0224e2c07da"},
     {file = "markdown_it_py-2.1.0-py3-none-any.whl", hash = "sha256:93de681e5c021a432c63147656fe21790bc01231e0cd2da73626f1aa3ac0fe27"},
@@ -1828,10 +1738,6 @@ py = [
     {file = "py-1.11.0-py2.py3-none-any.whl", hash = "sha256:607c53218732647dff4acdfcd50cb62615cedf612e72d1724fb1a0cc6405b378"},
     {file = "py-1.11.0.tar.gz", hash = "sha256:51c75c4126074b472f746a24399ad32f6053d1b34b68d2fa41e558e6f4a98719"},
 ]
-pybind11 = [
-    {file = "pybind11-2.9.2-py2.py3-none-any.whl", hash = "sha256:20f56674da31c96bca7569b91e60f2bd30d693f0728541412ec927574f7bc9df"},
-    {file = "pybind11-2.9.2.tar.gz", hash = "sha256:e5541f8bccf9111d1a94f7897593b55c4cf1a28d5e8cfc8225a855651f011071"},
-]
 pycodestyle = [
     {file = "pycodestyle-2.8.0-py2.py3-none-any.whl", hash = "sha256:720f8b39dde8b293825e7ff02c475f3077124006db4f440dcbc9a20b76548a20"},
     {file = "pycodestyle-2.8.0.tar.gz", hash = "sha256:eddd5847ef438ea1c7870ca7eb78a9d47ce0cdb4851a5523949f2601d0cbbe7f"},
@@ -1863,10 +1769,6 @@ pylsp-rope = [
 pyparsing = [
     {file = "pyparsing-3.0.9-py3-none-any.whl", hash = "sha256:5026bae9a10eeaefb61dab2f09052b9f4307d44aee4eda64b309723d8d206bbc"},
     {file = "pyparsing-3.0.9.tar.gz", hash = "sha256:2b020ecf7d21b687f219b71ecad3631f644a47f01403fa1d1036b0c6416d70fb"},
-]
-pyserial = [
-    {file = "pyserial-3.5-py2.py3-none-any.whl", hash = "sha256:c4451db6ba391ca6ca299fb3ec7bae67a5c55dde170964c7a14ceefec02f2cf0"},
-    {file = "pyserial-3.5.tar.gz", hash = "sha256:3c77e014170dfffbd816e6ffc205e9842efb10be9f58ec16d3e8675b4925cddb"},
 ]
 pytest = [
     {file = "pytest-7.1.2-py3-none-any.whl", hash = "sha256:13d0e3ccfc2b6e26be000cb6568c832ba67ba32e719443bfe725814d3c42433c"},
@@ -1905,10 +1807,6 @@ pytz = [
     {file = "pytz-2022.1-py2.py3-none-any.whl", hash = "sha256:e68985985296d9a66a881eb3193b0906246245294a881e7c8afe623866ac6a5c"},
     {file = "pytz-2022.1.tar.gz", hash = "sha256:1e760e2fe6a8163bc0b3d9a19c4f84342afa0a2affebfaa84b01b978a02ecaa7"},
 ]
-pyusb = [
-    {file = "pyusb-1.2.1-py3-none-any.whl", hash = "sha256:2b4c7cb86dbadf044dfb9d3a4ff69fd217013dbe78a792177a3feb172449ea36"},
-    {file = "pyusb-1.2.1.tar.gz", hash = "sha256:a4cc7404a203144754164b8b40994e2849fde1cfff06b08492f12fff9d9de7b9"},
-]
 pywin32 = [
     {file = "pywin32-304-cp310-cp310-win32.whl", hash = "sha256:3c7bacf5e24298c86314f03fa20e16558a4e4138fc34615d7de4070c23e65af3"},
     {file = "pywin32-304-cp310-cp310-win_amd64.whl", hash = "sha256:4f32145913a2447736dad62495199a8e280a77a0ca662daa2332acf849f0be48"},
@@ -1924,21 +1822,6 @@ pywin32 = [
     {file = "pywin32-304-cp38-cp38-win_amd64.whl", hash = "sha256:ead865a2e179b30fb717831f73cf4373401fc62fbc3455a0889a7ddac848f83e"},
     {file = "pywin32-304-cp39-cp39-win32.whl", hash = "sha256:25746d841201fd9f96b648a248f731c1dec851c9a08b8e33da8b56148e4c65cc"},
     {file = "pywin32-304-cp39-cp39-win_amd64.whl", hash = "sha256:d24a3382f013b21aa24a5cfbfad5a2cd9926610c0affde3e8ab5b3d7dbcf4ac9"},
-]
-pyxcp = [
-    {file = "pyxcp-0.18.51-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:0bb48d4160c6a27fa83ea36bed32259d1edce55061ccbe890e460eca29f7acbe"},
-    {file = "pyxcp-0.18.51-cp310-cp310-win32.whl", hash = "sha256:882d253edeb754fb9a8d0d9892612d40d962d8f2088f9fa44f9a61a8bcb08447"},
-    {file = "pyxcp-0.18.51-cp310-cp310-win_amd64.whl", hash = "sha256:197cc3e1dcbd14b390330130badd4c92f9aad1947bc9e4824325a79ba6137068"},
-    {file = "pyxcp-0.18.51-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:60d51c20d7130b80d9c53b98e6a1b475c1c7d432d4b13a8c96da85f9f844fc34"},
-    {file = "pyxcp-0.18.51-cp37-cp37m-win32.whl", hash = "sha256:247cae8037bc76e29972631fe335b45ad105f7a8725a43e0067a123627449c4e"},
-    {file = "pyxcp-0.18.51-cp37-cp37m-win_amd64.whl", hash = "sha256:5fc34e9e3a6f6f71675cf56d3abfbbcd6cede6140a3f89a02a983b15669e93e7"},
-    {file = "pyxcp-0.18.51-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:e1f6e2f2f73388c291f493dcfbd2c56e2837ade2660cb8c506c67c53dd2b9f2d"},
-    {file = "pyxcp-0.18.51-cp38-cp38-win32.whl", hash = "sha256:d7c888e8d20647f9164315b2870bee537a576030102666c7d7f5ee4eacfea1e2"},
-    {file = "pyxcp-0.18.51-cp38-cp38-win_amd64.whl", hash = "sha256:9ffadfa8a483cf7367e4ecf5c99f40a847343ab9327e55298855bc803ff194a5"},
-    {file = "pyxcp-0.18.51-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:2044e835dac28db85298ae9f03288d8045bcf3ffa826f30348cbed55e4400eaa"},
-    {file = "pyxcp-0.18.51-cp39-cp39-win32.whl", hash = "sha256:f4c285026813c456df81de41ead591f906f16e7379bb81fe3ec8659a1db45740"},
-    {file = "pyxcp-0.18.51-cp39-cp39-win_amd64.whl", hash = "sha256:7babf93e4636078edc6c7e6b1b55e787515caf1bad06c5e19fdbd668ef7cf399"},
-    {file = "pyxcp-0.18.51.tar.gz", hash = "sha256:9b66cb5b7aeff742bbf137cea7b4d35d4e7c1610a1bb97a8c96a54b2138fb7c2"},
 ]
 pyyaml = [
     {file = "PyYAML-6.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:d4db7c7aef085872ef65a8fd7d6d09a14ae91f691dec3e87ee5ee0539d516f53"},
@@ -1986,10 +1869,6 @@ reuse = [
 rope = [
     {file = "rope-1.1.1-py3-none-any.whl", hash = "sha256:216390b6342bde8ef1f27a6663554de0ea0b1fdad7c421deb3d5a3f6c5fc01e7"},
     {file = "rope-1.1.1.tar.gz", hash = "sha256:13048ff0245a0fa187f282697a55add46e4ccf083e7670f868bdf54ee9e47f2e"},
-]
-setuptools-cpp = [
-    {file = "setuptools_cpp-0.1.0-py3-none-any.whl", hash = "sha256:cd8179c038a12dbf2914999928f193f54d4713fd11715efdc5d6f450f663c8bd"},
-    {file = "setuptools_cpp-0.1.0.tar.gz", hash = "sha256:4fd5e08603237578d06d28efd592d9847b523ede3e502f660be44b1e6254674d"},
 ]
 snowballstemmer = [
     {file = "snowballstemmer-2.2.0-py2.py3-none-any.whl", hash = "sha256:c8e1716e83cc398ae16824e5572ae04e0d9fc2c6b985fb0f900f5f0c96ecba1a"},
@@ -2107,9 +1986,6 @@ ujson = [
     {file = "ujson-5.3.0-pp38-pypy38_pp73-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:c5696c99a7dd567566c18490e8e346b2657967feb1e3c2004e91dbb253db0894"},
     {file = "ujson-5.3.0-pp38-pypy38_pp73-win_amd64.whl", hash = "sha256:a68d5a8a46712ffe86db8ae1b4311714db534725521c71fd4c9e1cd062dae9a4"},
     {file = "ujson-5.3.0.tar.gz", hash = "sha256:ab938777b3ac0372231ee654a7f6a13787e587b1ca268d8aa7e6fb6846e477d0"},
-]
-uptime = [
-    {file = "uptime-3.0.1.tar.gz", hash = "sha256:7c300254775b807ce46e3dcbcda30aa3b9a204b9c57a7ac1e79ee6dbe3942973"},
 ]
 urllib3 = [
     {file = "urllib3-1.26.9-py2.py3-none-any.whl", hash = "sha256:44ece4d53fb1706f667c9bd1c648f5469a2ec925fcf3a776667042d645472c14"},

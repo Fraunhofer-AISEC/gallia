@@ -4,8 +4,7 @@
 
 from typing import Any, Optional
 
-import pyxcp
-import pyxcp.types
+from gallia.services.xcp import types
 
 from gallia.penlog import Logger
 from gallia.transports.base import BaseTransport
@@ -23,7 +22,7 @@ class XCPService:
     async def request(self, data: bytes, timeout: Optional[float] = None) -> bytes:
         t = timeout if timeout else self.timeout
         resp = await self.transport.request(data, t)
-        header = pyxcp.types.Response.parse(resp)
+        header = types.Response.parse(resp)
         self.logger.log_info(header)
         if int(header.type) != 255:
             raise ValueError(
@@ -35,9 +34,9 @@ class XCPService:
     async def connect(self) -> None:
         self.logger.log_info("XCP CONNECT")
         resp = await self.request(bytes([0xFF, 0x00]))
-        tmp = pyxcp.types.ConnectResponsePartial.parse(resp)
+        tmp = types.ConnectResponsePartial.parse(resp)
         self.byte_order = tmp.commModeBasic.byteOrder
-        tmp = pyxcp.types.ConnectResponse.parse(resp, byteOrder=self.byte_order)
+        tmp = types.ConnectResponse.parse(resp, byteOrder=self.byte_order)
         self.logger.log_info(tmp)
         self.logger.log_summary("XCP CONNECT -> OK")
 
@@ -50,14 +49,14 @@ class XCPService:
     async def get_status(self) -> None:
         self.logger.log_info("XCP GET_STATUS")
         resp = await self.request(bytes([0xFD]))
-        tmp = pyxcp.types.GetStatusResponse.parse(resp, byteOrder=self.byte_order)
+        tmp = types.GetStatusResponse.parse(resp, byteOrder=self.byte_order)
         self.logger.log_info(tmp)
         self.logger.log_summary("XCP GET_STATUS -> OK")
 
     async def get_comm_mode_info(self) -> None:
         self.logger.log_info("XCP GET_COMM_MODE_INFO")
         resp = await self.request(bytes([0xFB]))
-        tmp = pyxcp.types.GetCommModeInfoResponse.parse(
+        tmp = types.GetCommModeInfoResponse.parse(
             resp,
             byteOrder=self.byte_order,
         )
@@ -67,7 +66,7 @@ class XCPService:
     async def get_id(self, id_: int) -> None:
         self.logger.log_info(f"XCP GET_ID({id_})")
         resp = await self.request(bytes([0xFA, id_]))
-        tmp = pyxcp.types.GetIDResponse.parse(resp, byteOrder=self.byte_order)
+        tmp = types.GetIDResponse.parse(resp, byteOrder=self.byte_order)
         self.logger.log_info(tmp)
         self.logger.log_summary(f"XCP GET_ID({id_}) -> OK")
 
