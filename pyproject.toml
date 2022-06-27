@@ -32,6 +32,7 @@ zstandard = ">=0.17,<0.19"
 python-can = "^4.0.0"
 tabulate = "^0.8.9"
 construct = "^2.10.68"
+rich = "^12.4.4"
 
 [tool.poetry.dev-dependencies]
 black = "^22.1.0"

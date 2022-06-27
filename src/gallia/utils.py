@@ -7,7 +7,6 @@ import re
 from argparse import Action, ArgumentError, ArgumentParser, Namespace
 from enum import Enum
 from pathlib import Path
-from sys import stdout
 from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence, Union
 from urllib.parse import urlparse
 
@@ -183,30 +182,6 @@ async def catch_and_log_exception(
         return await func(*args, **kwargs)
     except Exception as e:
         logger.log_error(f"func {func.__name__} failed: {repr(e)}")
-
-
-class ANSIEscapes:
-    if stdout.isatty():
-        BOLD = "\033[1m"
-        ITALIC = "\033[3m"
-        UNDERSCORE = "\033[4m"
-        BLINK = "\033[5m"
-        CROSSED = "\033[9m"
-
-        BLACK = "\033[90m"
-        RED = "\033[91m"
-        GREEN = "\033[92m"
-        YELLOW = "\033[93m"
-        BLUE = "\033[94m"
-        MAGENTA = "\033[95m"
-        CYAN = "\033[96m"
-        WHITE = "\033[97m"
-
-        RESET = "\033[0m"
-    else:
-        BOLD = ITALIC = UNDERSCORE = BLINK = CROSSED = ""
-        BLACK = RED = GREEN = YELLOW = BLUE = MAGENTA = CYAN = WHITE = ""
-        RESET = ""
 
 
 async def write_target_list(
