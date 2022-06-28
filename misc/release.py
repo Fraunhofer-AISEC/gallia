@@ -6,7 +6,7 @@
 
 import sys
 from argparse import ArgumentParser, Namespace
-from enum import Enum, unique
+from enum import Enum, unique, auto
 from subprocess import run
 from typing import Any, NoReturn
 
@@ -19,6 +19,15 @@ class BumpMode(Enum):
     PATCH = "patch"
     MINOR = "minor"
     MAJOR = "major"
+    PREPATCH = "prepatch"
+    PREMINOR = "preminor"
+    PREMAJOR = "premajor"
+
+
+@unique
+class ReleaseNotes(Enum):
+    INTERACTIVE = auto()
+    GENERATE = auto()
 
 
 def die(msg: str) -> NoReturn:
@@ -44,10 +53,15 @@ def check_project(mode: BumpMode) -> None:
     )
     current_branch = p.stdout.decode().strip()
 
-    if mode == BumpMode.PATCH or mode == BumpMode.MINOR:
+    if mode == BumpMode.PATCH or mode == BumpMode.PREPATCH:
         if not current_branch.endswith("-maint"):
-            die("minor or patch releases must be cut from master branch!")
-    elif mode == BumpMode.MAJOR:
+            die("minor or patch releases must be cut from maintenance branch!")
+    elif (
+        mode == BumpMode.MAJOR
+        or mode == BumpMode.PREMAJOR
+        or mode == BumpMode.MINOR
+        or mode == BumpMode.PREMINOR
+    ):
         if current_branch != "master":
             die("major releases must be cut from master branch!")
 
@@ -81,12 +95,13 @@ def commit_bump(version: str) -> None:
     )
 
 
-def github_release(version: str) -> None:
+def github_release(version: str, mode: BumpMode, notes: ReleaseNotes) -> None:
     run_wrapper(["git", "push", "--follow-tags"], check=True)
 
-    cmd = ["gh", "release", "create", "--generate-notes"]
-    pre = True if any(x in version.lower() for x in ("a", "b", "rc")) else False
-    if pre:
+    cmd = ["gh", "release", "create"]
+    if notes == ReleaseNotes.GENERATE:
+        cmd += ["--generate-notes"]
+    if mode.value.startswith("pre"):
         cmd += ["--prerelease"]
     cmd += [f"v{version}"]
 
@@ -95,34 +110,24 @@ def github_release(version: str) -> None:
 
 def parse_args() -> Namespace:
     parser = ArgumentParser()
-    group = parser.add_mutually_exclusive_group()
     parser.add_argument(
         "-d",
         "--dry-run",
         action="store_true",
         help="dry run, do not change anything",
     )
-    group.add_argument(
-        "-M",
-        "--major",
+    parser.add_argument(
+        "-g",
+        "--generate-notes",
         action="store_true",
-        help="bump to next major version",
+        help="auto generate release notes",
     )
-    group.add_argument(
-        "-m",
-        "--minor",
-        action="store_true",
-        help="bump to next minor version",
-    )
-    group.add_argument(
-        "-p",
-        "--patch",
-        action="store_true",
-        help="bump to next patch version",
+    parser.add_argument(
+        "RULE",
+        choices=list(map(lambda x: x.value, list(BumpMode))),
+        help="bumprule for the next version",
     )
     args = parser.parse_args()
-    if args.patch is False and args.minor is False and args.major is False:
-        parser.error("please set -M, -m, or -p!")
     return args
 
 
@@ -132,21 +137,17 @@ def main() -> None:
         global DRY_RUN
         DRY_RUN = True
 
-    if args.patch is True:
-        mode = BumpMode.PATCH
-    elif args.patch is True:
-        mode = BumpMode.MINOR
-    elif args.patch is True:
-        mode = BumpMode.MAJOR
+    rule = BumpMode(args.RULE)
+    notes = ReleaseNotes.GENERATE if args.generate_notes else ReleaseNotes.INTERACTIVE
 
-    check_project(mode)
+    check_project(rule)
     git_pull()
 
-    bump_version(mode)
+    bump_version(rule)
     new_version = get_current_version()
 
     commit_bump(new_version)
-    github_release(new_version)
+    github_release(new_version, rule, notes)
     git_pull()
 
 
