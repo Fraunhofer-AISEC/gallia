@@ -226,6 +226,7 @@ class UDSServer(ABC):
     ) -> None:
         if isinstance(response, service.DiagnosticSessionControlResponse):
             self.state.session = response.diagnostic_session_type
+            self.state.security_access_level = None
 
         if (
             isinstance(response, service.ReadDataByIdentifierResponse)
@@ -320,7 +321,7 @@ class UDSServer(ABC):
 
             await self.update_state(request, response)
 
-            if self.state != old_state:
+            if self.state.__dict__ != old_state.__dict__:
                 self.logger.log_info(f"Changed state to {self.state}")
 
             if self.use_default_response_if_suppress:
@@ -844,7 +845,7 @@ class UDSServerTransport:
     async def handle_request(self, request_pdu: bytes) -> tuple[Optional[bytes], float]:
         start = time()
 
-        if start - self.last_time_active > 2:
+        if start - self.last_time_active > 10:
             self.logger.log_info("Server state reset due to inactivity")
             self.server.state.reset()
 
