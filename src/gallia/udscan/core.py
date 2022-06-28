@@ -31,7 +31,9 @@ from gallia.transports.base import BaseTransport, TargetURI
 from gallia.transports.can import ISOTPTransport, RawCANTransport
 from gallia.transports.doip import DoIPTransport
 from gallia.transports.tcp import TCPLineSepTransport
+from gallia.uds.core.service import NegativeResponse, UDSResponse
 from gallia.uds.ecu import ECU
+from gallia.uds.helpers import raise_for_error
 from gallia.utils import camel_to_snake, g_repr
 
 
@@ -395,6 +397,13 @@ class UDSScanner(Scanner):
         )
         choices = ["default"] + choices
         group.add_argument(
+            "--ecu-reset",
+            const=0x01,
+            nargs="?",
+            default=None,
+            help="Trigger an initial ecu_reset via UDS; reset level is optional",
+        )
+        group.add_argument(
             "--oem",
             default=os.environ.get("GALLIA_OEM", "default"),
             choices=choices,
@@ -515,6 +524,16 @@ class UDSScanner(Scanner):
                 self.logger.log_warning(
                     f"Could not write the scan run to the database: {g_repr(e)}"
                 )
+
+        if args.ecu_reset is not None:
+            resp: UDSResponse = await self.ecu.ecu_reset(args.ecu_reset)
+            if isinstance(resp, NegativeResponse):
+                self.logger.log_warning(f"ECUReset failed: {resp}")
+                self.logger.log_warning("Switching to default session")
+                raise_for_error(await self.ecu.set_session(0x01))
+                resp = await self.ecu.ecu_reset(args.ecu_reset)
+                if isinstance(resp, NegativeResponse):
+                    self.logger.log_warning(f"ECUReset in session 0x01 failed: {resp}")
 
         # Handles connecting to the target and waits
         # until it is ready.
