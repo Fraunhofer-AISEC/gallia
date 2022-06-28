@@ -856,10 +856,14 @@ class UDSServerTransport:
         self.last_time_active = end
 
         if response is not None:
-            self.logger.log_info(f"  <--- {response} after {end - start} s")
+            self.logger.log_info(
+                f"  <--- {response} after {(end - start) * 1000:.2f} ms"
+            )
             return response.pdu, end - start
         else:
-            self.logger.log_info(f"  x--- NO RESPONSE after {end - start} s")
+            self.logger.log_info(
+                f"  x--- NO RESPONSE after {(end - start) * 1000:.2f} ms"
+            )
             return None, end - start
 
 
