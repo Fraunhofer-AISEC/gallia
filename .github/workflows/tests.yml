@@ -72,43 +72,44 @@ jobs:
 
     - name: Test scan-services
       run: |
-        poetry run gallia scan-services --target "tcp-lines://127.0.0.1:20162" --no-dumpcap --sessions 1 2 --check-session
+        poetry run gallia scan-services --ecu-reset --target "tcp-lines://127.0.0.1:20162" --no-dumpcap --sessions 1 2 --check-session
 
     - name: Test scan-sessions
       run: |
-        poetry run gallia scan-sessions --target "tcp-lines://127.0.0.1:20162" --no-dumpcap --depth 2
+        poetry run gallia scan-sessions --ecu-reset --target "tcp-lines://127.0.0.1:20162" --no-dumpcap --depth 2
+        poetry run gallia scan-sessions --ecu-reset --target "tcp-lines://127.0.0.1:20162" --no-dumpcap --fast
 
     - name: Test scan-identifiers
       run: |
-        poetry run gallia scan-identifiers --target "tcp-lines://127.0.0.1:20162" --no-dumpcap --start 0 --end 100 --sid 0x22
-        poetry run gallia scan-identifiers --target "tcp-lines://127.0.0.1:20162" --no-dumpcap --start 0 --end 100 --sid 0x2e
-        poetry run gallia scan-identifiers --target "tcp-lines://127.0.0.1:20162" --no-dumpcap --start 0 --end 100 --sid 0x31
+        poetry run gallia scan-identifiers --ecu-reset --target "tcp-lines://127.0.0.1:20162" --no-dumpcap --start 0 --end 100 --sid 0x22
+        poetry run gallia scan-identifiers --ecu-reset --target "tcp-lines://127.0.0.1:20162" --no-dumpcap --start 0 --end 100 --sid 0x2e
+        poetry run gallia scan-identifiers --ecu-reset --target "tcp-lines://127.0.0.1:20162" --no-dumpcap --start 0 --end 100 --sid 0x31
 
     - name: Test scan-reset
       run: |
-        poetry run gallia scan-reset --target "tcp-lines://127.0.0.1:20162" --no-dumpcap 
+        poetry run gallia scan-reset --ecu-reset --target "tcp-lines://127.0.0.1:20162" --no-dumpcap 
 
     - name: Test scan-dump-seeds
       run: |
-        poetry run gallia scan-dump-seeds --target "tcp-lines://127.0.0.1:20162" --no-dumpcap --duration 0.01 --level 0x2f
+        poetry run gallia scan-dump-seeds --ecu-reset --target "tcp-lines://127.0.0.1:20162" --no-dumpcap --duration 0.01 --level 0x2f
 
     - name: Test scan-memory-functions
       run: |
         for sid in 0x23 0x34 0x35 0x3d; do
-            poetry run gallia scan-memory-functions --target "tcp-lines://127.0.0.1:20162" --no-dumpcap --sid "$sid"
+            poetry run gallia scan-memory-functions --ecu-reset --target "tcp-lines://127.0.0.1:20162" --no-dumpcap --sid "$sid"
         done
 
     - name: Test UDS primitives
       run: |
-        poetry run gallia simple-ecu-reset --target "tcp-lines://127.0.0.1:20162" --no-dumpcap 
-        poetry run gallia simple-read-error-log --target "tcp-lines://127.0.0.1:20162" --no-dumpcap 
-        poetry run gallia simple-get-vin --target "tcp-lines://127.0.0.1:20162" --no-dumpcap 
-        poetry run gallia simple-ping --count 2 --target "tcp-lines://127.0.0.1:20162" --no-dumpcap 
-        poetry run gallia simple-read-by-identifier --data-id 0x108d --target "tcp-lines://127.0.0.1:20162" --no-dumpcap 
-        poetry run gallia simple-send-pdu 1001 --target "tcp-lines://127.0.0.1:20162" --no-dumpcap 
-        poetry run gallia simple-write-by-identifier --data-id 0x2266 --data 00 --target "tcp-lines://127.0.0.1:20162" --no-dumpcap
-        poetry run gallia simple-dtc --target "tcp-lines://127.0.0.1:20162" --no-dumpcap read
-        poetry run gallia simple-dtc --target "tcp-lines://127.0.0.1:20162" --no-dumpcap clear
-        poetry run gallia simple-dtc --target "tcp-lines://127.0.0.1:20162" --no-dumpcap control --stop
-        poetry run gallia simple-dtc --target "tcp-lines://127.0.0.1:20162" --no-dumpcap control --resume
-        poetry run gallia simple-iocbi --target "tcp-lines://127.0.0.1:20162" --no-dumpcap 0x1000 reset-to-default
+        poetry run gallia simple-ecu-reset --ecu-reset --target "tcp-lines://127.0.0.1:20162" --no-dumpcap 
+        poetry run gallia simple-read-error-log --ecu-reset --target "tcp-lines://127.0.0.1:20162" --no-dumpcap 
+        poetry run gallia simple-get-vin --ecu-reset --target "tcp-lines://127.0.0.1:20162" --no-dumpcap 
+        poetry run gallia simple-ping --ecu-reset --count 2 --target "tcp-lines://127.0.0.1:20162" --no-dumpcap 
+        poetry run gallia simple-read-by-identifier --ecu-reset --data-id 0x108d --target "tcp-lines://127.0.0.1:20162" --no-dumpcap 
+        poetry run gallia simple-send-pdu 1001 --ecu-reset --target "tcp-lines://127.0.0.1:20162" --no-dumpcap 
+        poetry run gallia simple-write-by-identifier --ecu-reset --data-id 0x2266 --data 00 --target "tcp-lines://127.0.0.1:20162" --no-dumpcap
+        poetry run gallia simple-dtc --ecu-reset --target "tcp-lines://127.0.0.1:20162" --no-dumpcap read
+        poetry run gallia simple-dtc --ecu-reset --target "tcp-lines://127.0.0.1:20162" --no-dumpcap clear
+        poetry run gallia simple-dtc --ecu-reset --target "tcp-lines://127.0.0.1:20162" --no-dumpcap control --stop
+        poetry run gallia simple-dtc --ecu-reset --target "tcp-lines://127.0.0.1:20162" --no-dumpcap control --resume
+        poetry run gallia simple-iocbi --ecu-reset --target "tcp-lines://127.0.0.1:20162" --no-dumpcap 0x1000 reset-to-default
