@@ -14,7 +14,7 @@ from gallia.transports.base import TargetURI
 from gallia.transports.can import ISOTPTransport
 from gallia.transports.tcp import TCPLineSepTransport
 from gallia.uds.core.constants import UDSIsoServices
-from gallia.uds.core.server import (
+from gallia.uds.server import (
     DBUDSServer,
     ISOTPUDSServerTransport,
     RandomUDSServer,
