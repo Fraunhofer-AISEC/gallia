@@ -14,6 +14,10 @@ from datetime import datetime
 from enum import Enum, IntEnum
 from typing import Any, TextIO, Optional
 
+from rich.console import Console
+
+console = Console()
+
 
 class MessageType(str, Enum):
     MESSAGE = "message"
@@ -39,20 +43,6 @@ class OutputType(Enum):
     HR_NANO = "hr-nano"
 
 
-class Color(Enum):
-    NOP = ""
-    RESET = "\033[0m"
-    BOLD = "\033[1m"
-    RED = "\033[31m"
-    GREEN = "\033[32m"
-    YELLOW = "\033[33m"
-    BLUE = "\033[34m"
-    PURPLE = "\033[35m"
-    CYAN = "\033[36m"
-    WHITE = "\033[37m"
-    GRAY = "\033[0;38;5;245m"
-
-
 @dataclass
 class RecordType:
     component: str
@@ -65,12 +55,6 @@ class RecordType:
     line: Optional[str] = None
     stacktrace: Optional[str] = None
     tags: Optional[list[str]] = None
-
-
-def colorize(color: Color, s: str) -> str:
-    if color == Color.NOP:
-        return s
-    return f"{color.value}{s}{Color.RESET.value}"
 
 
 def _get_line_number(depth: int) -> str:
