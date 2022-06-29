@@ -13,8 +13,6 @@ This project has the following system level dependencies:
 * [Python](https://python.org) >= 3.9
 * [poetry](https://python-poetry.org) (optional, for development)
 * [dumpcap](https://www.wireshark.org/docs/man-pages/dumpcap.html) (optional, part of [wireshark](https://www.wireshark.org/))
-* [jq](https://stedolan.github.io/jq/) (optional, required for `penrun`)
-* [penlog](https://github.com/Fraunhofer-AISEC/penlog) ([hr](https://fraunhofer-aisec.github.io/penlog/hr.1.html) optional for reading logfiles)
 
 Python dependencies are listed in `pyproject.toml`
 
@@ -30,11 +28,6 @@ $ paru -S gallia
 ``` shell-session
 $ pip install gallia
 ```
-
-#### penrun (optional)
-
-Install `bin/penrun` into `$PATH`.
-[`$HOME/.local/bin`](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html) might be a good candidate.
 
 ## Development
 
@@ -97,7 +90,6 @@ $ rm -rf ~/.cache/pypoetry/virtualenvs/*
 
 ```shell-session
 # register-python-argcomplete gallia > /etc/bash_completion.d/gallia
-# echo "complete -F _command penrun" > /etc/bash_completion.d/penrun
 ```
 
 #### fish
@@ -105,7 +97,6 @@ $ rm -rf ~/.cache/pypoetry/virtualenvs/*
 ```shell-session
 $ mkdir -p ~/.config/fish/completions
 $ register-python-argcomplete --shell fish gallia > ~/.config/fish/completions/gallia.fish
-$ cp misc/penrun.fish ~/.config/fish/completions
 ```
 
 ### IDE Integration
