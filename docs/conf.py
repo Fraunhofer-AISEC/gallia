@@ -25,7 +25,7 @@
 
 project = "gallia"
 author = "AISEC Pentest Team"
-copyright = f"2018 -- 2022, {author}"
+copyright = f"2018, {author}"
 
 
 # -- General configuration ---------------------------------------------------

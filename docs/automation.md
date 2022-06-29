@@ -4,9 +4,10 @@ SPDX-FileCopyrightText: AISEC Pentesting Team
 SPDX-License-Identifier: CC0-1.0
 -->
 
-# Power Supply
+# Automation
+## Power Supply
 
-Gallia supports the [opennetzteil API](https://codeberg.org/rumpelsepp/opennetzteil) via a builtin client.
+Gallia supports the [opennetzteil API](https://github.com/rumpelsepp/opennetzteil) via a builtin client.
 The location to the opennetzteil server is specified via `--power-supply`.
 The argument is a URI of the following form:
 
