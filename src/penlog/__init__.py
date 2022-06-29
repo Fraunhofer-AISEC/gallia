@@ -4,15 +4,238 @@
 
 import inspect
 import json
+import logging
 import os
 import socket
 import sys
 import traceback
 import uuid
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from enum import Enum, IntEnum
-from typing import Any, TextIO, Optional
+from typing import Any, Optional, TextIO
+
+from rich.logging import RichHandler
+
+from penlog import haggis_logs
+
+haggis_logs.add_logging_level("TRACE", 5)
+haggis_logs.add_logging_level("NOTICE", 25)
+
+fac = logging.getLogRecordFactory()
+
+
+def _get_line_number(depth: int) -> tuple[str, int]:
+    stack = inspect.stack()
+    frame = stack[depth]
+    return frame.filename, frame.lineno
+
+
+def str2bool(s: str) -> bool:
+    return s.lower() in ["true", "1", "t", "y"]
+
+
+def _log_record_factory(
+    name,
+    level,
+    fn,
+    lno,
+    msg,
+    args,
+    exc_info,
+    func=None,
+    sinfo=None,
+    **kwargs,
+):
+    custom_depth = 7 if name == "root" else 5
+    if level == 5 or level == 25:
+        fn, lno = _get_line_number(custom_depth)
+    return fac(
+        name,
+        level,
+        fn,
+        lno,
+        msg,
+        args,
+        exc_info,
+        func=func,
+        sinfo=sinfo,
+        **kwargs,
+    )
+
+
+logging.setLogRecordFactory(_log_record_factory)
+
+FORMAT = "%(message)s"
+logging.basicConfig(
+    level="NOTSET",
+    format=FORMAT,
+    datefmt="%Y-%m-%d %H:%M:%S",
+    handlers=[
+        RichHandler(
+            rich_tracebacks=True,
+            tracebacks_show_locals=True,
+            show_level=False,
+            omit_repeated_times=False,
+        )
+    ],
+)
+
+
+class Penlogger(logging.Logger):
+    def trace(self, msg, *args, **kwargs):
+        if self.isEnabledFor(5):
+            self._log(5, msg, args, **kwargs)
+
+    def notice(self, msg, *args, **kwargs):
+        if self.isEnabledFor(25):
+            self._log(25, msg, args, **kwargs)
+
+
+logging.setLoggerClass(Penlogger)
+logger: Penlogger = logging.getLogger("foobar")
+
+logger.trace("foo")
+
+logging.trace("foobar")
+logging.debug("foobar")
+logging.info("foobar")
+logging.notice("foobar")
+logging.warning("foobar")
+logging.error("foobar")
+logging.exception(RuntimeError("Deine Mama"))
+
+
+class MessagePrio(IntEnum):
+    EMERGENCY = 0
+    ALERT = 1
+    CRITICAL = 2
+    ERROR = 3
+    WARNING = 4
+    NOTICE = 5
+    INFO = 6
+    DEBUG = 7
+    TRACE = 8
+
+
+class MessageType(str, Enum):
+    MESSAGE = "message"
+
+
+@dataclass
+class RecordType:
+    component: str
+    data: str
+    host: str
+    priority: MessagePrio
+    timestamp: str
+    type: str
+    line: Optional[str] = None
+    stacktrace: Optional[str] = None
+    tags: Optional[list[str]] = None
+
+
+class Logger:
+    def __init__(self, component: str, loglevel: Optional[int] = None):
+        self._logger = logging.getLogger(component)
+        self.host = socket.gethostname()
+        self.component = component
+        self.lines = str2bool(os.environ.get("PENLOG_CAPTURE_LINES", ""))
+        self.stacktraces = str2bool(os.environ.get("PENLOG_CAPTURE_STACKTRACES", ""))
+
+        # Default the loglevel to the function argument
+        # if it is set. Otherwise try to read the environ
+        # variable. If it is set, validate it. If it is not
+        # set, default to INFO.
+        if loglevel is not None:
+            self.loglevel = loglevel
+        else:
+            if (level := os.getenv("PENLOG_LOGLEVEL")) is None:
+                self.loglevel = MessagePrio.INFO
+            else:
+                try:
+                    level_int = int(level, 0)
+                    self.loglevel = MessagePrio(level_int)
+                except ValueError as e:
+                    for level_enum in MessagePrio:
+                        if level == level_enum.name.lower():
+                            self.loglevel = level_enum
+                            break
+                    else:
+                        raise ValueError("invalid loglevel") from e
+
+    def _log(self, msg: RecordType, depth: int) -> None:
+        try:
+            prio = MessagePrio(msg.priority)
+            if prio > self.loglevel:
+                return
+        except ValueError:
+            pass
+        msg.component = self.component
+        msg.host = self.host
+        if msg.priority == MessagePrio.TRACE:
+            self._logger.trace(msg)
+        elif msg.priority == MessagePrio.DEBUG:
+            self._logger.debug(msg)
+        elif msg.priority == MessagePrio.INFO:
+            self._logger.info(msg)
+        elif msg.priority == MessagePrio.NOTICE:
+            self._logger.notice(msg)
+        elif msg.priority == MessagePrio.WARNING:
+            self._logger.warning(msg)
+        elif msg.priority == MessagePrio.ERROR:
+            self._logger.error(msg)
+        elif msg.priority == MessagePrio.CRITICAL:
+            self._logger.critical(msg)
+
+    def log_msg(
+        self,
+        data: Any,
+        type_: str = MessageType.MESSAGE,
+        prio: MessagePrio = MessagePrio.INFO,
+        tags: Optional[list[str]] = None,
+        _depth: int = 3,
+    ) -> None:
+        msg = RecordType(
+            component="",
+            data=str(data),
+            host="",
+            id=None,
+            line=None,
+            priority=prio,
+            stacktrace=None,
+            tags=tags,
+            timestamp="",
+            type=type_,
+        )
+        self._log(msg, _depth)
+
+    def log_trace(self, data: Any, tags: Optional[list[str]] = None) -> None:
+        self.log_msg(data, MessageType.MESSAGE, MessagePrio.TRACE, tags, 4)
+
+    def log_debug(self, data: Any, tags: Optional[list[str]] = None) -> None:
+        self.log_msg(data, MessageType.MESSAGE, MessagePrio.DEBUG, tags, 4)
+
+    def log_info(self, data: Any, tags: Optional[list[str]] = None) -> None:
+        self.log_msg(data, MessageType.MESSAGE, MessagePrio.INFO, tags, 4)
+
+    def log_notice(self, data: Any, tags: Optional[list[str]] = None) -> None:
+        self.log_msg(data, MessageType.MESSAGE, MessagePrio.NOTICE, tags, 4)
+
+    def log_warning(self, data: Any, tags: Optional[list[str]] = None) -> None:
+        self.log_msg(data, MessageType.MESSAGE, MessagePrio.WARNING, tags, 4)
+
+    def log_error(self, data: Any, tags: Optional[list[str]] = None) -> None:
+        self.log_msg(data, MessageType.MESSAGE, MessagePrio.ERROR, tags, 4)
+
+    def log_critical(self, data: Any, tags: Optional[list[str]] = None) -> None:
+        self.log_msg(data, MessageType.MESSAGE, MessagePrio.CRITICAL, tags, 4)
+
+
+logger = Logger("foobert")
+logger.log_info("dere")
+
+exit()
 
 
 class MessageType(str, Enum):
