@@ -336,10 +336,7 @@ class ECU(UDSClient):
         """wait for ecu to be alive again (eg. after reset)
         Wait at most timeout"""
         t = timeout if timeout is not None else self.timeout
-        try:
-            await asyncio.wait_for(self._wait_for_ecu(t * 0.8), timeout=t)
-        except asyncio.TimeoutError:
-            self.logger.log_critical("Timeout while waiting for ECU!")
+        await asyncio.wait_for(self._wait_for_ecu(t * 0.8), timeout=t)
 
     async def update_state(
         self, request: service.UDSRequest, response: service.UDSResponse
