@@ -4,13 +4,16 @@
 
 from __future__ import annotations
 
+import importlib.util
 import ipaddress
 import logging
 import re
+import sys
 from argparse import Action, ArgumentError, ArgumentParser, Namespace
 from collections.abc import Awaitable, Callable, Sequence
 from enum import Enum
 from pathlib import Path
+from types import ModuleType
 from typing import TYPE_CHECKING, Any, TypeVar
 from urllib.parse import urlparse
 
@@ -221,3 +224,18 @@ async def write_target_list(
 
             if db_handler is not None:
                 await db_handler.insert_discovery_result(str(target))
+
+
+def lazy_import(name: str) -> ModuleType:
+    if name in sys.modules:
+        return sys.modules[name]
+    spec = importlib.util.find_spec(name)
+    if spec is None or spec.loader is None:
+        raise ImportError()
+
+    loader = importlib.util.LazyLoader(spec.loader)
+    spec.loader = loader
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    loader.exec_module(module)
+    return module
