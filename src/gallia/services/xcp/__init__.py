@@ -4,9 +4,8 @@
 
 from typing import Any, Optional
 
-from gallia.services.xcp import types
-
 from gallia.penlog import Logger
+from gallia.services.xcp import types
 from gallia.transports.base import BaseTransport
 
 

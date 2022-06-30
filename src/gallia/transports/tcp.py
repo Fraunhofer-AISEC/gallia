@@ -6,12 +6,12 @@ from __future__ import annotations
 
 import asyncio
 import binascii
-from typing import Optional, TypedDict
+from typing import Any, Optional, TypedDict
 
 from gallia.transports.base import BaseTransport, TargetURI
 
 _TCP_SPEC_TYPE = TypedDict("_TCP_SPEC_TYPE", {})
-tcp_spec: dict = {}
+tcp_spec: dict[Any, Any] = {}
 assertion_str = "bug: transport is not connected"
 
 

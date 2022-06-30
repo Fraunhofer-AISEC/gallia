@@ -2,9 +2,22 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from ctypes import CDLL, POINTER, byref, c_char_p, c_int, c_uint, create_string_buffer
+from ctypes import (
+    CDLL,
+    POINTER,
+    Array,
+    byref,
+    c_char,
+    c_char_p,
+    c_int,
+    c_uint,
+    create_string_buffer,
+)
 from ctypes.util import find_library
-from typing import Callable, Union
+from typing import Callable, Union, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ctypes import _CArgObject
 
 DEFAULT_BUFFER_LIMIT = 2**28
 UCL_UNAVAILABLE = "libucl is not available!"
@@ -33,7 +46,9 @@ def nrv2b_decompress_8(in_data: Union[bytes, bytearray], out_size: int) -> bytes
 
 
 def _execute_nrv_operation_blindly(
-    in_data: Union[bytes, bytearray], operation: Callable, buffer_limit: int
+    in_data: Union[bytes, bytearray],
+    operation: Callable[[Array[c_char], int, Array[c_char], "_CArgObject"], int],
+    buffer_limit: int,
 ) -> bytes:
     """Executes an NRV operation without knowing the size of the result.
 
@@ -81,7 +96,8 @@ def _execute_nrv_operation_blindly(
 
 
 def nrv2b_decompress_8_blindly(
-    in_data: Union[bytes, bytearray], buffer_limit: int = DEFAULT_BUFFER_LIMIT
+    in_data: Union[bytes, bytearray],
+    buffer_limit: int = DEFAULT_BUFFER_LIMIT,
 ) -> bytes:
     """Decompress NRV data without the need to know the size of the output.
 

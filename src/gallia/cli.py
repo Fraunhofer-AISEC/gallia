@@ -9,7 +9,7 @@ import os
 import sys
 from importlib.metadata import entry_points
 
-import argcomplete
+import argcomplete  # type: ignore
 
 
 def main() -> None:

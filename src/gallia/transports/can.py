@@ -11,7 +11,7 @@ import struct
 import time
 from typing import Optional, TypedDict, cast
 
-from can import Message
+from can import Message  # type: ignore
 
 from gallia.transports.base import BaseTransport, TargetURI, _bool_spec, _int_spec
 
@@ -204,7 +204,7 @@ class CANMessage(Message):  # type: ignore
     CANFD_ESI = 0x02
 
     def _compose_arbitration_id(self) -> int:
-        can_id = self.arbitration_id
+        can_id = cast(int, self.arbitration_id)
         if self.is_extended_id:
             can_id |= s.CAN_EFF_FLAG
         if self.is_remote_frame:

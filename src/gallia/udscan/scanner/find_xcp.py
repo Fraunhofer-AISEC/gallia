@@ -14,7 +14,8 @@ from subprocess import CalledProcessError, run
 from gallia.penlog import Logger
 from gallia.transports.base import TargetURI
 from gallia.transports.can import RawCANTransport
-from gallia.utils import bytes_repr, can_id_repr, g_repr
+from gallia.uds.core.utils import bytes_repr
+from gallia.utils import can_id_repr, g_repr
 
 
 class FindXCP:

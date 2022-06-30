@@ -14,16 +14,15 @@ from asyncio import subprocess
 from datetime import datetime
 from functools import partial
 from pathlib import Path
-from socket import SocketKind  # pylint: disable=no-name-in-module
-from typing import Callable, Optional, Union
+from socket import SocketKind
+from typing import Awaitable, Callable, Optional, Union, cast
 from urllib.parse import urlparse
-
-from opennetzteil import Netzteil
 
 from gallia.penlog import Logger
 from gallia.transports.base import TargetURI
 from gallia.transports.can import ISOTPTransport, RawCANTransport
-from gallia.utils import split_host_port, g_repr
+from gallia.utils import g_repr, split_host_port
+from opennetzteil import Netzteil
 
 
 class PowerSupplyURI(TargetURI):
@@ -76,7 +75,7 @@ class PowerSupply:
     async def power_cycle(
         self,
         sleep: float = 2.0,
-        callback: Optional[Callable] = None,
+        callback: Optional[Callable[[], Awaitable[None]]] = None,
     ) -> None:
         async with self.mutex:
             await self.power_down()
@@ -109,13 +108,14 @@ class Dumpcap:
     async def start(
         cls,
         target: TargetURI,
-        artifacts_dir: Optional[os.PathLike] = None,
+        artifacts_dir: Optional[Path] = None,
     ) -> Dumpcap:
         logger = Logger("penlab.dumpcap", flush=True)
 
-        if artifacts_dir:
-            artifacts_dir = Path(artifacts_dir)
-        elif path := os.environ.get("PENRUN_ARTIFACTS"):
+        if (
+            artifacts_dir is None
+            and (path := os.environ.get("PENRUN_ARTIFACTS")) is not None
+        ):
             artifacts_dir = Path(path)
         else:
             raise ValueError("no artifacts dir set")
@@ -178,7 +178,7 @@ class Dumpcap:
 
     @staticmethod
     def _swap_bytes_16(x: int) -> int:
-        return struct.unpack(">H", struct.pack("<H", x))[0]
+        return cast(int, struct.unpack(">H", struct.pack("<H", x))[0])
 
     @staticmethod
     def _can_cmd(

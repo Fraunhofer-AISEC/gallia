@@ -127,7 +127,7 @@ class LogMode(Enum):
 
 class DBHandler:
     def __init__(self, database: Path):
-        self.tasks: list[asyncio.Task] = []
+        self.tasks: list[asyncio.Task[None]] = []
         self.path = database
         self.connection: Optional[aiosqlite.Connection] = None
         self.scan_run: Optional[int] = None
@@ -186,7 +186,7 @@ class DBHandler:
             )
 
     async def insert_run_meta(
-        self, script: str, arguments: list, start_time: datetime, path: Path
+        self, script: str, arguments: list[str], start_time: datetime, path: Path
     ) -> None:
         assert self.connection is not None, "Not connected to the database"
 
@@ -236,7 +236,9 @@ class DBHandler:
         self.scan_run = cursor.lastrowid
         await self.connection.commit()
 
-    async def insert_scan_run_properties_pre(self, properties_pre: dict) -> None:
+    async def insert_scan_run_properties_pre(
+        self, properties_pre: dict[str, Any]
+    ) -> None:
         assert self.connection is not None, "Not connected to the database"
         assert self.scan_run is not None, "Scan run not yet created"
 
@@ -246,7 +248,7 @@ class DBHandler:
         )
         await self.connection.commit()
 
-    async def complete_scan_run(self, properties_post: dict) -> None:
+    async def complete_scan_run(self, properties_post: dict[str, Any]) -> None:
         assert self.connection is not None, "Not connected to the database"
         assert self.scan_run is not None, "Scan run not yet created"
 
@@ -279,7 +281,7 @@ class DBHandler:
 
     async def insert_scan_result(
         self,
-        state: dict,
+        state: dict[str, Any],
         request: service.UDSRequest,
         response: Optional[service.UDSResponse],
         exception: Optional[Exception],

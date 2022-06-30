@@ -8,7 +8,16 @@ from argparse import Action, ArgumentError, ArgumentParser, Namespace
 from enum import Enum
 from pathlib import Path
 from sys import stdout
-from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Awaitable,
+    Callable,
+    Optional,
+    Sequence,
+    TypeVar,
+    Union,
+)
 from urllib.parse import urlparse
 
 import aiofiles
@@ -134,7 +143,7 @@ class ParseSkips(Action):
         parser: ArgumentParser,
         namespace: Namespace,
         values: Union[str, Sequence[Any], None],
-        option_string: str = None,
+        option_string: Optional[str] = None,
     ) -> None:
         skip_sids: dict[int, Optional[list[int]]] = {}
 
@@ -166,12 +175,15 @@ class ParseSkips(Action):
             raise ArgumentError(self, "The argument is malformed!") from e
 
 
+T = TypeVar("T")
+
+
 async def catch_and_log_exception(
     logger: Logger,
-    func: Callable,
+    func: Callable[..., Awaitable[T]],
     *args: Any,
     **kwargs: Any,
-) -> None:
+) -> Optional[T]:
     """Runs an async function. If an exception is raised,
     it will be logged via logger.
 
@@ -183,6 +195,7 @@ async def catch_and_log_exception(
         return await func(*args, **kwargs)
     except Exception as e:
         logger.log_error(f"func {func.__name__} failed: {repr(e)}")
+        return None
 
 
 class ANSIEscapes:

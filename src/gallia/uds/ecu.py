@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import asyncio
 from datetime import datetime, timezone
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 from gallia.db.db_handler import DBHandler, LogMode
 from gallia.penlab import PowerSupply
@@ -64,7 +64,7 @@ class ECU(UDSClient):
 
     async def properties(
         self, fresh: bool = False, config: Optional[UDSRequestConfig] = None
-    ) -> dict:
+    ) -> dict[str, Any]:
         return {}
 
     async def ping(
@@ -219,7 +219,7 @@ class ECU(UDSClient):
         Returns:
             True on success, False on error.
         """
-        resp = await self.ecu_reset(0x01)
+        resp: service.UDSResponse = await self.ecu_reset(0x01)
         if isinstance(resp, service.NegativeResponse):
             await self.power_cycle()
         else:
@@ -230,7 +230,7 @@ class ECU(UDSClient):
             return await self.power_cycle()
         return True
 
-    async def find_sessions(self, search: list, max_retry: int = 4) -> list[int]:
+    async def find_sessions(self, search: list[int], max_retry: int = 4) -> list[int]:
         sessions = []
         for sid in search:
             try:
