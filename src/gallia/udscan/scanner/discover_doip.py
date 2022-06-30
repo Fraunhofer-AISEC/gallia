@@ -109,8 +109,8 @@ class DiscoverDoIP(DiscoveryScanner):
             host,
             port,
             {
-                "src_addr": diag_msg.SourceAddress,
-                "dst_addr": diag_msg.TargetAddress,
+                "src_addr": diag_msg.TargetAddress,
+                "dst_addr": diag_msg.SourceAddress,
                 "activation_type": activation_type.value,
             },
         )
