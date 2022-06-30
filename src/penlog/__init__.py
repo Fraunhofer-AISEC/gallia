@@ -11,14 +11,16 @@ import traceback
 import uuid
 from dataclasses import dataclass, asdict
 from datetime import datetime
-from enum import Enum, IntEnum
+from enum import Enum, IntEnum, unique
 from typing import Any, TextIO, Optional
 
 
+@unique
 class MessageType(str, Enum):
     MESSAGE = "message"
 
 
+@unique
 class MessagePrio(IntEnum):
     EMERGENCY = 0
     ALERT = 1
@@ -31,6 +33,7 @@ class MessagePrio(IntEnum):
     TRACE = 8
 
 
+@unique
 class OutputType(Enum):
     JSON = "json"
     JSON_PRETTY = "json-pretty"
@@ -39,6 +42,7 @@ class OutputType(Enum):
     HR_NANO = "hr-nano"
 
 
+@unique
 class Color(Enum):
     NOP = ""
     RESET = "\033[0m"

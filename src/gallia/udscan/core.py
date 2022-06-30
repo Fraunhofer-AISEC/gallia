@@ -14,7 +14,7 @@ from abc import ABC, abstractmethod
 from argparse import ArgumentDefaultsHelpFormatter, Namespace
 from asyncio import Task
 from datetime import datetime, timezone
-from enum import Enum, IntEnum
+from enum import Enum, IntEnum, unique
 from importlib.metadata import EntryPoint, entry_points, version
 from pathlib import Path
 from secrets import token_urlsafe
@@ -35,6 +35,7 @@ from gallia.uds.ecu import ECU
 from gallia.utils import camel_to_snake, g_repr
 
 
+@unique
 class ExitCodes(IntEnum):
     SUCCESS = 0
     GENERIC_ERROR = 1
@@ -42,6 +43,7 @@ class ExitCodes(IntEnum):
     TEARDOWN_FAILED = 11
 
 
+@unique
 class FileNames(Enum):
     PROPERTIES_PRE = "PROPERTIES_PRE.json"
     PROPERTIES_POST = "PROPERTIES_POST.json"

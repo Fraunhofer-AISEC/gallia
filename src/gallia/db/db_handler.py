@@ -5,7 +5,7 @@
 import asyncio
 import json
 from datetime import datetime
-from enum import Enum
+from enum import Enum, unique
 from pathlib import Path
 from typing import Any, Optional
 
@@ -118,6 +118,7 @@ INSERT OR IGNORE INTO version VALUES('main', '{schema_version}');
 """
 
 
+@unique
 class LogMode(Enum):
     implicit = "implicit"
     explicit = "explicit"

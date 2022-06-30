@@ -2,12 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from enum import Enum
+from enum import Enum, unique
 from typing import Any, Optional
 
 import penlog
 
 
+@unique
 class MessageType(str, Enum):
     READ = "read"
     WRITE = "write"

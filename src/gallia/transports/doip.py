@@ -7,24 +7,27 @@ from __future__ import annotations
 import asyncio
 import struct
 from dataclasses import dataclass
-from enum import IntEnum
+from enum import IntEnum, unique
 from typing import Optional, TypedDict, Union, cast
 
 from gallia.penlog import Logger
 from gallia.transports.base import BaseTransport, TargetURI, _int_spec
 
 
+@unique
 class ProtocolVersions(IntEnum):
     ISO_13400_2_2010 = 0x01
     ISO_13400_2_2012 = 0x02
 
 
+@unique
 class RoutingActivationRequestTypes(IntEnum):
     Default = 0x00
     WWH_OBD = 0x01
     CentralSecurity = 0xE0
 
 
+@unique
 class RoutingActivationResponseCodes(IntEnum):
     UnknownSourceAddress = 0x00
     NoRessources = 0x01
@@ -37,6 +40,7 @@ class RoutingActivationResponseCodes(IntEnum):
     SuccessConfirmationRequired = 0x11
 
 
+@unique
 class PayloadTypes(IntEnum):
     NegativeAcknowledge = 0x0000
     VehicleIdentificationRequestMessage = 0x0002
@@ -53,10 +57,12 @@ class PayloadTypes(IntEnum):
     DiagnosticMessageNegativeAcknowledgement = 0x8003
 
 
+@unique
 class DiagnosticMessagePositiveAckCodes(IntEnum):
     Success = 0x00
 
 
+@unique
 class DiagnosticMessageNegativeAckCodes(IntEnum):
     InvalidSourceAddress = 0x02
     UnknownTargetAddress = 0x03
@@ -67,6 +73,7 @@ class DiagnosticMessageNegativeAckCodes(IntEnum):
     TransportProtocolError = 0x08
 
 
+@unique
 class GenericHeaderNACKCodes(IntEnum):
     IncorrectPatternFormat = 0x01
     UnknownPayloadType = 0x02
