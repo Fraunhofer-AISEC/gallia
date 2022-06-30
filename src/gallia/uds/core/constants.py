@@ -56,7 +56,7 @@ class UDSErrorCodes(IntEnum):
     conditionsNotCorrect = 0x22
     requestSequenceError = 0x24
     noResponseFromSubnetComponent = 0x25
-    failurePreventsExecutionOfRequestedAction = 0x25
+    failurePreventsExecutionOfRequestedAction = 0x26
     requestOutOfRange = 0x31
     securityAccessDenied = 0x33
     authenticationRequired = 0x34
