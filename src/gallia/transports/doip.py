@@ -51,7 +51,7 @@ class PayloadTypes(IntEnum):
     AliveCheckRequest = 0x0007
     AliveCheckResponse = 0x0008
     DoIPEntityStatusRequest = 0x4001
-    DoIPEntityStatusResponse = 0x4001
+    DoIPEntityStatusResponse = 0x4002
     DiagnosticMessage = 0x8001
     DiagnosticMessagePositiveAcknowledgement = 0x8002
     DiagnosticMessageNegativeAcknowledgement = 0x8003
