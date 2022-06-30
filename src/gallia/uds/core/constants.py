@@ -2,9 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from enum import IntEnum
+from enum import IntEnum, unique
 
 
+@unique
 class UDSIsoServices(IntEnum):
     ShowCurrentData = 0x01
     ShowFreezeFrameData = 0x02
@@ -46,6 +47,7 @@ class UDSIsoServices(IntEnum):
     NegativeResponse = 0x7F
 
 
+@unique
 class UDSErrorCodes(IntEnum):
     generalReject = 0x10
     serviceNotSupported = 0x11
@@ -123,6 +125,7 @@ class UDSErrorCodes(IntEnum):
     vehicleManufacturerSpecificConditionsNotCorrectFE = 0xFE
 
 
+@unique
 class DSCSubFuncs(IntEnum):
     # defaultSession
     DS = 0x01
@@ -134,6 +137,7 @@ class DSCSubFuncs(IntEnum):
     SSDS = 0x04
 
 
+@unique
 class RCSubFuncs(IntEnum):
     # start routine
     STR = 0x01
@@ -143,6 +147,7 @@ class RCSubFuncs(IntEnum):
     RRR = 0x03
 
 
+@unique
 class CCSubFuncs(IntEnum):
     # enableRxAndTx
     ERXTX = 0x00
@@ -155,12 +160,14 @@ class CCSubFuncs(IntEnum):
     # Plus vendor specific stuff...
 
 
+@unique
 class CDTCSSubFuncs(IntEnum):
     ON = 0x01
     OFF = 0x02
     # Plus vendor specific stuff...
 
 
+@unique
 class RDTCISubFuncs(IntEnum):
     # reportNumberOfDTCByStatusMask
     RNODTCBSM = 0x01
@@ -190,6 +197,7 @@ class RDTCISubFuncs(IntEnum):
     RDTCWPS = 0x15
 
 
+@unique
 class ERSubFuncs(IntEnum):
     # hardReset
     HR = 0x01
@@ -203,6 +211,7 @@ class ERSubFuncs(IntEnum):
     DRPSD = 0x05
 
 
+@unique
 class InputOutputControlParameter(IntEnum):
     # returnControlToECU
     RCTECU = 0x00
@@ -214,6 +223,7 @@ class InputOutputControlParameter(IntEnum):
     STA = 0x03
 
 
+@unique
 class DTCFormatIdentifier(IntEnum):
     # ISO15031-6DTCFormat
     ISO_15031_6 = 0x00
@@ -256,5 +266,6 @@ UDSIsoServicesEchoLength = {
 }
 
 
+@unique
 class DataIdentifier(IntEnum):
     ActiveDiagnosticSessionDataIdentifier = 0xF186

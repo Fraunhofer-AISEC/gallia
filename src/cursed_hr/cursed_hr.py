@@ -20,7 +20,7 @@ from binascii import unhexlify
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime
-from enum import IntEnum
+from enum import IntEnum, unique
 from math import ceil
 from pathlib import Path
 from typing import Any, BinaryIO, Optional, Union
@@ -31,6 +31,7 @@ from penlog import MessagePrio, RecordType
 from gallia.uds.core.service import NegativeResponse, UDSRequest, UDSResponse
 
 
+@unique
 class InterpretationColor(IntEnum):
     DEFAULT = 42
     UDS_REQUEST = 43
