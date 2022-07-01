@@ -56,14 +56,14 @@ class DisplayEntry:
     Represents one single line of a single formatted penlog entry as displayed in the console.
 
     :param texts: The (differently) formatted text fragments of the displayed line.
-    :param penlog_entry_number: The line number of the corresponding penlog entry.
+    :param penentry_number: The line number of the corresponding penlog entry.
     :param entry_line_number: The index in the list of formatted lines as created for the corresponding penlog entry.
     :param last_line: True if and only if this entry refers to the last of the formatted lines as created for the
                       corresponding penlog entry.
     """
 
     texts: list[FormattedText]
-    penlog_entry_number: int
+    penentry_number: int
     entry_line_number: int
     last_line = False
 
@@ -965,7 +965,7 @@ class CursedHR:
             stop_display_entry = display_entries[
                 min(cursor[0], len(display_entries) - 1)
             ]
-            stop_entry = stop_display_entry.penlog_entry_number
+            stop_entry = stop_display_entry.penentry_number
 
             if start_entry == stop_entry:
                 start_entry = self.previous_sufficient_entry(start_entry)
@@ -987,7 +987,7 @@ class CursedHR:
             start_entry = None
 
         while (key := self.window.getkey()) != "q":
-            entry_start = display_entries[0].penlog_entry_number
+            entry_start = display_entries[0].penentry_number
             line_start = display_entries[0].entry_line_number
             cursor = curses.getsyx()
             max_lines, max_columns = self.window.getmaxyx()
@@ -1003,7 +1003,7 @@ class CursedHR:
                     old_line_start = line_start
 
                     if display_entries[0].entry_line_number == 0 and entry_start > 0:
-                        entry_start = max(0, display_entries[0].penlog_entry_number - 1)
+                        entry_start = max(0, display_entries[0].penentry_number - 1)
                         line_start = -1
                     else:
                         line_start = display_entries[0].entry_line_number - 1
@@ -1048,7 +1048,7 @@ class CursedHR:
                 if cursor[0] < len(display_entries) - 1:
                     cursor = (len(display_entries) - 1, cursor[1])
                 else:
-                    entry_start = display_entries[-1].penlog_entry_number
+                    entry_start = display_entries[-1].penentry_number
                     line_start = display_entries[-1].entry_line_number
             elif key == "g":
                 entry_start = 0
@@ -1073,7 +1073,7 @@ class CursedHR:
                     continue
             elif key in ["v", "V"]:
                 if cursor[0] < len(display_entries):
-                    start_entry = display_entries[cursor[0]].penlog_entry_number
+                    start_entry = display_entries[cursor[0]].penentry_number
             elif key == chr(curses.ascii.ESC):
                 start_entry = None
             elif key in ["p", "P"]:
@@ -1208,7 +1208,7 @@ class CursedHR:
             ):
                 previous_entry_start = entry_start
                 previous_line_start = line_start
-                entry_start = display_entries[0].penlog_entry_number
+                entry_start = display_entries[0].penentry_number
                 line_start = display_entries[0].entry_line_number
                 line_up()
                 display_entries = self.calculate_display_entries(
@@ -1218,12 +1218,12 @@ class CursedHR:
             if start_entry is not None:
                 stop_entry = display_entries[
                     min(cursor[0], len(display_entries) - 1)
-                ].penlog_entry_number
+                ].penentry_number
 
                 for entry in display_entries:
                     if (
                         min(start_entry, stop_entry)
-                        <= entry.penlog_entry_number
+                        <= entry.penentry_number
                         <= max(start_entry, stop_entry)
                     ):
                         for text in entry.texts:
@@ -1236,9 +1236,9 @@ class CursedHR:
         self, display_entries: list[DisplayEntry], cursor: tuple[int, int]
     ) -> list[FormattedText]:
         selected_entry = display_entries[min(cursor[0], len(display_entries) - 1)]
-        entry_number = selected_entry.penlog_entry_number + 1
+        entry_number = selected_entry.penentry_number + 1
         n = len(self.entries)
-        zone = self.entry_zone(selected_entry.penlog_entry_number)
+        zone = self.entry_zone(selected_entry.penentry_number)
         zone_info = self.default_text(
             f"Zone {self.configuration.priority_zones.index(zone): >2} ({zone.priority.name})"
         )

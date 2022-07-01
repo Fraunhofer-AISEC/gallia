@@ -54,22 +54,22 @@ class SendPDU(UDSScanner):
         parsed_request = UDSRequest.parse_dynamic(pdu)
 
         if isinstance(parsed_request, RawRequest):
-            self.logger.log_warning("Could not parse the request pdu")
+            self.logger.warning("Could not parse the request pdu")
 
-        self.logger.log_info(f"Sending {parsed_request}")
+        self.logger.info(f"Sending {parsed_request}")
 
         try:
             response = await self.ecu.send_raw(
                 pdu, config=UDSRequestConfig(max_retry=args.max_retry)
             )
         except UDSException as e:
-            self.logger.log_error(g_repr(e))
+            self.logger.error(g_repr(e))
             sys.exit(1)
 
         if isinstance(response, NegativeResponse):
-            self.logger.log_warning(f"Received {response}")
+            self.logger.warning(f"Received {response}")
         else:
             if isinstance(response, RawResponse):
-                self.logger.log_warning("Could not parse the response pdu")
+                self.logger.warning("Could not parse the response pdu")
 
-            self.logger.log_notice(f"Received {response}")
+            self.logger.notice(f"Received {response}")

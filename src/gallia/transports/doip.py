@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import Optional, TypedDict, Union, cast
 
-from gallia.penlog import Logger
+from penlog import get_logger
 from gallia.transports.base import BaseTransport, TargetURI, _int_spec
 
 
@@ -280,7 +280,7 @@ class DoIPConnection:
         src_addr: Optional[int],
         target_addr: Optional[int],
     ):
-        self.logger = Logger(component="doip", flush=True)
+        self.logger = get_logger("doip")
         self.reader = reader
         self.writer = writer
         self.src_addr = src_addr
@@ -333,7 +333,7 @@ class DoIPConnection:
                     continue
                 await self._read_queue.put((hdr, data))
         except asyncio.CancelledError:
-            self.logger.log_debug("read worker cancelled")
+            self.logger.debug("read worker cancelled")
 
     async def read_frame_unsafe(self) -> DoIPFrame:
         # Avoid waiting on the queue forever when
@@ -352,12 +352,12 @@ class DoIPConnection:
             if not isinstance(payload, DiagnosticMessage):
                 raise BrokenPipeError(f"unexpected DoIP message: {hdr} {payload}")
             if payload.SourceAddress != self.target_addr:
-                self.logger.log_warning(
+                self.logger.warning(
                     f"unexpected DoIP src address: {payload.SourceAddress:#04x}"
                 )
                 continue
             if payload.TargetAddress != self.src_addr:
-                self.logger.log_warning(
+                self.logger.warning(
                     f"unexpected DoIP target address: {payload.TargetAddress:#04x}"
                 )
                 continue
@@ -377,19 +377,19 @@ class DoIPConnection:
             )
 
         if payload.SourceAddress != self.target_addr:
-            self.logger.log_warning(
+            self.logger.warning(
                 f"ack: unexpected src_addr: {payload.SourceAddress:#04x}"
             )
         if payload.TargetAddress != self.src_addr:
-            self.logger.log_warning(
+            self.logger.warning(
                 f"ack: unexpected dst_addr: {payload.TargetAddress:#04x}"
             )
         if (
             len(payload.PreviousDiagnosticMessageData) > 0
             and prev_data != payload.PreviousDiagnosticMessageData
         ):
-            self.logger.log_warning("ack: previous data differs from request")
-            self.logger.log_warning(
+            self.logger.warning("ack: previous data differs from request")
+            self.logger.warning(
                 f"ack: got: {payload.PreviousDiagnosticMessageData.hex()} expected {prev_data.hex()}"
             )
 
@@ -416,7 +416,7 @@ class DoIPConnection:
             self.writer.write(buf)
             await self.writer.drain()
 
-            self.logger.log_trace(f"hdr: {hdr}, payload: {payload}")
+            self.logger.trace(f"hdr: {hdr}, payload: {payload}")
 
             try:
                 if isinstance(payload, DiagnosticMessage):
@@ -563,7 +563,7 @@ class DoIPTransport(BaseTransport, scheme="doip", spec=doip_spec):
         assert self.connection is not None, assertion_str
 
         data = await asyncio.wait_for(self.connection.read_diag_request(), timeout)
-        self.logger.log_read(data.hex(), tags)
+        self.logger.read(data.hex(), tags)
         return data
 
     async def write(
@@ -575,5 +575,5 @@ class DoIPTransport(BaseTransport, scheme="doip", spec=doip_spec):
         assert self.connection is not None, assertion_str
 
         await asyncio.wait_for(self.connection.write_diag_request(data), timeout)
-        self.logger.log_write(data.hex(), tags)
+        self.logger.write(data.hex(), tags)
         return len(data)

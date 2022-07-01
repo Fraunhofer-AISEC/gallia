@@ -84,13 +84,13 @@ class RTCL(UDSScanner):
         try:
             await self.ecu.check_and_set_session(args.session)
         except Exception as e:
-            self.logger.log_critical(
+            self.logger.critical(
                 f"Could not change to session: {g_repr(args.session)}: {g_repr(e)}"
             )
             sys.exit(1)
 
         if args.start is False and args.stop is False and args.results is False:
-            self.logger.log_warning("No instructions were given (start/stop/results)")
+            self.logger.warning("No instructions were given (start/stop/results)")
 
         if args.start:
             resp: Union[
@@ -100,17 +100,17 @@ class RTCL(UDSScanner):
             )
 
             if isinstance(resp, NegativeResponse):
-                self.logger.log_error(f"start_routine: {resp}")
+                self.logger.error(f"start_routine: {resp}")
             else:
-                self.logger.log_summary("[start] Positive response:")
-                self.logger.log_summary(f"hex: {resp.routine_status_record.hex()}")
-                self.logger.log_summary(f"raw: {repr(resp.routine_status_record)}")
+                self.logger.summary("[start] Positive response:")
+                self.logger.summary(f"hex: {resp.routine_status_record.hex()}")
+                self.logger.summary(f"raw: {repr(resp.routine_status_record)}")
 
         if args.stop:
             delay = args.stop_delay
 
             if delay > 0:
-                self.logger.log_info(
+                self.logger.info(
                     f"Delaying the request for stopping the routine by {delay} seconds"
                 )
                 await asyncio.sleep(delay)
@@ -120,17 +120,17 @@ class RTCL(UDSScanner):
             )
 
             if isinstance(resp, NegativeResponse):
-                self.logger.log_error(f"stop routine: {resp}")
+                self.logger.error(f"stop routine: {resp}")
             else:
-                self.logger.log_summary("[stop] Positive response:")
-                self.logger.log_summary(f"hex: {resp.routine_status_record.hex()}")
-                self.logger.log_summary(f"raw: {repr(resp.routine_status_record)}")
+                self.logger.summary("[stop] Positive response:")
+                self.logger.summary(f"hex: {resp.routine_status_record.hex()}")
+                self.logger.summary(f"raw: {repr(resp.routine_status_record)}")
 
         if args.results:
             delay = args.results_delay
 
             if delay > 0:
-                self.logger.log_info(
+                self.logger.info(
                     f"Delaying the request for the routine results by {delay} seconds"
                 )
                 await asyncio.sleep(delay)
@@ -140,8 +140,8 @@ class RTCL(UDSScanner):
             )
 
             if isinstance(resp, NegativeResponse):
-                self.logger.log_error(f"request_routine_results: {resp}")
+                self.logger.error(f"request_routine_results: {resp}")
             else:
-                self.logger.log_summary("[get result] Positive response:")
-                self.logger.log_summary(f"hex: {resp.routine_status_record.hex()}")
-                self.logger.log_summary(f"raw: {repr(resp.routine_status_record)}")
+                self.logger.summary("[get result] Positive response:")
+                self.logger.summary(f"hex: {resp.routine_status_record.hex()}")
+                self.logger.summary(f"raw: {repr(resp.routine_status_record)}")

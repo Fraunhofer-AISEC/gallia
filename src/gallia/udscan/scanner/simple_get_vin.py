@@ -17,6 +17,6 @@ class GetVin(UDSScanner):
     async def main(self, args: Namespace) -> None:
         resp = await self.ecu.read_vin()
         if isinstance(resp, NegativeResponse):
-            self.logger.log_warning(f"ECU said: {resp}")
+            self.logger.warning(f"ECU said: {resp}")
             return
-        self.logger.log_summary(resp.data_record.hex())
+        self.logger.summary(resp.data_record.hex())

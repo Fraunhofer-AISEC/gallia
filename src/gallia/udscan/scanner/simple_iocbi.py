@@ -61,7 +61,7 @@ class IOCBI(UDSScanner):
         try:
             await self.ecu.check_and_set_session(args.session)
         except Exception as e:
-            self.logger.log_critical(
+            self.logger.critical(
                 f"Could not change to session: {g_repr(args.session)}: {g_repr(e)}"
             )
             sys.exit(1)
@@ -98,17 +98,17 @@ class IOCBI(UDSScanner):
             )
             uses_control_parameter = False
         else:
-            self.logger.log_critical("Unhandled control parameter")
+            self.logger.critical("Unhandled control parameter")
             sys.exit(1)
 
         if isinstance(resp, NegativeResponse):
-            self.logger.log_error(resp)
+            self.logger.error(resp)
         else:
-            self.logger.log_summary("Positive response:")
+            self.logger.summary("Positive response:")
             data = (
                 resp.control_status_record[1:]
                 if uses_control_parameter
                 else resp.control_status_record
             )
-            self.logger.log_summary(f"hex: {data.hex()}")
-            self.logger.log_summary(f"raw: {repr(data)}")
+            self.logger.summary(f"hex: {data.hex()}")
+            self.logger.summary(f"raw: {repr(data)}")

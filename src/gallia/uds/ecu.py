@@ -10,7 +10,7 @@ from typing import Optional, Union
 
 from gallia.db.db_handler import DBHandler, LogMode
 from gallia.penlab import PowerSupply
-from gallia.penlog import Logger
+from penlog import get_logger
 from gallia.transports.base import BaseTransport
 from gallia.uds.core import service
 from gallia.uds.core.client import UDSClient, UDSRequestConfig
@@ -54,7 +54,7 @@ class ECU(UDSClient):
     ) -> None:
 
         super().__init__(transport, timeout, max_retry)
-        self.logger = Logger(component="ecu", flush=True)
+        self.logger = get_logger("ecu")
         self.power_supply = power_supply
         self.state = ECUState()
         self.db_handler: Optional[DBHandler] = None
@@ -132,7 +132,7 @@ class ECU(UDSClient):
         Returns True if the current session matches the expected session,
         or if read_session is not supported by the ECU or in the current session."""
 
-        self.logger.log_debug(
+        self.logger.debug(
             f"Checking current session, expecting {g_repr(expected_session)}"
         )
 
@@ -142,33 +142,33 @@ class ECU(UDSClient):
             )
         except UnexpectedNegativeResponse as e:
             if suggests_identifier_not_supported(e.RESPONSE_CODE):
-                self.logger.log_info(
+                self.logger.info(
                     f"Read current session not supported: {e.RESPONSE_CODE.name}, skipping check_session"
                 )
                 return True
             raise e
         except asyncio.TimeoutError:
-            self.logger.log_warning(
+            self.logger.warning(
                 "Reading current session timed out, skipping check_session"
             )
             return True
 
-        self.logger.log_debug(f"Current session is {g_repr(current_session)}")
+        self.logger.debug(f"Current session is {g_repr(current_session)}")
         if current_session == expected_session:
             return True
 
         for i in range(retries):
-            self.logger.log_warning(
+            self.logger.warning(
                 f"Not in session {g_repr(expected_session)}, ECU replied with {g_repr(current_session)}"
             )
 
-            self.logger.log_info(
+            self.logger.info(
                 f"Switching to session {g_repr(expected_session)}; attempt {i + 1} of {retries}"
             )
             resp = await self.set_session(expected_session)
 
             if isinstance(resp, service.NegativeResponse):
-                self.logger.log_warning(
+                self.logger.warning(
                     f"Switching to session {g_repr(expected_session)} failed: {resp}"
                 )
 
@@ -176,30 +176,30 @@ class ECU(UDSClient):
                 current_session = await self.read_session(
                     config=UDSRequestConfig(max_retry=retries)
                 )
-                self.logger.log_debug(f"Current session is {g_repr(current_session)}")
+                self.logger.debug(f"Current session is {g_repr(current_session)}")
                 if current_session == expected_session:
                     return True
             except UnexpectedNegativeResponse as e:
                 if suggests_identifier_not_supported(e.RESPONSE_CODE):
-                    self.logger.log_info(
+                    self.logger.info(
                         f"Read current session not supported: {e.RESPONSE_CODE.name}, skipping check_session"
                     )
                     return True
                 raise e
             except asyncio.TimeoutError:
-                self.logger.log_warning(
+                self.logger.warning(
                     "Reading current session timed out, skipping check_session"
                 )
                 return True
 
-        self.logger.log_warning(
+        self.logger.warning(
             f"Failed to switch to session {g_repr(expected_session)} after {retries} attempts"
         )
         return False
 
     async def power_cycle(self, sleep: int = 5) -> bool:
         if self.power_supply is None:
-            self.logger.log_warning("no power_supply available")
+            self.logger.warning("no power_supply available")
             return False
 
         await self.power_supply.power_cycle(sleep, self.wait_for_ecu)
@@ -290,7 +290,7 @@ class ECU(UDSClient):
         """transmit_data splits the data to be sent in several blocks of size block_length,
         transfers all of them and concludes the transmission with RequestTransferExit"""
         if block_length > max_block_length:
-            self.logger.log_warning(
+            self.logger.warning(
                 f"Limiting block size to {g_repr(max_block_length)}"
             )
             block_length = max_block_length
@@ -300,7 +300,7 @@ class ECU(UDSClient):
         for i in range(0, len(data), payload_size):
             counter += 1
             payload = data[i : i + payload_size]
-            self.logger.log_debug(
+            self.logger.debug(
                 f"Transferring block {g_repr(counter)} "
                 f"with payload size {g_repr(len(payload))}"
             )
@@ -314,20 +314,15 @@ class ECU(UDSClient):
     async def _wait_for_ecu(self, sleep_time: float) -> None:
         """wait for ecu to be alive again (eg. after reset)
         Internal method without timeout"""
-        self.logger.log_info("waiting for ECU…")
+        self.logger.info("waiting for ECU…")
         while True:
-            try:
-                await asyncio.sleep(sleep_time)
-                await self.reconnect()
-                await self.ping()
-                break
+            await asyncio.sleep(sleep_time)
+            await self.reconnect()
+            raise_for_error(await self.ping())
+            break
             # If the network is down or anything else is broken,
             # then an OSError is raised. Raise this kind of errors.
-            except OSError:
-                raise
-            except Exception as e:
-                self.logger.log_debug(f"ECU not ready: {g_repr(e)}")
-        self.logger.log_info("ECU ready")
+        self.logger.info("ECU ready")
 
     async def wait_for_ecu(
         self,
@@ -339,7 +334,7 @@ class ECU(UDSClient):
         try:
             await asyncio.wait_for(self._wait_for_ecu(t * 0.8), timeout=t)
         except asyncio.TimeoutError:
-            self.logger.log_critical("Timeout while waiting for ECU!")
+            self.logger.critical("Timeout while waiting for ECU!")
 
     async def update_state(
         self, request: service.UDSRequest, response: service.UDSResponse
@@ -404,14 +399,14 @@ class ECU(UDSClient):
         finally:
             try:
                 if self.db_handler is not None:
-                    log_mode = LogMode.implicit
+                    mode = LogMode.implicit
 
                     if (
                         config is not None
                         and config.tags is not None
                         and "ANALYZE" in config.tags
                     ):
-                        log_mode = LogMode.emphasized
+                        mode = LogMode.emphasized
 
                     await self.db_handler.insert_scan_result(
                         self.state.__dict__,
@@ -420,10 +415,10 @@ class ECU(UDSClient):
                         exception,
                         send_time,
                         receive_time,
-                        log_mode,
+                        mode,
                     )
             except Exception as e:
-                self.logger.log_warning(
+                self.logger.warning(
                     f"Could not log messages to database: {g_repr(e)}"
                 )
 

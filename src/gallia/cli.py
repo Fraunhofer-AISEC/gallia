@@ -8,8 +8,28 @@ import argparse
 import os
 import sys
 from importlib.metadata import entry_points
+import logging
+
+from pathlib import Path
 
 import argcomplete
+
+from penlog import ZstdFileHandler, JsonFormatter, ConsoleHandler
+
+
+console_handler = ConsoleHandler()
+
+logging.basicConfig(
+    level=logging.TRACE,  # type: ignore
+    handlers=[
+        console_handler,
+    ],
+)
+
+# The asyncio lib logs errors in some conditions to stdout, in addition to
+# throwing an exception.  This messes up with our penlog logging.
+asyncio_log = logging.getLogger("asyncio")
+asyncio_log.setLevel(logging.CRITICAL)
 
 
 def main() -> None:

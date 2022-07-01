@@ -41,7 +41,7 @@ class WriteMemoryByAddressScanner(UDSScanner):
         try:
             await self.ecu.check_and_set_session(args.session)
         except Exception as e:
-            self.logger.log_critical(
+            self.logger.critical(
                 f"Could not change to session: {g_repr(args.session)}: {g_repr(e)}"
             )
             sys.exit(1)
@@ -55,7 +55,7 @@ class WriteMemoryByAddressScanner(UDSScanner):
         resp = await self.ecu.write_memory_by_address(args.address, data)
 
         if isinstance(resp, NegativeResponse):
-            self.logger.log_error(resp)
+            self.logger.error(resp)
         else:
             # There is not real data returned, only echos
-            self.logger.log_summary("Success")
+            self.logger.summary("Success")

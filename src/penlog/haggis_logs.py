@@ -19,7 +19,7 @@ import warnings
 
 #: Default format string for the root logger. This string is set up by
 #: the :py:func:`configure_logger` method.
-_log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 #: When adding a new logging level, with :py:func:`add_logging_level`,
 #: silently keep the old level in case of conflict.
@@ -251,5 +251,5 @@ def _get_formatter(format=None):
     if isinstance(format, logging.Formatter):
         return format
     if format is None:
-        format = _log_format
+        format = _format
     return logging.Formatter(format)

@@ -124,7 +124,7 @@ class DiscoverDoIP(DiscoveryScanner):
         )
 
         for target_addr in src_gen:
-            self.logger.log_info(f"testing target {target_addr:#02x}")
+            self.logger.info(f"testing target {target_addr:#02x}")
             conn = await DoIPConnection.connect(
                 args.target.hostname,
                 args.target.port,
@@ -147,10 +147,10 @@ class DiscoverDoIP(DiscoveryScanner):
             finally:
                 await conn.close()
 
-            self.logger.log_info(f"found {target_addr:#02x}")
+            self.logger.info(f"found {target_addr:#02x}")
             found.append(target)
 
-        self.logger.log_summary(f"Found {len(found)} targets")
+        self.logger.summary(f"Found {len(found)} targets")
         ecus_file = self.artifacts_dir.joinpath("ECUs.txt")
-        self.logger.log_summary(f"Writing urls to file: {ecus_file}")
+        self.logger.summary(f"Writing urls to file: {ecus_file}")
         await write_target_list(ecus_file, found, self.db_handler)

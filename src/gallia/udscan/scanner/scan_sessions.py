@@ -66,7 +66,7 @@ class IterateSessions(UDSScanner):
             and resp.response_code == UDSErrorCodes.conditionsNotCorrect
         ):
             if not use_hooks:
-                self.logger.log_warning(
+                self.logger.warning(
                     f"Session {g_repr(session)} is potentially available but could not be entered. "
                     f"Use --with-hooks to try to enter the session using hooks to scan for "
                     f"transitions available from that session."
@@ -78,7 +78,7 @@ class IterateSessions(UDSScanner):
             )
 
             if isinstance(resp, NegativeResponse):
-                self.logger.log_notice(
+                self.logger.notice(
                     f"Received conditionsNotCorrect for session {g_repr(session)}. "
                     f"Successfully changed to the session with hooks."
                 )
@@ -92,13 +92,13 @@ class IterateSessions(UDSScanner):
                 resp = await self.set_session_with_hooks_handling(session, use_hooks)
 
                 if isinstance(resp, NegativeResponse):
-                    self.logger.log_error(
+                    self.logger.error(
                         f"Could not change to session {g_repr(session)} as part of stack: {resp}. "
                         f"Try with --reset to reset between each iteration."
                     )
                     return False
             except Exception as e:
-                self.logger.log_error(
+                self.logger.error(
                     f"Could not change to session {g_repr(session)} as part of stack: {g_repr(e)}. "
                     f"Try with --reset to reset between each iteration."
                 )
@@ -120,7 +120,7 @@ class IterateSessions(UDSScanner):
             depth += 1
 
             found[depth] = []
-            self.logger.log_summary(f"Depth: {depth}")
+            self.logger.summary(f"Depth: {depth}")
 
             for stack in found[depth - 1]:
                 if args.fast and stack[-1] in search_sessions:
@@ -129,37 +129,37 @@ class IterateSessions(UDSScanner):
                 search_sessions.append(stack[-1])
 
                 if stack:
-                    self.logger.log_summary(
+                    self.logger.summary(
                         f"Starting from session: {g_repr(stack[-1])}"
                     )
 
                 for session in sessions:
                     if session in args.skip:
-                        self.logger.log_info(
+                        self.logger.info(
                             f"Skipping session {g_repr(session)} as requested"
                         )
                         continue
 
                     if args.reset:
                         try:
-                            self.logger.log_info("Resetting the ECU")
+                            self.logger.info("Resetting the ECU")
                             resp: UDSResponse = await self.ecu.ecu_reset(0x01)
 
                             if isinstance(resp, NegativeResponse):
-                                self.logger.log_warning(
+                                self.logger.warning(
                                     f"Could not reset ECU: {resp}; "
                                     f"continue without reset"
                                 )
                             else:
-                                self.logger.log_info("Waiting for the ECU to recover…")
+                                self.logger.info("Waiting for the ECU to recover…")
                                 await self.ecu.wait_for_ecu()
                         except asyncio.TimeoutError:
-                            self.logger.log_error(
+                            self.logger.error(
                                 "ECU did not respond after reset; exiting…"
                             )
                             sys.exit(1)
                         except ConnectionError:
-                            self.logger.log_warning(
+                            self.logger.warning(
                                 "Lost connection to the ECU after performing a reset. "
                                 "Attempting to reconnect…"
                             )
@@ -168,17 +168,17 @@ class IterateSessions(UDSScanner):
                     try:
                         resp = await self.ecu.set_session(0x01)
                         if isinstance(resp, NegativeResponse):
-                            self.logger.log_error(
+                            self.logger.error(
                                 f"Could not change to default session: {resp}"
                             )
                             sys.exit(1)
                     except Exception as e:
-                        self.logger.log_error(
+                        self.logger.error(
                             f"Could not change to default session: {g_repr(e)}"
                         )
                         sys.exit(1)
 
-                    self.logger.log_debug(
+                    self.logger.debug(
                         f"Sleeping for {args.sleep}s after changing to DefaultSession"
                     )
                     await asyncio.sleep(args.sleep)
@@ -197,12 +197,12 @@ class IterateSessions(UDSScanner):
                             and resp.response_code
                             == UDSErrorCodes.subFunctionNotSupported
                         ):
-                            self.logger.log_info(
+                            self.logger.info(
                                 f"Could not change to session {g_repr(session)}: {resp}"
                             )
                             continue
 
-                        self.logger.log_summary(
+                        self.logger.summary(
                             f"Found session: {g_repr(session)} via stack: {g_repr(stack)}; {resp}"
                         )
 
@@ -225,12 +225,12 @@ class IterateSessions(UDSScanner):
                             )
 
                     except asyncio.TimeoutError:
-                        self.logger.log_warning(
+                        self.logger.warning(
                             f"Could not change to session {g_repr(session)}: Timeout"
                         )
                         continue
 
-        self.logger.log_summary("Scan finished; Found the following sessions:")
+        self.logger.summary("Scan finished; Found the following sessions:")
         previous_session = 0
 
         for res in sorted(positive_results, key=lambda x: x["session"]):
@@ -238,13 +238,13 @@ class IterateSessions(UDSScanner):
 
             if session != previous_session:
                 previous_session = session
-                self.logger.log_summary(f"* Session {g_repr(session)} ")
+                self.logger.summary(f"* Session {g_repr(session)} ")
 
-            self.logger.log_summary(
+            self.logger.summary(
                 f"\tvia stack: {'->'.join([f'{g_repr(i)}' for i in res['stack']])}"
             )
 
-        self.logger.log_summary(
+        self.logger.summary(
             "The following sessions were identified but could not be activated:"
         )
         previous_session = 0
@@ -258,9 +258,9 @@ class IterateSessions(UDSScanner):
             ):
                 if session != previous_session:
                     previous_session = session
-                    self.logger.log_summary(f"* Session {g_repr(session)} ")
+                    self.logger.summary(f"* Session {g_repr(session)} ")
 
-                self.logger.log_summary(
+                self.logger.summary(
                     f"\tvia stack: {'->'.join([f'{g_repr(i)}' for i in res['stack']])} "
                     f"(NRC: {res['error']})"
                 )

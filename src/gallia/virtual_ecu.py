@@ -100,7 +100,7 @@ class VirtualECU(AsyncScript):
         elif target.scheme == ISOTPTransport.SCHEME:
             transport = ISOTPUDSServerTransport(server, target)
         else:
-            self.logger.log_error(
+            self.logger.error(
                 f"Unsupported transport scheme! Use any of ["
                 f"{TCPLineSepTransport.SCHEME}, {ISOTPTransport.SCHEME}]"
             )

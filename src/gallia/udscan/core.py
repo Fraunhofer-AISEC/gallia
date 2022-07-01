@@ -5,6 +5,7 @@
 import argparse
 import asyncio
 import json
+import logging
 import os
 import signal
 import sys
@@ -26,13 +27,13 @@ import argcomplete
 
 from gallia.db.db_handler import DBHandler
 from gallia.penlab import Dumpcap, PowerSupply, PowerSupplyURI
-from gallia.penlog import Logger
 from gallia.transports.base import BaseTransport, TargetURI
 from gallia.transports.can import ISOTPTransport, RawCANTransport
 from gallia.transports.doip import DoIPTransport
 from gallia.transports.tcp import TCPLineSepTransport
 from gallia.uds.ecu import ECU
 from gallia.utils import camel_to_snake, g_repr
+from penlog import ConsoleHandler, JsonFormatter, ZstdFileHandler, get_logger
 
 
 class ExitCodes(IntEnum):
@@ -96,6 +97,20 @@ def load_ecu(vendor: str) -> type[ECU]:
     raise ValueError(f"no such OEM: '{vendor}'")
 
 
+def setup_logging(path: Path, level: int) -> None:
+    zstd_handler = ZstdFileHandler(path)
+    zstd_handler.setFormatter(JsonFormatter())
+
+    logging.basicConfig(
+        level=level,
+        handlers=[
+            ConsoleHandler(),
+            zstd_handler,
+        ],
+        force=True,
+    )
+
+
 class GalliaBase(ABC):
     """GalliaBase is a baseclass for all gallia commands.
     In order to register cli arguments:
@@ -110,7 +125,7 @@ class GalliaBase(ABC):
 
     def __init__(self) -> None:
         self.description = self.__class__.__doc__
-        self.logger = Logger(component="gallia", flush=True)
+        self.logger = get_logger("gallia")
         self.db_handler: Optional[DBHandler] = None
         self.parser = argparse.ArgumentParser(
             description=self.description, formatter_class=Formatter
@@ -120,7 +135,12 @@ class GalliaBase(ABC):
         self.add_parser()
 
     def add_class_parser(self) -> None:
-        ...
+        self.parser.add_argument(
+            "-v",
+            "--verbose",
+            action="count",
+            default=0,
+        )
 
     def add_parser(self) -> None:
         ...
@@ -279,7 +299,7 @@ class Scanner(GalliaBase, ABC):
         if path.is_dir():
             return path
 
-        self.logger.log_error(f"Data directory {path} is not an existing directory.")
+        self.logger.error(f"Data directory {path} is not an existing directory.")
         sys.exit(1)
 
     async def _run(self, args: Namespace) -> int:
@@ -301,9 +321,9 @@ class Scanner(GalliaBase, ABC):
                 await self.setup(args)
             except BrokenPipeError as e:
                 exit_code = ExitCodes.GENERIC_ERROR
-                self.logger.log_critical(g_repr(e))
+                self.logger.critical(g_repr(e))
             except Exception as e:
-                self.logger.log_critical(f"setup failed: {g_repr(e)}")
+                self.logger.exception(f"setup failed: {g_repr(e)}")
                 sys.exit(ExitCodes.SETUP_FAILED)
 
             try:
@@ -311,13 +331,13 @@ class Scanner(GalliaBase, ABC):
                     await self.main(args)
                 except Exception as e:
                     exit_code = ExitCodes.GENERIC_ERROR
-                    self.logger.log_critical(g_repr(e))
+                    self.logger.critical(g_repr(e))
                     traceback.print_exc()
             finally:
                 try:
                     await self.teardown(args)
                 except Exception as e:
-                    self.logger.log_critical(f"teardown failed: {g_repr(e)}")
+                    self.logger.critical(f"teardown failed: {g_repr(e)}")
                     sys.exit(ExitCodes.TEARDOWN_FAILED)
             return exit_code
         except KeyboardInterrupt:
@@ -334,14 +354,14 @@ class Scanner(GalliaBase, ABC):
                             datetime.now(timezone.utc).astimezone(), exit_code
                         )
                     except Exception as e:
-                        self.logger.log_warning(
+                        self.logger.warning(
                             f"Could not write the run meta to the database: {g_repr(e)}"
                         )
 
                 try:
                     await self.db_handler.disconnect()
                 except Exception as e:
-                    self.logger.log_error(
+                    self.logger.error(
                         f"Could not close the database connection properly: {g_repr(e)}"
                     )
 
@@ -350,20 +370,26 @@ class Scanner(GalliaBase, ABC):
         args = self.parser.parse_args()
 
         self.artifacts_dir = self.prepare_artifactsdir(args.data_dir)
-        self.logger.log_preamble(f"Storing artifacts at {self.artifacts_dir}")
-        self.logger.log_preamble(
+
+        level = logging.INFO
+        if args.verbose == 1:
+            level = logging.DEBUG
+        elif args.verbose == 2:
+            level = logging.TRACE  # type: ignore
+        setup_logging(self.artifacts_dir.joinpath("log.json.zstd"), level)
+
+        self.logger.info(f"Storing artifacts at {self.artifacts_dir}")
+        self.logger.info(
             f'Starting "{sys.argv[0]}" ({version("gallia")}) with [{" ".join(sys.argv)}]'
         )
 
         try:
             return asyncio.run(self._run(args))
         except KeyboardInterrupt:
-            self.logger.log_critical("ctrl+c received. Terminating…")
+            self.logger.critical("ctrl+c received. Terminating…")
             return 128 + signal.SIGINT
         finally:
-            self.logger.log_info(
-                f"The scan results are located at: {self.artifacts_dir}"
-            )
+            self.logger.info(f"The scan results are located at: {self.artifacts_dir}")
 
 
 class UDSScanner(Scanner):
@@ -380,7 +406,7 @@ class UDSScanner(Scanner):
         self.transport: BaseTransport
         self.tester_present_task: Optional[Task] = None
         self._implicit_logging = True
-        self.log_scan_run = True  # TODO: Remove this as soon as find-endpoint is fixed
+        self.scan_run = True  # TODO: Remove this as soon as find-endpoint is fixed
 
     def add_class_parser(self) -> None:
         super().add_class_parser()
@@ -449,7 +475,7 @@ class UDSScanner(Scanner):
 
     async def _tester_present_worker(self, interval: int) -> None:
         assert self.transport
-        self.logger.log_debug("tester present worker started")
+        self.logger.debug("tester present worker started")
         while True:
             try:
                 async with self.transport.mutex:
@@ -470,10 +496,10 @@ class UDSScanner(Scanner):
                         pass
                 await asyncio.sleep(interval)
             except asyncio.CancelledError:
-                self.logger.log_debug("tester present worker terminated")
+                self.logger.debug("tester present worker terminated")
                 break
             except Exception as e:
-                self.logger.log_debug(f"tester present got {g_repr(e)}")
+                self.logger.debug(f"tester present got {g_repr(e)}")
                 # Wait until the stack recovers, but not for too long…
                 await asyncio.sleep(1)
 
@@ -507,12 +533,12 @@ class UDSScanner(Scanner):
             power_supply=self.power_supply,
         )
 
-        if self.db_handler is not None and self.log_scan_run:
+        if self.db_handler is not None and self.scan_run:
             try:
                 await self.db_handler.insert_scan_run(str(args.target))
                 self._apply_implicit_logging_setting()
             except Exception as e:
-                self.logger.log_warning(
+                self.logger.warning(
                     f"Could not write the scan run to the database: {g_repr(e)}"
                 )
 
@@ -537,14 +563,14 @@ class UDSScanner(Scanner):
                 await file.write(json.dumps(await self.ecu.properties(True), indent=4))
                 await file.write("\n")
 
-        if self.db_handler is not None and self.log_scan_run:
+        if self.db_handler is not None and self.scan_run:
             try:
                 await self.db_handler.insert_scan_run_properties_pre(
                     await self.ecu.properties()
                 )
                 self._apply_implicit_logging_setting()
             except Exception as e:
-                self.logger.log_warning(
+                self.logger.warning(
                     f"Could not write the properties_pre to the database: {g_repr(e)}"
                 )
 
@@ -560,15 +586,15 @@ class UDSScanner(Scanner):
                 prop_pre = json.loads(await file.read())
 
             if args.compare_properties and await self.ecu.properties(False) != prop_pre:
-                self.logger.log_warning("ecu properties differ, please investigate!")
+                self.logger.warning("ecu properties differ, please investigate!")
 
-        if self.db_handler is not None and self.log_scan_run:
+        if self.db_handler is not None and self.scan_run:
             try:
                 await self.db_handler.complete_scan_run(
                     await self.ecu.properties(False)
                 )
             except Exception as e:
-                self.logger.log_warning(
+                self.logger.warning(
                     f"Could not write the scan run to the database: {g_repr(e)}"
                 )
 
@@ -600,6 +626,6 @@ class DiscoveryScanner(Scanner):
             try:
                 await self.db_handler.insert_discovery_run(args.target.url.scheme)
             except Exception as e:
-                self.logger.log_warning(
+                self.logger.warning(
                     f"Could not write the discovery run to the database: {g_repr(e)}"
                 )

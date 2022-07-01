@@ -20,7 +20,7 @@ from urllib.parse import urlparse
 
 from opennetzteil import Netzteil
 
-from gallia.penlog import Logger
+from penlog import get_logger, console_stderr
 from gallia.transports.base import TargetURI
 from gallia.transports.can import ISOTPTransport, RawCANTransport
 from gallia.utils import split_host_port, g_repr
@@ -47,7 +47,7 @@ class PowerSupplyURI(TargetURI):
 
 class PowerSupply:
     def __init__(self, channel_id: Union[int, list[int]], client: Netzteil) -> None:
-        self.logger = Logger("penlab.experiment", flush=True)
+        self.logger = get_logger("penlab.experiment")
         self.channel_id = channel_id
         self.netzteil = client
         self.mutex = asyncio.Lock()
@@ -66,11 +66,11 @@ class PowerSupply:
             await self.netzteil.set_channel(self.channel_id, op)
 
     async def power_up(self) -> None:
-        self.logger.log_info("power up experiment")
+        self.logger.info("power up experiment")
         await self._power(True)
 
     async def power_down(self) -> None:
-        self.logger.log_info("power down experiment")
+        self.logger.info("power down experiment")
         await self._power(False)
 
     async def power_cycle(
@@ -92,7 +92,7 @@ class Dumpcap:
     def __init__(
         self,
         proc: subprocess.Process,  # pylint: disable=no-member
-        logger: Logger,
+        logger,
         artifacts_dir: Path,
         outfile: Path,
         cleanup: int = 2,
@@ -111,7 +111,7 @@ class Dumpcap:
         target: TargetURI,
         artifacts_dir: Optional[os.PathLike] = None,
     ) -> Dumpcap:
-        logger = Logger("penlab.dumpcap", flush=True)
+        logger = get_logger("penlab.dumpcap")
 
         if artifacts_dir:
             artifacts_dir = Path(artifacts_dir)
@@ -137,7 +137,7 @@ class Dumpcap:
             )
             await asyncio.sleep(0.2)
         except Exception as e:
-            logger.log_error(f"Could not start dumpcap: ({g_repr(e)})")
+            logger.error(f"Could not start dumpcap: ({g_repr(e)})")
             raise
 
         if proc.returncode:
@@ -145,7 +145,7 @@ class Dumpcap:
                 f"dumpcap terminated with exit code: [{proc.returncode}]"
             )
 
-        logger.log_preamble(f'Started "dumpcap": {cmd_str}')
+        logger.info(f'Started "dumpcap": {cmd_str}')
 
         return cls(proc, logger, artifacts_dir, outfile)
 

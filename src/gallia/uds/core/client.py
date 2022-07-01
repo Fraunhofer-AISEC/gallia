@@ -9,12 +9,12 @@ import struct
 from dataclasses import dataclass
 from typing import Optional, Sequence, Union, overload
 
-from gallia.penlog import Logger
 from gallia.transports.base import BaseTransport
 from gallia.uds.core import service
 from gallia.uds.core.constants import UDSErrorCodes, UDSIsoServices
 from gallia.uds.core.exception import MissingResponse
 from gallia.uds.helpers import parse_pdu
+from penlog import get_logger
 
 
 @dataclass
@@ -39,7 +39,7 @@ class UDSClient:
         self.max_retry = max_retry
         self.retry_wait = 0.2
         self.pending_timeout = 5
-        self.logger = Logger("uds", flush=True)
+        self.logger = get_logger("uds")
 
     async def reconnect(self, timeout: Optional[int] = None) -> None:
         """Calls the underlying transport to trigger a reconnect"""
@@ -69,13 +69,13 @@ class UDSClient:
 
             # Avoid pasting this very line in every error branch.
             if i > 0:
-                self.logger.log_debug(f"retrying {i} from {max_retry}…")
+                self.logger.debug(f"retrying {i} from {max_retry}…")
             try:
                 raw_resp = await self.transport.request_unsafe(
                     request.pdu, timeout, config.tags
                 )
             except asyncio.TimeoutError as e:
-                self.logger.log_debug(f"{request} failed with: {repr(e)}")
+                self.logger.debug(f"{request} failed with: {repr(e)}")
                 last_exception = MissingResponse(request, str(e))
                 await asyncio.sleep(wait_time)
                 continue
@@ -123,7 +123,7 @@ class UDSClient:
                 # and similar busy stuff is resolved.
                 return resp
 
-        self.logger.log_debug(f"{request} failed after retry loop")
+        self.logger.debug(f"{request} failed after retry loop")
         raise last_exception
 
     async def _tester_present(

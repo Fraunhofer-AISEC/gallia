@@ -34,21 +34,21 @@ class ReadErrorLog(UDSScanner):
             sessions = list(range(1, 0x80))
             sessions = await self.ecu.find_sessions(sessions)
             msg = f"Found {len(sessions)} sessions: {g_repr(sessions)}"
-            self.logger.log_summary(msg)
+            self.logger.summary(msg)
 
         for sess in sessions:
             await self.ecu.set_session(sess)
             resp = await self.ecu.read_dtc()
             if isinstance(resp, NegativeResponse):
-                self.logger.log_warning(resp)
+                self.logger.warning(resp)
             else:
-                self.logger.log_summary(resp.dtc_and_status_record)
+                self.logger.summary(resp.dtc_and_status_record)
             await self.ecu.leave_session(sess)
 
         if args.clear_dtc:
             await self.ecu.clear_dtc()
             await self.ecu.read_dtc()
-            self.logger.log_info("Rebooting ECU...")
+            self.logger.info("Rebooting ECU...")
             await self.ecu.ecu_reset(1)
             await asyncio.sleep(2)
             await self.ecu.read_dtc()

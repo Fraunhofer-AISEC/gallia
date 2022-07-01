@@ -11,7 +11,7 @@ from typing import Any, Optional
 
 import aiosqlite
 
-from gallia.penlog import Logger
+from penlog import get_logger
 from gallia.uds.core import service
 from gallia.uds.core.utils import bytes_repr as bytes_repr_
 from gallia.utils import g_repr
@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS discovery_result (
 CREATE TABLE IF NOT EXISTS scan_result (
   id integer primary key,
   run int not null references scan_run(id) on update cascade on delete cascade,
-  log_mode text not null check(log_mode in ('implicit', 'explicit', 'emphasized')),
+  mode text not null check(log_mode in ('implicit', 'explicit', 'emphasized')),
   state json check(state is null or json_valid(state)),
   request_pdu blob not null,
   request_time real not null,
@@ -132,7 +132,7 @@ class DBHandler:
         self.scan_run: Optional[int] = None
         self.discovery_run: Optional[int] = None
         self.meta: Optional[int] = None
-        self.logger = Logger("db", flush=True)
+        self.logger = get_logger("db")
 
     async def connect(self) -> None:
         assert self.connection is None, "Already connected to the database"
@@ -157,7 +157,7 @@ class DBHandler:
             try:
                 await task
             except Exception as e:
-                self.logger.log_error(f"Inside task: {g_repr(e)}")
+                self.logger.error(f"Inside task: {g_repr(e)}")
 
         try:
             await self.connection.commit()
@@ -284,7 +284,7 @@ class DBHandler:
         exception: Optional[Exception],
         send_time: datetime,
         receive_time: Optional[datetime],
-        log_mode: LogMode,
+        mode: LogMode,
     ) -> None:
         assert self.connection is not None, "Not connected to the database"
         assert self.scan_run is not None, "Scan run not yet created"
@@ -335,7 +335,7 @@ class DBHandler:
 
         query = (
             "INSERT INTO scan_result(run, state, request_pdu, request_time, request_timezone, request_data, "
-            "response_pdu, response_time, response_timezone, response_data, exception, log_mode) "
+            "response_pdu, response_time, response_timezone, response_data, exception, mode) "
             "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         )
 
@@ -356,7 +356,7 @@ class DBHandler:
             else None,
             json.dumps(response_attributes) if response is not None else None,
             repr(exception) if exception is not None else None,
-            log_mode.name,
+            mode.name,
         )
 
         async def execute() -> None:
@@ -369,7 +369,7 @@ class DBHandler:
                     await self.connection.execute(query, query_parameter)
                     done = True
                 except aiosqlite.OperationalError:
-                    self.logger.log_warning(
+                    self.logger.warning(
                         f"Could not log message for {query_parameter[5]} to database. Retrying ..."
                     )
 

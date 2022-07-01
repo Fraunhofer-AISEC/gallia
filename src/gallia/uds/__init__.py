@@ -2,12 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import logging
+from penlog import get_logger
 
-from gallia.penlog import Logger
-
-logger = Logger("uds.lib", flush=True)
-# The asyncio lib logs errors in some conditions to stdout, in addition to
-# throwing an exception.  This messes up with our penlog logging.
-asyncio_log = logging.getLogger("asyncio")
-asyncio_log.setLevel(logging.CRITICAL)
+logger = get_logger("uds.lib")
