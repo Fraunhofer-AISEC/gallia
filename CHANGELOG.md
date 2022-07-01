@@ -13,6 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 1.0.3 (2022-06-30)
+
+### Fixed
+
+* Fix a crash when the DoIP gateway denies the UDS request (#196)
+* Fix the DoIP discovery scanner creating invalid URLs (source and targed where confused) (#196)
+* Readd the removed return value to `wait_for_ecu()` (#198)
+* vECU: Fix state change comparison and reset security access on session change (#190)
+
 ## 1.0.2 (2022-06-30)
 
 ### Added
