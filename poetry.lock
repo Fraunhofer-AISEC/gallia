@@ -633,11 +633,11 @@ testutils = ["gitpython (>3)"]
 
 [[package]]
 name = "pylsp-mypy"
-version = "0.5.8"
+version = "0.6.2"
 description = "Mypy linter for the Python LSP Server"
 category = "dev"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 
 [package.dependencies]
 mypy = "*"
@@ -1135,7 +1135,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9,<3.11"
-content-hash = "a8ec5d8c4281b8dd9ee9865db0cac49d9468498e8f961b7f6507ef9c7148f377"
+content-hash = "506fd6ccd09d7bfe73d65182346dc41c0c8f100c30a39bcf515834432e4c5479"
 
 [metadata.files]
 aiofiles = [
@@ -1759,8 +1759,8 @@ pylint = [
     {file = "pylint-2.14.4.tar.gz", hash = "sha256:47705453aa9dce520e123a7d51843d5f0032cbfa06870f89f00927aa1f735a4a"},
 ]
 pylsp-mypy = [
-    {file = "pylsp-mypy-0.5.8.tar.gz", hash = "sha256:79f4ce6eb69d767801cb47f3d12f2be2c9cf65c21acfc5868a81c094d8087eb5"},
-    {file = "pylsp_mypy-0.5.8-py3-none-any.whl", hash = "sha256:d98d1360cbba191192cf4c61d0f9ad77b62b87b4660263f1dcdf2252237e30dd"},
+    {file = "pylsp-mypy-0.6.2.tar.gz", hash = "sha256:e709a244eb56768765f334de550bd9101d2312fa2a6dd077c7bbf939b7b3fba1"},
+    {file = "pylsp_mypy-0.6.2-py3-none-any.whl", hash = "sha256:473bf16027c3a69d8052c184ba72f049ce137b10eeefea0b1414c9e589ec79a9"},
 ]
 pylsp-rope = [
     {file = "pylsp-rope-0.1.9.tar.gz", hash = "sha256:67ae55aeea2d60e2d77c5713445fa780e78b7ce543d76e88cfc5a958168b4664"},
