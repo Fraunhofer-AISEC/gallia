@@ -286,6 +286,7 @@ class DBHandler:
         send_time: datetime,
         receive_time: Optional[datetime],
         log_mode: LogMode,
+        commit: bool = True,
     ) -> None:
         assert self.connection is not None, "Not connected to the database"
         assert self.scan_run is not None, "Scan run not yet created"
@@ -374,6 +375,7 @@ class DBHandler:
                         f"Could not log message for {query_parameter[5]} to database. Retrying ..."
                     )
 
-            await self.connection.commit()
+            if commit:
+                await self.connection.commit()
 
         self.tasks.append(asyncio.create_task(execute()))
