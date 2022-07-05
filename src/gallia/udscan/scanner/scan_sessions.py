@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+import json
 import sys
 from argparse import Namespace
 from typing import Union
@@ -58,7 +59,7 @@ class IterateSessions(UDSScanner):
         self, session: int, use_hooks: bool
     ) -> Union[NegativeResponse, DiagnosticSessionControlResponse]:
         resp = await self.ecu.set_session(
-            session, config=UDSRequestConfig(skip_hooks=True)
+            session, config=UDSRequestConfig(skip_hooks=True), use_db=False
         )
 
         if (
@@ -74,7 +75,7 @@ class IterateSessions(UDSScanner):
                 return resp
 
             resp_ = await self.ecu.set_session(
-                session, config=UDSRequestConfig(skip_hooks=False)
+                session, config=UDSRequestConfig(skip_hooks=False), use_db=False
             )
 
             if isinstance(resp, NegativeResponse):
@@ -166,7 +167,7 @@ class IterateSessions(UDSScanner):
                             await self.ecu.reconnect()
 
                     try:
-                        resp = await self.ecu.set_session(0x01)
+                        resp = await self.ecu.set_session(0x01, use_db=False)
                         if isinstance(resp, NegativeResponse):
                             self.logger.log_error(
                                 f"Could not change to default session: {resp}"
@@ -240,6 +241,9 @@ class IterateSessions(UDSScanner):
                 previous_session = session
                 self.logger.log_summary(f"* Session {g_repr(session)} ")
 
+                if self.db_handler is not None:
+                    await self.db_handler.insert_session_transition(session, res['stack'])
+
             self.logger.log_summary(
                 f"\tvia stack: {'->'.join([f'{g_repr(i)}' for i in res['stack']])}"
             )
@@ -259,6 +263,9 @@ class IterateSessions(UDSScanner):
                 if session != previous_session:
                     previous_session = session
                     self.logger.log_summary(f"* Session {g_repr(session)} ")
+
+                    if self.db_handler is not None:
+                        await self.db_handler.insert_session_transition(session, res['stack'])
 
                 self.logger.log_summary(
                     f"\tvia stack: {'->'.join([f'{g_repr(i)}' for i in res['stack']])} "
