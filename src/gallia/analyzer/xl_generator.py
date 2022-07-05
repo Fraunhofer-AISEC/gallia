@@ -32,7 +32,7 @@ class ExcelGenerator(Operator):
     def __init__(self, path: str = "", log_mode: LogMode = LogMode.STD_OUT):
         Operator.__init__(self, path, log_mode)
         self.msg_head = "[ExcelGenerator] "
-        self.workbook = self.workbook = op.Workbook()
+        self.workbook: op.Workbook = op.Workbook()
         self.worksheet: Any
         self.load_color_code(SrcPath.err_src)
 
@@ -77,7 +77,7 @@ class ExcelGenerator(Operator):
         except (InvalidFileException, WorkbookAlreadySaved) as exc:
             self.log("saving EXCEL failed", True, exc)
             return False
-        return
+        return True
 
     def add_sum_sheet_serv(
         self, raw_df: pd.DataFrame, entries_vec: np.ndarray, sheet_name: str = ""
@@ -121,8 +121,8 @@ class ExcelGenerator(Operator):
         try:
             self.worksheet = self.workbook.create_sheet(sheet_name)
             ref_col = ColNm.iden
-            serv = pd.unique(raw_df[ColNm.serv])[0]
-            sbfn_vec = np.sort(pd.unique(raw_df[ColNm.sbfn]))
+            serv = np.unique(raw_df[ColNm.serv])[0]
+            sbfn_vec = np.sort(np.unique(raw_df[ColNm.sbfn]))
             dft_err_df = self.get_dft_err_df_from_raw(raw_df)
             cur_row, cur_col = self.sum_sheet_fill_origin(ScanMode.IDEN, serv, sbfn_vec)
             cur_row, cur_col = self.sum_sheet_fill_index(
@@ -288,7 +288,7 @@ class ExcelGenerator(Operator):
             if scan_mode == ScanMode.SERV:
                 sbfn_vec = np.arange(1)
             if scan_mode == ScanMode.IDEN:
-                sbfn_vec = np.sort(pd.unique(raw_df[ColNm.sbfn]))
+                sbfn_vec = np.sort(np.unique(raw_df[ColNm.sbfn]))
             for sess in sess_vec:
                 if dft_err_df[sess][0] == -1:
                     continue
@@ -344,7 +344,7 @@ class ExcelGenerator(Operator):
                 width = XlDesign.dim_wide
             if scan_mode == ScanMode.IDEN:
                 fail_vec = np.array([Failure.UNDOC_IDEN, Failure.MISS_IDEN])
-                sbfn_vec = np.sort(pd.unique(raw_df[ColNm.sbfn]))
+                sbfn_vec = np.sort(np.unique(raw_df[ColNm.sbfn]))
                 width = XlDesign.dim_middle
             cur_row = self.start_row
             cur_col = self.start_col
@@ -390,7 +390,7 @@ class ExcelGenerator(Operator):
                         lambda x, fl=fail: self.check_fail(x, fl)
                     ) & (raw_df[ColNm.sess] == sess)
                     if scan_mode == ScanMode.SERV:
-                        serv_vec = np.sort(pd.unique(raw_df.loc[cond, ColNm.serv]))
+                        serv_vec = np.sort(np.unique(raw_df.loc[cond, ColNm.serv]))
                         for serv in serv_vec:
                             self.worksheet.cell(
                                 cur_row, cur_col
@@ -406,7 +406,7 @@ class ExcelGenerator(Operator):
                                 zip(raw_df[ColNm.iden], raw_df[ColNm.sbfn])
                             )
                             iden_sbfn_vec = np.sort(
-                                pd.unique(raw_df.loc[cond, ColNm.combi])
+                                np.unique(raw_df.loc[cond, ColNm.combi])
                             )
                             for iden_sbfn in iden_sbfn_vec:
                                 iden = iden_sbfn[0]
@@ -422,7 +422,7 @@ class ExcelGenerator(Operator):
                                 cur_row += 1
                             cur_col += 1
                         else:
-                            iden_vec = np.sort(pd.unique(raw_df.loc[cond, ColNm.iden]))
+                            iden_vec = np.sort(np.unique(raw_df.loc[cond, ColNm.iden]))
                             for iden in iden_vec:
                                 if iden == -1:
                                     entry = CellCnt.no_ent

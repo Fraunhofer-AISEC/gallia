@@ -3,9 +3,9 @@ gallia-analyze Operator module
 """
 import json
 from json.decoder import JSONDecodeError
-from typing import Tuple
 from sqlite3 import OperationalError
 from itertools import chain
+from typing import cast
 import numpy as np
 import pandas as pd
 from pandas.core.indexing import IndexingError
@@ -35,8 +35,8 @@ class Operator(DatabaseHandler):
         self.ref_ven_df = pd.DataFrame()
         self.supp_serv_ven_vec = np.array([])
         self.sess_code_vec = np.array([])
-        self.sess_code_dict = dict()
-        self.sess_name_dict = dict()
+        self.sess_code_dict: dict[int, str] = {}
+        self.sess_name_dict: dict[str, int] = {}
         self.load_all_dicts()
         if self.connect_db():
             self.load_ref_iso()
@@ -58,7 +58,7 @@ class Operator(DatabaseHandler):
         get all a numpy array of all runs in the database.
         """
         if self.load_meta(force=True):
-            return self.run_meta_df.index
+            return self.run_meta_df.index.to_numpy()
         return np.array([])
 
     def get_scan_mode(self, run: int) -> ScanMode:
@@ -88,10 +88,10 @@ class Operator(DatabaseHandler):
                 return -1
             raw_df = self.read_run_db(TblNm.iden, run)
             self.check_df(raw_df, TblStruct.iden)
-            serv_vec = pd.unique(raw_df[ColNm.serv])
+            serv_vec = np.unique(raw_df[ColNm.serv])
             if serv_vec.shape[0] > 1:
                 self.log("A run has more than one Service ID.", True)
-            serv_ser = raw_df[ColNm.serv].mode()
+            serv_ser = raw_df[ColNm.serv].mode(dropna=True)
             if serv_ser.shape[0] > 1:
                 self.log("A run has more than one most frequent Service ID.", True)
         except (
@@ -112,7 +112,7 @@ class Operator(DatabaseHandler):
         if not self.load_meta():
             return -1
         try:
-            ecu_mode = self.run_meta_df.loc[run, ColNm.ecu_mode]
+            ecu_mode = cast(int, self.run_meta_df.loc[run, ColNm.ecu_mode])
             return ecu_mode
         except (KeyError, IndexingError, AttributeError) as exc:
             self.log("getting ECU mode failed", True, exc)
@@ -135,7 +135,7 @@ class Operator(DatabaseHandler):
         try:
             lu_df = self.read_db(TblNm.ven_lu)
             self.check_df(lu_df, TblStruct.ven_lu)
-            sess_vec = pd.unique(lu_df[ColNm.sess])
+            sess_vec = np.unique(lu_df[ColNm.sess])
         except (
             KeyError,
             IndexingError,
@@ -173,36 +173,18 @@ class Operator(DatabaseHandler):
             return pd.DataFrame()
         return ref_df
 
-    def get_dft_err_df(self, run: int) -> Tuple[pd.DataFrame, np.ndarray]:
-        """
-        get data frame that shows most common error(default error)
-        for each diagnostic session regarding a run.
-        """
-        try:
-            scan_mode = self.get_scan_mode(run)
-            if scan_mode == ScanMode.SERV:
-                raw_df = self.read_run_db(TblNm.serv, run)
-                self.check_df(raw_df, TblStruct.serv)
-            else:
-                raw_df = self.read_run_db(TblNm.iden, run)
-                self.check_df(raw_df, TblStruct.iden)
-        except (EmptyTableException, ColumnMismatchException) as exc:
-            self.log("getting default error data frame failed", True, exc)
-            return pd.DataFrame()
-        return self.get_dft_err_df_from_raw(raw_df)
-
     def get_dft_err_df_from_raw(self, raw_df: pd.DataFrame) -> pd.DataFrame:
         """
         get summarized data frame that shows most common error(default error)
         for each diagnostic session from raw data frame.
         """
         try:
-            sess_vec = pd.unique(raw_df[ColNm.sess])
+            sess_vec = np.unique(raw_df[ColNm.sess])
             dft_err_df = pd.DataFrame([], index=[ColNm.dft], columns=sess_vec)
             for sess in sess_vec:
                 cond = raw_df[ColNm.sess] == sess
                 dft_err_df.loc[ColNm.dft, sess] = raw_df.loc[cond, ColNm.resp].mode()[0]
-            dft_err_df.attrs[ColNm.serv] = list(pd.unique(raw_df[ColNm.serv]))
+            dft_err_df.attrs[ColNm.serv] = list(np.unique(raw_df[ColNm.serv]))
         except (
             KeyError,
             IndexingError,
@@ -224,7 +206,7 @@ class Operator(DatabaseHandler):
             FROM "{TblNm.scan_result}" WHERE "{ColNm.id}" = {str(search_id)};
             """
             res_df = self.get_df_by_query(res_sql)
-            resp = res_df.iloc[0, 0]
+            resp = cast(str, res_df.iloc[0, 0])
         except (KeyError, IndexingError, AttributeError) as exc:
             self.log("getting positive response failed", True, exc)
             return ""
@@ -281,7 +263,7 @@ class Operator(DatabaseHandler):
         try:
             lu_df = self.read_db(TblNm.ven_lu)
             self.check_df(lu_df, TblStruct.ven_lu)
-            supp_serv_vec = np.sort(pd.unique(lu_df[ColNm.serv]))
+            supp_serv_vec = np.sort(np.unique(lu_df[ColNm.serv]))
             mode_vec = np.arange(num_modes)
             ven_lu_dict = {}
             self.num_modes = 0
@@ -295,21 +277,21 @@ class Operator(DatabaseHandler):
                 for serv in supp_serv_vec:
                     sess_ls = list(
                         np.sort(
-                            pd.unique(
+                            np.unique(
                                 loi_df.loc[loi_df[ColNm.serv] == serv, ColNm.sess]
                             )
                         )
                     )
                     sbfn_ls = list(
                         np.sort(
-                            pd.unique(
+                            np.unique(
                                 loi_df.loc[loi_df[ColNm.serv] == serv, ColNm.sbfn]
                             )
                         )
                     )
                     iden_ls = list(
                         np.sort(
-                            pd.unique(
+                            np.unique(
                                 loi_df.loc[
                                     loi_df[ColNm.serv] == serv,
                                     ColNm.iden,
@@ -323,7 +305,7 @@ class Operator(DatabaseHandler):
                     )
                 ven_lu_dict[mode] = ref_df.T
             ven_lu_df = pd.concat(ven_lu_dict.values(), axis=1, keys=ven_lu_dict.keys())
-            self.ref_ven_df: pd.DataFrame = ven_lu_df
+            self.ref_ven_df = ven_lu_df
             self.supp_serv_ven_vec = np.sort(np.array(ven_lu_df.index))
         except (
             KeyError,
@@ -413,7 +395,7 @@ class Operator(DatabaseHandler):
                 (raw_df[ColNm.serv] == serv) & (raw_df[ColNm.ecu_mode] == ecu_mode)
             ].copy()
             self.lu_iden_df = pd.DataFrame(
-                pd.unique(
+                np.unique(
                     list(
                         zip(
                             serv_df[ColNm.sess],
@@ -503,7 +485,7 @@ class Operator(DatabaseHandler):
             ven_lu_df[ColNm.combi] = list(
                 zip(ven_lu_df[ColNm.serv], ven_lu_df[ColNm.sess], ven_lu_df[ColNm.boot])
             )
-            entries_vec = pd.unique(ven_lu_df[ColNm.combi])
+            entries_vec = np.unique(ven_lu_df[ColNm.combi])
             for entry in entries_vec:
                 pair_ls.append((entry[0], entry[1], entry[2]))
             pair_df = pd.DataFrame(

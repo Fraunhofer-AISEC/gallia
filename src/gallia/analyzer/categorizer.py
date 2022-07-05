@@ -95,7 +95,7 @@ class Categorizer(Analyzer):
         categorize failures for scan_identifier.
         """
         try:
-            serv_vec = pd.unique(raw_df[ColNm.serv])
+            serv_vec = np.unique(raw_df[ColNm.serv])
             if not serv_vec.size == 1:
                 self.log("more than one service in a run", True)
                 return pd.DataFrame()
@@ -124,7 +124,7 @@ class Categorizer(Analyzer):
             return pd.DataFrame()
         return raw_df
 
-    def check_sess_alwd(self, serv: int, sess: int, op_mode: OpMode, ecu_mode) -> bool:
+    def check_sess_alwd(self, serv: int, sess: int, op_mode: OpMode, ecu_mode: int) -> bool:
         """
         check if a certain diagnostic session is available or supported
         for a certain service at given analysis mode.
@@ -149,7 +149,7 @@ class Categorizer(Analyzer):
             + self.iso_supp_err_for_all_vec.tolist()
         )
 
-    def check_sbfn_alwd(self, serv: int, sbfn: int, op_mode: OpMode, ecu_mode) -> bool:
+    def check_sbfn_alwd(self, serv: int, sbfn: int, op_mode: OpMode, ecu_mode: int) -> bool:
         """
         check if a certain sub-function is available or supported
         for a certain service at given analysis mode.
@@ -275,6 +275,8 @@ class Categorizer(Analyzer):
             supp_serv_vec = self.supp_serv_ven_vec
         if op_mode == OpMode.ISO:
             supp_serv_vec = self.supp_serv_iso_vec
+        else:
+            raise RuntimeError(f'Unsupported op_mode: {op_mode}')
 
         cond_serv_supp = serv in supp_serv_vec
         cond_resp_alwd = self.check_resp_alwd(serv, resp)

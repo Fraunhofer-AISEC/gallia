@@ -306,7 +306,7 @@ class Reporter(Operator):
                 )
             if ecu_mode != -1:
                 cond_abn &= raw_df[ColNm.ecu_mode] == ecu_mode
-            self.abn_serv_vec = np.sort(pd.unique(raw_df.loc[cond_abn, ColNm.serv]))
+            self.abn_serv_vec = np.sort(np.unique(raw_df.loc[cond_abn, ColNm.serv]))
         except (KeyError, IndexingError, AttributeError) as exc:
             self.log("loading services of interest from data frame failed", True, exc)
             return False
@@ -331,7 +331,7 @@ class Reporter(Operator):
         load identifiers of interest from input raw data frame.
         """
         try:
-            serv_vec = np.sort(pd.unique(raw_df[ColNm.serv]))
+            serv_vec = np.sort(np.unique(raw_df[ColNm.serv]))
             if not serv_vec.size == 1:
                 self.log("more than one service in a run", True)
                 return False
@@ -348,7 +348,7 @@ class Reporter(Operator):
                 )
             if ecu_mode != -1:
                 cond_abn &= raw_df[ColNm.ecu_mode] == ecu_mode
-            self.abn_iden_vec = np.sort(pd.unique(raw_df.loc[cond_abn, ColNm.iden]))
+            self.abn_iden_vec = np.sort(np.unique(raw_df.loc[cond_abn, ColNm.iden]))
         except (KeyError, IndexingError, AttributeError) as exc:
             self.log(
                 "loading identifiers of interest from data frame failed", True, exc
