@@ -13,7 +13,7 @@ from subprocess import CalledProcessError, run
 
 from gallia.penlog import Logger
 from gallia.transports.base import TargetURI
-from gallia.transports.can import RawCANTransport
+from gallia.transports.can import RawCANTransport, CANMessage
 from gallia.utils import bytes_repr, can_id_repr, g_repr
 
 
@@ -225,33 +225,32 @@ class FindXCP:
 
         sniff_time: int = args.sniff_time
         self.logger.log_summary(
-            f"Listening to idle bus communication for {sniff_time}s..."
+            f"Listening to idle bus communication for {sniff_time}s…"
         )
         addr_idle = await transport.get_idle_traffic(sniff_time)
         self.logger.log_summary(f"Found {len(addr_idle)} CAN Addresses on idle Bus")
         transport.set_filter(addr_idle, inv_filter=True)
-        # flush receive queue
-        await transport.get_idle_traffic(2)
+        await transport.flush_receiver()
 
         for can_id in range(0x800):
             self.logger.log_info(f"Testing CAN ID: {can_id_repr(can_id)}")
             pdu = bytes([0xFF, 0x00])
-            await transport.sendto(pdu, can_id, timeout=0.1)
+            msg = CANMessage(arbitration_id=can_id, data=pdu)
+            await transport.write_frame(msg, timeout=0.1)
 
             try:
                 while True:
-                    master, data = await transport.recvfrom(timeout=0.1)
-                    if data[0] == 0xFF:
-                        msg = (
-                            f"Found XCP endpoint [master:slave]: CAN: {can_id_repr(master)}:{can_id_repr(can_id)} "
-                            f"data: {bytes_repr(data)}"
+                    msg = await transport.read_frame(timeout=0.1)
+                    if msg.data[0] == 0xFF:
+                        self.logger.log_summary(
+                            f"Found endpoint [master:slave]: {msg.msg_repr} "
+                            f"data: {bytes_repr(msg.data)}"
                         )
-                        self.logger.log_summary(msg)
-                        endpoints.append((can_id, master))
+                        endpoints.append((can_id, msg))
                     else:
                         self.logger.log_info(
-                            f"Received non XCP answer for CAN-ID {can_id_repr(can_id)}: {can_id_repr(master)}:"
-                            f"{bytes_repr(data)}"
+                            f"Received non XCP answer on {msg.msg_repr}:"
+                            f"{bytes_repr(msg.data)}"
                         )
             except asyncio.TimeoutError:
                 pass

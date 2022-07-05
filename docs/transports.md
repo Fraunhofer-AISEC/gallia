@@ -43,9 +43,6 @@ isotp://can0?src_addr=0x6f4&dst_addr=0x654&rx_ext_address=0xf4&ext_address=0x54&
 
 ## can-raw
 
-* `src_addr` (required): The ISOTP source address as int.
-* `dst_addr` (required): The ISOTP destination address as int.
-* `is_extended` (optional): Use extended CAN identifiers.
 * `is_fd` (optional): Use CAN-FD frames.
 
 Example:

@@ -203,6 +203,16 @@ class CANMessage(Message):  # type: ignore
     CANFD_BRS = 0x01
     CANFD_ESI = 0x02
 
+    @property
+    def arbitration_id_repr(self) -> str:
+        if self.is_extended_id:
+            return f"{self.arbitration_id:08x}"
+        return f"{self.arbitration_id:03x}"
+
+    @property
+    def msg_repr(self) -> str:
+        return f"{self.arbitration_id_repr}#{self.data.hex()}"
+
     def _compose_arbitration_id(self) -> int:
         can_id = self.arbitration_id
         if self.is_extended_id:
@@ -269,20 +279,12 @@ class CANMessage(Message):  # type: ignore
 _CAN_RAW_SPEC_TYPE = TypedDict(
     "_CAN_RAW_SPEC_TYPE",
     {
-        "src_addr": Optional[int],
-        "dst_addr": Optional[int],
-        "is_extended": bool,
         "is_fd": bool,
-        "bind": bool,
     },
 )
 
 spec_can_raw = {
-    "src_addr": (_int_spec(None), False),
-    "dst_addr": (_int_spec(None), False),
-    "is_extended": (_bool_spec(False), False),
     "is_fd": (_bool_spec(False), False),
-    "bind": (_bool_spec(False), False),
 }
 
 
@@ -293,13 +295,10 @@ class RawCANTransport(BaseTransport, scheme="can-raw", spec=spec_can_raw):
     def __init__(self, target: TargetURI) -> None:
         super().__init__(target)
         self.args = cast(_CAN_RAW_SPEC_TYPE, self._args)
-        self.connected = False
 
         assert target.hostname is not None, "empty interface"
         self.interface = target.hostname
         self._sock: s.socket
-        self.src_addr: int
-        self.dst_addr: int
 
     async def connect(self, timeout: Optional[float] = None) -> None:
         self._sock = s.socket(s.PF_CAN, s.SOCK_RAW, s.CAN_RAW)
@@ -308,38 +307,58 @@ class RawCANTransport(BaseTransport, scheme="can-raw", spec=spec_can_raw):
             self._sock.setsockopt(s.SOL_CAN_RAW, s.CAN_RAW_FD_FRAMES, 1)
         self._sock.setblocking(False)
 
-        if self.args["bind"]:
-            self.bind()
-
-    def set_filter(self, can_ids: list[int], inv_filter: bool = False) -> None:
-        if not can_ids:
+    def set_filter(self, can_ids: list[dict], inv_filter: bool = False) -> None:
+        if len(can_ids) == 0:
             return
-        filter_mask = s.CAN_EFF_MASK if self.args["is_extended"] else s.CAN_SFF_MASK
         data = b""
         for can_id in can_ids:
+            id_ = can_id["arbitration_id"]
+            filter_mask = s.CAN_EFF_MASK if can_id["is_extended_id"] else s.CAN_SFF_MASK
             if inv_filter:
-                can_id |= self.CAN_INV_FILTER
-            data += struct.pack("@II", can_id, filter_mask)
+                id_ |= self.CAN_INV_FILTER
+            data += struct.pack("@II", id_, filter_mask)
         self._sock.setsockopt(s.SOL_CAN_RAW, s.CAN_RAW_FILTER, data)
         if inv_filter:
             self._sock.setsockopt(s.SOL_CAN_RAW, s.CAN_RAW_JOIN_FILTERS, 1)
 
-    def bind(self) -> None:
-        if self.args["src_addr"] is None or self.args["dst_addr"] is None:
-            raise RuntimeError("no src_addr/dst_addr set")
+    async def flush_receiver(self, timeout: float = 1.0) -> None:
+        while True:
+            try:
+                await self.read_frame(timeout)
+            except asyncio.TimeoutError:
+                break
 
-        self.set_filter([self.args["src_addr"]])
-        self.src_addr = self.args["src_addr"]
-        self.dst_addr = self.args["dst_addr"]
-        self.connected = True
+    async def read_frame(
+        self,
+        timeout: Optional[float] = None,
+        tags: Optional[list[str]] = None,
+    ) -> CANMessage:
+        loop = asyncio.get_running_loop()
+        can_frame = await asyncio.wait_for(
+            loop.sock_recv(self._sock, self.BUFSIZE), timeout
+        )
+        msg = CANMessage.unpack(can_frame)
+
+        self.logger.log_read(msg.msg_repr, tags=tags)
+        return msg
+
+    async def write_frame(
+        self,
+        msg: CANMessage,
+        timeout: Optional[float] = None,
+        tags: Optional[list[str]] = None,
+    ) -> None:
+        self.logger.log_write(msg.msg_repr, tags=tags)
+
+        loop = asyncio.get_running_loop()
+        await asyncio.wait_for(loop.sock_sendall(self._sock, msg.pack()), timeout)
 
     async def read(
-        self, timeout: Optional[float] = None, tags: Optional[list[str]] = None
+        self,
+        timeout: Optional[float] = None,
+        tags: Optional[list[str]] = None,
     ) -> bytes:
-        if not self.connected or not self.src_addr:
-            raise RuntimeError("transport is not connected; set bind=true")
-        _, data = await self.recvfrom(timeout, tags)
-        return data
+        pass
 
     async def write(
         self,
@@ -347,72 +366,31 @@ class RawCANTransport(BaseTransport, scheme="can-raw", spec=spec_can_raw):
         timeout: Optional[float] = None,
         tags: Optional[list[str]] = None,
     ) -> int:
-        if not self.connected or not self.dst_addr:
-            raise RuntimeError("transport is not connected; set bind=true")
-        return await self.sendto(data, self.dst_addr, timeout=timeout, tags=tags)
-
-    async def sendto(
-        self,
-        data: bytes,
-        dst: int,
-        timeout: Optional[float] = None,
-        tags: Optional[list[str]] = None,
-    ) -> int:
-        msg = CANMessage(
-            arbitration_id=dst,
-            data=data,
-            is_extended_id=self.args["is_extended"],
-            is_fd=self.args["is_fd"],
-            check=True,
-        )
-        if self.args["is_extended"]:
-            self.logger.log_write(f"{dst:08x}#{data.hex()}", tags=tags)
-        else:
-            self.logger.log_write(f"{dst:03x}#{data.hex()}", tags=tags)
-
-        loop = asyncio.get_running_loop()
-        await asyncio.wait_for(loop.sock_sendall(self._sock, msg.pack()), timeout)
-        return len(data)
-
-    async def recvfrom(
-        self, timeout: Optional[float] = None, tags: Optional[list[str]] = None
-    ) -> tuple[int, bytes]:
-        loop = asyncio.get_running_loop()
-        can_frame = await asyncio.wait_for(
-            loop.sock_recv(self._sock, self.BUFSIZE), timeout
-        )
-        msg = CANMessage.unpack(can_frame)
-
-        if msg.is_extended_id:
-            self.logger.log_read(
-                f"{msg.arbitration_id:08x}#{msg.data.hex()}", tags=tags
-            )
-        else:
-            self.logger.log_read(
-                f"{msg.arbitration_id:03x}#{msg.data.hex()}", tags=tags
-            )
-        return msg.arbitration_id, msg.data
+        pass
 
     async def close(self) -> None:
-        pass
+        self._sock.close()
 
     async def reconnect(self, timeout: Optional[float] = None) -> None:
         pass
 
-    async def get_idle_traffic(self, sniff_time: float) -> list[int]:
+    async def get_idle_traffic(self, sniff_time: float) -> list[dict]:
         """Listen to traffic on the bus and return list of IDs
         which are seen in the specified period of time.
         The output of this function can be used as input to set_filter.
         """
-        addr_idle: list[int] = list()
+        idle_msgs: list[dict] = []
         t1 = time.time()
         while time.time() - t1 < sniff_time:
             try:
-                addr, _ = await self.recvfrom(timeout=1)
-                if addr not in addr_idle:
-                    self.logger.log_info(f"Received a message from {addr:03x}")
-                    addr_idle.append(addr)
+                msg = await self.read_frame(timeout=1)
+                msg_dict = {
+                    "is_extended_id": msg.is_extended_id,
+                    "arbitration_id": msg.arbitration_id,
+                }
+                if msg_dict not in idle_msgs:
+                    self.logger.log_info(f"Received a message {msg.msg_repr}")
+                    idle_msgs.append(msg_dict)
             except asyncio.TimeoutError:
                 continue
-        addr_idle.sort()
-        return addr_idle
+        return idle_msgs
