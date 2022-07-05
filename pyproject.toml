@@ -71,6 +71,8 @@ reuse = "^4.0"
 construct-typing = ">=0.5.2,<0.7.0"
 pytest-cov = ">=4,<6"
 ruff = "^0.5.0"
+pandas-stubs = "^1.4.3"
+openpyxl-stubs = "^0.1.21"
 
 [tool.poetry.scripts]
 "gallia" = "gallia.cli:main"
