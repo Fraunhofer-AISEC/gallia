@@ -129,7 +129,7 @@ class ExcelGenerator(Operator):
             dft_err_df = self.get_dft_err_df_from_raw(raw_df)
             cur_row, cur_col = self.sum_sheet_fill_origin(ScanMode.IDEN, serv, sbfn_vec)
             cur_row, cur_col = self.sum_sheet_fill_index(
-                cur_row, cur_col, entries_vec, ScanMode.IDEN, sbfn_vec
+                cur_row, cur_col, raw_df[raw_df['identifier'].isin(entries_vec)], ScanMode.IDEN
             )
             cur_row, cur_col = self.sum_sheet_fill_sess(cur_row, cur_col, dft_err_df)
             cur_row, cur_col = self.sum_sheet_fill_resp(
@@ -189,55 +189,45 @@ class ExcelGenerator(Operator):
         self,
         cur_row: int,
         cur_col: int,
-        entries_vec: np.ndarray,
+        entries_vec: pd.DataFrame,
         scan_mode: ScanMode,
-        sbfn_vec: np.ndarray = np.array([]),
     ) -> Tuple[int, int]:
         """
         fill index column in summary sheet.
         """
+        entries_vec = entries_vec.drop_duplicates(['subfunc', 'identifier'])
         try:
-            for entry in entries_vec:
+            for _, row in entries_vec.iterrows():
                 if scan_mode == ScanMode.SERV:
                     self.worksheet.cell(cur_row, cur_col).value = self.get_code_text(
                         entry, self.iso_serv_code_dict
                     )
                     cur_row += 1
                 if scan_mode == ScanMode.IDEN:
-                    if entry == -1:
+                    if row.identifier == -1:
                         index_name = CellCnt.no_ent
                     else:
-                        index_name = f"0x{int(entry):04X}"
-                    for sbfn in sbfn_vec:
-                        if sbfn_vec.size > 1:
-                            self.worksheet.cell(
-                                cur_row, self.start_col
-                            ).value = index_name
-                            self.worksheet.cell(
-                                cur_row, self.start_col + 1
-                            ).value = sbfn
-                            fill_color = self.get_gray_color(sbfn)
-                            self.worksheet.cell(
-                                cur_row, self.start_col + 1
-                            ).fill = PatternFill(
-                                start_color=fill_color,
-                                end_color=fill_color,
-                                fill_type="solid",
-                            )
-                            self.worksheet.cell(
-                                cur_row, self.start_col + 1
-                            ).alignment = Alignment(horizontal="center")
-                            cur_row += 1
-                        else:
-                            self.worksheet.cell(cur_row, cur_col).value = index_name
-                            cur_row += 1
+                        index_name = f"0x{int(row.identifier):04X}"
+                    self.worksheet.cell(
+                        cur_row, self.start_col
+                    ).value = index_name
+                    cur_row += 1
+                    if row.subfunc != -1:
+                        # service has subfunction and identifer
+                        self.worksheet.cell(
+                            cur_row, self.start_col + 1
+                        ).value = row.subfunc
+                        cur_row += 1
+
                 self.worksheet.cell(cur_row, cur_col).font = Font(
                     name=XlDesign.font_index
                 )
-            if sbfn_vec.size > 1:
-                cur_col += 2
-            else:
+            if -1 in entries_vec['subfunc']:
+                # has no sub function
                 cur_col += 1
+            else:
+                # has sub function and identifer
+                cur_col += 2
             cur_row = self.start_row
         except (KeyError, AttributeError) as exc:
             self.log("filling index of summary sheet failed", True, exc)
