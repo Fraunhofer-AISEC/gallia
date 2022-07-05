@@ -14,9 +14,6 @@ from gallia.analyzer.config import SrcPath
 from gallia.analyzer.mode_config import LogMode, ScanMode, OpMode
 from gallia.analyzer.name_config import ColNm, KyNm, TblNm, VwNm, NEG_STR
 
-if __name__ == "__main__":
-    exit()
-
 
 class Analyzer(Operator):
     """
@@ -144,26 +141,26 @@ class Analyzer(Operator):
                 return False
             create_view_sql = f"""
             DROP VIEW IF EXISTS "{VwNm.sess_alwd}";
-            CREATE VIEW "{VwNm.sess_alwd}" 
-            AS SELECT "{ColNm.sess}" 
+            CREATE VIEW "{VwNm.sess_alwd}"
+            AS SELECT "{ColNm.sess}"
             FROM "{TblNm.ven_lu}"
             WHERE "{ColNm.serv}" = {serv}
             GROUP BY "{ColNm.sess}";
             DROP VIEW IF EXISTS "{VwNm.sbfn_alwd}";
-            CREATE VIEW "{VwNm.sbfn_alwd}" 
-            AS SELECT "{ColNm.sbfn}" 
+            CREATE VIEW "{VwNm.sbfn_alwd}"
+            AS SELECT "{ColNm.sbfn}"
             FROM "{TblNm.ven_lu}"
             WHERE "{ColNm.serv}" = {serv}
-            GROUP BY "{ColNm.sbfn}";            
+            GROUP BY "{ColNm.sbfn}";
             DROP VIEW IF EXISTS "{VwNm.resp_alwd}";
-            CREATE VIEW "{VwNm.resp_alwd}" 
-            AS SELECT "{ColNm.resp}" 
+            CREATE VIEW "{VwNm.resp_alwd}"
+            AS SELECT "{ColNm.resp}"
             FROM "{TblNm.ref_resp}"
             WHERE "{ColNm.serv}" = {serv}
-            GROUP BY "{ColNm.resp}";            
+            GROUP BY "{ColNm.resp}";
             DROP VIEW IF EXISTS "{VwNm.ref_vw}";
-            CREATE VIEW "{VwNm.ref_vw}" 
-            AS SELECT "{ColNm.serv}", "{ColNm.sess}", "{ColNm.boot}", 
+            CREATE VIEW "{VwNm.ref_vw}"
+            AS SELECT "{ColNm.serv}", "{ColNm.sess}", "{ColNm.boot}",
             "{ColNm.sbfn}", "{ColNm.iden}", "{ColNm.ecu_mode}"
             FROM "{TblNm.ven_lu}" WHERE "{ColNm.serv}" = {serv};
             """
@@ -185,7 +182,7 @@ class Analyzer(Operator):
                     self.log("condition key reading failed", True, exc)
             drop_view_sql = f"""
             DROP VIEW IF EXISTS "{VwNm.sess_alwd}";
-            DROP VIEW IF EXISTS "{VwNm.sbfn_alwd}";            
+            DROP VIEW IF EXISTS "{VwNm.sbfn_alwd}";
             DROP VIEW IF EXISTS "{VwNm.resp_alwd}";
             DROP VIEW IF EXISTS "{VwNm.ref_vw}";
             """

@@ -3,9 +3,6 @@ gallia-analyze Failure module
 """
 from enum import IntEnum
 
-if __name__ == "__main__":
-    exit()
-
 
 class Failure(IntEnum):
     """

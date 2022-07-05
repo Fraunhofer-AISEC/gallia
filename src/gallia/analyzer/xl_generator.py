@@ -23,9 +23,6 @@ from gallia.analyzer.failure import Failure
 from gallia.analyzer.mode_config import LogMode, ScanMode
 from gallia.analyzer.name_config import ColNm, ShtNm, CellCnt, KyNm
 
-if __name__ == "__main__":
-    exit()
-
 
 class ExcelGenerator(Operator):
 
@@ -129,7 +126,10 @@ class ExcelGenerator(Operator):
             dft_err_df = self.get_dft_err_df_from_raw(raw_df)
             cur_row, cur_col = self.sum_sheet_fill_origin(ScanMode.IDEN, serv, sbfn_vec)
             cur_row, cur_col = self.sum_sheet_fill_index(
-                cur_row, cur_col, raw_df[raw_df['identifier'].isin(entries_vec)], ScanMode.IDEN
+                cur_row,
+                cur_col,
+                raw_df[raw_df["identifier"].isin(entries_vec)],
+                ScanMode.IDEN,
             )
             cur_row, cur_col = self.sum_sheet_fill_sess(cur_row, cur_col, dft_err_df)
             cur_row, cur_col = self.sum_sheet_fill_resp(
@@ -195,12 +195,12 @@ class ExcelGenerator(Operator):
         """
         fill index column in summary sheet.
         """
-        entries_vec = entries_vec.drop_duplicates(['subfunc', 'identifier'])
+        entries_vec = entries_vec.drop_duplicates(["subfunc", "identifier"])
         try:
             for _, row in entries_vec.iterrows():
                 if scan_mode == ScanMode.SERV:
                     self.worksheet.cell(cur_row, cur_col).value = self.get_code_text(
-                        entry, self.iso_serv_code_dict
+                        row.identifier, self.iso_serv_code_dict
                     )
                     cur_row += 1
                 if scan_mode == ScanMode.IDEN:
@@ -208,9 +208,7 @@ class ExcelGenerator(Operator):
                         index_name = CellCnt.no_ent
                     else:
                         index_name = f"0x{int(row.identifier):04X}"
-                    self.worksheet.cell(
-                        cur_row, self.start_col
-                    ).value = index_name
+                    self.worksheet.cell(cur_row, self.start_col).value = index_name
                     cur_row += 1
                     if row.subfunc != -1:
                         # service has subfunction and identifer
@@ -222,7 +220,7 @@ class ExcelGenerator(Operator):
                 self.worksheet.cell(cur_row, cur_col).font = Font(
                     name=XlDesign.font_index
                 )
-            if -1 in entries_vec['subfunc']:
+            if -1 in entries_vec["subfunc"]:
                 # has no sub function
                 cur_col += 1
             else:
@@ -374,7 +372,7 @@ class ExcelGenerator(Operator):
                             + CellCnt.sess_unscn
                         )
                     if sess_lu_vec.size > 0:
-                        if not sess in sess_lu_vec:
+                        if sess not in sess_lu_vec:
                             self.worksheet.cell(cur_row, cur_col).value = (
                                 str(self.worksheet.cell(cur_row, cur_col).value)
                                 + "\n"

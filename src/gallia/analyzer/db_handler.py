@@ -10,9 +10,6 @@ from pandas.io.sql import DatabaseError
 from gallia.analyzer.mode_config import LogMode
 from gallia.analyzer.name_config import ColNm
 
-if __name__ == "__main__":
-    exit()
-
 
 class DatabaseHandler:
     """

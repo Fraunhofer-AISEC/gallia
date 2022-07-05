@@ -2,9 +2,6 @@
 gallia-analyze Exceptions module
 """
 
-if __name__ == "__main__":
-    exit()
-
 
 class EmptyTableException(Exception):
     """

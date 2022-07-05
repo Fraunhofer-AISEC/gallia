@@ -5,8 +5,6 @@ gallia-analyze main script
 from argparse import Namespace
 import sys
 import time
-import argparse
-import textwrap
 import numpy as np
 from gallia.analyzer.operator import Operator
 from gallia.analyzer.analyzer import Analyzer
@@ -26,6 +24,7 @@ from gallia.udscan.core import Script
 # Report Option: one word starting with uppercase
 # Parameter: one word lowercase(sometimes with dash)
 # ========================================================== #
+
 
 class AnalyzerMain(Script):
     def add_parser(self) -> None:
@@ -146,6 +145,10 @@ class AnalyzerMain(Script):
                 if service_id == -1:
                     print("Please input Service ID with --sid option.")
                 else:
-                    reporter.consolidate_xl_iden(service_id, file_path, show_possible_on)
+                    reporter.consolidate_xl_iden(
+                        service_id, file_path, show_possible_on
+                    )
 
-        print(f"gallia-analyze: elapsed time(sec): {str(time.process_time() - start_time)}")
+        print(
+            f"gallia-analyze: elapsed time(sec): {str(time.process_time() - start_time)}"
+        )

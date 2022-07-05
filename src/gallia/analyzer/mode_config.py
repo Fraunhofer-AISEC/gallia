@@ -4,9 +4,6 @@ gallia-analyze Mode Config module
 
 from enum import IntEnum
 
-if __name__ == "__main__":
-    exit()
-
 
 class ScanMode(IntEnum):
     """

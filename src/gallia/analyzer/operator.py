@@ -20,10 +20,6 @@ from gallia.analyzer.constants import UDSIsoSessions
 from gallia.uds.core.constants import UDSErrorCodes, UDSIsoServices
 
 
-if __name__ == "__main__":
-    exit()
-
-
 class Operator(DatabaseHandler):
     """
     Class for common basic operations and utilites such as loading meta data of runs,
@@ -253,7 +249,7 @@ class Operator(DatabaseHandler):
         "script" AS "{ColNm.scan_mode}"
         FROM "{TblNm.run_meta}";
         DROP TABLE IF EXISTS "{TblNm.meta}";
-        CREATE TABLE "{TblNm.meta}" 
+        CREATE TABLE "{TblNm.meta}"
         AS SELECT "{ColNm.run_id}", "{ColNm.ecu_mode}", "{ColNm.scan_mode}"
         FROM "{VwNm.ecu_vw}"
         INNER JOIN "{VwNm.mode_vw}"

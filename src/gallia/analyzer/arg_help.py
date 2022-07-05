@@ -2,9 +2,6 @@
 gallia-analyze module for argument help texts
 """
 
-if __name__ == "__main__":
-    exit()
-
 
 class ArgHelp:
     """
@@ -35,7 +32,7 @@ class ArgHelp:
     Clear all analyzed data in database.
     """
     extract = """
-    Extract JSON data, etc. from database and store into relational database.    
+    Extract JSON data, etc. from database and store into relational database.
     """
     aio_iden = """
     Consolidate all scan_identifier runs into one EXCEL file sorted by ECU mode for a certain Service ID.

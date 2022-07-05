@@ -12,9 +12,6 @@ from gallia.analyzer.config import PltDesign, TblStruct, SrcPath, DFT_T_PREC
 from gallia.analyzer.mode_config import ScanMode, LogMode
 from gallia.analyzer.name_config import ColNm, TblNm, KyNm
 
-if __name__ == "__main__":
-    exit()
-
 
 class TimeAnalyzer(Reporter):
     """

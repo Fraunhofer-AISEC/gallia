@@ -13,9 +13,6 @@ from gallia.analyzer.name_config import ColNm, TblNm
 from gallia.analyzer.exceptions import EmptyTableException, ColumnMismatchException
 from gallia.uds.core.constants import UDSIsoServices, UDSErrorCodes
 
-if __name__ == "__main__":
-    exit()
-
 
 class Categorizer(Analyzer):
     """
@@ -136,7 +133,7 @@ class Categorizer(Analyzer):
             ref_df = self.ref_ven_df[ecu_mode]
         if op_mode == OpMode.ISO:
             ref_df = self.ref_iso_df
-        if not serv in ref_df.index:
+        if serv not in ref_df.index:
             return False
         return sess in ref_df.loc[serv, ColNm.sess]
 
@@ -144,7 +141,7 @@ class Categorizer(Analyzer):
         """
         check if a certain response is available or supported for a certain service.
         """
-        if not serv in list(self.ref_iso_df.index):
+        if serv not in list(self.ref_iso_df.index):
             return False
         return (
             resp
@@ -161,7 +158,7 @@ class Categorizer(Analyzer):
             ref_df = self.ref_ven_df[ecu_mode]
         if op_mode == OpMode.ISO:
             ref_df = self.ref_iso_df
-        if not serv in ref_df.index:
+        if serv not in ref_df.index:
             return False
         return sbfn in ref_df.loc[serv, ColNm.sbfn]
 

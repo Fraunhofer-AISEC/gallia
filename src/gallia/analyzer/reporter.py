@@ -12,9 +12,6 @@ from gallia.analyzer.mode_config import LogMode, ScanMode
 from gallia.analyzer.name_config import ColNm, TblNm
 from gallia.analyzer.exceptions import ColumnMismatchException, EmptyTableException
 
-if __name__ == "__main__":
-    exit()
-
 
 class Reporter(Operator):
     """
@@ -89,7 +86,7 @@ class Reporter(Operator):
         consolidate all scan_identifier runs sorted by ECU mode
         for a certain given service into one EXCEL file.
         """
-        if not serv in self.iso_serv_by_iden_vec:
+        if serv not in self.iso_serv_by_iden_vec:
             self.log("given Service ID is not service by identifier.")
             return False
         if not self.load_meta(force=True):

@@ -7,9 +7,6 @@ from gallia import analyzer
 from gallia.analyzer.name_config import ColNm
 from gallia.analyzer.constants import SqlDataType
 
-if __name__ == "__main__":
-    exit()
-
 
 def load_resource_file(path: str) -> str:
     """

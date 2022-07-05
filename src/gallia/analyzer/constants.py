@@ -3,9 +3,6 @@ gallia-analyze Const module
 """
 from enum import IntEnum
 
-if __name__ == "__main__":
-    exit()
-
 
 class UDSIsoSessions(IntEnum):
     """

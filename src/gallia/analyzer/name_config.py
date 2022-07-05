@@ -1,8 +1,6 @@
 """
 gallia-analyze Name Config module
 """
-if __name__ == "__main__":
-    exit()
 
 NEG_STR = "NOT "
 
