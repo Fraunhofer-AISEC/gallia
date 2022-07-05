@@ -19,10 +19,6 @@ from gallia.uds.core.constants import UDSIsoServices
 
 
 class FuzzPayloads(UDSScanner):
-    def __init__(self) -> None:
-        super().__init__()
-        self.can_recv_event = asyncio.Event()
-
     def add_parser(self) -> None:
         self.parser.add_argument(
             "--sessions",
@@ -92,8 +88,6 @@ class FuzzPayloads(UDSScanner):
         transport = RawCANTransport(TargetURI(can_url.geturl()))
         await transport.connect()
         transport.set_filter(can_ids, inv_filter=False)
-
-        self.can_recv_event.set()
 
         try:
             can_msgs: dict[int, bytes] = {}
