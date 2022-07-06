@@ -384,7 +384,6 @@ class UDSScanner(Scanner):
         self.transport: BaseTransport
         self.tester_present_task: Optional[Task] = None
         self._implicit_logging = True
-        self.log_scan_run = True  # TODO: Remove this as soon as find-endpoint is fixed
 
     def add_class_parser(self) -> None:
         super().add_class_parser()
@@ -518,7 +517,7 @@ class UDSScanner(Scanner):
             power_supply=self.power_supply,
         )
 
-        if self.db_handler is not None and self.log_scan_run:
+        if self.db_handler is not None:
             try:
                 await self.db_handler.insert_scan_run(str(args.target))
                 self._apply_implicit_logging_setting()
@@ -558,7 +557,7 @@ class UDSScanner(Scanner):
                 await file.write(json.dumps(await self.ecu.properties(True), indent=4))
                 await file.write("\n")
 
-        if self.db_handler is not None and self.log_scan_run:
+        if self.db_handler is not None:
             try:
                 await self.db_handler.insert_scan_run_properties_pre(
                     await self.ecu.properties()
@@ -583,7 +582,7 @@ class UDSScanner(Scanner):
             if args.compare_properties and await self.ecu.properties(False) != prop_pre:
                 self.logger.log_warning("ecu properties differ, please investigate!")
 
-        if self.db_handler is not None and self.log_scan_run:
+        if self.db_handler is not None:
             try:
                 await self.db_handler.complete_scan_run(
                     await self.ecu.properties(False)
