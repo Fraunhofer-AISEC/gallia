@@ -5,7 +5,6 @@
 import argparse
 import asyncio
 import json
-import os
 import signal
 import sys
 import time
@@ -20,7 +19,7 @@ from importlib.metadata import EntryPoint, entry_points, version
 from pathlib import Path
 from secrets import token_urlsafe
 from tempfile import gettempdir
-from typing import Optional, cast
+from typing import Any, Optional, cast
 
 import aiofiles
 
@@ -109,12 +108,31 @@ class BaseCommand(ABC):
     SHORT_HELP: str
     EPILOG: Optional[str] = None
 
-    def __init__(self, parser: ArgumentParser) -> None:
+    def __init__(self, parser: ArgumentParser, config: dict[str, Any]) -> None:
         self.id = camel_to_snake(self.__class__.__name__)
         self.logger = Logger(component="gallia", flush=True)
         self.parser = parser
+        self.config = config
         self.add_class_parser()
         self.add_parser()
+
+    def get_config_value(
+        self,
+        key: str,
+        default: Optional[Any] = None,
+    ) -> Optional[Any]:
+        parts = key.split(".")
+        subdict: Optional[dict[str, Any]] = self.config
+        val: Optional[Any] = None
+
+        for part in parts:
+            if subdict is None:
+                return default
+
+            val = subdict.get(part)
+            subdict = val if isinstance(val, dict) else None
+
+        return val if val is not None else default
 
     def add_class_parser(self) -> None:
         ...
@@ -186,8 +204,8 @@ class Scanner(BaseCommand, ABC):
 
     CATEGORY = "scan"
 
-    def __init__(self, parser: ArgumentParser) -> None:
-        super().__init__(parser)
+    def __init__(self, parser: ArgumentParser, config: dict[str, Any]) -> None:
+        super().__init__(parser, config)
         self.artifacts_dir: Path
         self.db_handler: Optional[DBHandler] = None
         self.power_supply: Optional[PowerSupply] = None
@@ -198,6 +216,9 @@ class Scanner(BaseCommand, ABC):
         ...
 
     async def setup(self, args: Namespace) -> None:
+        if args.target is None:
+            self.parser.error("--target is required")
+
         if args.power_supply is not None:
             self.power_supply = await PowerSupply.connect(args.power_supply)
             if (time_ := args.power_cycle) is not None:
@@ -219,15 +240,24 @@ class Scanner(BaseCommand, ABC):
         super().add_class_parser()
 
         group = self.parser.add_argument_group("generic gallia arguments")
-        group.add_argument(
+
+        _mutex_group = group.add_mutually_exclusive_group()
+        _mutex_group.add_argument(
             "--artifacts-dir",
-            default=os.environ.get("PENRUN_ARTIFACTS"),
+            default=self.config.get("gallia.scanner.artifacts_dir"),
             type=Path,
             help="Folder for artifacts",
         )
+        _mutex_group.add_argument(
+            "--artifacts-base",
+            default=self.config.get("gallia.scanner.artifacts_base"),
+            type=Path,
+            help="Base directory for artifacts",
+        )
+
         group.add_argument(
             "--db",
-            default=os.environ.get("GALLIA_DB"),
+            default=self.get_config_value("gallia.scanner.db"),
             type=Path,
             help="Path to sqlite3 database",
         )
@@ -236,7 +266,7 @@ class Scanner(BaseCommand, ABC):
         group.add_argument(
             "--target",
             metavar="TARGET",
-            default=os.environ.get("GALLIA_TARGET"),
+            default=self.get_config_value("gallia.scanner.target"),
             type=TargetURI,
             help="URI that describes the target",
         )
@@ -245,13 +275,13 @@ class Scanner(BaseCommand, ABC):
         group.add_argument(
             "--power-supply",
             metavar="URI",
-            default=os.environ.get("GALLIA_POWER_SUPPLY"),
+            default=self.get_config_value("gallia.scanner.power_supply"),
             type=PowerSupplyURI,
             help="URI specifying the location of the relevant opennetzteil server",
         )
         group.add_argument(
             "--power-cycle",
-            default=os.environ.get("GALLIA_POWER_CYCLE"),
+            default=self.get_config_value("gallia.scanner.power_cycle"),
             const=5.0,
             nargs="?",
             type=float,
@@ -263,7 +293,7 @@ class Scanner(BaseCommand, ABC):
         group.add_argument(
             "--dumpcap",
             action=argparse.BooleanOptionalAction,
-            default=True,
+            default=self.get_config_value("gallia.scanner.dumpcap", default=True),
             help="Enable/Disable creating a pcap file",
         )
 
@@ -373,8 +403,8 @@ class UDSScanner(Scanner):
     CATEGORY = "scan"
     SUBCATEGORY = "uds"
 
-    def __init__(self, parser: ArgumentParser) -> None:
-        super().__init__(parser)
+    def __init__(self, parser: ArgumentParser, config: dict[str, Any]) -> None:
+        super().__init__(parser, config)
         self.ecu: ECU
         self.transport: BaseTransport
         self.tester_present_task: Optional[Task] = None
@@ -396,26 +426,26 @@ class UDSScanner(Scanner):
             "--ecu-reset",
             const=0x01,
             nargs="?",
-            default=None,
+            default=self.get_config_value("gallia.protocols.uds.ecu_reset"),
             help="Trigger an initial ecu_reset via UDS; reset level is optional",
         )
         group.add_argument(
             "--oem",
-            default=os.environ.get("GALLIA_OEM", "default"),
+            default=self.get_config_value("gallia.protocols.uds.oem", "default"),
             choices=choices,
             metavar="OEM",
             help="The OEM of the ECU, used to choose a OEM specific ECU implementation",
         )
         group.add_argument(
             "--timeout",
-            default=2,
+            default=self.get_config_value("gallia.protocols.uds.timeout", 2),
             type=float,
             metavar="SECONDS",
             help="Timeout value to wait for a response from the ECU",
         )
         group.add_argument(
             "--max-retries",
-            default=3,
+            default=self.get_config_value("gallia.protocols.uds.max_retries", 3),
             type=int,
             metavar="INT",
             help="Number of maximum retries while sending UDS requests",
@@ -423,12 +453,14 @@ class UDSScanner(Scanner):
         group.add_argument(
             "--ping",
             action=argparse.BooleanOptionalAction,
-            default=True,
+            default=self.get_config_value("gallia.protocols.uds.ping", True),
             help="Enable/Disable initial TesterPresent request",
         )
         group.add_argument(
             "--tester-present-interval",
-            default=0.5,
+            default=self.get_config_value(
+                "gallia.protocols.uds.tester_present_interval", 0.5
+            ),
             type=float,
             metavar="SECONDS",
             help="Modify the interval of the cyclic tester present packets",
@@ -436,18 +468,20 @@ class UDSScanner(Scanner):
         group.add_argument(
             "--tester-present",
             action=argparse.BooleanOptionalAction,
-            default=True,
+            default=self.get_config_value("gallia.protocols.uds.tester_present", True),
             help="Enable/Disable tester present background worker",
         )
         group.add_argument(
             "--properties",
-            default=True,
+            default=self.get_config_value("gallia.protocols.uds.properties", True),
             action=argparse.BooleanOptionalAction,
             help="Read and store the ECU proporties prior and after scan",
         )
         group.add_argument(
             "--compare-properties",
-            default=True,
+            default=self.get_config_value(
+                "gallia.protocols.uds.compare_properties", True
+            ),
             action=argparse.BooleanOptionalAction,
             help="Compare properties before and after the scan",
         )
@@ -606,7 +640,7 @@ class DiscoveryScanner(Scanner):
         self.parser.add_argument(
             "--timeout",
             type=float,
-            default=0.5,
+            default=self.get_config_value("gallia.scanner.timeout", 0.5),
             help="timeout value for request",
         )
 

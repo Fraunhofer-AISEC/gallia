@@ -5,11 +5,17 @@
 # PYTHON_ARGCOMPLETE_OK
 
 import argparse
+import os
+import subprocess
 import sys
 from importlib.metadata import entry_points, version
+from pathlib import Path
+from pprint import pprint
 from typing import Any, Optional
 
 import argcomplete
+import tomlkit
+from xdg import xdg_config_dirs
 
 from gallia.command import BaseCommand
 from gallia.commands.discover.uds.doip import DoIPDiscoverer
@@ -69,6 +75,49 @@ registry: list[type[BaseCommand]] = [
 PARSERS: dict[str, Any] = {}
 
 
+def get_git_root() -> Optional[Path]:
+    try:
+        p = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            capture_output=True,
+            check=True,
+        )
+    except subprocess.SubprocessError:
+        return None
+
+    return Path(p.stdout.decode().strip())
+
+
+def get_config_dirs() -> list[Path]:
+    dirs = xdg_config_dirs()
+    git_root = get_git_root()
+    cwd = Path.cwd()
+    if git_root is not None:
+        return [cwd, git_root] + dirs
+    return [cwd] + dirs
+
+
+def search_config() -> Optional[Path]:
+    if (s := os.getenv("GALLIA_CONFIG")) is not None:
+        if (path := Path(s)).exists():
+            return path
+        else:
+            raise FileNotFoundError(s)
+
+    for dir_ in get_config_dirs():
+        if (path := dir_.joinpath("gallia.toml")).exists():
+            return path
+
+    return None
+
+
+def load_config_file() -> tuple[dict[str, Any], Optional[Path]]:
+    if (path := search_config()) is not None:
+        raw_toml = path.read_text()
+        return tomlkit.loads(raw_toml), path
+    return {}, None
+
+
 def load_cli_commands() -> None:
     eps = entry_points()
     if (s := "gallia_cli_commands") in eps:
@@ -112,6 +161,7 @@ def load_parsers() -> dict[str, Any]:
     parser = argparse.ArgumentParser(
         description="""gallia COMMANDs are grouped by CATEGORY and SUBCATEGORY.
         Each CATEGORY, SUBCATEGORY, or COMMAND contains a help page which can be accessed via `-h` or `--help`.
+Every command line option can be set via a TOML config file. Check `gallia --template` for a starting point.
         """,
         epilog="""https://fraunhofer-aisec.github.io/gallia/index.html""",
     )
@@ -121,6 +171,21 @@ def load_parsers() -> dict[str, Any]:
         "--version",
         action="version",
         version=f'%(prog)s {version("gallia")}',
+    )
+    parser.add_argument(
+        "--show-config",
+        action="store_true",
+        help="show information about the loaded config",
+    )
+    parser.add_argument(
+        "--show-defaults",
+        action="store_true",
+        help="show defaults of all flags",
+    )
+    parser.add_argument(
+        "--template",
+        action="store_true",
+        help="print a config template",
     )
 
     subparsers = parser.add_subparsers(metavar="CATEGORY")
@@ -209,7 +274,7 @@ def load_parsers() -> dict[str, Any]:
     return parsers
 
 
-def build_cli(parsers: dict[str, Any]) -> None:
+def build_cli(parsers: dict[str, Any], config: dict[str, Any]) -> None:
     for cls in registry:
         if cls.SUBCATEGORY is not None:
             subparsers = parsers["siblings"][cls.CATEGORY]["siblings"][cls.SUBCATEGORY][
@@ -224,8 +289,106 @@ def build_cli(parsers: dict[str, Any]) -> None:
             help=cls.SHORT_HELP,
             epilog=cls.EPILOG,
         )
-        scanner = cls(subparser)
+        scanner = cls(subparser, config)
         subparser.set_defaults(run_func=scanner.run)
+
+
+def cmd_show_config(
+    args: argparse.Namespace,
+    config: dict[str, Any],
+    config_path: Optional[Path],
+) -> None:
+    if (p := os.getenv("GALLIA_CONFIG")) is not None:
+        print(f"path to config set by env variable: {p}", file=sys.stderr)
+
+    if config_path is not None:
+        print(f"loaded config: {config_path}", file=sys.stderr)
+        pprint(config)
+    else:
+        print("no config available", file=sys.stderr)
+        sys.exit(1)
+
+
+def _get_cli_defaults(parser: argparse.ArgumentParser, out: dict[str, Any]) -> None:
+    for action in parser.__dict__["_actions"]:
+        if isinstance(
+            action,
+            (
+                argparse._StoreAction,  # pylint: disable=protected-access
+                argparse._StoreTrueAction,  # pylint: disable=protected-access
+                argparse._StoreFalseAction,  # pylint: disable=protected-access
+                argparse.BooleanOptionalAction,
+            ),
+        ):
+            opts = action.__dict__["option_strings"]
+            if len(opts) == 2:
+                if opts[0].startswith("--"):
+                    opts_str = opts[0]
+                else:
+                    opts_str = opts[1]
+            elif len(opts) == 1:
+                opts_str = opts[0]
+            else:
+                continue
+
+            keys = (
+                f"{parser.prog} {opts_str.removeprefix('--').replace('-', '_')}".split()
+            )
+            value = action.default
+
+            d = out
+            for i, key in enumerate(keys):
+                if key not in d:
+                    d[key] = {}
+
+                d = d[key]
+
+                if i == len(keys) - 2:
+                    d[keys[-1]] = value
+                    break
+
+        if isinstance(
+            action, argparse._SubParsersAction  # pylint: disable=protected-access
+        ):
+            for subparser in action.__dict__["choices"].values():
+                _get_cli_defaults(subparser, out)
+
+
+def get_cli_defaults(parser: argparse.ArgumentParser) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    _get_cli_defaults(parser, out)
+    return out
+
+
+def cmd_show_defaults(parser: argparse.ArgumentParser) -> None:
+    defaults = get_cli_defaults(parser)
+    pprint(defaults)
+
+
+def cmd_template(args: argparse.Namespace) -> None:
+    template = """[gallia]
+[gallia.scanner]
+# db = <string>
+# target = <string>
+# power_supply = <string>
+# power_cycle = <float>
+# dumpcap = <bool>
+# artifacts_dir = <string>
+# artifacts_base = <string>
+
+[gallia.protocol.uds]
+# dumpcap = <bool>
+# ecu_reset = <float>
+# oem = <string>
+# timeout = <float>
+# max_retries = <int>
+# ping = <bool>
+# tester_present_interval = <float>
+# tester_present = <bool>
+# properties = <bool>
+# compare_properties = <bool>
+"""
+    print(template.strip())
 
 
 def main() -> None:
@@ -234,11 +397,25 @@ def main() -> None:
     global PARSERS  # pylint: disable=W0603
     PARSERS = load_parsers()
 
-    build_cli(PARSERS)
+    config, config_path = load_config_file()
+    build_cli(PARSERS, config)
 
     parser = PARSERS["parser"]
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
+
+    if args.show_config:
+        cmd_show_config(args, config, config_path)
+        sys.exit(0)
+
+    if args.show_defaults:
+        cmd_show_defaults(parser)
+        sys.exit(0)
+
+    if args.template:
+        cmd_template(args)
+        sys.exit(0)
+
     if not hasattr(args, "run_func"):
         args.help_func()
         parser.exit(1)
