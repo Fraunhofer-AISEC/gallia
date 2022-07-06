@@ -9,7 +9,7 @@ import sys
 import time
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import aiofiles
 
@@ -25,8 +25,8 @@ class SASeedsDumper(UDSScanner):
     COMMAND = "dump-seeds"
     SHORT_HELP = "dump security access seeds"
 
-    def __init__(self, parser: ArgumentParser) -> None:
-        super().__init__(parser)
+    def __init__(self, parser: ArgumentParser, config: dict[str, Any]) -> None:
+        super().__init__(parser, config)
 
         self.implicit_logging = False
 
