@@ -2,8 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import importlib.util
 import ipaddress
 import re
+import sys
 from argparse import Action, ArgumentError, ArgumentParser, Namespace
 from enum import Enum
 from pathlib import Path
@@ -229,3 +231,15 @@ async def write_target_list(
 
             if db_handler is not None:
                 await db_handler.insert_discovery_result(str(target))
+
+
+def lazy_import(name: str):
+    if name in sys.modules:
+        return sys.modules[name]
+    spec = importlib.util.find_spec(name)
+    loader = importlib.util.LazyLoader(spec.loader)
+    spec.loader = loader
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    loader.exec_module(module)
+    return module
