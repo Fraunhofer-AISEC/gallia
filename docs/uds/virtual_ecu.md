@@ -71,8 +71,8 @@ For example, two random virtual ECUs, which uses the iso-tp protocol for communi
 and use the *vcan0* interface can be started with the following commands:
 
 ```shell-session
-$ gallia vecu "can://vcan0?src_addr=0x6aa&dst_addr=0x6f4&rx_ext_address=0xaa&ext_address=0xf4&is_fd=false" rng
-$ gallia vecu "can://vcan0?src_addr=0x6bb&dst_addr=0x6f4&rx_ext_address=0xbb&ext_address=0xf4&is_fd=false" rng
+$ gallia vecu "isotp://vcan0?src_addr=0x6aa&dst_addr=0x6f4&rx_ext_address=0xaa&ext_address=0xf4&is_fd=false" rng
+$ gallia vecu "isotp://vcan0?src_addr=0x6bb&dst_addr=0x6f4&rx_ext_address=0xbb&ext_address=0xf4&is_fd=false" rng
 ```
 
 ## model
