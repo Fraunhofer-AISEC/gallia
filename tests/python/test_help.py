@@ -14,19 +14,9 @@ def check(command: list[str]) -> None:
 
 
 def test_help() -> None:
-    all_entries = entry_points()
     check(["gallia", "-h"])
 
-    # for some reason, the entry points appear multiple times; thus we use a set to reduce them
-    scripts = set(
-        map(
-            lambda x: x.name,
-            filter(lambda x: "gallia" in str(x.module), all_entries["console_scripts"]),
-        )
-    )
-    for entry in scripts:
-        check([entry, "-h"])
-
-    for group in ["gallia_scanners"]:
-        for entry in all_entries[group]:
-            check(["gallia", entry.name, "-h"])
+    all_entries = entry_points()
+    for entry in all_entries["console_scripts"]:
+        if (e := entry.name).startswith("gallia_"):
+            check([e, "-h"])

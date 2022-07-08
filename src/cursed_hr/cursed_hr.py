@@ -26,9 +26,9 @@ from pathlib import Path
 from typing import Any, BinaryIO, Optional, Union
 
 import zstandard as zstd
-from penlog import MessagePrio, RecordType
 
 from gallia.uds.core.service import NegativeResponse, UDSRequest, UDSResponse
+from penlog import MessagePrio, RecordType
 
 
 @unique

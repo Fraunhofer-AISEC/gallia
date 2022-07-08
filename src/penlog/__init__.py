@@ -9,10 +9,10 @@ import socket
 import sys
 import traceback
 import uuid
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from enum import Enum, IntEnum, unique
-from typing import Any, TextIO, Optional
+from typing import Any, Optional, TextIO
 
 
 @unique
