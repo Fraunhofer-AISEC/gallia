@@ -41,7 +41,7 @@ class RMBAPrimitive(UDSScanner):
         try:
             await self.ecu.check_and_set_session(args.session)
         except Exception as e:
-            self.logger.log_critical(
+            self.logger.critical(
                 f"Could not change to session: {g_repr(args.session)}: {g_repr(e)}"
             )
             sys.exit(1)
@@ -49,9 +49,9 @@ class RMBAPrimitive(UDSScanner):
         resp = await self.ecu.read_memory_by_address(args.address, args.length)
 
         if isinstance(resp, NegativeResponse):
-            self.logger.log_error(resp)
+            self.logger.error(resp)
         else:
-            self.logger.log_summary("Positive response:")
+            self.logger.result("Positive response:")
 
-            self.logger.log_summary(f"hex: {resp.data_record.hex()}")
-            self.logger.log_summary(f"raw: {repr(resp.data_record)}")
+            self.logger.result(f"hex: {resp.data_record.hex()}")
+            self.logger.result(f"raw: {repr(resp.data_record)}")

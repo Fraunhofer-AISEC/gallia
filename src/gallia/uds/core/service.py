@@ -120,30 +120,30 @@ class UDSRequest(ABC):
     @staticmethod
     def parse_dynamic(pdu: bytes) -> UDSRequest:
         try:
-            logger.log_trace("Dynamically parsing request")
-            logger.log_trace(f" - Got PDU {pdu.hex()}")
+            logger.trace("Dynamically parsing request")
+            logger.trace(f" - Got PDU {pdu.hex()}")
             # pylint: disable=protected-access
             request_service = UDSService._SERVICES[UDSIsoServices(pdu[0])]
 
-            logger.log_trace(f" - Inferred service {request_service.__name__}")
+            logger.trace(f" - Inferred service {request_service.__name__}")
 
             if (request_type := request_service.Request) is not None:
-                logger.log_trace(f" - Trying {request_type.__name__}")
+                logger.trace(f" - Trying {request_type.__name__}")
                 return request_type.from_pdu(pdu)
             elif issubclass(request_service, SpecializedSubFunctionService):
-                logger.log_trace(" - Trying to infer subFunction")
+                logger.trace(" - Trying to infer subFunction")
                 # pylint: disable=protected-access
                 request_sub_function = request_service._sub_function_type(pdu)
-                logger.log_trace(
+                logger.trace(
                     f" - Inferred subFunction {request_sub_function.__name__}"
                 )
                 assert (request_type := request_sub_function.Request) is not None
-                logger.log_trace(f" - Trying {request_type.__name__}")
+                logger.trace(f" - Trying {request_type.__name__}")
                 return request_type.from_pdu(pdu)
             else:
                 raise ValueError("Request cannot be parsed")
         except Exception as e:
-            logger.log_trace(
+            logger.trace(
                 f" - Falling back to RawRequest because of the following problem: {repr(e)}"
             )
             return RawRequest(pdu)
@@ -222,19 +222,19 @@ class UDSResponse(ABC):
 
         response_type: Type[PositiveResponse]
 
-        logger.log_trace("Dynamically parsing response")
-        logger.log_trace(f" - Got PDU {pdu.hex()}")
+        logger.trace("Dynamically parsing response")
+        logger.trace(f" - Got PDU {pdu.hex()}")
 
         try:
             # pylint: disable=protected-access
             response_service = UDSService._SERVICES[UDSIsoServices(pdu[0] - 0x40)]
         except Exception:
-            logger.log_trace(
+            logger.trace(
                 " - Falling back to raw response because the service is unknown"
             )
             return RawPositiveResponse(pdu)
 
-        logger.log_trace(f" - Inferred service {response_service.__name__}")
+        logger.trace(f" - Inferred service {response_service.__name__}")
 
         if response_service.Response is not None:
             response_type = response_service.Response
@@ -244,26 +244,26 @@ class UDSResponse(ABC):
                     "Message of subfunction service contains no subfunction"
                 )
 
-            logger.log_trace(" - Trying to infer subfunction")
+            logger.trace(" - Trying to infer subfunction")
             try:
                 # pylint: disable=protected-access
                 response_sub_function = response_service._sub_function_type(pdu)
             except ValueError as e:
-                logger.log_trace(f" - Falling back to raw response because {str(e)}")
+                logger.trace(f" - Falling back to raw response because {str(e)}")
                 return RawPositiveResponse(pdu)
 
-            logger.log_trace(
+            logger.trace(
                 f" - Inferred subFunction {response_sub_function.__name__}"
             )
             assert (response_type_ := response_sub_function.Response) is not None
             response_type = response_type_
         else:
-            logger.log_trace(
+            logger.trace(
                 " - Falling back to raw response because the response cannot be parsed"
             )
             return RawPositiveResponse(pdu)
 
-        logger.log_trace(f" - Trying {response_type.__name__}")
+        logger.trace(f" - Trying {response_type.__name__}")
         return response_type.from_pdu(pdu)
 
 

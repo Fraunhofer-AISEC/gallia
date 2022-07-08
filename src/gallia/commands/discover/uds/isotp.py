@@ -100,23 +100,23 @@ class IsotpDiscoverer(DiscoveryScanner):
         await super().setup(args)
 
     async def query_description(self, target_list: list[TargetURI], did: int) -> None:
-        self.logger.log_info("reading info DID from all discovered endpoints")
+        self.logger.info("reading info DID from all discovered endpoints")
         for target in target_list:
-            self.logger.log_summary("----------------------------")
-            self.logger.log_summary(f"Probing ECU: {target}")
+            self.logger.result("----------------------------")
+            self.logger.result(f"Probing ECU: {target}")
 
             transport = ISOTPTransport(target)
             await transport.connect(None)
             uds_client = UDSClient(transport, timeout=2)
-            self.logger.log_summary(f"reading device description at {g_repr(did)}")
+            self.logger.result(f"reading device description at {g_repr(did)}")
             try:
                 resp = await uds_client.read_data_by_identifier(did)
                 if isinstance(resp, NegativeResponse):
-                    self.logger.log_summary(f"could not read did: {resp}")
+                    self.logger.result(f"could not read did: {resp}")
                 else:
-                    self.logger.log_summary(f"response was: {resp}")
+                    self.logger.result(f"response was: {resp}")
             except Exception as e:
-                self.logger.log_summary(f"reading description failed: {g_repr(e)}")
+                self.logger.result(f"reading description failed: {g_repr(e)}")
 
     def _build_isotp_frame_extended(
         self,
@@ -158,10 +158,10 @@ class IsotpDiscoverer(DiscoveryScanner):
         found = []
 
         sniff_time: int = args.sniff_time
-        self.logger.log_summary(f"Recording idle bus communication for {sniff_time}s")
+        self.logger.result(f"Recording idle bus communication for {sniff_time}s")
         addr_idle = await transport.get_idle_traffic(sniff_time)
 
-        self.logger.log_summary(f"Found {len(addr_idle)} CAN Addresses on idle Bus")
+        self.logger.result(f"Found {len(addr_idle)} CAN Addresses on idle Bus")
         transport.set_filter(addr_idle, inv_filter=True)
 
         req = UDSRequest.parse_dynamic(args.pdu)
@@ -174,14 +174,14 @@ class IsotpDiscoverer(DiscoveryScanner):
             if args.extended_addr:
                 pdu = self.build_isotp_frame(req, ID, padding=args.padding)
 
-            self.logger.log_info(f"Testing ID {can_id_repr(ID)}")
+            self.logger.info(f"Testing ID {can_id_repr(ID)}")
             is_broadcast = False
 
             await transport.sendto(pdu, timeout=0.1, dst=dst_addr)
             try:
                 addr, _ = await transport.recvfrom(timeout=0.1)
                 if addr == ID:
-                    self.logger.log_info(
+                    self.logger.info(
                         f"The same CAN ID {can_id_repr(ID)} answered. Skipping…"
                     )
                     continue
@@ -195,22 +195,22 @@ class IsotpDiscoverer(DiscoveryScanner):
                     new_addr, _ = await transport.recvfrom(timeout=0.1)
                     if new_addr != addr:
                         is_broadcast = True
-                        self.logger.log_summary(
+                        self.logger.result(
                             f"seems that broadcast was triggered on CAN ID {can_id_repr(ID)}, "
                             f"got answer from {can_id_repr(new_addr)}"
                         )
                     else:
-                        self.logger.log_info(
+                        self.logger.info(
                             f"seems like a large ISO-TP packet was received on CAN ID {can_id_repr(ID)}"
                         )
                 except asyncio.TimeoutError:
                     if is_broadcast:
-                        self.logger.log_summary(
+                        self.logger.result(
                             f"seems that broadcast was triggered on CAN ID {can_id_repr(ID)}, "
                             f"got answer from {can_id_repr(addr)}"
                         )
                     else:
-                        self.logger.log_summary(
+                        self.logger.result(
                             f"found endpoint on CAN ID [src:dst]: {can_id_repr(ID)}:{can_id_repr(addr)}"
                         )
                         target_args = {}
@@ -242,9 +242,9 @@ class IsotpDiscoverer(DiscoveryScanner):
                         found.append(target)
                     break
 
-        self.logger.log_summary(f"finished; found {len(found)} UDS endpoints")
+        self.logger.result(f"finished; found {len(found)} UDS endpoints")
         ecus_file = self.artifacts_dir.joinpath("ECUs.txt")
-        self.logger.log_summary(f"Writing urls to file: {ecus_file}")
+        self.logger.result(f"Writing urls to file: {ecus_file}")
         await write_target_list(ecus_file, found, self.db_handler)
 
         if args.query:

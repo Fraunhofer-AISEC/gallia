@@ -81,7 +81,7 @@ class ServicesScanner(UDSScanner):
         found: dict[int, dict[int, Any]] = {}
 
         if args.sessions is None:
-            self.logger.log_info("No sessions specified, starting with session scan")
+            self.logger.info("No sessions specified, starting with session scan")
             # Only until 0x80 because the eight bit is "SuppressResponse"
             sessions = list(
                 s
@@ -89,7 +89,7 @@ class ServicesScanner(UDSScanner):
                 if s not in args.skip or args.skip[s] is not None
             )
             sessions = await self.ecu.find_sessions(sessions)
-            self.logger.log_summary(
+            self.logger.result(
                 f"Found {len(sessions)} sessions: {g_repr(sessions)}"
             )
         else:
@@ -99,30 +99,30 @@ class ServicesScanner(UDSScanner):
                 if s not in args.skip or args.skip[s] is not None
             )
 
-        self.logger.log_info(f"testing sessions {g_repr(sessions)}")
+        self.logger.info(f"testing sessions {g_repr(sessions)}")
 
         # TODO: Unified shortened output necessary here
-        self.logger.log_info(f"skipping identifiers {reprlib.repr(args.skip)}")
+        self.logger.info(f"skipping identifiers {reprlib.repr(args.skip)}")
 
         for session in sessions:
-            self.logger.log_info(f"Switching to session {g_repr(session)}")
+            self.logger.info(f"Switching to session {g_repr(session)}")
             try:
                 resp: UDSResponse = await self.ecu.set_session(
                     session, UDSRequestConfig(tags=["preparation"])
                 )
             except (UDSException, RuntimeError) as e:
-                self.logger.log_warning(
+                self.logger.warning(
                     f"session change: {g_repr(session)} reason: {g_repr(e)}"
                 )
                 continue
             if isinstance(resp, NegativeResponse):
-                self.logger.log_warning(
+                self.logger.warning(
                     f"session change: {g_repr(session)} reason: {resp}"
                 )
                 continue
 
             found[session] = {}
-            self.logger.log_summary(f"scanning in session {g_repr(session)}")
+            self.logger.result(f"scanning in session {g_repr(session)}")
 
             # Starts at 0x00, see first loop iteration.
             sid = -1
@@ -132,12 +132,12 @@ class ServicesScanner(UDSScanner):
                     continue
 
                 if session in args.skip and sid in args.skip[session]:
-                    self.logger.log_info(f"{g_repr(sid)}: skipped")
+                    self.logger.info(f"{g_repr(sid)}: skipped")
                     continue
 
                 if args.check_session:
                     if not await self.ecu.check_and_set_session(session):
-                        self.logger.log_error(
+                        self.logger.error(
                             f"Aborting scan on session {g_repr(session)}; current SID was {g_repr(sid)}"
                         )
                         break
@@ -149,18 +149,18 @@ class ServicesScanner(UDSScanner):
                         pdu, config=UDSRequestConfig(tags=["ANALYZE"])
                     )
                 except asyncio.TimeoutError:
-                    self.logger.log_info(f"{g_repr(sid)}: timeout")
+                    self.logger.info(f"{g_repr(sid)}: timeout")
                     continue
                 except Exception as e:
-                    self.logger.log_info(f"{g_repr(sid)}: {g_repr(e)} occurred")
+                    self.logger.info(f"{g_repr(sid)}: {g_repr(e)} occurred")
                     await self.ecu.reconnect()
                     continue
 
                 if suggests_service_not_supported(resp):
-                    self.logger.log_info(f"{g_repr(sid)}: not supported [{resp}]")
+                    self.logger.info(f"{g_repr(sid)}: not supported [{resp}]")
                     continue
 
-                self.logger.log_summary(
+                self.logger.result(
                     f"{g_repr(sid)}: available in session {g_repr(session)}: {resp}"
                 )
                 found[session][sid] = resp
@@ -168,13 +168,13 @@ class ServicesScanner(UDSScanner):
             await self.ecu.leave_session(session)
 
         for key, value in found.items():
-            self.logger.log_summary(f"findings in session 0x{key:02X}:")
+            self.logger.result(f"findings in session 0x{key:02X}:")
             for sid, data in value.items():
                 try:
-                    self.logger.log_summary(
+                    self.logger.result(
                         f"  [{g_repr(sid)}] {UDSIsoServices(sid).name}: {data}"
                     )
                 except Exception:
-                    self.logger.log_summary(
+                    self.logger.result(
                         f"  [{g_repr(sid)}] vendor specific sid: {data}"
                     )

@@ -38,14 +38,14 @@ class ReadByIdentifierPrimitive(UDSScanner):
             if args.session != 0x01:
                 await self.ecu.set_session(args.session)
         except Exception as e:
-            self.logger.log_critical(f"fatal error: {g_repr(e)}")
+            self.logger.critical(f"fatal error: {g_repr(e)}")
             sys.exit(1)
 
         resp = await self.ecu.read_data_by_identifier(args.data_id)
         if isinstance(resp, NegativeResponse):
-            self.logger.log_error(resp)
+            self.logger.error(resp)
         else:
-            self.logger.log_info("Positive response:")
+            self.logger.info("Positive response:")
             data = resp.data_record
-            self.logger.log_info(f"hex: {data.hex()}")
-            self.logger.log_info(f"raw: {repr(data)}")
+            self.logger.info(f"hex: {data.hex()}")
+            self.logger.info(f"raw: {repr(data)}")

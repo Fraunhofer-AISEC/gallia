@@ -29,14 +29,14 @@ def logger_hr() -> penlog.Logger:
     return create_logger()
 
 
-def test_log_hr(logger_hr: penlog.Logger) -> None:
-    logger_hr.log_warning("foo")
+def test_hr(logger_hr: penlog.Logger) -> None:
+    logger_hr.warning("foo")
     logger_hr.file.seek(0)
     assert logger_hr.file.read() == "foo\n"
 
 
-def test_log_json(logger_json: penlog.Logger) -> None:
-    logger_json.log_warning("foo")
+def test_json(logger_json: penlog.Logger) -> None:
+    logger_json.warning("foo")
     logger_json.file.seek(0)
     data = logger_json.file.read()
     record = json.loads(data)

@@ -89,7 +89,7 @@ class SASeedsDumper(UDSScanner):
             level, data, config=UDSRequestConfig(tags=["ANALYZE"])
         )
         if isinstance(resp, NegativeResponse):
-            self.logger.log_warning(f"ECU replied with an error: {resp}")
+            self.logger.warning(f"ECU replied with an error: {resp}")
             return None
         return resp.security_seed
 
@@ -98,14 +98,14 @@ class SASeedsDumper(UDSScanner):
             level + 1, key, config=UDSRequestConfig(tags=["ANALYZE"])
         )
         if isinstance(resp, NegativeResponse):
-            self.logger.log_debug(f"Key was rejected: {resp}")
+            self.logger.debug(f"Key was rejected: {resp}")
             return False
-        self.logger.log_summary(
+        self.logger.result(
             f'Unlocked SA level {g_repr(level)} with key "{key.hex()}"! resp: {resp}'
         )
         return True
 
-    def log_size(self, path: os.PathLike, time_delta: float) -> None:
+    def size(self, path: os.PathLike, time_delta: float) -> None:
         size = os.path.getsize(path) / 1024
         size_unit = "KiB"
         rate = size / time_delta * 3600 if time_delta != 0 else 0
@@ -116,17 +116,17 @@ class SASeedsDumper(UDSScanner):
         if size > 1024:
             size = size / 1024
             size_unit = "MiB"
-        self.logger.log_notice(
+        self.logger.notice(
             f"Dumping seeds with {rate:.2f}{rate_unit}/h: {size:.2f}{size_unit}"
         )
 
     async def main(self, args: Namespace) -> None:
         session = args.session
-        self.logger.log_info(f"scanning in session: {g_repr(session)}")
+        self.logger.info(f"scanning in session: {g_repr(session)}")
 
         resp = await self.ecu.set_session(session)
         if isinstance(resp, NegativeResponse):
-            self.logger.log_critical(f"could not change to session: {resp}")
+            self.logger.critical(f"could not change to session: {resp}")
             return
 
         i = -1
@@ -143,10 +143,10 @@ class SASeedsDumper(UDSScanner):
             # include too much garbage…
             i = (i + 1) % 1000
             if i == 0:
-                self.log_size(seeds_file, time.time() - start_time)
+                self.size(seeds_file, time.time() - start_time)
             if args.check_session or reset:
                 if not await self.ecu.check_and_set_session(args.session):
-                    self.logger.log_error(
+                    self.logger.error(
                         f"ECU persistently lost session {g_repr(args.session)}"
                     )
                     sys.exit(1)
@@ -156,10 +156,10 @@ class SASeedsDumper(UDSScanner):
             try:
                 seed = await self.request_seed(args.level, args.data_record)
             except asyncio.TimeoutError:
-                self.logger.log_error("Timeout while requesting seed")
+                self.logger.error("Timeout while requesting seed")
                 continue
             except Exception as e:
-                self.logger.log_critical(f"Error while requesting seed: {g_repr(e)}")
+                self.logger.critical(f"Error while requesting seed: {g_repr(e)}")
                 sys.exit(1)
 
             if seed is None:
@@ -168,7 +168,7 @@ class SASeedsDumper(UDSScanner):
 
             await file.write(seed)
             if last_seed == seed:
-                self.logger.log_warning("Received the same seed as before")
+                self.logger.warning("Received the same seed as before")
 
             last_seed = seed
 
@@ -177,10 +177,10 @@ class SASeedsDumper(UDSScanner):
                     if await self.send_key(args.level, bytes(args.send_zero_key)):
                         break
                 except asyncio.TimeoutError:
-                    self.logger.log_warning("Timeout while sending key")
+                    self.logger.warning("Timeout while sending key")
                     continue
                 except Exception as e:
-                    self.logger.log_critical(f"Error while sending key: {g_repr(e)}")
+                    self.logger.critical(f"Error while sending key: {g_repr(e)}")
                     sys.exit(1)
 
             runs_since_last_reset += 1
@@ -190,15 +190,15 @@ class SASeedsDumper(UDSScanner):
                 runs_since_last_reset = 0
 
                 try:
-                    self.logger.log_info("Resetting the ECU")
+                    self.logger.info("Resetting the ECU")
                     await self.ecu.ecu_reset(0x01)
-                    self.logger.log_info("Waiting for the ECU to recover…")
+                    self.logger.info("Waiting for the ECU to recover…")
                     await self.ecu.wait_for_ecu()
                 except asyncio.TimeoutError:
-                    self.logger.log_error("ECU did not respond after reset; exiting…")
+                    self.logger.error("ECU did not respond after reset; exiting…")
                     sys.exit(1)
                 except ConnectionError:
-                    self.logger.log_warning(
+                    self.logger.warning(
                         "Lost connection to the ECU after performing a reset. "
                         "Attempting to reconnect…"
                     )
@@ -208,5 +208,5 @@ class SASeedsDumper(UDSScanner):
                 await self.ecu.set_session(session)
 
         await file.close()
-        self.log_size(seeds_file, time.time() - start_time)
+        self.size(seeds_file, time.time() - start_time)
         await self.ecu.leave_session(session)

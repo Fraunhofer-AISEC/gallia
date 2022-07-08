@@ -264,7 +264,7 @@ class Logger:
         else:
             raise RuntimeError("BUG: invalid penlog output")
 
-    def log_msg(
+    def msg(
         self,
         data: Any,
         type_: str = MessageType.MESSAGE,
@@ -286,26 +286,26 @@ class Logger:
         )
         self._log(msg, _depth)
 
-    def log_trace(self, data: Any, tags: Optional[list[str]] = None) -> None:
-        self.log_msg(data, MessageType.MESSAGE, MessagePrio.TRACE, tags, 4)
+    def trace(self, data: Any, tags: Optional[list[str]] = None) -> None:
+        self.msg(data, MessageType.MESSAGE, MessagePrio.TRACE, tags, 4)
 
-    def log_debug(self, data: Any, tags: Optional[list[str]] = None) -> None:
-        self.log_msg(data, MessageType.MESSAGE, MessagePrio.DEBUG, tags, 4)
+    def debug(self, data: Any, tags: Optional[list[str]] = None) -> None:
+        self.msg(data, MessageType.MESSAGE, MessagePrio.DEBUG, tags, 4)
 
-    def log_info(self, data: Any, tags: Optional[list[str]] = None) -> None:
-        self.log_msg(data, MessageType.MESSAGE, MessagePrio.INFO, tags, 4)
+    def info(self, data: Any, tags: Optional[list[str]] = None) -> None:
+        self.msg(data, MessageType.MESSAGE, MessagePrio.INFO, tags, 4)
 
-    def log_notice(self, data: Any, tags: Optional[list[str]] = None) -> None:
-        self.log_msg(data, MessageType.MESSAGE, MessagePrio.NOTICE, tags, 4)
+    def notice(self, data: Any, tags: Optional[list[str]] = None) -> None:
+        self.msg(data, MessageType.MESSAGE, MessagePrio.NOTICE, tags, 4)
 
-    def log_warning(self, data: Any, tags: Optional[list[str]] = None) -> None:
-        self.log_msg(data, MessageType.MESSAGE, MessagePrio.WARNING, tags, 4)
+    def warning(self, data: Any, tags: Optional[list[str]] = None) -> None:
+        self.msg(data, MessageType.MESSAGE, MessagePrio.WARNING, tags, 4)
 
-    def log_error(self, data: Any, tags: Optional[list[str]] = None) -> None:
-        self.log_msg(data, MessageType.MESSAGE, MessagePrio.ERROR, tags, 4)
+    def error(self, data: Any, tags: Optional[list[str]] = None) -> None:
+        self.msg(data, MessageType.MESSAGE, MessagePrio.ERROR, tags, 4)
 
-    def log_critical(self, data: Any, tags: Optional[list[str]] = None) -> None:
-        self.log_msg(data, MessageType.MESSAGE, MessagePrio.CRITICAL, tags, 4)
+    def critical(self, data: Any, tags: Optional[list[str]] = None) -> None:
+        self.msg(data, MessageType.MESSAGE, MessagePrio.CRITICAL, tags, 4)
 
 
 class DiscardLogger(Logger):
