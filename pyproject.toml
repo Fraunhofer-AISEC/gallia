@@ -58,31 +58,6 @@ reuse = "^1.0.0"
 "discover-xcp" = "gallia.udscan.scanner.find_xcp:main"
 "cursed-hr" = "cursed_hr.cursed_hr:main"
 
-[tool.poetry.plugins."gallia_scanners"]
-"discover-can-ids" = "gallia.udscan.scanner.find_can_ids:FindCanIDsScanner"
-"discover-doip" = "gallia.udscan.scanner.discover_doip:DiscoverDoIP"
-"fuzz-payloads" = "gallia.udscan.scanner.fuzz_payloads:FuzzPayloads"
-"scan-dump-seeds" = "gallia.udscan.scanner.scan_sa_dump_seeds:SaDumpSeeds"
-"scan-identifiers" = "gallia.udscan.scanner.scan_identifiers:ScanIdentifiers"
-"scan-memory-functions" = "gallia.udscan.scanner.scan_memory_functions:ScanWriteDataByAddress"
-"scan-reset" = "gallia.udscan.scanner.scan_reset:ScanReset"
-"scan-services" = "gallia.udscan.scanner.scan_services:ScanServices"
-"scan-sessions" = "gallia.udscan.scanner.scan_sessions:IterateSessions"
-"simple-dtc" = "gallia.udscan.scanner.simple_dtc:DTCScanner"
-"simple-ecu-reset" = "gallia.udscan.scanner.simple_ecu_reset:EcuReset"
-"simple-get-vin" = "gallia.udscan.scanner.simple_get_vin:GetVin"
-"simple-iocbi" = "gallia.udscan.scanner.simple_iocbi:IOCBI"
-"simple-ping" = "gallia.udscan.scanner.simple_ping:Ping"
-"simple-read-by-identifier" = "gallia.udscan.scanner.simple_read_by_identifier:ReadByIdentifier"
-"simple-read-error-log" = "gallia.udscan.scanner.simple_read_error_log:ReadErrorLog"
-"simple-rmba" = "gallia.udscan.scanner.simple_rmba:ReadMemoryByAddressScanner"
-"simple-rtcl" = "gallia.udscan.scanner.simple_rtcl:RTCL"
-"simple-send-pdu" = "gallia.udscan.scanner.simple_send_pdu:SendPDU"
-"simple-test-xcp" = "gallia.udscan.scanner.simple_test_xcp:TestXCP"
-"simple-wmba" = "gallia.udscan.scanner.simple_wmba:WriteMemoryByAddressScanner"
-"simple-write-by-identifier" = "gallia.udscan.scanner.simple_write_by_identifier:WriteByIdentifier"
-"vecu" = "gallia.virtual_ecu:VirtualECU"
-
 [tool.mypy]
 disallow_any_unimported = true
 check_untyped_defs = true

@@ -28,6 +28,7 @@ setup
 architecture
 automation
 transports
+plugins
 ```
 
 ----
