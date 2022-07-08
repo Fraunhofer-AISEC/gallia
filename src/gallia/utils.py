@@ -61,8 +61,9 @@ def join_host_port(host: str, port: int) -> str:
 
 def camel_to_snake(s: str) -> str:
     """Convert a CamelCase string to a snake_case string."""
-    # https://stackoverflow.com/a/12867228
-    return re.sub(r"((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]))", r"_\1", s).lower()
+    # https://stackoverflow.com/a/1176023
+    s = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", s)
+    return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s).lower()
 
 
 def camel_to_dash(s: str) -> str:

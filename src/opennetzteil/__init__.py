@@ -4,8 +4,8 @@
 
 from __future__ import annotations
 
-from urllib.parse import urljoin
 from typing import Any, cast
+from urllib.parse import urljoin
 
 import aiohttp
 

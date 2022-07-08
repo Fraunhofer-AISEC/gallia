@@ -8,7 +8,7 @@ import asyncio
 import io
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Optional
-from urllib.parse import parse_qs, urlparse, urlencode, urlunparse
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 from gallia.penlog import Logger
 from gallia.utils import join_host_port
