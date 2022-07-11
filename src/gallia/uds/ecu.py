@@ -347,6 +347,7 @@ class ECU(UDSClient):
         self, request: service.UDSRequest, response: service.UDSResponse
     ) -> None:
         if isinstance(response, service.DiagnosticSessionControlResponse):
+            self.state.reset()
             self.state.session = response.diagnostic_session_type
 
         if (
@@ -354,9 +355,16 @@ class ECU(UDSClient):
             and response.data_identifier
             == DataIdentifier.ActiveDiagnosticSessionDataIdentifier
         ):
-            self.state.session = int.from_bytes(response.data_record, "big")
+            new_session = int.from_bytes(response.data_record, "big")
 
-        if isinstance(response, service.SecurityAccessResponse):
+            if self.state.session != new_session:
+                self.state.reset()
+                self.state.session = new_session
+
+        if (
+            isinstance(response, service.SecurityAccessResponse)
+            and response.security_access_type % 2 == 0
+        ):
             self.state.security_access_level = response.security_access_type - 1
 
         if isinstance(response, service.ECUResetResponse):
