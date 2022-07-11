@@ -119,6 +119,7 @@ class Analyzer(Operator):
             IndexingError,
             AttributeError,
             JSONDecodeError,
+            NotImplementedError,
         ) as exc:
             self.log("analyzing scan_service in place failed", True, exc)
             return False

@@ -441,7 +441,8 @@ class Operator(DatabaseHandler):
         if op_mode == OpMode.ISO:
             ref_df = self.ref_iso_df
         if op_mode == OpMode.VEN_SPEC:
-            ref_df = self.ref_ven_df[ecu_mode]
+            # ref_df = self.ref_ven_df[ecu_mode]
+            raise NotImplementedError('OpMode.VEN_SPEC not yet supported')
         if not self.prepare_alwd_res():
             return False
         if not self.prepare_alwd_sess_boot(op_mode, ecu_mode):
