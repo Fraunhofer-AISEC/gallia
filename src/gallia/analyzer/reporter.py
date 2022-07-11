@@ -233,7 +233,7 @@ class Reporter(Operator):
             self.out_path = os.path.expanduser(path + "/")
 
     def get_path(
-        self, suffix: int = "", ext: str = ".xlsx", rm_if_exists: bool = False
+        self, suffix: str = "", ext: str = ".xlsx", rm_if_exists: bool = False
     ) -> str:
         """
         get path for EXCEL report file by combining path prefix,
