@@ -93,7 +93,10 @@ class ExcelGenerator(Operator):
             dft_err_df = self.get_dft_err_df_from_raw(raw_df)
             cur_row, cur_col = self.sum_sheet_fill_origin(ScanMode.SERV)
             cur_row, cur_col = self.sum_sheet_fill_index(
-                cur_row, cur_col, entries_vec, ScanMode.SERV
+                cur_row,
+                cur_col,
+                raw_df[raw_df["service"].isin(entries_vec)],
+                ScanMode.SERV
             )
             cur_row, cur_col = self.sum_sheet_fill_sess(cur_row, cur_col, dft_err_df)
             cur_row, cur_col = self.sum_sheet_fill_resp(
@@ -195,12 +198,24 @@ class ExcelGenerator(Operator):
         """
         fill index column in summary sheet.
         """
-        entries_vec = entries_vec.drop_duplicates(["subfunc", "identifier"])
+        has_sub_func = False
+        has_id = False
+        if scan_mode == ScanMode.SERV:
+            entries_vec = entries_vec.drop_duplicates(["service"])
+            has_id = True
+        elif scan_mode == ScanMode.IDEN:
+            entries_vec = entries_vec.drop_duplicates(["subfunc", "identifier"])
+            if not entries_vec[entries_vec["subfunc"] != -1].empty:
+                has_sub_func = True
+            if not entries_vec[entries_vec["identifier"] != -1].empty:
+                has_id = True
+        else:
+            raise NotImplementedError(f'ScanMode not supported: {scan_mode}')
         try:
             for _, row in entries_vec.iterrows():
                 if scan_mode == ScanMode.SERV:
                     self.worksheet.cell(cur_row, cur_col).value = self.get_code_text(
-                        row.identifier, self.iso_serv_code_dict
+                        row.service, self.iso_serv_code_dict
                     )
                     cur_row += 1
                 if scan_mode == ScanMode.IDEN:
@@ -220,16 +235,12 @@ class ExcelGenerator(Operator):
                 self.worksheet.cell(cur_row, cur_col).font = Font(
                     name=XlDesign.font_index
                 )
-            if -1 in entries_vec["subfunc"]:
-                # has no sub function
-                cur_col += 1
-            else:
-                # has sub function and identifer
-                cur_col += 2
-            cur_row = self.start_row
         except (KeyError, AttributeError) as exc:
             self.log("filling index of summary sheet failed", True, exc)
             return self.start_row, self.start_col + 1
+
+        cur_col += int(has_id) + int(has_sub_func)
+        cur_row = self.start_row
         return cur_row, cur_col
 
     def sum_sheet_fill_sess(
