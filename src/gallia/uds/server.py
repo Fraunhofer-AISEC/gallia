@@ -29,7 +29,6 @@ from gallia.uds.core.constants import (
 )
 from gallia.uds.core.utils import (
     bytes_repr,
-    from_bytes,
     int_repr,
     service_repr,
     to_bytes,
@@ -225,17 +224,13 @@ class UDSServer(ABC):
         self, request: service.UDSRequest, response: service.UDSResponse
     ) -> None:
         if isinstance(response, service.DiagnosticSessionControlResponse):
+            self.state.reset()
             self.state.session = response.diagnostic_session_type
-            self.state.security_access_level = None
 
         if (
-            isinstance(response, service.ReadDataByIdentifierResponse)
-            and response.data_identifier
-            == DataIdentifier.ActiveDiagnosticSessionDataIdentifier
+            isinstance(response, service.SecurityAccessResponse)
+            and response.security_access_type % 2 == 0
         ):
-            self.state.session = from_bytes(response.data_record)
-
-        if isinstance(response, service.SecurityAccessResponse):
             self.state.security_access_level = response.security_access_type - 1
 
         if isinstance(response, service.ECUResetResponse):
