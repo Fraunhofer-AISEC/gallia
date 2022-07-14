@@ -112,7 +112,13 @@ class Operator(DatabaseHandler):
         if not self.load_meta():
             return -1
         try:
-            ecu_mode = cast(int, self.run_meta_df.loc[run, ColNm.ecu_mode])
+            _ecu_mode = self.run_meta_df.loc[run, ColNm.ecu_mode]
+            if isinstance(_ecu_mode, int):
+                ecu_mode = _ecu_mode
+            else:
+                # ecu_mode must be positive integer in the current implementation
+                # we use the dummy mode 0 if ECU does not use ecu_modes at all
+                ecu_mode = 0
             return ecu_mode
         except (KeyError, IndexingError, AttributeError) as exc:
             self.log("getting ECU mode failed", True, exc)
@@ -441,8 +447,9 @@ class Operator(DatabaseHandler):
         if op_mode == OpMode.ISO:
             ref_df = self.ref_iso_df
         if op_mode == OpMode.VEN_SPEC:
-            # ref_df = self.ref_ven_df[ecu_mode]
-            raise NotImplementedError('OpMode.VEN_SPEC not yet supported')
+            ref_df = cast(
+                pd.DataFrame, self.ref_ven_df[ecu_mode]
+            )  # this a nested DataFrame, which yields a DataFrame per ecu_mode
         if not self.prepare_alwd_res():
             return False
         if not self.prepare_alwd_sess_boot(op_mode, ecu_mode):

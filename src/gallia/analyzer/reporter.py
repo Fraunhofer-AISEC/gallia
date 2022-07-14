@@ -2,6 +2,8 @@
 gallia-analyze Reporter module
 """
 import os
+from typing import cast
+
 import numpy as np
 import pandas as pd
 from pandas.core.indexing import IndexingError
@@ -298,11 +300,14 @@ class Reporter(Operator):
             sess_vec = np.array(dft_err_df.columns)
             raw_df[ColNm.combi] = list(zip(raw_df[ColNm.sess], raw_df[ColNm.resp]))
             for sess in sess_vec:
-                cond_abn |= raw_df[ColNm.combi].apply(
-                    lambda x, s=sess: (x[0] == s)
-                    and (x[1] != dft_err_ser[s])
-                    and (x[1] != -1)
-                    and (x[1] != 0)
+                cond_abn |= cast(
+                    pd.Series,
+                    raw_df[ColNm.combi].apply(
+                        lambda x, s=sess: (x[0] == s)
+                        and (x[1] != dft_err_ser[s])
+                        and (x[1] != -1)
+                        and (x[1] != 0)
+                    ),
                 )
             if ecu_mode != -1:
                 cond_abn &= raw_df[ColNm.ecu_mode] == ecu_mode
@@ -341,10 +346,13 @@ class Reporter(Operator):
             sess_vec = np.array(dft_err_df.columns)
             raw_df[ColNm.combi] = list(zip(raw_df[ColNm.sess], raw_df[ColNm.resp]))
             for sess in sess_vec:
-                cond_abn |= raw_df[ColNm.combi].apply(
-                    lambda x, s=sess: (x[0] == s)
-                    and (x[1] != dft_err_ser[s])
-                    and (x[1] != -1)
+                cond_abn |= cast(
+                    pd.Series,
+                    raw_df[ColNm.combi].apply(
+                        lambda x, s=sess: (x[0] == s)
+                        and (x[1] != dft_err_ser[s])
+                        and (x[1] != -1)
+                    ),
                 )
             if ecu_mode != -1:
                 cond_abn &= raw_df[ColNm.ecu_mode] == ecu_mode

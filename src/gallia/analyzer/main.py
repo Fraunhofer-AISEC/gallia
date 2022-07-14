@@ -114,11 +114,13 @@ class AnalyzerMain(Script):
 
         if analyze_on:
             if categorizer_on:
-                analyzer = Categorizer(db_path, log_mode)
+                categorizer = Categorizer(db_path, log_mode)
+                an_opt = categorizer.get_op_mode(iso_on)
+                categorizer.analyze(runs_vec, an_opt)
             else:
                 analyzer = Analyzer(db_path, log_mode, debug_on)
-            an_opt = analyzer.get_op_mode(iso_on)
-            analyzer.analyze(runs_vec, an_opt)
+                an_opt = analyzer.get_op_mode(iso_on)
+                analyzer.analyze(runs_vec, an_opt)
 
         if t_analyze_on:
             if t_prec > 0:

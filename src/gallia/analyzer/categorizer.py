@@ -3,6 +3,8 @@ gallia-analyze Categorizer module
 """
 
 from sqlite3 import OperationalError
+from typing import cast
+
 import numpy as np
 import pandas as pd
 from gallia.analyzer.analyzer import Analyzer
@@ -124,18 +126,24 @@ class Categorizer(Analyzer):
             return pd.DataFrame()
         return raw_df
 
-    def check_sess_alwd(self, serv: int, sess: int, op_mode: OpMode, ecu_mode: int) -> bool:
+    def check_sess_alwd(
+        self, serv: int, sess: int, op_mode: OpMode, ecu_mode: int
+    ) -> bool:
         """
         check if a certain diagnostic session is available or supported
         for a certain service at given analysis mode.
         """
         if op_mode == OpMode.VEN_SPEC:
-            ref_df = self.ref_ven_df[ecu_mode]
+            ref_df = cast(
+                pd.DataFrame, self.ref_ven_df[ecu_mode]
+            )  # this a nested DataFrame, which yields a DataFrame per ecu_mode
         if op_mode == OpMode.ISO:
             ref_df = self.ref_iso_df
         if serv not in ref_df.index:
             return False
-        return sess in ref_df.loc[serv, ColNm.sess]
+        return sess in cast(
+            list[int], ref_df.loc[serv, ColNm.sess]  # The session column is a list of supported session IDs
+        )
 
     def check_resp_alwd(self, serv: int, resp: int) -> bool:
         """
@@ -149,18 +157,24 @@ class Categorizer(Analyzer):
             + self.iso_supp_err_for_all_vec.tolist()
         )
 
-    def check_sbfn_alwd(self, serv: int, sbfn: int, op_mode: OpMode, ecu_mode: int) -> bool:
+    def check_sbfn_alwd(
+        self, serv: int, sbfn: int, op_mode: OpMode, ecu_mode: int
+    ) -> bool:
         """
         check if a certain sub-function is available or supported
         for a certain service at given analysis mode.
         """
         if op_mode == OpMode.VEN_SPEC:
-            ref_df = self.ref_ven_df[ecu_mode]
+            ref_df = cast(
+                pd.DataFrame, self.ref_ven_df[ecu_mode]
+            )  # this a nested DataFrame, which yields a DataFrame per ecu_mode
         if op_mode == OpMode.ISO:
             ref_df = self.ref_iso_df
         if serv not in ref_df.index:
             return False
-        return sbfn in ref_df.loc[serv, ColNm.sbfn]
+        return sbfn in cast(
+            list[int], ref_df.loc[serv, ColNm.sbfn]  # The sub-function column is a list of supported sub-functions
+        )
 
     def get_fail_serv(
         self,
@@ -273,10 +287,10 @@ class Categorizer(Analyzer):
         """
         if op_mode == OpMode.VEN_SPEC:
             supp_serv_vec = self.supp_serv_ven_vec
-        if op_mode == OpMode.ISO:
+        elif op_mode == OpMode.ISO:
             supp_serv_vec = self.supp_serv_iso_vec
         else:
-            raise RuntimeError(f'Unsupported op_mode: {op_mode}')
+            raise RuntimeError(f"Unsupported op_mode: {op_mode}")
 
         cond_serv_supp = serv in supp_serv_vec
         cond_resp_alwd = self.check_resp_alwd(serv, resp)
@@ -375,13 +389,14 @@ class Categorizer(Analyzer):
             if resp == UDSErrorCodes.subFunctionNotSupportedInActiveSession:
                 return Failure.UNDOC_IDEN_B
 
+            # TODO: What is this case about?
+            if resp == 0:
+                return Failure.UNDOC_IDEN_E
+
             if cond_resp_alwd:
                 return Failure.UNDOC_IDEN_C
 
             if not cond_resp_alwd:
                 return Failure.UNDOC_IDEN_D
-
-            if resp == 0:
-                return Failure.UNDOC_IDEN_E
 
         return Failure.UNKNOWN

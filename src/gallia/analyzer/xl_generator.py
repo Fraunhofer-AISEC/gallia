@@ -96,7 +96,7 @@ class ExcelGenerator(Operator):
                 cur_row,
                 cur_col,
                 raw_df[raw_df["service"].isin(entries_vec)],
-                ScanMode.SERV
+                ScanMode.SERV,
             )
             cur_row, cur_col = self.sum_sheet_fill_sess(cur_row, cur_col, dft_err_df)
             cur_row, cur_col = self.sum_sheet_fill_resp(
@@ -210,7 +210,7 @@ class ExcelGenerator(Operator):
             if not entries_vec[entries_vec["identifier"] != -1].empty:
                 has_id = True
         else:
-            raise NotImplementedError(f'ScanMode not supported: {scan_mode}')
+            raise NotImplementedError(f"ScanMode not supported: {scan_mode}")
         try:
             for _, row in entries_vec.iterrows():
                 if scan_mode == ScanMode.SERV:
@@ -361,16 +361,16 @@ class ExcelGenerator(Operator):
             cur_col = self.start_col
             sess_lu_vec = self.get_sess_lu()
             for fail in fail_vec:
-                if (fail == Failure.UNDOC_SERV) or (fail == Failure.UNDOC_IDEN):
+                if fail in [Failure.UNDOC_SERV, Failure.UNDOC_IDEN]:
                     sheet_name = ShtNm.undoc
-                if (fail == Failure.MISS_SERV) or (fail == Failure.MISS_IDEN):
+                if fail in [Failure.MISS_SERV, Failure.MISS_IDEN]:
                     sheet_name = ShtNm.miss
                 self.worksheet = self.workbook.create_sheet(
                     f"{sheet_name}{sheet_name_suffix}"
                 )
                 self.worksheet.freeze_panes = self.worksheet.cell(
                     self.start_row + 1, self.start_col
-                ).coordinate
+                ).coordinate  # type: ignore  # This seems like an error in the type hints
                 for sess in sess_vec:
                     self.set_cell_width(cur_col, width)
                     self.worksheet.cell(cur_row, cur_col).value = self.get_code_text(
@@ -509,10 +509,7 @@ class ExcelGenerator(Operator):
         """
         check if given failure belongs to given faliure class.
         """
-        if (fail // FAIL_CLS_CAP) == (fail_class // FAIL_CLS_CAP):
-            return True
-        else:
-            return False
+        return (fail // FAIL_CLS_CAP) == (fail_class // FAIL_CLS_CAP)
 
     def get_code_text(self, code: int, ref: Dict[int, str]) -> str:
         """
@@ -523,7 +520,7 @@ class ExcelGenerator(Operator):
             txt = ref[code]
         except KeyError:
             txt = "Unknown Code"
-        if code == -1 or code == 0:
+        if code in [-1, 0]:
             code_txt = f"{txt}"
         else:
             code_txt = f"0x{int(code):02X} {txt}"

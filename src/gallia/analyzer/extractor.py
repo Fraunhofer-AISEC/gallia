@@ -180,7 +180,9 @@ class Extractor(Operator):
             if boot_df.shape[0] == 0:
                 return False
             boot_types_vec = np.array([0, 1])  # vendor-specific
-            boot_ok = boot_df[ColNm.boot].apply(lambda x: x in boot_types_vec).all()
+            boot_ok = bool(
+                boot_df[ColNm.boot].apply(lambda x: x in boot_types_vec).all()
+            )
             if not boot_ok:
                 self.log("boot information not complete.", True)
         except (KeyError, AttributeError, OperationalError) as exc:
