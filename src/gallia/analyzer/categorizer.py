@@ -142,7 +142,10 @@ class Categorizer(Analyzer):
         if serv not in ref_df.index:
             return False
         return sess in cast(
-            list[int], ref_df.loc[serv, ColNm.sess]  # The session column is a list of supported session IDs
+            list[int],
+            ref_df.loc[
+                serv, ColNm.sess
+            ],  # The session column is a list of supported session IDs
         )
 
     def check_resp_alwd(self, serv: int, resp: int) -> bool:
@@ -173,7 +176,10 @@ class Categorizer(Analyzer):
         if serv not in ref_df.index:
             return False
         return sbfn in cast(
-            list[int], ref_df.loc[serv, ColNm.sbfn]  # The sub-function column is a list of supported sub-functions
+            list[int],
+            ref_df.loc[
+                serv, ColNm.sbfn
+            ],  # The sub-function column is a list of supported sub-functions
         )
 
     def get_fail_serv(
