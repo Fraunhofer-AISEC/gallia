@@ -4,7 +4,7 @@ SPDX-FileCopyrightText: AISEC Pentesting Team
 SPDX-License-Identifier: CC0-1.0
 -->
 
-# Gallia -- Rebellion Against the Romans
+# Gallia -- Extendable Pentesting Framework 
 
 ```{warning}
 This project is intended for research and development usage only!
