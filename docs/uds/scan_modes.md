@@ -9,9 +9,10 @@ SPDX-License-Identifier: CC0-1.0
 A UDS scan usually covers multiple phases:
 
 1. Searching for ECUs on the relevant transport: **Discovery Scan**
-2. Searching for UDS services on the found ECUs: **Service Scan**
-3. Searching for UDS identifiers in discovered UDS services: **Identifier Scan**
-4. Additional service specific scans, such as **Memory Scan**, **Fuzzing**, …
+2. Searching for UDS sessions on the found ECUs: **Session Scan**
+3. Searching for UDS services on the found ECUs: **Service Scan**
+4. Searching for UDS identifiers in discovered UDS services: **Identifier Scan**
+5. Additional service specific scans, such as **Memory Scan**, **Fuzzing**, …
 
 ## Discovery Scan
 
