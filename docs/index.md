@@ -12,7 +12,7 @@ Inappropriate usage might cause irreversible damage to the device under test.
 We do not take any responsibility for damage caused by the usage of this tool.
 ```
 
-Gallia is an extendable pentesting framework with the focus on the automotive domain.
+[Gallia](https://github.com/Fraunhofer-AISEC/gallia) is an extendable pentesting framework with the focus on the automotive domain.
 The scope of the toolchain is conducting penetration tests from a single ECU up to whole cars.
 Currently, the main focus lies on the [UDS](https://www.iso.org/standard/72439.html) interface.
 Taking advantage of this modular design, the [logging and archiving](https://fraunhofer-aisec.github.io/gallia/penlog.7.html) functionality was developed separately.
