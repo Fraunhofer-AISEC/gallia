@@ -9,6 +9,14 @@ lint:
 	pylint --rcfile pyproject.toml src
 	shellcheck ./bin/penrun
 
+.PHONY: zipapp
+TEMPDIR = $(shell mktemp -d)
+zipapp:
+	poetry build
+	poetry run python -m pip install --target $(TEMPDIR) gallia dist/*.whl
+	poetry run python -m zipapp -o gallia.pyz -c -p "/usr/bin/env python3" -m "gallia.cli:main" $(TEMPDIR)
+	$(RM) -r $(TEMPDIR)
+
 BINDIR ?= "${HOME}/bin"
 
 .PHONY: install

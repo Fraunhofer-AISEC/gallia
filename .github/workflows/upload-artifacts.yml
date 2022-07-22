@@ -1,0 +1,37 @@
+# SPDX-FileCopyrightText: AISEC Pentesting Team
+#
+# SPDX-License-Identifier: CC0-1.0
+
+name: Upload Python Package
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  deploy:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    - uses: Gr1N/setup-poetry@v7
+    - uses: actions/cache@v3
+      with:
+        path: ~/.cache/pypoetry/virtualenvs
+        key: ${{ runner.os }}-poetry-${{ hashFiles('poetry.lock') }}-${{ hashFiles('pyproject.toml') }}
+
+    - name: Install Dependencies
+      run: |
+        poetry install
+
+    - name: Build zipapp
+      run: |
+        poetry run make zipapp
+
+    - name: Upload zipapp
+      run: |
+        gh release upload ${{ github.ref }} gallia.pyz
