@@ -36,7 +36,7 @@ from gallia.udscan.core import Script
 
 
 class AnalyzerMain(Script):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.artifacts_dir: Path
 
@@ -80,7 +80,6 @@ class AnalyzerMain(Script):
         grp_param.add_argument("--sid", type=int, help=ArgHelp.sid, default=-1)
         grp_param.add_argument("--from", type=int, help=ArgHelp.first, default=0)
         grp_param.add_argument("--to", type=int, help=ArgHelp.last, default=0)
-        grp_param.add_argument("--output", type=str, help=ArgHelp.output, default="")
         grp_param.add_argument("--source", type=str, help=ArgHelp.source, default="")
         grp_param.add_argument("--precision", type=int, help=ArgHelp.prec, default=0)
         grp_param.add_argument(
@@ -117,7 +116,6 @@ class AnalyzerMain(Script):
         db_path = args["source"]
         run_start = args["from"]
         run_end = args["to"] + 1
-        file_path = args["output"]
         t_prec = args["precision"]
 
         if run_end <= run_start:
@@ -151,42 +149,44 @@ class AnalyzerMain(Script):
 
         if analyze_on:
             if categorizer_on:
-                categorizer = Categorizer(db_path, log_mode)
+                categorizer = Categorizer(db_path, self.artifacts_dir, log_mode)
                 an_opt = categorizer.get_op_mode(iso_on)
                 categorizer.analyze(runs_vec, an_opt)
             else:
-                analyzer = Analyzer(db_path, log_mode, debug_on)
+                analyzer = Analyzer(db_path, self.artifacts_dir, log_mode, debug_on)
                 an_opt = analyzer.get_op_mode(iso_on)
                 analyzer.analyze(runs_vec, an_opt)
 
         if t_analyze_on:
             if t_prec > 0:
-                time_analyzer = TimeAnalyzer(db_path, t_prec, log_mode)
+                time_analyzer = TimeAnalyzer(
+                    db_path, self.artifacts_dir, t_prec, log_mode
+                )
             else:
-                time_analyzer = TimeAnalyzer(db_path, log_mode=log_mode)
+                time_analyzer = TimeAnalyzer(
+                    db_path, self.artifacts_dir, log_mode=log_mode
+                )
             time_analyzer.extract_tra(runs_vec)
             time_analyzer.hist_tra(runs_vec)
             time_analyzer.plot_tra(runs_vec)
 
         if report_on or aio_service_on or aio_identifier_on:
-            reporter = Reporter(db_path, log_mode)
+            reporter = Reporter(db_path, self.artifacts_dir, log_mode)
 
         if report_on:
-            reporter.report_xl(runs_vec, show_possible_on, file_path)
+            reporter.report_xl(runs_vec, show_possible_on)
 
         if aio_service_on:
-            reporter.consolidate_xl_serv(file_path, show_possible_on)
+            reporter.consolidate_xl_serv(show_possible_on)
 
         if aio_identifier_on:
             if all_services_on:
-                reporter.iterate_all(file_path, show_possible_on)
+                reporter.iterate_all(show_possible_on)
             else:
                 if service_id == -1:
                     print("Please input Service ID with --sid option.")
                 else:
-                    reporter.consolidate_xl_iden(
-                        service_id, file_path, show_possible_on
-                    )
+                    reporter.consolidate_xl_iden(service_id, show_possible_on)
 
         print(
             f"gallia-analyze: elapsed time(sec): {str(time.process_time() - start_time)}"

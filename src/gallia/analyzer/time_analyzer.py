@@ -6,6 +6,8 @@
 gallia-analyze Time Analyzer module
 """
 import json
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 from pandas.core.indexing import IndexingError
@@ -24,11 +26,12 @@ class TimeAnalyzer(Reporter):
 
     def __init__(
         self,
-        path: str = "",
+        path: str,
+        artifacts_dir: Path,
         t_prec: int = DFT_T_PREC,
         log_mode: LogMode = LogMode.STD_OUT,
     ):
-        Reporter.__init__(self, path, log_mode)
+        Reporter.__init__(self, path, artifacts_dir, log_mode)
         self.msg_head = "[TimeAnalyzer] "
         self.t_prec = t_prec
         self.jpg_ext = ".jpg"

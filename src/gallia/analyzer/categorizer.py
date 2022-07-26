@@ -5,7 +5,7 @@
 """
 gallia-analyze Categorizer module
 """
-
+from pathlib import Path
 from sqlite3 import OperationalError
 from typing import cast
 
@@ -26,8 +26,10 @@ class Categorizer(Analyzer):
     Inherited from Analyzer.
     """
 
-    def __init__(self, path: str = "", log_mode: LogMode = LogMode.STD_OUT):
-        Analyzer.__init__(self, path, log_mode)
+    def __init__(
+        self, path: str, artifacts_dir: Path, log_mode: LogMode = LogMode.STD_OUT
+    ):
+        Analyzer.__init__(self, path, artifacts_dir, log_mode)
         self.msg_head = "[Categorizer] "
 
     def analyze_serv(self, run: int, op_mode: OpMode) -> bool:

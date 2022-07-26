@@ -5,9 +5,9 @@
 """
 gallia-analyze Analyzer module
 """
-import os
 import json
 from json.decoder import JSONDecodeError
+from pathlib import Path
 from sqlite3 import OperationalError
 import textwrap
 from typing import Tuple
@@ -28,13 +28,18 @@ class Analyzer(Operator):
 
     def __init__(
         self,
-        path: str = "",
+        path: str,
+        artifacts_dir: Path,
         log_mode: LogMode = LogMode.STD_OUT,
         debug_on: bool = False,
     ):
         Operator.__init__(self, path, log_mode)
         self.msg_head = "[Analyzer] "
         self.debug_on = debug_on
+        self.debug_dir = artifacts_dir.joinpath("debug")
+        if debug_on:
+            self.debug_dir.mkdir()
+        self.artifacts_dir = artifacts_dir
 
     def analyze(self, runs_vec: np.ndarray, op_mode: OpMode = OpMode.VEN_SPEC) -> bool:
         """
@@ -107,11 +112,8 @@ class Analyzer(Operator):
                 except KeyError as exc:
                     self.log("condition key reading failed", True, exc)
             if self.debug_on:
-                if not os.path.isdir("debug"):
-                    os.mkdir("debug")
-                with open(
-                    f"./debug/analyze_serv_{str(run)}.sql", "w", encoding="utf8"
-                ) as file:
+                path = self.debug_dir.joinpath(f"analyze_serv_{str(run)}.sql")
+                with path.open("w", encoding="utf8") as file:
                     file.write(analyze_sql)
             self.cur.executescript(analyze_sql)
             self.con.commit()
@@ -193,11 +195,8 @@ class Analyzer(Operator):
             """
             analyze_sql += textwrap.dedent(drop_view_sql) + "\n"
             if self.debug_on:
-                if not os.path.isdir("debug"):
-                    os.mkdir("debug")
-                with open(
-                    f"./debug/analyze_iden_{str(run)}.sql", "w", encoding="utf8"
-                ) as file:
+                path = self.debug_dir.joinpath(f"analyze_iden_{str(run)}.sql")
+                with path.open("w", encoding="utf8") as file:
                     file.write(analyze_sql)
             self.cur.executescript(analyze_sql)
             self.con.commit()

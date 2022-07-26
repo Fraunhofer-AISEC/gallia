@@ -6,6 +6,7 @@
 gallia-analyze Reporter module
 """
 import os
+from pathlib import Path
 from typing import cast
 
 import numpy as np
@@ -24,24 +25,26 @@ class Reporter(Operator):
     Reporter class for generating EXCEL report and visualizing data with graphs and data frames.
     """
 
-    def __init__(self, path: str = "", log_mode: LogMode = LogMode.STD_OUT):
+    def __init__(
+        self, path: str, artifacts_dir: Path, log_mode: LogMode = LogMode.STD_OUT
+    ):
         Operator.__init__(self, path, log_mode)
         self.msg_head = "[Reporter] "
-        self.out_path = f"./reports_{os.path.basename(path)}/"
+        self.artifacts_dir = artifacts_dir
         self.abn_serv_vec = np.array([])
         self.abn_iden_vec = np.array([])
         self.xl_ext = ".xlsx"
 
-    def iterate_all(self, out_path: str, show_psb: bool = False) -> bool:
+    def iterate_all(self, show_psb: bool = False) -> bool:
         """
         consolidate all scan_identifier runs for all services by identifier respectively into EXCEL files.
         """
         for serv in self.iso_serv_by_iden_vec:
-            if not self.consolidate_xl_iden(serv, out_path, show_psb):
+            if not self.consolidate_xl_iden(serv, show_psb):
                 continue
         return True
 
-    def consolidate_xl_serv(self, out_path: str, show_psb: bool = False) -> bool:
+    def consolidate_xl_serv(self, show_psb: bool = False) -> bool:
         """
         consolidate all scan_service runs sorted by ECU mode into one EXCEL file.
         """
@@ -50,7 +53,6 @@ class Reporter(Operator):
         self.load_ven_sess()
         self.load_ven_lu()
         self.log(f"consolidating scan_service by ECU mode from {self.db_path} ...")
-        self.set_path_prefix(out_path)
         xl_generator = ExcelGenerator(self.db_path, self.log_mode)
         xl_is_empty = True
         for ecu_mode in np.arange(self.num_modes):
@@ -77,7 +79,6 @@ class Reporter(Operator):
                 self.log(f"nothing to report for ECU mode {ecu_mode}.")
         if xl_is_empty:
             return False
-        self.set_path_prefix(out_path)
         out_path = self.get_path(
             "all_services_by_ecu_mode", self.xl_ext, rm_if_exists=True
         )
@@ -85,9 +86,7 @@ class Reporter(Operator):
             return False
         return True
 
-    def consolidate_xl_iden(
-        self, serv: int, out_path: str, show_psb: bool = False
-    ) -> bool:
+    def consolidate_xl_iden(self, serv: int, show_psb: bool = False) -> bool:
         """
         consolidate all scan_identifier runs sorted by ECU mode
         for a certain given service into one EXCEL file.
@@ -102,7 +101,6 @@ class Reporter(Operator):
         self.log(
             f"consolidating for Service ID 0x{serv:02X} {self.iso_serv_code_dict[serv]} from {self.db_path} ..."
         )
-        self.set_path_prefix(out_path)
         xl_generator = ExcelGenerator(self.db_path, self.log_mode)
         xl_is_empty = True
         if self.num_modes == 0:
@@ -137,7 +135,6 @@ class Reporter(Operator):
         if xl_is_empty:
             self.log(f"nothing to report for Service ID 0x{serv:02X}")
             return False
-        self.set_path_prefix(out_path)
         out_path = self.get_path(
             f"0x{serv:02X}_{self.iso_serv_code_dict[serv]}",
             self.xl_ext,
@@ -151,7 +148,6 @@ class Reporter(Operator):
         self,
         runs_vec: np.ndarray,
         show_psb: bool = False,
-        out_path: str = "",
     ) -> bool:
         """
         generate EXCEL report for given input runs.
@@ -160,7 +156,6 @@ class Reporter(Operator):
             return False
         self.load_ven_sess()
         self.load_ven_lu()
-        self.set_path_prefix(out_path)
         for run in runs_vec:
             self.report_xl_each_run(run, show_psb)
         return True
@@ -221,47 +216,18 @@ class Reporter(Operator):
             return False
         return True
 
-    def set_path_prefix(self, path: str = "") -> None:
-        """
-        set path prefix for EXCEL report file to save.
-        """
-        if path == "":
-            self.out_path = os.path.expanduser(
-                f"./reports_{os.path.basename(self.db_path)}/"
-            )
-        elif path == ".":
-            self.out_path = os.path.expanduser("./")
-        elif path == "..":
-            self.out_path = os.path.expanduser("../")
-        elif path[-1] == "/":
-            self.out_path = os.path.expanduser(path)
-        else:
-            self.out_path = os.path.expanduser(path + "/")
-
     def get_path(
         self, suffix: str = "", ext: str = ".xlsx", rm_if_exists: bool = False
     ) -> str:
         """
         get path for EXCEL report file by combining path prefix,
-        run number and EXCEL extention.
+        run number and EXCEL extension.
         """
-        try:
-            dir_name = os.path.dirname(self.out_path)
-            file_name = os.path.basename(self.out_path)
-            if dir_name == "":
-                dir_name = "./"
-            out_path = os.path.join(dir_name, file_name + str(suffix) + ext)
-            if os.path.isdir(dir_name):
-                if os.path.isfile(out_path) and rm_if_exists:
-                    os.remove(out_path)
-                    self.log(f"existing file removed from {out_path}")
-            else:
-                os.mkdir(dir_name)
-                self.log(f"directory created at {dir_name}")
-        except (OSError) as exc:
-            self.log("getting path failed", True, exc)
-            return f"./reports/run{str(suffix)}{ext}"
-        return out_path
+        out_path = self.artifacts_dir.joinpath(f"{suffix}{ext}")
+        if out_path.is_file() and rm_if_exists:
+            os.remove(out_path)
+            self.log(f"existing file removed from {out_path}")
+        return str(out_path)
 
     def get_entries_oi(self, scan_mode: ScanMode, show_psb: bool = False) -> np.ndarray:
         """
