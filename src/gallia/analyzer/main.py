@@ -5,9 +5,15 @@
 """
 gallia-analyze main script
 """
+import os
 from argparse import Namespace
 import sys
 import time
+from pathlib import Path
+from secrets import token_urlsafe
+from tempfile import gettempdir
+from typing import Optional
+
 import numpy as np
 from gallia.analyzer.operator import Operator
 from gallia.analyzer.analyzer import Analyzer
@@ -30,6 +36,25 @@ from gallia.udscan.core import Script
 
 
 class AnalyzerMain(Script):
+    def __init__(self):
+        super().__init__()
+        self.artifacts_dir: Path
+
+    def prepare_artifactsdir(self, path: Optional[Path]) -> Path:
+        if path is None:
+            base = Path(gettempdir())
+            p = base.joinpath(
+                f'{self.id}_{time.strftime("%Y%m%d-%H%M%S")}_{token_urlsafe(6)}'
+            )
+            p.mkdir(parents=True)
+            return p
+
+        if path.is_dir():
+            return path
+
+        self.logger.log_error(f"Data directory {path} is not an existing directory.")
+        sys.exit(1)
+
     def add_parser(self) -> None:
         # Commands
         grp_cmd = self.parser.add_argument_group("Command")
@@ -58,8 +83,17 @@ class AnalyzerMain(Script):
         grp_param.add_argument("--output", type=str, help=ArgHelp.output, default="")
         grp_param.add_argument("--source", type=str, help=ArgHelp.source, default="")
         grp_param.add_argument("--precision", type=int, help=ArgHelp.prec, default=0)
+        grp_param.add_argument(
+            "--data-dir",
+            default=os.environ.get("PENRUN_ARTIFACTS"),
+            type=Path,
+            help="Folder for artifacts",
+        )
 
     def main(self, args: Namespace) -> None:
+        self.artifacts_dir = self.prepare_artifactsdir(args.data_dir)
+        self.logger.log_preamble(f"Storing artifacts at {self.artifacts_dir}")
+
         args = vars(args)
         # Commands
         analyze_on = args["a"]
