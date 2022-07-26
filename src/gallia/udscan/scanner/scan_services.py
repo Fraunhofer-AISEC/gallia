@@ -4,6 +4,7 @@
 
 import asyncio
 import reprlib
+import sys
 from argparse import BooleanOptionalAction, Namespace
 from binascii import unhexlify
 from typing import Any
@@ -148,6 +149,11 @@ class ScanServices(UDSScanner):
                 except Exception as e:
                     self.logger.log_info(f"{g_repr(sid)}: {g_repr(e)} occurred")
                     await self.ecu.reconnect()
+                    if not self.ecu.check_and_set_session(session):
+                        self.logger.log_error(
+                            f"Could not change to session 0x{session:02x} after reconnect; exit"
+                        )
+                        sys.exit(1)
                     continue
 
                 if suggests_service_not_supported(resp):

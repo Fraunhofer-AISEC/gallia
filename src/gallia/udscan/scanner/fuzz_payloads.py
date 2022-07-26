@@ -5,6 +5,7 @@
 import asyncio
 import binascii
 import random
+import sys
 from argparse import Namespace
 
 from gallia.transports.base import TargetURI
@@ -176,6 +177,11 @@ class FuzzPayloads(UDSScanner):
                         )
                         flow_control_miss += 1
                         await self.ecu.reconnect()
+                        if not self.ecu.check_and_set_session(session):
+                            self.logger.log_error(
+                                f"Could not change to session 0x{session:02x} after reconnect; exit"
+                            )
+                            sys.exit(1)
 
                 self.logger.log_summary(f"Scan in session 0x{session:0x} is complete!")
 
