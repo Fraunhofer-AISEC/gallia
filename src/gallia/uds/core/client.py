@@ -42,7 +42,8 @@ class UDSClient:
         self.logger = Logger("uds", flush=True)
 
     async def reconnect(self, timeout: Optional[int] = None) -> None:
-        """Calls the underlying transport to trigger a reconnect"""
+        """Calls the underlying transport to trigger a reconnect.
+        Be aware, that this might change the state of the ECU! Always restore desired state after reconnect."""
         await self.transport.reconnect(timeout)
 
     async def _read(
