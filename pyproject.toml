@@ -49,6 +49,8 @@ exitcode = "^0.1.0"
 psutil = ">=5.9.4,<7.0.0"
 httpx = ">=0.26,<0.28"
 more-itertools = "^10.3.0"
+# A list of all of the optional dependencies, some of which are included in the
+# below `extras`. They can be opted into by apps.
 numpy = "^1.21.4"
 openpyxl = "^3.0.9"
 pandas = "^1.3.4"
