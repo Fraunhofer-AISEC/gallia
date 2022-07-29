@@ -14,16 +14,22 @@ from secrets import token_urlsafe
 from tempfile import gettempdir
 from typing import Optional
 
-import numpy as np
-from gallia.analyzer.operator import Operator
-from gallia.analyzer.analyzer import Analyzer
-from gallia.analyzer.extractor import Extractor
-from gallia.analyzer.reporter import Reporter
-from gallia.analyzer.categorizer import Categorizer
-from gallia.analyzer.time_analyzer import TimeAnalyzer
-from gallia.analyzer.mode_config import LogMode
-from gallia.analyzer.arg_help import ArgHelp
-from gallia.udscan.core import Script
+try:
+    import numpy as np
+    from gallia.analyzer.operator import Operator
+    from gallia.analyzer.analyzer import Analyzer
+    from gallia.analyzer.extractor import Extractor
+    from gallia.analyzer.reporter import Reporter
+    from gallia.analyzer.categorizer import Categorizer
+    from gallia.analyzer.time_analyzer import TimeAnalyzer
+    from gallia.analyzer.mode_config import LogMode
+    from gallia.analyzer.arg_help import ArgHelp
+    from gallia.udscan.core import Script
+
+    ANALYZER_AVAILABLE = True
+except ModuleNotFoundError:
+    ANALYZER_AVAILABLE = False
+
 
 # ========================================================== #
 # [Rule for arguments]
@@ -39,6 +45,11 @@ class AnalyzerMain(Script):
     def __init__(self) -> None:
         super().__init__()
         self.artifacts_dir: Path
+        if not ANALYZER_AVAILABLE:
+            self.logger.log_error(
+                "Please install optional dependencies to run the analyzer"
+            )
+            sys.exit(1)
 
     def prepare_artifactsdir(self, path: Optional[Path]) -> Path:
         if path is None:
