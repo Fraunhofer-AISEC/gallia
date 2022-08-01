@@ -35,7 +35,7 @@ construct = "^2.10.68"
 
 [tool.poetry.dev-dependencies]
 black = "^22.6.0"
-Sphinx = "^5.0.2"
+Sphinx = "^5.1.1"
 flake8 = "^4.0.1"
 isort = "^5.10.1"
 lxml-stubs = "^0.4.0"
