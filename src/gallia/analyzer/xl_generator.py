@@ -26,6 +26,7 @@ from gallia.analyzer.config import SrcPath, XlDesign, FAIL_CLS_CAP
 from gallia.analyzer.failure import Failure
 from gallia.analyzer.mode_config import LogMode, ScanMode
 from gallia.analyzer.name_config import ColNm, ShtNm, CellCnt, KyNm
+from gallia.utils import g_repr
 
 
 class ExcelGenerator(Operator):
@@ -35,7 +36,6 @@ class ExcelGenerator(Operator):
 
     def __init__(self, path: str = "", log_mode: LogMode = LogMode.STD_OUT):
         Operator.__init__(self, path, log_mode)
-        self.msg_head = "[ExcelGenerator] "
         self.workbook: op.Workbook = op.Workbook()
         self.worksheet: Any
         self.load_color_code(SrcPath.err_src)
@@ -70,7 +70,7 @@ class ExcelGenerator(Operator):
             if len(self.workbook.worksheets) == 0:
                 self.workbook.create_sheet(ShtNm.init)
         except (SheetTitleException, ReadOnlyWorkbookException) as exc:
-            self.log("generating EXCEL failed", True, exc)
+            self.logger.log_error(f"generating EXCEL failed: {g_repr(exc)}")
             return False
         return True
 
@@ -79,7 +79,7 @@ class ExcelGenerator(Operator):
             self.workbook.save(out_path)
             self.workbook.close()
         except (InvalidFileException, WorkbookAlreadySaved) as exc:
-            self.log("saving EXCEL failed", True, exc)
+            self.logger.log_error(f"saving EXCEL failed: {g_repr(exc)}")
             return False
         return True
 
@@ -113,7 +113,7 @@ class ExcelGenerator(Operator):
                 ScanMode.SERV,
             )
         except (KeyError, IndexError, AttributeError, SheetTitleException) as exc:
-            self.log("adding summary sheet failed", True, exc)
+            self.logger.log_error(f"adding summary sheet failed: {g_repr(exc)}")
             return False
         return True
 
@@ -149,7 +149,7 @@ class ExcelGenerator(Operator):
                 ScanMode.IDEN,
             )
         except (KeyError, IndexError, AttributeError, SheetTitleException) as exc:
-            self.log("adding summary sheet failed", True, exc)
+            self.logger.log_error(f"adding summary sheet failed: {g_repr(exc)}")
             return False
         return True
 
@@ -188,7 +188,9 @@ class ExcelGenerator(Operator):
                     self.start_row + 1, self.start_col + 1
                 ).coordinate
         except (KeyError, AttributeError) as exc:
-            self.log("filling origin cell of summary sheet failed", True, exc)
+            self.logger.log_error(
+                f"filling origin cell of summary sheet failed: {g_repr(exc)}"
+            )
             return self.start_row, self.start_col
         return cur_row, cur_col
 
@@ -230,7 +232,7 @@ class ExcelGenerator(Operator):
                     self.worksheet.cell(cur_row, self.start_col).value = index_name
                     cur_row += 1
                     if row.subfunc != -1:
-                        # service has subfunction and identifer
+                        # service has subfunction and identifier
                         self.worksheet.cell(
                             cur_row, self.start_col + 1
                         ).value = row.subfunc
@@ -240,7 +242,9 @@ class ExcelGenerator(Operator):
                     name=XlDesign.font_index
                 )
         except (KeyError, AttributeError) as exc:
-            self.log("filling index of summary sheet failed", True, exc)
+            self.logger.log_error(
+                f"filling index of summary sheet failed: {g_repr(exc)}"
+            )
             return self.start_row, self.start_col + 1
 
         cur_col += int(has_id) + int(has_sub_func)
@@ -281,7 +285,9 @@ class ExcelGenerator(Operator):
             cur_col -= sess_num
             cur_row = self.start_row + 2
         except (KeyError, IndexingError, AttributeError) as exc:
-            self.log("filling top session row of summary sheet failed", True, exc)
+            self.logger.log_error(
+                f"filling top session row of summary sheet failed: {g_repr(exc)}"
+            )
             return self.start_row + 1, self.start_col + 1
         return cur_row, cur_col
 
@@ -338,7 +344,9 @@ class ExcelGenerator(Operator):
                 cur_col += 1
                 cur_row = self.start_row + 2
         except (KeyError, IndexingError, AttributeError) as exc:
-            self.log("filling response field of summary sheet failed", True, exc)
+            self.logger.log_error(
+                f"filling response field of summary sheet failed: {g_repr(exc)}"
+            )
             return self.start_row + 1, self.start_col + 1
         return cur_row, cur_col
 
@@ -349,7 +357,7 @@ class ExcelGenerator(Operator):
         add failure(undocumented or missing) sheet to report EXCEL file.
         """
         if scan_mode == ScanMode.UNKNOWN:
-            self.log("adding summary sheet failed: scan mode unknown.")
+            self.logger.log_error("adding summary sheet failed: scan mode unknown.")
             return False
         try:
             dft_err_df = self.get_dft_err_df_from_raw(raw_df)
@@ -452,7 +460,9 @@ class ExcelGenerator(Operator):
                     cur_row = self.start_row
                 cur_col = self.start_col
         except (KeyError, IndexingError, AttributeError, SheetTitleException) as exc:
-            self.log("adding failure summary sheets failed", True, exc)
+            self.logger.log_error(
+                f"adding failure summary sheets failed: {g_repr(exc)}"
+            )
             return False
         return True
 
@@ -468,7 +478,7 @@ class ExcelGenerator(Operator):
                     for color_code in color_code_ls
                 }
         except (FileNotFoundError, KeyError, JSONDecodeError) as exc:
-            self.log("loading color codes failed", True, exc)
+            self.logger.log_error(f"loading color codes failed: {g_repr(exc)}")
             return False
         return True
 
@@ -479,7 +489,7 @@ class ExcelGenerator(Operator):
         try:
             self.worksheet.column_dimensions[get_column_letter(col)].width = width
         except (KeyError, AttributeError) as exc:
-            self.log("setting cell width failed", True, exc)
+            self.logger.log_error(f"setting cell width failed: {g_repr(exc)}")
             return False
         return True
 
@@ -490,7 +500,7 @@ class ExcelGenerator(Operator):
         try:
             self.worksheet.row_dimensions[row].height = height
         except (KeyError, AttributeError) as exc:
-            self.log("setting cell height failed", True, exc)
+            self.logger.log_error(f"setting cell height failed: {g_repr(exc)}")
             return False
         return True
 
@@ -505,7 +515,7 @@ class ExcelGenerator(Operator):
                 fill_type="solid",
             )
         except (KeyError, AttributeError) as exc:
-            self.log("filling cell failed", True, exc)
+            self.logger.log_error(f"filling cell failed: {g_repr(exc)}")
             return False
         return True
 
@@ -517,7 +527,7 @@ class ExcelGenerator(Operator):
 
     def get_code_text(self, code: int, ref: Dict[int, str]) -> str:
         """
-        get combined string of hex code and correspoding name
+        get combined string of hex code and corresponding name
         with a given code and a given dictionary.
         """
         try:
@@ -532,7 +542,7 @@ class ExcelGenerator(Operator):
 
     def get_err_rgb(self, error: int) -> str:
         """
-        get RGB color code string for an error reponse.
+        get RGB color code string for an error response.
         """
         try:
             return "00" + self.color_code_dict[error]

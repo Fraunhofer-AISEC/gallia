@@ -57,7 +57,6 @@ class ColNm:
     t_react = "reaction_time"
     prefix = "$_"
     infix = "_"
-    ecu_mode = "ecu_mode"
     is_err = "is_error"
 
 

@@ -22,17 +22,17 @@ from gallia.analyzer.mode_config import LogMode, ScanMode, OpMode
 from gallia.analyzer.exceptions import EmptyTableException, ColumnMismatchException
 from gallia.analyzer.constants import UDSIsoSessions
 from gallia.uds.core.constants import UDSErrorCodes, UDSIsoServices
+from gallia.utils import g_repr
 
 
 class Operator(DatabaseHandler):
     """
-    Class for common basic operations and utilites such as loading meta data of runs,
+    Class for common basic operations and utilities such as loading metadata of runs,
     loading reference dictionaries, getting other information from a certain run in the database.
     """
 
     def __init__(self, path: str = "", log_mode: LogMode = LogMode.STD_OUT):
         DatabaseHandler.__init__(self, path, log_mode)
-        self.msg_head = "[Operator] "
         self.num_modes = 0
         self.run_meta_df = pd.DataFrame()
         self.lu_iden_df = pd.DataFrame()
@@ -78,7 +78,7 @@ class Operator(DatabaseHandler):
             if scan_mode_str == "scan-identifiers":
                 return ScanMode.IDEN
         except (KeyError, IndexingError, AttributeError) as exc:
-            self.log("getting scan mode failed", True, exc)
+            self.logger.log_error(f"getting scan mode failed: {g_repr(exc)}")
             return ScanMode.UNKNOWN
         return ScanMode.UNKNOWN
 
@@ -88,16 +88,18 @@ class Operator(DatabaseHandler):
         """
         try:
             if self.get_scan_mode(run) != ScanMode.IDEN:
-                self.log("scan mode is not scan_identifier.", True)
+                self.logger.log_error("scan mode is not scan_identifier")
                 return -1
             raw_df = self.read_run_db(TblNm.iden, run)
             self.check_df(raw_df, TblStruct.iden)
             serv_vec = np.unique(raw_df[ColNm.serv])
             if serv_vec.shape[0] > 1:
-                self.log("A run has more than one Service ID.", True)
+                self.logger.log_warning("A run has more than one Service ID")
             serv_ser = raw_df[ColNm.serv].mode(dropna=True)
             if serv_ser.shape[0] > 1:
-                self.log("A run has more than one most frequent Service ID.", True)
+                self.logger.log_warning(
+                    "A run has more than one most frequent Service ID"
+                )
         except (
             KeyError,
             IndexingError,
@@ -105,7 +107,7 @@ class Operator(DatabaseHandler):
             EmptyTableException,
             ColumnMismatchException,
         ) as exc:
-            self.log("getting Service ID failed", True, exc)
+            self.logger.log_error(f"getting Service ID failed: {g_repr(exc)}")
             return -1
         return serv_ser[0]
 
@@ -125,7 +127,7 @@ class Operator(DatabaseHandler):
                 ecu_mode = 0
             return ecu_mode
         except (KeyError, IndexingError, AttributeError) as exc:
-            self.log("getting ECU mode failed", True, exc)
+            self.logger.log_error(f"getting ECU mode failed: {g_repr(exc)}")
             return -1
 
     def get_op_mode(self, iso_on: bool) -> OpMode:
@@ -153,7 +155,9 @@ class Operator(DatabaseHandler):
             EmptyTableException,
             ColumnMismatchException,
         ) as exc:
-            self.log("getting sessions in lookup table failed", True, exc)
+            self.logger.log_error(
+                f"getting sessions in lookup table failed: {g_repr(exc)}"
+            )
             return np.array([])
         return sess_vec
 
@@ -179,7 +183,9 @@ class Operator(DatabaseHandler):
             FileNotFoundError,
             JSONDecodeError,
         ) as exc:
-            self.log("getting reference summary from JSON failed", True, exc)
+            self.logger.log_error(
+                f"getting reference summary from JSON failed: {g_repr(exc)}"
+            )
             return pd.DataFrame()
         return ref_df
 
@@ -202,7 +208,9 @@ class Operator(DatabaseHandler):
             EmptyTableException,
             ColumnMismatchException,
         ) as exc:
-            self.log("getting default error data frame failed", True, exc)
+            self.logger.log_error(
+                f"getting default error data frame failed: {g_repr(exc)}"
+            )
             return pd.DataFrame()
         return dft_err_df
 
@@ -218,7 +226,7 @@ class Operator(DatabaseHandler):
             res_df = self.get_df_by_query(res_sql)
             resp = cast(str, res_df.iloc[0, 0])
         except (KeyError, IndexingError, AttributeError) as exc:
-            self.log("getting positive response failed", True, exc)
+            self.logger.log_error(f"getting positive response failed: {g_repr(exc)}")
             return ""
         return resp
 
@@ -253,12 +261,14 @@ class Operator(DatabaseHandler):
             self.cur.executescript(gen_meta_sql)
             meta_df = self.read_db(TblNm.meta)
             if meta_df.shape == (0, 0):
-                self.log("no meta data", True)
+                self.logger.log_error("no meta data")
                 return False
             meta_df.set_index("run_id", inplace=True)
             self.run_meta_df = meta_df
         except (KeyError, IndexingError, AttributeError, OperationalError) as exc:
-            self.log("loading run meta data failed", True, exc)
+            self.logger.log_error(
+                f"loading run meta data failed: {g_repr(exc)}",
+            )
             return False
         return True
 
@@ -324,7 +334,9 @@ class Operator(DatabaseHandler):
             EmptyTableException,
             ColumnMismatchException,
         ) as exc:
-            self.log("loading vendor-specific reference failed", True, exc)
+            self.logger.log_error(
+                f"loading vendor-specific reference failed: {g_repr(exc)}"
+            )
             return False
         return True
 
@@ -341,7 +353,9 @@ class Operator(DatabaseHandler):
             self.supp_serv_iso_vec = np.sort(np.array(ref_iso_df.index))
             self.ref_iso_df: pd.DataFrame = ref_iso_df.sort_index()
         except (KeyError, IndexingError, AttributeError) as exc:
-            self.log("loading reference summary for UDS ISO failed", True, exc)
+            self.logger.log_error(
+                f"loading reference summary for UDS ISO failed: {g_repr(exc)}"
+            )
             return False
         return True
 
@@ -388,7 +402,9 @@ class Operator(DatabaseHandler):
         ) as exc:
             self.sess_name_dict = self.iso_sess_name_dict
             self.sess_code_dict = self.iso_sess_code_dict
-            self.log("loading vendor-specific sessions failed", True, exc)
+            self.logger.log_error(
+                f"loading vendor-specific sessions failed: {g_repr(exc)}"
+            )
             return False
         return True
 
@@ -426,7 +442,9 @@ class Operator(DatabaseHandler):
             OperationalError,
         ) as exc:
             self.lu_iden_df = pd.DataFrame()
-            self.log(f"loading lookup for service 0x{serv:02x} failed", True, exc)
+            self.logger.log_error(
+                f"loading lookup for service 0x{serv:02x} failed: {g_repr(exc)}"
+            )
             return False
         return True
 
@@ -435,10 +453,10 @@ class Operator(DatabaseHandler):
         prepare relational tables to save data for scan_service and scan_identifier.
         """
         if not self.create_table(TblNm.serv, TblStruct.serv):
-            self.log("preparing table for scan_service failed.", True)
+            self.logger.log_error("preparing table for scan_service failed")
             return False
         if not self.create_table(TblNm.iden, TblStruct.iden):
-            self.log("preparing table for scan_identifier failed.", True)
+            self.logger.log_error("preparing table for scan_identifier failed")
             return False
         return True
 
@@ -511,7 +529,9 @@ class Operator(DatabaseHandler):
             EmptyTableException,
             ColumnMismatchException,
         ) as exc:
-            self.log("preparing table for session and boot failed", True, exc)
+            self.logger.log_error(
+                f"preparing table for session and boot failed: {g_repr(exc)}"
+            )
             return False
         return True
 
@@ -536,7 +556,9 @@ class Operator(DatabaseHandler):
             pair_df = pd.DataFrame(pair_ls, columns=[ColNm.serv, col_name])
             self.write_db(pair_df, table_name)
         except (KeyError, IndexError, AttributeError) as exc:
-            self.log("preparing table for availabilities failed", True, exc)
+            self.logger.log_error(
+                f"preparing table for availabilities failed: {g_repr(exc)}"
+            )
             return False
         return True
 
@@ -558,7 +580,7 @@ class Operator(DatabaseHandler):
 
     def clear_alwd(self) -> bool:
         """
-        clear relational tables for reference in the databse.
+        clear relational tables for reference in the database.
         """
         table_ls = [
             TblNm.ref_resp,

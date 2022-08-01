@@ -18,6 +18,7 @@ from gallia.analyzer.mode_config import LogMode, OpMode
 from gallia.analyzer.name_config import ColNm, TblNm
 from gallia.analyzer.exceptions import EmptyTableException, ColumnMismatchException
 from gallia.uds.core.constants import UDSIsoServices, UDSErrorCodes
+from gallia.utils import g_repr
 
 
 class Categorizer(Analyzer):
@@ -30,7 +31,6 @@ class Categorizer(Analyzer):
         self, path: str, artifacts_dir: Path, log_mode: LogMode = LogMode.STD_OUT
     ):
         Analyzer.__init__(self, path, artifacts_dir, log_mode)
-        self.msg_head = "[Categorizer] "
 
     def analyze_serv(self, run: int, op_mode: OpMode) -> bool:
         """
@@ -45,7 +45,7 @@ class Categorizer(Analyzer):
             if not self.write_db(raw_df, TblNm.serv):
                 return False
         except (EmptyTableException, ColumnMismatchException, OperationalError) as exc:
-            self.log("analyzing scan_service failed", True, exc)
+            self.logger.log_error(f"analyzing scan_service failed: {g_repr(exc)}")
             return False
         return True
 
@@ -65,7 +65,7 @@ class Categorizer(Analyzer):
             if not self.write_db(raw_df, TblNm.iden):
                 return False
         except (EmptyTableException, ColumnMismatchException, OperationalError) as exc:
-            self.log("analyzing scan_identifier failed", True, exc)
+            self.logger.log_error(f"analyzing scan_identifier failed: {g_repr(exc)}")
             return False
         return True
 
@@ -88,8 +88,10 @@ class Categorizer(Analyzer):
                 lambda x: self.get_fail_serv(op_mode, x[0], x[1], x[2], x[3])
             )
             raw_df = raw_df.drop([ColNm.combi], axis=1)
-        except (KeyError) as exc:
-            self.log("categorizing failures for scan_service failed", True, exc)
+        except KeyError as exc:
+            self.logger.log_error(
+                f"categorizing failures for scan_service failed: {g_repr(exc)}"
+            )
             return pd.DataFrame()
         return raw_df
 
@@ -105,7 +107,7 @@ class Categorizer(Analyzer):
         try:
             serv_vec = np.unique(raw_df[ColNm.serv])
             if not serv_vec.size == 1:
-                self.log("more than one service in a run", True)
+                self.logger.log_error("more than one service in a run")
                 return pd.DataFrame()
             else:
                 serv = serv_vec[0]
@@ -127,8 +129,10 @@ class Categorizer(Analyzer):
                 )
             )
             raw_df = raw_df.drop([ColNm.combi], axis=1)
-        except (KeyError) as exc:
-            self.log("categorizing failures for scan_identifier failed", True, exc)
+        except KeyError as exc:
+            self.logger.log_error(
+                f"categorizing failures for scan_identifier failed: {g_repr(exc)}"
+            )
             return pd.DataFrame()
         return raw_df
 
@@ -233,7 +237,7 @@ class Categorizer(Analyzer):
                 return Failure.OK_SERV_B
 
         if not cond_serv_supp:
-            # normal responses to unsupporeted services
+            # normal responses to unsupported services
             if cond_resp_means_not_supp:
                 return Failure.OK_SERV_C
 
@@ -252,7 +256,7 @@ class Categorizer(Analyzer):
                 if cond_resp_means_not_supp:
                     return Failure.OK_SERV_E
 
-                # Undocumented Type B: supported servcies in not available session responded
+                # Undocumented Type B: supported services in not available session responded
                 # other than "not supported" family
                 if not cond_resp_means_not_supp:
                     return Failure.UNDOC_SERV_B
@@ -262,7 +266,7 @@ class Categorizer(Analyzer):
                 if cond_resp_alwd and not cond_resp_means_not_supp:
                     return Failure.OK_SERV_F
 
-                # supported servcies (and even in available session) give a response undocumented in ISO
+                # supported services (and even in available session) give a response undocumented in ISO
                 if not cond_resp_means_not_supp:
                     return Failure.OK_SERV_G
 
@@ -276,7 +280,7 @@ class Categorizer(Analyzer):
                 if cond_resp_serv_not_supp:
                     return Failure.MISS_SERV_B
 
-                # supported services in available session give a reponded as "subFunctionNotSupported"
+                # supported services in available session give a responded as "subFunctionNotSupported"
                 if cond_resp_sbfn_not_supp:
                     return Failure.OK_SERV_H
 
@@ -328,7 +332,9 @@ class Categorizer(Analyzer):
                     break
 
         except (KeyError, AttributeError) as exc:
-            self.log("getting failure for identifier failed", True, exc)
+            self.logger.log_error(
+                f"getting failure for identifier failed: {g_repr(exc)}"
+            )
             return Failure.UNKNOWN
 
         if cond_combi:

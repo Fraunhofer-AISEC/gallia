@@ -23,6 +23,7 @@ try:
     from gallia.analyzer.categorizer import Categorizer
     from gallia.analyzer.time_analyzer import TimeAnalyzer
     from gallia.analyzer.mode_config import LogMode
+
     ANALYZER_AVAILABLE = True
 except ModuleNotFoundError:
     ANALYZER_AVAILABLE = False
@@ -133,7 +134,7 @@ class AnalyzerMain(Script):
             run_end = run_start + 1
 
         if db_path == "":
-            print("Please set database path with --source option!")
+            self.logger.log_error("Please set database path with --source option!")
             sys.exit()
 
         start_time = time.process_time()
@@ -195,10 +196,10 @@ class AnalyzerMain(Script):
                 reporter.iterate_all(show_possible_on)
             else:
                 if service_id == -1:
-                    print("Please input Service ID with --sid option.")
+                    self.logger.log_error("Please input Service ID with --sid option.")
                 else:
                     reporter.consolidate_xl_iden(service_id, show_possible_on)
 
-        print(
+        self.logger.log_summary(
             f"gallia-analyze: elapsed time(sec): {str(time.process_time() - start_time)}"
         )
