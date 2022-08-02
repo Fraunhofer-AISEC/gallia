@@ -1036,7 +1036,7 @@ python-versions = ">=3.6,<4.0"
 
 [[package]]
 name = "types-aiofiles"
-version = "0.8.9"
+version = "0.8.10"
 description = "Typing stubs for aiofiles"
 category = "dev"
 optional = false
@@ -1136,7 +1136,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9,<3.11"
-content-hash = "1a441e011e0d4b0a51e6e3e80c4ef5e8766b7ca6317ebc699884e2b3a70f8d7e"
+content-hash = "bad3a6d34f78c7b8b3c558705f5a6bdce5f585199460b01658afc8ab74c699c8"
 
 [metadata.files]
 aiofiles = [
@@ -1924,8 +1924,8 @@ tomlkit = [
     {file = "tomlkit-0.11.0.tar.gz", hash = "sha256:71ceb10c0eefd8b8f11fe34e8a51ad07812cb1dc3de23247425fbc9ddc47b9dd"},
 ]
 types-aiofiles = [
-    {file = "types-aiofiles-0.8.9.tar.gz", hash = "sha256:ed4e35cee4cd7b51da6e6764405ff4d7cf3bd83e0db9db85ef09878e16fe3125"},
-    {file = "types_aiofiles-0.8.9-py3-none-any.whl", hash = "sha256:ab1e27ecb3efe73e3c86d22f327ce00587743b900560a5348d321bc91bcd7c21"},
+    {file = "types-aiofiles-0.8.10.tar.gz", hash = "sha256:d006ed6894c1da9ed148325b80f3b13c45332474ec31335e6342493cf134e6d4"},
+    {file = "types_aiofiles-0.8.10-py3-none-any.whl", hash = "sha256:ced29372faf9fe95a5b617c844b3c10db3b288c85f8fabdd8b58f4cdb0101bcd"},
 ]
 types-tabulate = [
     {file = "types-tabulate-0.8.11.tar.gz", hash = "sha256:17a5fa3b5ca453815778fc9865e8ecd0118b07b2b9faff3e2b06fe448174dd5e"},
