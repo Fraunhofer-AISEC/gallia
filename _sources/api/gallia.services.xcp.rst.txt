@@ -1,0 +1,21 @@
+gallia.services.xcp package
+===========================
+
+Submodules
+----------
+
+gallia.services.xcp.types module
+--------------------------------
+
+.. automodule:: gallia.services.xcp.types
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: gallia.services.xcp
+   :members:
+   :undoc-members:
+   :show-inheritance:

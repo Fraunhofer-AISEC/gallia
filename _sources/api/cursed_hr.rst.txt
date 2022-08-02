@@ -1,0 +1,21 @@
+cursed\_hr package
+==================
+
+Submodules
+----------
+
+cursed\_hr.cursed\_hr module
+----------------------------
+
+.. automodule:: cursed_hr.cursed_hr
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: cursed_hr
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gallia.db.db_handler &mdash; gallia  documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../transports.html">Transports</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../penlog.7.html">penlog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/modules.html">Modules</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>gallia.db.db_handler</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gallia.db.db_handler</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-FileCopyrightText: AISEC Pentesting Team</span>
+<span class="c1">#</span>
+<span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
+
+<span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span><span class="p">,</span> <span class="n">unique</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">import</span> <span class="nn">aiosqlite</span>
+
+<span class="kn">from</span> <span class="nn">gallia.penlog</span> <span class="kn">import</span> <span class="n">Logger</span>
+<span class="kn">from</span> <span class="nn">gallia.uds.core</span> <span class="kn">import</span> <span class="n">service</span>
+<span class="kn">from</span> <span class="nn">gallia.uds.core.utils</span> <span class="kn">import</span> <span class="n">bytes_repr</span> <span class="k">as</span> <span class="n">bytes_repr_</span>
+<span class="kn">from</span> <span class="nn">gallia.utils</span> <span class="kn">import</span> <span class="n">g_repr</span>
+
+
+<div class="viewcode-block" id="bytes_repr"><a class="viewcode-back" href="../../../api/gallia.db.html#gallia.db.db_handler.bytes_repr">[docs]</a><span class="k">def</span> <span class="nf">bytes_repr</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">bytes_repr_</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span></div>
+
+
+<span class="n">schema_version</span> <span class="o">=</span> <span class="s2">&quot;1.0&quot;</span>
+
+<span class="n">DB_SCHEMA</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">CREATE TABLE IF NOT EXISTS version (</span>
+<span class="s2">  schema text unique,</span>
+<span class="s2">  version text</span>
+<span class="s2">);</span>
+<span class="s2">CREATE TABLE IF NOT EXISTS ecu (</span>
+<span class="s2">  id integer primary key,</span>
+<span class="s2">  name text,</span>
+<span class="s2">  oem text,</span>
+<span class="s2">  manufacturer text,</span>
+<span class="s2">  oem_uid text</span>
+<span class="s2">);</span>
+<span class="s2">CREATE TABLE IF NOT EXISTS address (</span>
+<span class="s2">  id integer primary key,</span>
+<span class="s2">  url text not null unique,</span>
+<span class="s2">  ecu int references ecu(id) on update cascade on delete set null</span>
+<span class="s2">);</span>
+<span class="s2">CREATE TABLE IF NOT EXISTS run_meta (</span>
+<span class="s2">  id integer primary key,</span>
+<span class="s2">  script text not null,</span>
+<span class="s2">  arguments json not null check(json_valid(arguments)),</span>
+<span class="s2">  start_time real not null,</span>
+<span class="s2">  start_timezone text not null,</span>
+<span class="s2">  end_time real,</span>
+<span class="s2">  end_timezone text check((end_timezone is null) = (end_time is null)),</span>
+<span class="s2">  exit_code int,</span>
+<span class="s2">  path text</span>
+<span class="s2">);</span>
+<span class="s2">CREATE TABLE IF NOT EXISTS error_log (</span>
+<span class="s2">  level int not null,</span>
+<span class="s2">  time real not null,</span>
+<span class="s2">  timezone text not null,</span>
+<span class="s2">  message text not null,</span>
+<span class="s2">  meta int references run_meta(id) not null</span>
+<span class="s2">);</span>
+<span class="s2">CREATE TABLE IF NOT EXISTS discovery_run (</span>
+<span class="s2">  id integer primary key,</span>
+<span class="s2">  protocol str not null,</span>
+<span class="s2">  meta int references run_meta(id) on update cascade on delete cascade</span>
+<span class="s2">);</span>
+<span class="s2">CREATE TABLE IF NOT EXISTS scan_run (</span>
+<span class="s2">  id integer primary key,</span>
+<span class="s2">  address int references address(id) on update cascade on delete set null,</span>
+<span class="s2">  properties_pre json check(properties_pre is null or json_valid(properties_pre)),</span>
+<span class="s2">  properties_post json check(properties_post is null or json_valid(properties_post)),</span>
+<span class="s2">  meta int references run_meta(id) on update cascade on delete cascade</span>
+<span class="s2">);</span>
+<span class="s2">CREATE TABLE IF NOT EXISTS discovery_result (</span>
+<span class="s2">  id integer primary key,</span>
+<span class="s2">  run int not null references discovery_run(id) on update cascade on delete cascade,</span>
+<span class="s2">  address int not null references address(id) on update cascade on delete cascade</span>
+<span class="s2">);</span>
+<span class="s2">CREATE TABLE IF NOT EXISTS scan_result (</span>
+<span class="s2">  id integer primary key,</span>
+<span class="s2">  run int not null references scan_run(id) on update cascade on delete cascade,</span>
+<span class="s2">  log_mode text not null check(log_mode in (&#39;implicit&#39;, &#39;explicit&#39;, &#39;emphasized&#39;)),</span>
+<span class="s2">  state json check(state is null or json_valid(state)),</span>
+<span class="s2">  request_pdu blob not null,</span>
+<span class="s2">  request_time real not null,</span>
+<span class="s2">  request_timezone text not null,</span>
+<span class="s2">  request_data json check(json_valid(request_data)) not null,</span>
+<span class="s2">  response_pdu blob,</span>
+<span class="s2">  response_time real,</span>
+<span class="s2">  response_timezone text check((response_timezone is null) = (response_time is null)),</span>
+<span class="s2">  response_data json check(response_data is null or json_valid(response_data)),</span>
+<span class="s2">  exception text</span>
+<span class="s2">);</span>
+<span class="s2">CREATE INDEX IF NOT EXISTS ix_scan_result_request_pdu ON scan_result(request_pdu);</span>
+
+<span class="s2">CREATE VIEW IF NOT EXISTS run_stats AS</span>
+<span class="s2">SELECT</span>
+<span class="s2">  ru.id AS run,</span>
+<span class="s2">  ecu.name AS ECU,</span>
+<span class="s2">  rm.script,</span>
+<span class="s2">  rm.arguments,</span>
+<span class="s2">  strftime(&#39;%Y-%m-%d %H:%M:%f&#39;, rm.start_time, &#39;unixepoch&#39;, &#39;localtime&#39;) AS start,</span>
+<span class="s2">  strftime(&#39;%Y-%m-%d %H:%M:%f&#39;, rm.end_time, &#39;unixepoch&#39;, &#39;localtime&#39;) AS end,</span>
+<span class="s2">  cast((CASE WHEN end_time IS NULL THEN strftime(&#39;%s&#39;,&#39;now&#39;) ELSE end_time END - start_time) / 86400 AS int) || &#39; &#39; ||</span>
+<span class="s2">    time(CASE WHEN end_time IS NULL THEN strftime(&#39;%s&#39;,&#39;now&#39;) ELSE end_time END - start_time, &#39;unixepoch&#39;) AS duration,</span>
+<span class="s2">  exit_code,</span>
+<span class="s2">  ru.properties_pre = ru.properties_post AS equal_props,</span>
+<span class="s2">  n_msgs</span>
+<span class="s2">FROM</span>
+<span class="s2">  run_meta rm,</span>
+<span class="s2">  scan_run ru LEFT JOIN (SELECT run, count(*) AS n_msgs FROM scan_result GROUP BY run) sc ON ru.id = sc.run,</span>
+<span class="s2">  address ad LEFT JOIN ecu ON ecu.id = ad.ecu</span>
+<span class="s2">WHERE ru.meta = rm.id</span>
+<span class="s2">AND ad.id = ru.address</span>
+<span class="s2">GROUP BY ru.id;</span>
+
+
+<span class="s2">INSERT OR IGNORE INTO version VALUES(&#39;main&#39;, &#39;</span><span class="si">{</span><span class="n">schema_version</span><span class="si">}</span><span class="s2">&#39;);</span>
+<span class="s2">&quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="LogMode"><a class="viewcode-back" href="../../../api/gallia.db.html#gallia.db.db_handler.LogMode">[docs]</a><span class="nd">@unique</span>
+<span class="k">class</span> <span class="nc">LogMode</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">implicit</span> <span class="o">=</span> <span class="s2">&quot;implicit&quot;</span>
+    <span class="n">explicit</span> <span class="o">=</span> <span class="s2">&quot;explicit&quot;</span>
+    <span class="n">emphasized</span> <span class="o">=</span> <span class="s2">&quot;emphasized&quot;</span></div>
+
+
+<div class="viewcode-block" id="DBHandler"><a class="viewcode-back" href="../../../api/gallia.db.html#gallia.db.db_handler.DBHandler">[docs]</a><span class="k">class</span> <span class="nc">DBHandler</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">database</span><span class="p">:</span> <span class="n">Path</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">asyncio</span><span class="o">.</span><span class="n">Task</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">database</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">aiosqlite</span><span class="o">.</span><span class="n">Connection</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scan_run</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">discovery_run</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">Logger</span><span class="p">(</span><span class="s2">&quot;db&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DBHandler.connect"><a class="viewcode-back" href="../../../api/gallia.db.html#gallia.db.db_handler.DBHandler.connect">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Already connected to the database&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">connection</span> <span class="o">=</span> <span class="k">await</span> <span class="n">aiosqlite</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;PRAGMA foreign_keys = 1&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Allows to read the database in parallel to a scan without causing delays or even losing data</span>
+        <span class="c1"># This setting is persistent for the database and leads to the creation of extra files</span>
+        <span class="c1"># See https://www.sqlite.org/wal.html for further information</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;PRAGMA journal_mode = WAL&quot;</span><span class="p">)</span>
+
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;PRAGMA busy_timeout = 10000&quot;</span><span class="p">)</span>
+
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">executescript</span><span class="p">(</span><span class="n">DB_SCHEMA</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_version</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="DBHandler.disconnect"><a class="viewcode-back" href="../../../api/gallia.db.html#gallia.db.db_handler.DBHandler.disconnect">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">disconnect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Not connected to the database&quot;</span>
+
+        <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">await</span> <span class="n">task</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Inside task: </span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">connection</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="DBHandler.check_version"><a class="viewcode-back" href="../../../api/gallia.db.html#gallia.db.db_handler.DBHandler.check_version">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">check_version</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Not connected to the database&quot;</span>
+
+        <span class="n">query</span> <span class="o">=</span> <span class="s1">&#39;SELECT version FROM version WHERE schema = &quot;main&quot;&#39;</span>
+        <span class="n">cursor</span><span class="p">:</span> <span class="n">aiosqlite</span><span class="o">.</span><span class="n">Cursor</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cursor</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">row</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No schema version is specified in the database!&quot;</span><span class="p">)</span>
+
+        <span class="n">version</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># This could be a much more complex version to support some older version as well</span>
+        <span class="c1"># Additionally one might bind certain features to this version or trigger a database migration, etc</span>
+        <span class="k">if</span> <span class="n">version</span> <span class="o">!=</span> <span class="n">schema_version</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;The version of the database schema is not supported! (</span><span class="si">{</span><span class="n">version</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="n">schema_version</span><span class="si">}</span><span class="s2">)&quot;</span>
+            <span class="p">)</span></div>
+
+<div class="viewcode-block" id="DBHandler.insert_run_meta"><a class="viewcode-back" href="../../../api/gallia.db.html#gallia.db.db_handler.DBHandler.insert_run_meta">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">insert_run_meta</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">script</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">arguments</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">start_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Path</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Not connected to the database&quot;</span>
+
+        <span class="n">query</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;INSERT INTO run_meta(script, arguments, start_time, start_timezone, path) VALUES &quot;</span>
+            <span class="s2">&quot;(?, ?, ?, ?, ?)&quot;</span>
+        <span class="p">)</span>
+        <span class="n">cursor</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+            <span class="n">query</span><span class="p">,</span>
+            <span class="p">(</span>
+                <span class="n">script</span><span class="p">,</span>
+                <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">arguments</span><span class="p">),</span>
+                <span class="n">start_time</span><span class="o">.</span><span class="n">timestamp</span><span class="p">(),</span>
+                <span class="n">start_time</span><span class="o">.</span><span class="n">tzname</span><span class="p">(),</span>
+                <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">),</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">meta</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">lastrowid</span>
+
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="DBHandler.complete_run_meta"><a class="viewcode-back" href="../../../api/gallia.db.html#gallia.db.db_handler.DBHandler.complete_run_meta">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">complete_run_meta</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">end_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">exit_code</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Not connected to the database&quot;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">meta</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Run meta not yet created&quot;</span>
+
+        <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;UPDATE run_meta SET end_time = ?, end_timezone = ?, exit_code = ? WHERE id = ?&quot;</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+            <span class="n">query</span><span class="p">,</span> <span class="p">(</span><span class="n">end_time</span><span class="o">.</span><span class="n">timestamp</span><span class="p">(),</span> <span class="n">end_time</span><span class="o">.</span><span class="n">tzname</span><span class="p">(),</span> <span class="n">exit_code</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="DBHandler.insert_scan_run"><a class="viewcode-back" href="../../../api/gallia.db.html#gallia.db.db_handler.DBHandler.insert_scan_run">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">insert_scan_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Not connected to the database&quot;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">meta</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Run meta not yet created&quot;</span>
+
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+            <span class="s2">&quot;INSERT OR IGNORE INTO address(url) VALUES(?)&quot;</span><span class="p">,</span> <span class="p">(</span><span class="n">target</span><span class="p">,)</span>
+        <span class="p">)</span>
+
+        <span class="n">query</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;INSERT INTO scan_run(address, meta) VALUES &quot;</span>
+            <span class="s2">&quot;((SELECT id FROM address WHERE url = ?), ?)&quot;</span>
+        <span class="p">)</span>
+        <span class="n">cursor</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">scan_run</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">lastrowid</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="DBHandler.insert_scan_run_properties_pre"><a class="viewcode-back" href="../../../api/gallia.db.html#gallia.db.db_handler.DBHandler.insert_scan_run_properties_pre">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">insert_scan_run_properties_pre</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">properties_pre</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Not connected to the database&quot;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">scan_run</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Scan run not yet created&quot;</span>
+
+        <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;UPDATE scan_run SET properties_pre = ? WHERE id = ?&quot;</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+            <span class="n">query</span><span class="p">,</span> <span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">properties_pre</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">scan_run</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="DBHandler.complete_scan_run"><a class="viewcode-back" href="../../../api/gallia.db.html#gallia.db.db_handler.DBHandler.complete_scan_run">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">complete_scan_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">properties_post</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Not connected to the database&quot;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">scan_run</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Scan run not yet created&quot;</span>
+
+        <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;UPDATE scan_run SET properties_post = ? WHERE id = ?&quot;</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+            <span class="n">query</span><span class="p">,</span> <span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">properties_post</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">scan_run</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="DBHandler.insert_discovery_run"><a class="viewcode-back" href="../../../api/gallia.db.html#gallia.db.db_handler.DBHandler.insert_discovery_run">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">insert_discovery_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">protocol</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Not connected to the database&quot;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">meta</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Run meta not yet created&quot;</span>
+
+        <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;INSERT INTO discovery_run(protocol, meta) VALUES (?, ?)&quot;</span>
+        <span class="n">cursor</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="p">(</span><span class="n">protocol</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">discovery_run</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">lastrowid</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="DBHandler.insert_discovery_result"><a class="viewcode-back" href="../../../api/gallia.db.html#gallia.db.db_handler.DBHandler.insert_discovery_result">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">insert_discovery_result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Not connected to the database&quot;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">discovery_run</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Discovery run not yet created&quot;</span>
+
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+            <span class="s2">&quot;INSERT OR IGNORE INTO address(url) VALUES(?)&quot;</span><span class="p">,</span> <span class="p">(</span><span class="n">target</span><span class="p">,)</span>
+        <span class="p">)</span>
+
+        <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;INSERT INTO discovery_result(address, run) VALUES ((SELECT id FROM address WHERE url = ?), ?)&quot;</span>
+
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">discovery_run</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="DBHandler.insert_scan_result"><a class="viewcode-back" href="../../../api/gallia.db.html#gallia.db.db_handler.DBHandler.insert_scan_result">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">insert_scan_result</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">state</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSRequest</span><span class="p">,</span>
+        <span class="n">response</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">service</span><span class="o">.</span><span class="n">UDSResponse</span><span class="p">],</span>
+        <span class="n">exception</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="ne">Exception</span><span class="p">],</span>
+        <span class="n">send_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span>
+        <span class="n">receive_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">],</span>
+        <span class="n">log_mode</span><span class="p">:</span> <span class="n">LogMode</span><span class="p">,</span>
+        <span class="n">commit</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Not connected to the database&quot;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">scan_run</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Scan run not yet created&quot;</span>
+
+        <span class="n">request_attributes</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;service_id&quot;</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">service_id</span><span class="p">,</span>
+            <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">bytes_repr</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">data</span><span class="p">),</span>
+        <span class="p">}</span>
+        <span class="n">response_attributes</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">service</span><span class="o">.</span><span class="n">SubFunctionRequest</span><span class="p">):</span>
+            <span class="n">request_attributes</span><span class="p">[</span><span class="s2">&quot;sub_function&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">sub_function</span>
+
+        <span class="k">for</span> <span class="n">attr</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">request</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">attr</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">):</span>
+                <span class="n">request_attributes</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">bytes</span><span class="p">,</span> <span class="nb">bytearray</span><span class="p">)):</span>
+                    <span class="n">request_attributes</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span> <span class="o">=</span> <span class="n">bytes_repr</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="p">(</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
+                    <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+                    <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">(</span><span class="nb">bytes</span><span class="p">,</span> <span class="nb">bytearray</span><span class="p">))</span>
+                <span class="p">):</span>
+                    <span class="n">request_attributes</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">bytes_repr</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">value</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">response</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">response_attributes</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;service_id&quot;</span><span class="p">:</span> <span class="n">response</span><span class="o">.</span><span class="n">service_id</span><span class="p">}</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">service</span><span class="o">.</span><span class="n">PositiveResponse</span><span class="p">):</span>
+                <span class="n">response_attributes</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bytes_repr</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">service</span><span class="o">.</span><span class="n">SubFunctionResponse</span><span class="p">):</span>
+                <span class="n">response_attributes</span><span class="p">[</span><span class="s2">&quot;sub_function&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">sub_function</span>
+
+            <span class="k">for</span> <span class="n">attr</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">response</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">attr</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">attr</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;trigger_request&quot;</span><span class="p">]:</span>
+                    <span class="n">response_attributes</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">bytes</span><span class="p">,</span> <span class="nb">bytearray</span><span class="p">)):</span>
+                        <span class="n">response_attributes</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span> <span class="o">=</span> <span class="n">bytes_repr</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="p">(</span>
+                        <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
+                        <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+                        <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">(</span><span class="nb">bytes</span><span class="p">,</span> <span class="nb">bytearray</span><span class="p">))</span>
+                    <span class="p">):</span>
+                        <span class="n">response_attributes</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">bytes_repr</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">value</span><span class="p">)</span>
+
+        <span class="n">query</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;INSERT INTO scan_result(run, state, request_pdu, request_time, request_timezone, request_data, &quot;</span>
+            <span class="s2">&quot;response_pdu, response_time, response_timezone, response_data, exception, log_mode) &quot;</span>
+            <span class="s2">&quot;VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)&quot;</span>
+        <span class="p">)</span>
+
+        <span class="c1"># This has do be done here, in order to make sure, that only &quot;immutable&quot; objects are passed to a different task</span>
+        <span class="n">query_parameter</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scan_run</span><span class="p">,</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">state</span><span class="p">),</span>
+            <span class="n">bytes_repr</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">pdu</span><span class="p">),</span>
+            <span class="n">send_time</span><span class="o">.</span><span class="n">timestamp</span><span class="p">(),</span>
+            <span class="n">send_time</span><span class="o">.</span><span class="n">tzname</span><span class="p">(),</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">request_attributes</span><span class="p">),</span>
+            <span class="n">bytes_repr</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">pdu</span><span class="p">)</span> <span class="k">if</span> <span class="n">response</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">receive_time</span><span class="o">.</span><span class="n">timestamp</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">response</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">receive_time</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">receive_time</span><span class="o">.</span><span class="n">tzname</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">response</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">receive_time</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">response_attributes</span><span class="p">)</span> <span class="k">if</span> <span class="n">response</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="nb">repr</span><span class="p">(</span><span class="n">exception</span><span class="p">)</span> <span class="k">if</span> <span class="n">exception</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">log_mode</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">async</span> <span class="k">def</span> <span class="nf">execute</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+            <span class="n">done</span> <span class="o">=</span> <span class="kc">False</span>
+
+            <span class="k">while</span> <span class="ow">not</span> <span class="n">done</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">query_parameter</span><span class="p">)</span>
+                    <span class="n">done</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">except</span> <span class="n">aiosqlite</span><span class="o">.</span><span class="n">OperationalError</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_warning</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Could not log message for </span><span class="si">{</span><span class="n">query_parameter</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="si">}</span><span class="s2"> to database. Retrying ...&quot;</span>
+                    <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">commit</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">execute</span><span class="p">()))</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

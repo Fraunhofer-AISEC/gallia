@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gallia.udscan.scanner.scan_sessions &mdash; gallia  documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../index.html" class="icon icon-home"> gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../transports.html">Transports</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../penlog.7.html">penlog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/modules.html">Modules</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      <li>gallia.udscan.scanner.scan_sessions</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gallia.udscan.scanner.scan_sessions</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-FileCopyrightText: AISEC Pentesting Team</span>
+<span class="c1">#</span>
+<span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
+
+<span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">argparse</span> <span class="kn">import</span> <span class="n">Namespace</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span>
+
+<span class="kn">from</span> <span class="nn">gallia.uds.core.client</span> <span class="kn">import</span> <span class="n">UDSRequestConfig</span>
+<span class="kn">from</span> <span class="nn">gallia.uds.core.constants</span> <span class="kn">import</span> <span class="n">UDSErrorCodes</span>
+<span class="kn">from</span> <span class="nn">gallia.uds.core.service</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">DiagnosticSessionControlResponse</span><span class="p">,</span>
+    <span class="n">NegativeResponse</span><span class="p">,</span>
+    <span class="n">UDSResponse</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">gallia.udscan.core</span> <span class="kn">import</span> <span class="n">UDSScanner</span>
+<span class="kn">from</span> <span class="nn">gallia.utils</span> <span class="kn">import</span> <span class="n">auto_int</span><span class="p">,</span> <span class="n">g_repr</span>
+
+
+<div class="viewcode-block" id="IterateSessions"><a class="viewcode-back" href="../../../../api/gallia.udscan.scanner.html#gallia.udscan.scanner.scan_sessions.IterateSessions">[docs]</a><span class="k">class</span> <span class="nc">IterateSessions</span><span class="p">(</span><span class="n">UDSScanner</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Iterate Sessions&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="IterateSessions.add_parser"><a class="viewcode-back" href="../../../../api/gallia.udscan.scanner.html#gallia.udscan.scanner.scan_sessions.IterateSessions.add_parser">[docs]</a>    <span class="k">def</span> <span class="nf">add_parser</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--depth&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">auto_int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Specify max scanning depth.&quot;</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--sleep&quot;</span><span class="p">,</span>
+            <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;SECONDS&quot;</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="n">auto_int</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Sleep this amount of seconds after changing to DefaultSession&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--skip&quot;</span><span class="p">,</span>
+            <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;SESSION_ID&quot;</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="n">auto_int</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="p">[],</span>
+            <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;List with session IDs to skip while scanning&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--with-hooks&quot;</span><span class="p">,</span>
+            <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Use hooks in case of a ConditionsNotCorrect error&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--reset&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Reset the ECU after each iteration&quot;</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--fast&quot;</span><span class="p">,</span>
+            <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Only search for new sessions once in a particular session, i.e. ignore different stacks&quot;</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="IterateSessions.set_session_with_hooks_handling"><a class="viewcode-back" href="../../../../api/gallia.udscan.scanner.html#gallia.udscan.scanner.scan_sessions.IterateSessions.set_session_with_hooks_handling">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">set_session_with_hooks_handling</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">use_hooks</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">NegativeResponse</span><span class="p">,</span> <span class="n">DiagnosticSessionControlResponse</span><span class="p">]:</span>
+        <span class="n">resp</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecu</span><span class="o">.</span><span class="n">set_session</span><span class="p">(</span>
+            <span class="n">session</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">UDSRequestConfig</span><span class="p">(</span><span class="n">skip_hooks</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">resp</span><span class="p">,</span> <span class="n">NegativeResponse</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="n">resp</span><span class="o">.</span><span class="n">response_code</span> <span class="o">==</span> <span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">conditionsNotCorrect</span>
+        <span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">use_hooks</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Session </span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">session</span><span class="p">)</span><span class="si">}</span><span class="s2"> is potentially available but could not be entered. &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Use --with-hooks to try to enter the session using hooks to scan for &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;transitions available from that session.&quot;</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="n">resp</span>
+
+            <span class="n">resp_</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecu</span><span class="o">.</span><span class="n">set_session</span><span class="p">(</span>
+                <span class="n">session</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">UDSRequestConfig</span><span class="p">(</span><span class="n">skip_hooks</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">resp</span><span class="p">,</span> <span class="n">NegativeResponse</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_notice</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Received conditionsNotCorrect for session </span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">session</span><span class="p">)</span><span class="si">}</span><span class="s2">. &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Successfully changed to the session with hooks.&quot;</span>
+                <span class="p">)</span>
+                <span class="n">resp</span> <span class="o">=</span> <span class="n">resp_</span>
+
+        <span class="k">return</span> <span class="n">resp</span></div>
+
+<div class="viewcode-block" id="IterateSessions.recover_stack"><a class="viewcode-back" href="../../../../api/gallia.udscan.scanner.html#gallia.udscan.scanner.scan_sessions.IterateSessions.recover_stack">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">recover_stack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stack</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">use_hooks</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">session</span> <span class="ow">in</span> <span class="n">stack</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">resp</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_session_with_hooks_handling</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">use_hooks</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">resp</span><span class="p">,</span> <span class="n">NegativeResponse</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_error</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Could not change to session </span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">session</span><span class="p">)</span><span class="si">}</span><span class="s2"> as part of stack: </span><span class="si">{</span><span class="n">resp</span><span class="si">}</span><span class="s2">. &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;Try with --reset to reset between each iteration.&quot;</span>
+                    <span class="p">)</span>
+                    <span class="k">return</span> <span class="kc">False</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_error</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Could not change to session </span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">session</span><span class="p">)</span><span class="si">}</span><span class="s2"> as part of stack: </span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">. &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Try with --reset to reset between each iteration.&quot;</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="IterateSessions.main"><a class="viewcode-back" href="../../../../api/gallia.udscan.scanner.html#gallia.udscan.scanner.scan_sessions.IterateSessions.main">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">found</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="p">[[</span><span class="mh">0x01</span><span class="p">]]}</span>
+        <span class="n">positive_results</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">negative_results</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">activated_sessions</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="n">search_sessions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">sessions</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mh">0x80</span><span class="p">))</span>
+        <span class="n">depth</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="c1"># pylint: disable=too-many-nested-blocks</span>
+        <span class="k">while</span> <span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">depth</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">depth</span> <span class="o">&lt;</span> <span class="n">args</span><span class="o">.</span><span class="n">depth</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">found</span><span class="p">[</span><span class="n">depth</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">depth</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="n">found</span><span class="p">[</span><span class="n">depth</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Depth: </span><span class="si">{</span><span class="n">depth</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">stack</span> <span class="ow">in</span> <span class="n">found</span><span class="p">[</span><span class="n">depth</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">fast</span> <span class="ow">and</span> <span class="n">stack</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">search_sessions</span><span class="p">:</span>
+                    <span class="k">continue</span>
+
+                <span class="n">search_sessions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stack</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+                <span class="k">if</span> <span class="n">stack</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Starting from session: </span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">stack</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+
+                <span class="k">for</span> <span class="n">session</span> <span class="ow">in</span> <span class="n">sessions</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">session</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">skip</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;Skipping session </span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">session</span><span class="p">)</span><span class="si">}</span><span class="s2"> as requested&quot;</span>
+                        <span class="p">)</span>
+                        <span class="k">continue</span>
+
+                    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">reset</span><span class="p">:</span>
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span><span class="s2">&quot;Resetting the ECU&quot;</span><span class="p">)</span>
+                            <span class="n">resp</span><span class="p">:</span> <span class="n">UDSResponse</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecu</span><span class="o">.</span><span class="n">ecu_reset</span><span class="p">(</span><span class="mh">0x01</span><span class="p">)</span>
+
+                            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">resp</span><span class="p">,</span> <span class="n">NegativeResponse</span><span class="p">):</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_warning</span><span class="p">(</span>
+                                    <span class="sa">f</span><span class="s2">&quot;Could not reset ECU: </span><span class="si">{</span><span class="n">resp</span><span class="si">}</span><span class="s2">; &quot;</span>
+                                    <span class="sa">f</span><span class="s2">&quot;continue without reset&quot;</span>
+                                <span class="p">)</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span><span class="s2">&quot;Waiting for the ECU to recover…&quot;</span><span class="p">)</span>
+                                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecu</span><span class="o">.</span><span class="n">wait_for_ecu</span><span class="p">()</span>
+                        <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">TimeoutError</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_error</span><span class="p">(</span>
+                                <span class="s2">&quot;ECU did not respond after reset; exiting…&quot;</span>
+                            <span class="p">)</span>
+                            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                        <span class="k">except</span> <span class="ne">ConnectionError</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_warning</span><span class="p">(</span>
+                                <span class="s2">&quot;Lost connection to the ECU after performing a reset. &quot;</span>
+                                <span class="s2">&quot;Attempting to reconnect…&quot;</span>
+                            <span class="p">)</span>
+                            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecu</span><span class="o">.</span><span class="n">reconnect</span><span class="p">()</span>
+
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">resp</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecu</span><span class="o">.</span><span class="n">set_session</span><span class="p">(</span><span class="mh">0x01</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">resp</span><span class="p">,</span> <span class="n">NegativeResponse</span><span class="p">):</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_error</span><span class="p">(</span>
+                                <span class="sa">f</span><span class="s2">&quot;Could not change to default session: </span><span class="si">{</span><span class="n">resp</span><span class="si">}</span><span class="s2">&quot;</span>
+                            <span class="p">)</span>
+                            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_error</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;Could not change to default session: </span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="p">)</span>
+                        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_debug</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Sleeping for </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">sleep</span><span class="si">}</span><span class="s2">s after changing to DefaultSession&quot;</span>
+                    <span class="p">)</span>
+                    <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">sleep</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="ow">not</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">recover_stack</span><span class="p">(</span><span class="n">stack</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">with_hooks</span><span class="p">):</span>
+                        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">resp</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_session_with_hooks_handling</span><span class="p">(</span>
+                            <span class="n">session</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">with_hooks</span>
+                        <span class="p">)</span>
+
+                        <span class="c1"># do not ignore NCR subFunctionNotSupportedInActiveSession in this case</span>
+                        <span class="k">if</span> <span class="p">(</span>
+                            <span class="nb">isinstance</span><span class="p">(</span><span class="n">resp</span><span class="p">,</span> <span class="n">NegativeResponse</span><span class="p">)</span>
+                            <span class="ow">and</span> <span class="n">resp</span><span class="o">.</span><span class="n">response_code</span>
+                            <span class="o">==</span> <span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">subFunctionNotSupported</span>
+                        <span class="p">):</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span>
+                                <span class="sa">f</span><span class="s2">&quot;Could not change to session </span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">session</span><span class="p">)</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">resp</span><span class="si">}</span><span class="s2">&quot;</span>
+                            <span class="p">)</span>
+                            <span class="k">continue</span>
+
+                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;Found session: </span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">session</span><span class="p">)</span><span class="si">}</span><span class="s2"> via stack: </span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">stack</span><span class="p">)</span><span class="si">}</span><span class="s2">; </span><span class="si">{</span><span class="n">resp</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="p">)</span>
+
+                        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">resp</span><span class="p">,</span> <span class="n">NegativeResponse</span><span class="p">):</span>
+                            <span class="c1"># Reaching each session once is enough</span>
+                            <span class="k">if</span> <span class="n">session</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">stack</span><span class="p">:</span>
+                                <span class="n">found</span><span class="p">[</span><span class="n">depth</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stack</span> <span class="o">+</span> <span class="p">[</span><span class="n">session</span><span class="p">])</span>
+
+                            <span class="n">activated_sessions</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+                            <span class="n">positive_results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                                <span class="p">{</span><span class="s2">&quot;session&quot;</span><span class="p">:</span> <span class="n">session</span><span class="p">,</span> <span class="s2">&quot;stack&quot;</span><span class="p">:</span> <span class="n">stack</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">}</span>
+                            <span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">negative_results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                                <span class="p">{</span>
+                                    <span class="s2">&quot;session&quot;</span><span class="p">:</span> <span class="n">session</span><span class="p">,</span>
+                                    <span class="s2">&quot;stack&quot;</span><span class="p">:</span> <span class="n">stack</span><span class="p">,</span>
+                                    <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">resp</span><span class="o">.</span><span class="n">response_code</span><span class="p">,</span>
+                                <span class="p">}</span>
+                            <span class="p">)</span>
+
+                    <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">TimeoutError</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_warning</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;Could not change to session </span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">session</span><span class="p">)</span><span class="si">}</span><span class="s2">: Timeout&quot;</span>
+                        <span class="p">)</span>
+                        <span class="k">continue</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span><span class="s2">&quot;Scan finished; Found the following sessions:&quot;</span><span class="p">)</span>
+        <span class="n">previous_session</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">for</span> <span class="n">res</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">positive_results</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="s2">&quot;session&quot;</span><span class="p">]):</span>
+            <span class="n">session</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="s2">&quot;session&quot;</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">session</span> <span class="o">!=</span> <span class="n">previous_session</span><span class="p">:</span>
+                <span class="n">previous_session</span> <span class="o">=</span> <span class="n">session</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;* Session </span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">session</span><span class="p">)</span><span class="si">}</span><span class="s2"> &quot;</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">via stack: </span><span class="si">{</span><span class="s1">&#39;-&gt;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">res</span><span class="p">[</span><span class="s1">&#39;stack&#39;</span><span class="p">]])</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span>
+            <span class="s2">&quot;The following sessions were identified but could not be activated:&quot;</span>
+        <span class="p">)</span>
+        <span class="n">previous_session</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">for</span> <span class="n">res</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">negative_results</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="s2">&quot;session&quot;</span><span class="p">]):</span>
+            <span class="n">session</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="s2">&quot;session&quot;</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="n">session</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">activated_sessions</span>
+                <span class="ow">and</span> <span class="n">res</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">subFunctionNotSupportedInActiveSession</span>
+            <span class="p">):</span>
+                <span class="k">if</span> <span class="n">session</span> <span class="o">!=</span> <span class="n">previous_session</span><span class="p">:</span>
+                    <span class="n">previous_session</span> <span class="o">=</span> <span class="n">session</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;* Session </span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">session</span><span class="p">)</span><span class="si">}</span><span class="s2"> &quot;</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">via stack: </span><span class="si">{</span><span class="s1">&#39;-&gt;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">res</span><span class="p">[</span><span class="s1">&#39;stack&#39;</span><span class="p">]])</span><span class="si">}</span><span class="s2"> &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;(NRC: </span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;error&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">)&quot;</span>
+                <span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

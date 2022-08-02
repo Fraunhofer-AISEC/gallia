@@ -1,0 +1,10 @@
+penlog package
+==============
+
+Module contents
+---------------
+
+.. automodule:: penlog
+   :members:
+   :undoc-members:
+   :show-inheritance:

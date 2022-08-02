@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gallia.penlab &mdash; gallia  documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../transports.html">Transports</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../penlog.7.html">penlog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/modules.html">Modules</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      <li>gallia.penlab</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gallia.penlab</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-FileCopyrightText: AISEC Pentesting Team</span>
+<span class="c1">#</span>
+<span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">import</span> <span class="nn">gzip</span>
+<span class="kn">import</span> <span class="nn">io</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">shlex</span>
+<span class="kn">import</span> <span class="nn">struct</span>
+<span class="kn">from</span> <span class="nn">asyncio</span> <span class="kn">import</span> <span class="n">subprocess</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span> <span class="nn">socket</span> <span class="kn">import</span> <span class="n">SocketKind</span>  <span class="c1"># pylint: disable=no-name-in-module</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">urllib.parse</span> <span class="kn">import</span> <span class="n">urlparse</span>
+
+<span class="kn">from</span> <span class="nn">opennetzteil</span> <span class="kn">import</span> <span class="n">Netzteil</span>
+
+<span class="kn">from</span> <span class="nn">gallia.penlog</span> <span class="kn">import</span> <span class="n">Logger</span>
+<span class="kn">from</span> <span class="nn">gallia.transports.base</span> <span class="kn">import</span> <span class="n">TargetURI</span>
+<span class="kn">from</span> <span class="nn">gallia.transports.can</span> <span class="kn">import</span> <span class="n">ISOTPTransport</span><span class="p">,</span> <span class="n">RawCANTransport</span>
+<span class="kn">from</span> <span class="nn">gallia.utils</span> <span class="kn">import</span> <span class="n">split_host_port</span><span class="p">,</span> <span class="n">g_repr</span>
+
+
+<div class="viewcode-block" id="PowerSupplyURI"><a class="viewcode-back" href="../../api/gallia.html#gallia.penlab.PowerSupplyURI">[docs]</a><span class="k">class</span> <span class="nc">PowerSupplyURI</span><span class="p">(</span><span class="n">TargetURI</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;id&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">qs</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;id is missing in power-supply URI&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;channel&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">qs</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;channel is missing in power-supply URI&quot;</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qs</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">channel</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ch</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qs</span><span class="p">[</span><span class="s2">&quot;channel&quot;</span><span class="p">])</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">ch</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span> <span class="n">ch</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="PowerSupply"><a class="viewcode-back" href="../../api/gallia.html#gallia.penlab.PowerSupply">[docs]</a><span class="k">class</span> <span class="nc">PowerSupply</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel_id</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span> <span class="n">client</span><span class="p">:</span> <span class="n">Netzteil</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">Logger</span><span class="p">(</span><span class="s2">&quot;penlab.experiment&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">channel_id</span> <span class="o">=</span> <span class="n">channel_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">netzteil</span> <span class="o">=</span> <span class="n">client</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mutex</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+
+<div class="viewcode-block" id="PowerSupply.connect"><a class="viewcode-back" href="../../api/gallia.html#gallia.penlab.PowerSupply.connect">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">PowerSupplyURI</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PowerSupply</span><span class="p">:</span>
+        <span class="n">client</span> <span class="o">=</span> <span class="k">await</span> <span class="n">Netzteil</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">target</span><span class="o">.</span><span class="n">location</span><span class="p">,</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">target</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span> <span class="n">client</span><span class="p">)</span></div>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_power</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">op</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">netzteil</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">channel_id</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">id_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel_id</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">netzteil</span><span class="o">.</span><span class="n">set_channel</span><span class="p">(</span><span class="n">id_</span><span class="p">,</span> <span class="n">op</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">channel_id</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">netzteil</span><span class="o">.</span><span class="n">set_channel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">channel_id</span><span class="p">,</span> <span class="n">op</span><span class="p">)</span>
+
+<div class="viewcode-block" id="PowerSupply.power_up"><a class="viewcode-back" href="../../api/gallia.html#gallia.penlab.PowerSupply.power_up">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">power_up</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span><span class="s2">&quot;power up experiment&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_power</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PowerSupply.power_down"><a class="viewcode-back" href="../../api/gallia.html#gallia.penlab.PowerSupply.power_down">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">power_down</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span><span class="s2">&quot;power down experiment&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_power</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PowerSupply.power_cycle"><a class="viewcode-back" href="../../api/gallia.html#gallia.penlab.PowerSupply.power_cycle">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">power_cycle</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">sleep</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
+        <span class="n">callback</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">mutex</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">power_down</span><span class="p">()</span>
+            <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">sleep</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">power_up</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">callback</span><span class="p">:</span>
+                <span class="k">await</span> <span class="n">callback</span><span class="p">()</span></div></div>
+
+
+<div class="viewcode-block" id="Dumpcap"><a class="viewcode-back" href="../../api/gallia.html#gallia.penlab.Dumpcap">[docs]</a><span class="k">class</span> <span class="nc">Dumpcap</span><span class="p">:</span>
+    <span class="n">BUFSIZE</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">DEFAULT_BUFFER_SIZE</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">proc</span><span class="p">:</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Process</span><span class="p">,</span>  <span class="c1"># pylint: disable=no-member</span>
+        <span class="n">logger</span><span class="p">:</span> <span class="n">Logger</span><span class="p">,</span>
+        <span class="n">artifacts_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
+        <span class="n">outfile</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
+        <span class="n">cleanup</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">proc</span> <span class="o">=</span> <span class="n">proc</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logger</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">artifacts_dir</span> <span class="o">=</span> <span class="n">artifacts_dir</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">outfile</span> <span class="o">=</span> <span class="n">outfile</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cleanup</span> <span class="o">=</span> <span class="n">cleanup</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ready_event</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">compressor</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_compressor</span><span class="p">())</span>
+
+<div class="viewcode-block" id="Dumpcap.start"><a class="viewcode-back" href="../../api/gallia.html#gallia.penlab.Dumpcap.start">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">start</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">target</span><span class="p">:</span> <span class="n">TargetURI</span><span class="p">,</span>
+        <span class="n">artifacts_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dumpcap</span><span class="p">:</span>
+        <span class="n">logger</span> <span class="o">=</span> <span class="n">Logger</span><span class="p">(</span><span class="s2">&quot;penlab.dumpcap&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">artifacts_dir</span><span class="p">:</span>
+            <span class="n">artifacts_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">artifacts_dir</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">path</span> <span class="o">:=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;PENRUN_ARTIFACTS&quot;</span><span class="p">):</span>
+            <span class="n">artifacts_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;no artifacts dir set&quot;</span><span class="p">)</span>
+
+        <span class="n">ts</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">timestamp</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">target</span><span class="o">.</span><span class="n">scheme</span> <span class="ow">in</span> <span class="p">[</span><span class="n">ISOTPTransport</span><span class="o">.</span><span class="n">SCHEME</span><span class="p">,</span> <span class="n">RawCANTransport</span><span class="o">.</span><span class="n">SCHEME</span><span class="p">]:</span>
+            <span class="n">outfile</span> <span class="o">=</span> <span class="n">artifacts_dir</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;candump-</span><span class="si">{</span><span class="n">ts</span><span class="si">}</span><span class="s2">.pcap.gz&quot;</span><span class="p">)</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_can_cmd</span><span class="p">(</span><span class="n">target</span><span class="o">.</span><span class="n">netloc</span><span class="p">,</span> <span class="n">target</span><span class="o">.</span><span class="n">src_addr</span><span class="p">,</span> <span class="n">target</span><span class="o">.</span><span class="n">dst_addr</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">outfile</span> <span class="o">=</span> <span class="n">artifacts_dir</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;eth-</span><span class="si">{</span><span class="n">ts</span><span class="si">}</span><span class="s2">.pcap.gz&quot;</span><span class="p">)</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_eth_cmd</span><span class="p">(</span><span class="n">target</span><span class="o">.</span><span class="n">netloc</span><span class="p">)</span>
+
+        <span class="n">cmd_str</span> <span class="o">=</span> <span class="n">shlex</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">proc</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_subprocess_exec</span><span class="p">(</span>
+                <span class="o">*</span><span class="n">cmd</span><span class="p">,</span>
+                <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+                <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">DEVNULL</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.2</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">log_error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not start dumpcap: (</span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+            <span class="k">raise</span>
+
+        <span class="k">if</span> <span class="n">proc</span><span class="o">.</span><span class="n">returncode</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;dumpcap terminated with exit code: [</span><span class="si">{</span><span class="n">proc</span><span class="o">.</span><span class="n">returncode</span><span class="si">}</span><span class="s2">]&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">log_preamble</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Started &quot;dumpcap&quot;: </span><span class="si">{</span><span class="n">cmd_str</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">proc</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span> <span class="n">artifacts_dir</span><span class="p">,</span> <span class="n">outfile</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Dumpcap.sync"><a class="viewcode-back" href="../../api/gallia.html#gallia.penlab.Dumpcap.sync">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">sync</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait_for</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ready_event</span><span class="o">.</span><span class="n">wait</span><span class="p">(),</span> <span class="n">timeout</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Dumpcap.stop"><a class="viewcode-back" href="../../api/gallia.html#gallia.penlab.Dumpcap.stop">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cleanup</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">terminate</span><span class="p">()</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">compressor</span></div>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_compressor</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Gzip support in aiofiles is missing.</span>
+        <span class="c1"># https://github.com/Tinche/aiofiles/issues/46</span>
+        <span class="n">ready</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdout</span>
+        <span class="k">with</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="n">gzip</span><span class="o">.</span><span class="n">open</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">outfile</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>  <span class="c1"># type: ignore</span>
+            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="n">chunk</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">64</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">chunk</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">:</span>
+                    <span class="k">break</span>
+                <span class="c1"># Dumpcap first writes the pcap header. It does this</span>
+                <span class="c1"># once the tool is ready. We can use this is as a poor</span>
+                <span class="c1"># man&#39;s synchronization primitive.</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">ready</span><span class="p">:</span>
+                    <span class="n">ready</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">ready_event</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+                <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">,</span> <span class="n">chunk</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_swap_bytes_16</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s2">&quot;&gt;H&quot;</span><span class="p">,</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">&quot;&lt;H&quot;</span><span class="p">,</span> <span class="n">x</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_can_cmd</span><span class="p">(</span>
+        <span class="n">iface</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">src_addr</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">dst_addr</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;dumpcap&quot;</span><span class="p">,</span> <span class="s2">&quot;-q&quot;</span><span class="p">,</span> <span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="n">iface</span><span class="p">,</span> <span class="s2">&quot;-w&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">]</span>
+        <span class="c1"># Debug this with `dumpcap -d` or `tshark -x` to inspect the captured buffer.</span>
+        <span class="n">filter_</span> <span class="o">=</span> <span class="s2">&quot;link[1] == 0x01&quot;</span>  <span class="c1"># broadcast flag; ignore &quot;sent by us&quot; frames</span>
+
+        <span class="k">if</span> <span class="n">src_addr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">dst_addr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># TODO: Support extended CAN IDs</span>
+            <span class="k">if</span> <span class="n">src_addr</span> <span class="o">&gt;</span> <span class="mh">0x800</span> <span class="ow">or</span> <span class="n">dst_addr</span> <span class="o">&gt;</span> <span class="mh">0x800</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Extended CAN IDs are currently not supported!&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Debug this with `dumpcap -d` or `tshark -x` to inspect the captured buffer.</span>
+            <span class="n">filter_</span> <span class="o">+=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;&amp;&amp; (link[16:2] == </span><span class="si">{</span><span class="n">Dumpcap</span><span class="o">.</span><span class="n">_swap_bytes_16</span><span class="p">(</span><span class="n">src_addr</span><span class="p">)</span><span class="si">:</span><span class="s2">#x</span><span class="si">}</span><span class="s2"> &quot;</span>  <span class="c1"># can_id is in little endian</span>
+                <span class="sa">f</span><span class="s2">&quot;|| link[16:2] == </span><span class="si">{</span><span class="n">Dumpcap</span><span class="o">.</span><span class="n">_swap_bytes_16</span><span class="p">(</span><span class="n">dst_addr</span><span class="p">)</span><span class="si">:</span><span class="s2">#x</span><span class="si">}</span><span class="s2">)&quot;</span>
+            <span class="p">)</span>
+        <span class="n">args</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;-f&quot;</span><span class="p">,</span> <span class="n">filter_</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">args</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_eth_cmd</span><span class="p">(</span><span class="n">target_ip</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">host</span><span class="p">,</span> <span class="n">port</span> <span class="o">=</span> <span class="n">split_host_port</span><span class="p">(</span><span class="n">target_ip</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid argument for target ip: </span><span class="si">{</span><span class="n">target_ip</span><span class="si">}</span><span class="s2">; </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+
+        <span class="k">if</span> <span class="n">proxy</span> <span class="o">:=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;all_proxy&quot;</span><span class="p">):</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="n">urlparse</span><span class="p">(</span><span class="n">proxy</span><span class="p">)</span>
+            <span class="n">host</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">url</span><span class="o">.</span><span class="n">hostname</span><span class="p">)</span> <span class="k">if</span> <span class="n">url</span><span class="o">.</span><span class="n">hostname</span> <span class="k">else</span> <span class="s2">&quot;localhost&quot;</span>
+            <span class="n">port</span> <span class="o">=</span> <span class="n">url</span><span class="o">.</span><span class="n">port</span> <span class="k">if</span> <span class="n">url</span><span class="o">.</span><span class="n">port</span> <span class="k">else</span> <span class="mi">1080</span>
+
+        <span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_running_loop</span><span class="p">()</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="k">await</span> <span class="n">loop</span><span class="o">.</span><span class="n">getaddrinfo</span><span class="p">(</span>
+            <span class="n">host</span><span class="p">,</span>
+            <span class="n">port</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="n">SocketKind</span><span class="o">.</span><span class="n">SOCK_STREAM</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="c1"># We don&#39;t do round robin, ergo we only have</span>
+        <span class="c1"># 1 result. That&#39;s fine here. The data structure</span>
+        <span class="c1"># of the return value of getaddrinfo() is weird,</span>
+        <span class="c1"># but it&#39;s documented in the python docs:</span>
+        <span class="c1"># https://docs.python.org/3/library/socket.html</span>
+        <span class="n">addr_tuple</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">ip</span><span class="p">,</span> <span class="n">port</span> <span class="o">=</span> <span class="n">addr_tuple</span><span class="p">[</span><span class="mi">4</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">addr_tuple</span><span class="p">[</span><span class="mi">4</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="s2">&quot;dumpcap&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;-q&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;-i&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;any&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;-w&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;-&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;-f&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;host </span><span class="si">{</span><span class="n">ip</span><span class="si">}</span><span class="s2"> and tcp port </span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="p">]</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

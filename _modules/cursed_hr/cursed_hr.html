@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>cursed_hr.cursed_hr &mdash; gallia  documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../transports.html">Transports</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../penlog.7.html">penlog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/modules.html">Modules</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      <li>cursed_hr.cursed_hr</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for cursed_hr.cursed_hr</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-FileCopyrightText: AISEC Pentesting Team</span>
+<span class="c1">#</span>
+<span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
+
+<span class="c1"># pylint: disable=too-many-lines,eval-used</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span> <span class="nn">curses</span>
+<span class="kn">import</span> <span class="nn">curses.ascii</span>
+<span class="kn">import</span> <span class="nn">gzip</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">mmap</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">from</span> <span class="nn">argparse</span> <span class="kn">import</span> <span class="n">ArgumentParser</span>
+<span class="kn">from</span> <span class="nn">array</span> <span class="kn">import</span> <span class="n">array</span>
+<span class="kn">from</span> <span class="nn">binascii</span> <span class="kn">import</span> <span class="n">unhexlify</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">IntEnum</span><span class="p">,</span> <span class="n">unique</span>
+<span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">ceil</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">BinaryIO</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">zstandard</span> <span class="k">as</span> <span class="nn">zstd</span>
+<span class="kn">from</span> <span class="nn">penlog</span> <span class="kn">import</span> <span class="n">MessagePrio</span><span class="p">,</span> <span class="n">RecordType</span>
+
+<span class="kn">from</span> <span class="nn">gallia.uds.core.service</span> <span class="kn">import</span> <span class="n">NegativeResponse</span><span class="p">,</span> <span class="n">UDSRequest</span><span class="p">,</span> <span class="n">UDSResponse</span>
+
+
+<div class="viewcode-block" id="InterpretationColor"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.InterpretationColor">[docs]</a><span class="nd">@unique</span>
+<span class="k">class</span> <span class="nc">InterpretationColor</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">DEFAULT</span> <span class="o">=</span> <span class="mi">42</span>
+    <span class="n">UDS_REQUEST</span> <span class="o">=</span> <span class="mi">43</span>
+    <span class="n">UDS_POSITIVE_RESPONSE</span> <span class="o">=</span> <span class="mi">44</span>
+    <span class="n">UDS_NEGATIVE_RESPONSE</span> <span class="o">=</span> <span class="mi">45</span></div>
+
+
+<div class="viewcode-block" id="PenlogEntry"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.PenlogEntry">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">PenlogEntry</span><span class="p">(</span><span class="n">RecordType</span><span class="p">):</span>
+    <span class="n">interpretation</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">interpretation_color</span><span class="p">:</span> <span class="n">InterpretationColor</span> <span class="o">=</span> <span class="n">InterpretationColor</span><span class="o">.</span><span class="n">DEFAULT</span></div>
+
+
+<div class="viewcode-block" id="FormattedText"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.FormattedText">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">FormattedText</span><span class="p">:</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="nb">format</span><span class="p">:</span> <span class="nb">int</span></div>
+
+
+<div class="viewcode-block" id="DisplayEntry"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.DisplayEntry">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">DisplayEntry</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Represents one single line of a single formatted penlog entry as displayed in the console.</span>
+
+<span class="sd">    :param texts: The (differently) formatted text fragments of the displayed line.</span>
+<span class="sd">    :param penlog_entry_number: The line number of the corresponding penlog entry.</span>
+<span class="sd">    :param entry_line_number: The index in the list of formatted lines as created for the corresponding penlog entry.</span>
+<span class="sd">    :param last_line: True if and only if this entry refers to the last of the formatted lines as created for the</span>
+<span class="sd">                      corresponding penlog entry.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">texts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">FormattedText</span><span class="p">]</span>
+    <span class="n">penlog_entry_number</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">entry_line_number</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">last_line</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="PriorityZone"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.PriorityZone">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">PriorityZone</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Represents a continuous range (including start and end) of entries for which a certain priority filter applies.</span>
+
+<span class="sd">    :param start: The first penlog entry of the zone.</span>
+<span class="sd">    :param end: The last penlog entry of the zone.</span>
+<span class="sd">    :param priority: The filtering priority to be applied on all entries in in the zone.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">start</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">end</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
+    <span class="n">priority</span><span class="p">:</span> <span class="n">MessagePrio</span></div>
+
+
+<div class="viewcode-block" id="EntryCache"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.EntryCache">[docs]</a><span class="k">class</span> <span class="nc">EntryCache</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A simple two level cache that stores the latest accessed penlog entries.</span>
+
+<span class="sd">    This is used to speed up the processing of penlog entries by reducing the number of necessary fetches from the</span>
+<span class="sd">    input file. It may be ineffective if the whole file is kept in memory.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">file</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">BinaryIO</span><span class="p">,</span> <span class="n">mmap</span><span class="o">.</span><span class="n">mmap</span><span class="p">],</span>
+        <span class="n">entry_positions</span><span class="p">:</span> <span class="n">array</span><span class="p">,</span>
+        <span class="n">cache_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20_000</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file</span> <span class="o">=</span> <span class="n">file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">old_entries</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">PenlogEntry</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">entries</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">PenlogEntry</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">entry_positions</span> <span class="o">=</span> <span class="n">entry_positions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cache_size</span> <span class="o">=</span> <span class="n">cache_size</span>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">entry_positions</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entry_number</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PenlogEntry</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">entries</span><span class="p">[</span><span class="n">entry_number</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_load_entry</span><span class="p">(</span><span class="n">entry_number</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">entries</span><span class="p">[</span><span class="n">entry_number</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_load_entry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entry_number</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">entry_positions</span><span class="p">[</span><span class="n">entry_number</span><span class="p">])</span>
+        <span class="n">line</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">entries</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">old_entries</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_size</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">old_entries</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">entries</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">entries</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">entries</span><span class="p">[</span><span class="n">entry_number</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">old_entries</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">entry_number</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">entries</span><span class="p">[</span><span class="n">entry_number</span><span class="p">]</span> <span class="o">=</span> <span class="n">PenlogEntry</span><span class="p">(</span><span class="o">**</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">line</span><span class="p">))</span>
+            <span class="k">except</span> <span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">decoder</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">entries</span><span class="p">[</span><span class="n">entry_number</span><span class="p">]</span> <span class="o">=</span> <span class="n">PenlogEntry</span><span class="p">(</span>
+                    <span class="n">data</span><span class="o">=</span><span class="n">line</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">),</span>
+                    <span class="n">host</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                    <span class="n">component</span><span class="o">=</span><span class="s2">&quot;JSON&quot;</span><span class="p">,</span>
+                    <span class="n">timestamp</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                    <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;ERROR&quot;</span><span class="p">,</span>
+                    <span class="n">priority</span><span class="o">=</span><span class="n">MessagePrio</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+                <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Configuration"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.Configuration">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">Configuration</span><span class="p">:</span>
+    <span class="n">priority_zones</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">PriorityZone</span><span class="p">]</span>
+    <span class="nb">filter</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">interpret</span><span class="p">:</span> <span class="nb">bool</span></div>
+
+
+<div class="viewcode-block" id="CursedHR"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.CursedHR">[docs]</a><span class="k">class</span> <span class="nc">CursedHR</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A curses based interactive reader for log files complying to penlog.</span>
+
+<span class="sd">    It supports the following features:</span>
+<span class="sd">        - interactive display of penlog files (similar to less)</span>
+<span class="sd">        - coloring and formatting of entries based on the priority level</span>
+<span class="sd">        - optimized sectional filtering based on priority</span>
+<span class="sd">        - unoptimized sectional filtering based on any penlog entry attribute</span>
+<span class="sd">        - in-line interpretation of UDS messages using the Gallia UDS implementation</span>
+
+<span class="sd">    See https://github.com/Fraunhofer-AISEC/penlog for the penlog specification.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">in_file</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
+        <span class="n">priority</span><span class="p">:</span> <span class="n">MessagePrio</span> <span class="o">=</span> <span class="n">MessagePrio</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+        <span class="n">filters</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">in_file</span> <span class="o">=</span> <span class="n">in_file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">level_pointers</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">array</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">array</span><span class="p">(</span><span class="s2">&quot;L&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">9</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">entry_positions</span> <span class="o">=</span> <span class="n">array</span><span class="p">(</span><span class="s2">&quot;L&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">configuration_history</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">Configuration</span><span class="p">(</span>
+                <span class="n">priority_zones</span><span class="o">=</span><span class="p">[</span><span class="n">PriorityZone</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">priority</span><span class="p">)],</span>
+                <span class="nb">filter</span><span class="o">=</span><span class="n">filters</span> <span class="k">if</span> <span class="n">filters</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[],</span>
+                <span class="n">interpret</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">configuration_index</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">window</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">init_curses</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">color_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">define_colors</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncompressed_file</span><span class="p">()</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">with</span> <span class="n">mmap</span><span class="o">.</span><span class="n">mmap</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">fileno</span><span class="p">(),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">access</span><span class="o">=</span><span class="n">mmap</span><span class="o">.</span><span class="n">ACCESS_READ</span>
+                <span class="p">)</span> <span class="k">as</span> <span class="n">mm_file</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">parse_structure</span><span class="p">(</span><span class="n">mm_file</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">entries</span> <span class="o">=</span> <span class="n">EntryCache</span><span class="p">(</span><span class="n">mm_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">entry_positions</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">handle_io</span><span class="p">()</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">terminate_curses</span><span class="p">()</span>
+
+<div class="viewcode-block" id="CursedHR.init_curses"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.CursedHR.init_curses">[docs]</a>    <span class="k">def</span> <span class="nf">init_curses</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="n">window</span> <span class="o">=</span> <span class="n">curses</span><span class="o">.</span><span class="n">initscr</span><span class="p">()</span>
+        <span class="n">curses</span><span class="o">.</span><span class="n">start_color</span><span class="p">()</span>
+        <span class="n">curses</span><span class="o">.</span><span class="n">use_default_colors</span><span class="p">()</span>
+        <span class="n">curses</span><span class="o">.</span><span class="n">noecho</span><span class="p">()</span>
+        <span class="n">curses</span><span class="o">.</span><span class="n">cbreak</span><span class="p">()</span>
+        <span class="n">window</span><span class="o">.</span><span class="n">keypad</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">window</span></div>
+
+<div class="viewcode-block" id="CursedHR.terminate_curses"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.CursedHR.terminate_curses">[docs]</a>    <span class="k">def</span> <span class="nf">terminate_curses</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">curses</span><span class="o">.</span><span class="n">nocbreak</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">keypad</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">curses</span><span class="o">.</span><span class="n">echo</span><span class="p">()</span>
+        <span class="n">curses</span><span class="o">.</span><span class="n">endwin</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="CursedHR.define_colors"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.CursedHR.define_colors">[docs]</a>    <span class="k">def</span> <span class="nf">define_colors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="n">prio_colors</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">MessagePrio</span><span class="o">.</span><span class="n">EMERGENCY</span><span class="p">:</span> <span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="n">curses</span><span class="o">.</span><span class="n">COLOR_RED</span><span class="p">),</span>
+            <span class="n">MessagePrio</span><span class="o">.</span><span class="n">ALERT</span><span class="p">:</span> <span class="p">(</span><span class="mi">101</span><span class="p">,</span> <span class="n">curses</span><span class="o">.</span><span class="n">COLOR_RED</span><span class="p">),</span>
+            <span class="n">MessagePrio</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">:</span> <span class="p">(</span><span class="mi">102</span><span class="p">,</span> <span class="n">curses</span><span class="o">.</span><span class="n">COLOR_RED</span><span class="p">),</span>
+            <span class="n">MessagePrio</span><span class="o">.</span><span class="n">ERROR</span><span class="p">:</span> <span class="p">(</span><span class="mi">103</span><span class="p">,</span> <span class="n">curses</span><span class="o">.</span><span class="n">COLOR_RED</span><span class="p">),</span>
+            <span class="n">MessagePrio</span><span class="o">.</span><span class="n">WARNING</span><span class="p">:</span> <span class="p">(</span><span class="mi">104</span><span class="p">,</span> <span class="n">curses</span><span class="o">.</span><span class="n">COLOR_YELLOW</span><span class="p">),</span>
+            <span class="n">MessagePrio</span><span class="o">.</span><span class="n">NOTICE</span><span class="p">:</span> <span class="p">(</span><span class="mi">105</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span>
+            <span class="n">MessagePrio</span><span class="o">.</span><span class="n">INFO</span><span class="p">:</span> <span class="p">(</span><span class="mi">106</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span>
+            <span class="n">MessagePrio</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">:</span> <span class="p">(</span><span class="mi">107</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span>
+            <span class="n">MessagePrio</span><span class="o">.</span><span class="n">TRACE</span><span class="p">:</span> <span class="p">(</span><span class="mi">108</span><span class="p">,</span> <span class="n">curses</span><span class="o">.</span><span class="n">COLOR_BLUE</span><span class="p">),</span>
+        <span class="p">}</span>
+
+        <span class="k">for</span> <span class="p">(</span><span class="n">identifier</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="ow">in</span> <span class="n">prio_colors</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">curses</span><span class="o">.</span><span class="n">init_pair</span><span class="p">(</span><span class="n">identifier</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">curses</span><span class="o">.</span><span class="n">init_pair</span><span class="p">(</span><span class="n">InterpretationColor</span><span class="o">.</span><span class="n">DEFAULT</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">curses</span><span class="o">.</span><span class="n">init_pair</span><span class="p">(</span><span class="n">InterpretationColor</span><span class="o">.</span><span class="n">UDS_REQUEST</span><span class="p">,</span> <span class="n">curses</span><span class="o">.</span><span class="n">COLOR_CYAN</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">curses</span><span class="o">.</span><span class="n">init_pair</span><span class="p">(</span>
+            <span class="n">InterpretationColor</span><span class="o">.</span><span class="n">UDS_POSITIVE_RESPONSE</span><span class="p">,</span> <span class="n">curses</span><span class="o">.</span><span class="n">COLOR_GREEN</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="p">)</span>
+        <span class="n">curses</span><span class="o">.</span><span class="n">init_pair</span><span class="p">(</span><span class="n">InterpretationColor</span><span class="o">.</span><span class="n">UDS_NEGATIVE_RESPONSE</span><span class="p">,</span> <span class="mi">166</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">((</span><span class="n">prio</span><span class="p">,</span> <span class="n">color</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">for</span> <span class="n">prio</span><span class="p">,</span> <span class="n">color</span> <span class="ow">in</span> <span class="n">prio_colors</span><span class="o">.</span><span class="n">items</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="CursedHR.uncompressed_file"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.CursedHR.uncompressed_file">[docs]</a>    <span class="k">def</span> <span class="nf">uncompressed_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BinaryIO</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns an uncompressed version of the input file as referenced by self.in_file.</span>
+
+<span class="sd">        In case the input file is already uncompressed, the original file is returned.</span>
+<span class="sd">        In any other case, the input file is decompressed to a temporary file (potentially on disk).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">addstr</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loading contents from </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">in_file</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">refresh</span><span class="p">()</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_file</span><span class="o">.</span><span class="n">suffix</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;.zst&quot;</span><span class="p">,</span> <span class="s2">&quot;.gz&quot;</span><span class="p">]:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">erase</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">addstr</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Loading contents from </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">in_file</span><span class="si">}</span><span class="s2">: Decompressing file ...&quot;</span>
+                <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">refresh</span><span class="p">()</span>
+
+                <span class="n">file</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">TemporaryFile</span><span class="p">()</span>  <span class="c1"># pylint: disable=consider-using-with</span>
+
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_file</span><span class="o">.</span><span class="n">suffix</span> <span class="o">==</span> <span class="s2">&quot;.zst&quot;</span><span class="p">:</span>
+                    <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_file</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">in_file</span><span class="p">:</span>
+                        <span class="n">decomp</span> <span class="o">=</span> <span class="n">zstd</span><span class="o">.</span><span class="n">ZstdDecompressor</span><span class="p">()</span>
+                        <span class="n">decomp</span><span class="o">.</span><span class="n">copy_stream</span><span class="p">(</span><span class="n">in_file</span><span class="p">,</span> <span class="n">file</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_file</span><span class="o">.</span><span class="n">suffix</span> <span class="o">==</span> <span class="s2">&quot;.gz&quot;</span><span class="p">:</span>
+                    <span class="k">with</span> <span class="n">gzip</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">in_file</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">in_file</span><span class="p">:</span>
+                        <span class="n">shutil</span><span class="o">.</span><span class="n">copyfileobj</span><span class="p">(</span><span class="n">in_file</span><span class="p">,</span> <span class="n">file</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_file</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span>
+
+            <span class="n">file</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+
+            <span class="k">return</span> <span class="n">file</span>  <span class="c1"># type: ignore</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unsupported file format&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span></div>
+
+<div class="viewcode-block" id="CursedHR.parse_structure"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.CursedHR.parse_structure">[docs]</a>    <span class="k">def</span> <span class="nf">parse_structure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">BinaryIO</span><span class="p">,</span> <span class="n">mmap</span><span class="o">.</span><span class="n">mmap</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parses an (already uncompressed) penlog file to a skeleton containing structural information but no data.</span>
+
+<span class="sd">        This process enables handling relatively large penlog entries efficiently by extracting information on the</span>
+<span class="sd">        priority from each entry, which can later be used to quickly jump to adjacent entries of at least same priority.</span>
+<span class="sd">        This is accomplished by the following two data structures:</span>
+
+<span class="sd">            - self.entry_positions: Stores the absolute offsets of each penlog entry inside the input file.</span>
+<span class="sd">                                    This offset can later be used to efficiently retrieve the data for a penlog entry</span>
+<span class="sd">                                    from the input file without the need to store it in memory.</span>
+<span class="sd">            - self.level_pointers: Stores the entries which have at least a certain priority (i.e. less or equal).</span>
+<span class="sd">                                   More precisely, the indices of the corresponding entries in self.entry_positions.</span>
+<span class="sd">                                   There exists on such list for each priority level.</span>
+<span class="sd">                                   This allows to quickly find entries which are to be displayed inside a priority zone</span>
+<span class="sd">                                   even if there are many entries with filtered out priority in between.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">prio_prefix</span> <span class="o">=</span> <span class="s1">&#39;&quot;priority&quot;:&#39;</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;ascii&quot;</span><span class="p">)</span>
+        <span class="n">prio_prefix_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">prio_prefix</span><span class="p">)</span>
+
+        <span class="n">file</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">file_length</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">tell</span><span class="p">()</span>
+        <span class="n">file</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">erase</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">addstr</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Loading contents from </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">in_file</span><span class="si">}</span><span class="s2">: Parsing structure (</span><span class="si">{</span><span class="mi">0</span><span class="si">}</span><span class="s2">%)&quot;</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">refresh</span><span class="p">()</span>
+
+        <span class="n">prev_progress</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">num_entries</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">n</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">tell</span><span class="p">()</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">line</span><span class="p">:</span>
+                <span class="k">break</span>
+
+            <span class="n">prio</span> <span class="o">=</span> <span class="n">MessagePrio</span><span class="o">.</span><span class="n">INFO</span><span class="o">.</span><span class="n">value</span>
+
+            <span class="k">if</span> <span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">123</span><span class="p">:</span>
+                <span class="n">prio</span> <span class="o">=</span> <span class="n">MessagePrio</span><span class="o">.</span><span class="n">ERROR</span>
+            <span class="k">elif</span> <span class="p">(</span><span class="n">pos</span> <span class="o">:=</span> <span class="n">line</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">prio_prefix</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">pos</span> <span class="o">+=</span> <span class="n">prio_prefix_len</span>
+
+                <span class="k">while</span> <span class="ow">not</span> <span class="mi">48</span> <span class="o">&lt;=</span> <span class="n">line</span><span class="p">[</span><span class="n">pos</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">57</span><span class="p">:</span>
+                    <span class="n">pos</span> <span class="o">+=</span> <span class="mi">1</span>
+
+                <span class="n">prio</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="n">pos</span><span class="p">]</span> <span class="o">-</span> <span class="mi">48</span>
+
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">prio</span><span class="p">,</span> <span class="n">MessagePrio</span><span class="o">.</span><span class="n">TRACE</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">level_pointers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">num_entries</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">entry_positions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+            <span class="n">num_entries</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="n">progress</span> <span class="o">=</span> <span class="n">n</span> <span class="o">*</span> <span class="mi">100</span> <span class="o">//</span> <span class="n">file_length</span>
+
+            <span class="k">if</span> <span class="n">progress</span> <span class="o">&gt;=</span> <span class="n">prev_progress</span> <span class="o">+</span> <span class="mi">10</span><span class="p">:</span>
+                <span class="n">prev_progress</span> <span class="o">=</span> <span class="n">progress</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">erase</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">addstr</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Loading contents from </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">in_file</span><span class="si">}</span><span class="s2">: Parsing structure (</span><span class="si">{</span><span class="n">progress</span><span class="si">}</span><span class="s2">%)&quot;</span>
+                <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">refresh</span><span class="p">()</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">configuration</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Configuration</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">configuration_history</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">configuration_index</span><span class="p">]</span>
+
+<div class="viewcode-block" id="CursedHR.new_configuration"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.CursedHR.new_configuration">[docs]</a>    <span class="k">def</span> <span class="nf">new_configuration</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">configuration_index</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">configuration_history</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">configuration_history</span><span class="p">[</span>
+            <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">configuration_index</span>
+        <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">configuration_history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">configuration_history</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span></div>
+
+<div class="viewcode-block" id="CursedHR.entry_zone"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.CursedHR.entry_zone">[docs]</a>    <span class="k">def</span> <span class="nf">entry_zone</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entry_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PriorityZone</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the zone into which the entry with the given id falls.</span>
+
+<span class="sd">        :params entry_id: The index of the entry.</span>
+<span class="sd">        :return: The zone into which the entry with the given id falls.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">zone</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">priority_zones</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">entry_id</span> <span class="o">&gt;=</span> <span class="n">zone</span><span class="o">.</span><span class="n">start</span> <span class="ow">and</span> <span class="p">(</span><span class="n">zone</span><span class="o">.</span><span class="n">end</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">entry_id</span> <span class="o">&lt;=</span> <span class="n">zone</span><span class="o">.</span><span class="n">end</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">zone</span>
+
+        <span class="k">assert</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="CursedHR.update_zones"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.CursedHR.update_zones">[docs]</a>    <span class="k">def</span> <span class="nf">update_zones</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_zone</span><span class="p">:</span> <span class="n">PriorityZone</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Inserts the given zone into the current set of zones.</span>
+
+<span class="sd">        Adds a new list of zones into the zone history, which contains the previous zones and the new zone.</span>
+<span class="sd">        In the process of integrating the new zone, itself as well as old zones may be altered or completely removed.</span>
+<span class="sd">        It is guaranteed, that the zones are always ordered and do not overlap.</span>
+
+<span class="sd">        :param new_zone: The zone to be added.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">new_zone</span><span class="o">.</span><span class="n">end</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">new_configuration</span><span class="p">()</span>
+
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">priority_zones</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">cur_zone</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">priority_zones</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">assert</span> <span class="n">cur_zone</span><span class="o">.</span><span class="n">end</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+            <span class="c1"># If no intersection</span>
+            <span class="k">if</span> <span class="n">new_zone</span><span class="o">.</span><span class="n">end</span> <span class="o">&lt;</span> <span class="n">cur_zone</span><span class="o">.</span><span class="n">start</span> <span class="ow">or</span> <span class="n">new_zone</span><span class="o">.</span><span class="n">start</span> <span class="o">&gt;</span> <span class="n">cur_zone</span><span class="o">.</span><span class="n">end</span><span class="p">:</span>
+                <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">continue</span>
+
+            <span class="c1"># if current is contained in new</span>
+            <span class="k">if</span> <span class="n">new_zone</span><span class="o">.</span><span class="n">start</span> <span class="o">&lt;=</span> <span class="n">cur_zone</span><span class="o">.</span><span class="n">start</span> <span class="ow">and</span> <span class="n">new_zone</span><span class="o">.</span><span class="n">end</span> <span class="o">&gt;=</span> <span class="n">cur_zone</span><span class="o">.</span><span class="n">end</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">priority_zones</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">cur_zone</span><span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="c1"># if new is contained in current</span>
+            <span class="k">if</span> <span class="n">new_zone</span><span class="o">.</span><span class="n">start</span> <span class="o">&gt;</span> <span class="n">cur_zone</span><span class="o">.</span><span class="n">start</span> <span class="ow">and</span> <span class="n">new_zone</span><span class="o">.</span><span class="n">end</span> <span class="o">&lt;</span> <span class="n">cur_zone</span><span class="o">.</span><span class="n">end</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">priority_zones</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span>
+                    <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+                    <span class="n">PriorityZone</span><span class="p">(</span><span class="n">new_zone</span><span class="o">.</span><span class="n">end</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">cur_zone</span><span class="o">.</span><span class="n">end</span><span class="p">,</span> <span class="n">cur_zone</span><span class="o">.</span><span class="n">priority</span><span class="p">),</span>
+                <span class="p">)</span>
+                <span class="n">cur_zone</span><span class="o">.</span><span class="n">end</span> <span class="o">=</span> <span class="n">new_zone</span><span class="o">.</span><span class="n">start</span> <span class="o">-</span> <span class="mi">1</span>
+                <span class="k">break</span>
+
+            <span class="c1"># if new is intersecting from the left side</span>
+            <span class="k">if</span> <span class="n">new_zone</span><span class="o">.</span><span class="n">end</span> <span class="o">&lt;</span> <span class="n">cur_zone</span><span class="o">.</span><span class="n">end</span><span class="p">:</span>
+                <span class="n">cur_zone</span><span class="o">.</span><span class="n">start</span> <span class="o">=</span> <span class="n">new_zone</span><span class="o">.</span><span class="n">end</span> <span class="o">+</span> <span class="mi">1</span>
+
+            <span class="c1"># if new is intersecting from the right side</span>
+            <span class="k">if</span> <span class="n">new_zone</span><span class="o">.</span><span class="n">start</span> <span class="o">&gt;</span> <span class="n">cur_zone</span><span class="o">.</span><span class="n">start</span><span class="p">:</span>
+                <span class="n">cur_zone</span><span class="o">.</span><span class="n">end</span> <span class="o">=</span> <span class="n">new_zone</span><span class="o">.</span><span class="n">start</span> <span class="o">-</span> <span class="mi">1</span>
+
+            <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="c1"># if new is contained in or intersecting from the left side into the last zone</span>
+        <span class="n">last_zone</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">priority_zones</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">new_zone</span><span class="o">.</span><span class="n">end</span> <span class="o">&gt;=</span> <span class="n">last_zone</span><span class="o">.</span><span class="n">start</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">new_zone</span><span class="o">.</span><span class="n">start</span> <span class="o">&gt;=</span> <span class="n">last_zone</span><span class="o">.</span><span class="n">start</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">priority_zones</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span>
+                    <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+                    <span class="n">PriorityZone</span><span class="p">(</span>
+                        <span class="n">last_zone</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="n">new_zone</span><span class="o">.</span><span class="n">start</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">last_zone</span><span class="o">.</span><span class="n">priority</span>
+                    <span class="p">),</span>
+                <span class="p">)</span>
+            <span class="n">last_zone</span><span class="o">.</span><span class="n">start</span> <span class="o">=</span> <span class="n">new_zone</span><span class="o">.</span><span class="n">end</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">while</span> <span class="n">new_zone</span><span class="o">.</span><span class="n">start</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">priority_zones</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">start</span><span class="p">:</span>
+            <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">priority_zones</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">new_zone</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CursedHR.format_text"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.CursedHR.format_text">[docs]</a>    <span class="k">def</span> <span class="nf">format_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">entry</span><span class="p">:</span> <span class="n">PenlogEntry</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FormattedText</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a formatted text according to the properties of the corresponding penlog entry.</span>
+
+<span class="sd">        :param text: The text to be formatted.</span>
+<span class="sd">        :param entry: The penlog entry to which the text corresponds.</span>
+<span class="sd">        :return: The formatted text.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">component</span> <span class="o">==</span> <span class="s2">&quot;JSON&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">FormattedText</span><span class="p">(</span>
+                <span class="n">text</span><span class="p">,</span> <span class="n">curses</span><span class="o">.</span><span class="n">color_pair</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">color_ids</span><span class="p">[</span><span class="n">MessagePrio</span><span class="o">.</span><span class="n">ERROR</span><span class="p">])</span>
+            <span class="p">)</span>
+
+        <span class="n">text_format</span> <span class="o">=</span> <span class="n">curses</span><span class="o">.</span><span class="n">color_pair</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">color_ids</span><span class="p">[</span><span class="n">entry</span><span class="o">.</span><span class="n">priority</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">priority</span> <span class="o">&lt;</span> <span class="n">MessagePrio</span><span class="o">.</span><span class="n">INFO</span><span class="p">:</span>
+            <span class="n">text_format</span> <span class="o">=</span> <span class="n">text_format</span> <span class="o">|</span> <span class="n">curses</span><span class="o">.</span><span class="n">A_BOLD</span>
+
+        <span class="k">return</span> <span class="n">FormattedText</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">text_format</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CursedHR.default_text"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.CursedHR.default_text">[docs]</a>    <span class="k">def</span> <span class="nf">default_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FormattedText</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a formatted text with the content of the given text and the default formatting.</span>
+
+<span class="sd">        :param text: The text.</span>
+<span class="sd">        :return: The formatted text.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">FormattedText</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">curses</span><span class="o">.</span><span class="n">color_pair</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="CursedHR.formatted_entry"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.CursedHR.formatted_entry">[docs]</a>    <span class="k">def</span> <span class="nf">formatted_entry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entry_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">DisplayEntry</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a list of formatted entries, each corresponding to a single line of the entry referred to by the</span>
+<span class="sd">        given entry id, as displayed in the console.</span>
+
+<span class="sd">        :param entry_id: The index of the entry.</span>
+<span class="sd">        :return: The formatted display entries for the given entry.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">entry</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">entries</span><span class="p">[</span><span class="n">entry_id</span><span class="p">]</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">max_width</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">getmaxyx</span><span class="p">()</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">formatted_timestamp</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span>
+                <span class="n">entry</span><span class="o">.</span><span class="n">timestamp</span><span class="p">[:</span><span class="mi">26</span><span class="p">]</span> <span class="o">+</span> <span class="n">entry</span><span class="o">.</span><span class="n">timestamp</span><span class="p">[</span><span class="o">-</span><span class="mi">6</span><span class="p">:]</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%b </span><span class="si">%e</span><span class="s2"> %H:%M:%S.</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">)[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="n">formatted_timestamp</span> <span class="o">=</span> <span class="s2">&quot;0&quot;</span> <span class="o">*</span> <span class="mi">19</span>
+
+        <span class="n">prefix</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">formatted_timestamp</span><span class="si">}</span><span class="s2"> </span><span class="se">{{</span><span class="si">{</span><span class="n">entry</span><span class="o">.</span><span class="n">component</span><span class="si">:</span><span class="s2">8.8</span><span class="se">}}</span><span class="si">}</span><span class="s2"> [</span><span class="si">{</span><span class="n">entry</span><span class="o">.</span><span class="n">type</span><span class="si">:</span><span class="s2">8.8</span><span class="si">}</span><span class="s2">]: &quot;</span>
+        <span class="n">residual_width</span> <span class="o">=</span> <span class="n">max_width</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+
+        <span class="n">user_defined_lines</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">user_defined_lines</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">user_defined_lines</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">]</span>
+
+        <span class="n">terminal_width_defined_lines</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">user_defined_lines</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">terminal_width_defined_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ceil</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="o">/</span> <span class="n">residual_width</span><span class="p">)):</span>
+                <span class="n">terminal_width_defined_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="n">line</span><span class="p">[</span><span class="n">i</span> <span class="o">*</span> <span class="n">residual_width</span> <span class="p">:</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">residual_width</span><span class="p">]</span>
+                <span class="p">)</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">DisplayEntry</span><span class="p">(</span>
+                <span class="p">[</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">default_text</span><span class="p">(</span><span class="n">prefix</span><span class="p">),</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">format_text</span><span class="p">(</span><span class="n">terminal_width_defined_lines</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">entry</span><span class="p">),</span>
+                <span class="p">],</span>
+                <span class="n">entry_id</span><span class="p">,</span>
+                <span class="mi">0</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">terminal_width_defined_lines</span><span class="p">[</span><span class="mi">1</span><span class="p">:]):</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">DisplayEntry</span><span class="p">(</span>
+                    <span class="p">[</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">default_text</span><span class="p">(</span><span class="s2">&quot; &quot;</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">prefix</span><span class="p">)),</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">format_text</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">entry</span><span class="p">),</span>
+                    <span class="p">],</span>
+                    <span class="n">entry_id</span><span class="p">,</span>
+                    <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">interpret</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">interpretation</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">interpret_entry</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">interpretation</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">interpretation_text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;  # </span><span class="si">{</span><span class="n">entry</span><span class="o">.</span><span class="n">interpretation</span><span class="si">}</span><span class="s2">&quot;</span>
+
+                <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">interpretation_text</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">len_texts</span> <span class="o">=</span> <span class="mi">0</span>
+
+                    <span class="k">for</span> <span class="n">text</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">texts</span><span class="p">:</span>
+                        <span class="n">len_texts</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+
+                    <span class="n">residual_width</span> <span class="o">=</span> <span class="n">max_width</span> <span class="o">-</span> <span class="n">len_texts</span> <span class="o">-</span> <span class="mi">1</span>
+
+                    <span class="n">result</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">texts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="n">FormattedText</span><span class="p">(</span>
+                            <span class="n">interpretation_text</span><span class="p">[:</span><span class="n">residual_width</span><span class="p">],</span>
+                            <span class="n">curses</span><span class="o">.</span><span class="n">color_pair</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">interpretation_color</span><span class="p">),</span>
+                        <span class="p">)</span>
+                    <span class="p">)</span>
+
+                    <span class="n">interpretation_text</span> <span class="o">=</span> <span class="n">interpretation_text</span><span class="p">[</span><span class="n">residual_width</span><span class="p">:]</span>
+
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">interpretation_text</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                            <span class="n">DisplayEntry</span><span class="p">(</span>
+                                <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">default_text</span><span class="p">(</span><span class="s2">&quot; &quot;</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">prefix</span><span class="p">))],</span>
+                                <span class="n">entry_id</span><span class="p">,</span>
+                                <span class="n">result</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">entry_line_number</span><span class="p">,</span>
+                            <span class="p">)</span>
+                        <span class="p">)</span>
+
+        <span class="n">result</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">last_line</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">return</span> <span class="n">result</span></div>
+
+<div class="viewcode-block" id="CursedHR.interpret_entry"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.CursedHR.interpret_entry">[docs]</a>    <span class="k">def</span> <span class="nf">interpret_entry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entry</span><span class="p">:</span> <span class="n">PenlogEntry</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Adds an interpretation to the entry, if the entry can be identified as referring to a UDS request or response.</span>
+
+<span class="sd">        :param entry: The entry to be interpreted.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">entry</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;00&quot;</span><span class="p">):</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">unhexlify</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&amp;</span> <span class="mb">0b01000000</span><span class="p">:</span>
+                    <span class="n">response</span> <span class="o">=</span> <span class="n">UDSResponse</span><span class="o">.</span><span class="n">parse_dynamic</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+                    <span class="n">entry</span><span class="o">.</span><span class="n">interpretation</span> <span class="o">=</span> <span class="nb">repr</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">NegativeResponse</span><span class="p">):</span>
+                        <span class="n">entry</span><span class="o">.</span><span class="n">interpretation_color</span> <span class="o">=</span> <span class="p">(</span>
+                            <span class="n">InterpretationColor</span><span class="o">.</span><span class="n">UDS_NEGATIVE_RESPONSE</span>
+                        <span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">entry</span><span class="o">.</span><span class="n">interpretation_color</span> <span class="o">=</span> <span class="p">(</span>
+                            <span class="n">InterpretationColor</span><span class="o">.</span><span class="n">UDS_POSITIVE_RESPONSE</span>
+                        <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">entry</span><span class="o">.</span><span class="n">interpretation</span> <span class="o">=</span> <span class="nb">repr</span><span class="p">(</span><span class="n">UDSRequest</span><span class="o">.</span><span class="n">parse_dynamic</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+                    <span class="n">entry</span><span class="o">.</span><span class="n">interpretation_color</span> <span class="o">=</span> <span class="n">InterpretationColor</span><span class="o">.</span><span class="n">UDS_REQUEST</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">debug_log</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">e</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="CursedHR.check_filter"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.CursedHR.check_filter">[docs]</a>    <span class="k">def</span> <span class="nf">check_filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entry_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check if the entry which is referred to by the given entry id, is still to be displayed after applying filters.</span>
+
+<span class="sd">        :param entry_id: The index of the entry.</span>
+<span class="sd">        :return: The formatted display entries for the given entry.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="ne">SyntaxWarning</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">command</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">filter</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">eval</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">entries</span><span class="p">[</span><span class="n">entry_id</span><span class="p">]</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="CursedHR.calculate_display_entries"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.CursedHR.calculate_display_entries">[docs]</a>    <span class="k">def</span> <span class="nf">calculate_display_entries</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">start_entry</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">entry_line</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">DisplayEntry</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a list of display entries starting from the given start entry, which qualify to be displayed by having</span>
+<span class="sd">        a sufficient priority as well as passing any other filter.</span>
+
+<span class="sd">        The display entries may start from a different entry than the one pointed to by the given parameter,</span>
+<span class="sd">        in case that entry itself does not qualify itself.</span>
+<span class="sd">        In that case previous entries are taken into account if the entry_line is set to -1</span>
+<span class="sd">        and if there is at least oneprevious entry which qualifies.</span>
+<span class="sd">        Otherwise only entries following the given one are taken into account.</span>
+
+<span class="sd">        The number of entries which is returned is limited by the number of lines in the console.</span>
+
+<span class="sd">        The list is guaranteed to be not empty.</span>
+<span class="sd">        If there would be no entries to be displayed there will be an info message,</span>
+<span class="sd">        which informs the user, that no entries are available with the current filtering settings.</span>
+
+<span class="sd">        :param start_entry: The starting point for the search for the actual first entry (which qualifies) in the list.</span>
+<span class="sd">        :param entry_line: The index in the list of formatted lines as created for the corresponding penlog entry.</span>
+<span class="sd">                           Most importantly, a value of 0 indicates to start from the first line,</span>
+<span class="sd">                           a value of -1 to start from the last line. Other negative values are not supported.</span>
+<span class="sd">        :return: The list of display entries.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">max_lines</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">getmaxyx</span><span class="p">()</span>
+        <span class="n">max_lines</span> <span class="o">-=</span> <span class="mi">1</span>
+        <span class="n">display_entries</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">DisplayEntry</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">prio</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">entries</span><span class="p">[</span><span class="n">start_entry</span><span class="p">]</span><span class="o">.</span><span class="n">priority</span>
+        <span class="n">zone</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">entry_zone</span><span class="p">(</span><span class="n">start_entry</span><span class="p">)</span>
+
+        <span class="n">fallback_entry</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">DisplayEntry</span><span class="p">(</span>
+                <span class="p">[</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">default_text</span><span class="p">(</span>
+                        <span class="s2">&quot;No entries found! You can select a new priority on this line&quot;</span>
+                    <span class="p">)</span>
+                <span class="p">],</span>
+                <span class="mi">0</span><span class="p">,</span>
+                <span class="mi">0</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">prio</span> <span class="o">&gt;</span> <span class="n">zone</span><span class="o">.</span><span class="n">priority</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_filter</span><span class="p">(</span><span class="n">start_entry</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">entry_line</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">start_entry_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">previous_sufficient_entry</span><span class="p">(</span><span class="n">start_entry</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">start_entry_</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">start_entry_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">next_sufficient_entry</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">start_entry_</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">return</span> <span class="n">fallback_entry</span>
+
+                    <span class="n">entry_line</span> <span class="o">=</span> <span class="mi">0</span>
+
+                <span class="n">start_entry</span> <span class="o">=</span> <span class="n">start_entry_</span>
+            <span class="k">elif</span> <span class="n">entry_line</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">start_entry_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">next_sufficient_entry</span><span class="p">(</span><span class="n">start_entry</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">start_entry_</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">fallback_entry</span>
+
+                <span class="n">start_entry</span> <span class="o">=</span> <span class="n">start_entry_</span>
+
+            <span class="n">zone</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">entry_zone</span><span class="p">(</span><span class="n">start_entry</span><span class="p">)</span>
+
+        <span class="n">pointer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">priority_pointer</span><span class="p">(</span><span class="n">start_entry</span><span class="p">,</span> <span class="n">zone</span><span class="o">.</span><span class="n">priority</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">pointer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">start_entry</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">zone</span><span class="o">.</span><span class="n">priority</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">entry_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">level_pointers</span><span class="p">[</span><span class="n">zone</span><span class="o">.</span><span class="n">priority</span><span class="p">][</span><span class="n">pointer</span><span class="p">]</span>
+            <span class="n">new_lines</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">formatted_entry</span><span class="p">(</span><span class="n">entry_id</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">entry_line</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                    <span class="n">display_entries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_lines</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">display_entries</span> <span class="o">+=</span> <span class="n">new_lines</span><span class="p">[</span><span class="n">entry_line</span><span class="p">:]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">display_entries</span> <span class="o">+=</span> <span class="n">new_lines</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">display_entries</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">max_lines</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="n">zone</span><span class="p">,</span> <span class="n">pointer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">next_sufficient_pointer</span><span class="p">(</span><span class="n">zone</span><span class="p">,</span> <span class="n">pointer</span><span class="p">,</span> <span class="n">entry_id</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">pointer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">break</span>
+
+        <span class="k">return</span> <span class="n">display_entries</span><span class="p">[:</span><span class="n">max_lines</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="CursedHR.next_sufficient_entry"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.CursedHR.next_sufficient_entry">[docs]</a>    <span class="k">def</span> <span class="nf">next_sufficient_entry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entry_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the index of the next entry after the given one,</span>
+<span class="sd">        which has a sufficiently high priority to be displayed and also passes any filters.</span>
+
+<span class="sd">        If no such entry exists None is returned.</span>
+
+<span class="sd">        :param entry_id: The index of the entry in self.entries.</span>
+<span class="sd">        :return: The index of the next sufficient entry after the given one or None, if no such entry exists.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">prio</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">entries</span><span class="p">[</span><span class="n">entry_id</span><span class="p">]</span><span class="o">.</span><span class="n">priority</span>
+        <span class="n">pointer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">priority_pointer</span><span class="p">(</span><span class="n">entry_id</span><span class="p">,</span> <span class="n">prio</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">pointer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="n">zone</span><span class="p">,</span> <span class="n">pointer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">next_sufficient_pointer</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">pointer</span><span class="p">,</span> <span class="n">entry_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">level_pointers</span><span class="p">[</span><span class="n">zone</span><span class="o">.</span><span class="n">priority</span><span class="p">][</span><span class="n">pointer</span><span class="p">]</span> <span class="k">if</span> <span class="n">pointer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="CursedHR.previous_sufficient_entry"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.CursedHR.previous_sufficient_entry">[docs]</a>    <span class="k">def</span> <span class="nf">previous_sufficient_entry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entry_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the index of the previous entry after the given one,</span>
+<span class="sd">        which has a sufficiently high priority to be displayed and also passes any filters.</span>
+
+<span class="sd">        If no such entry exists None is returned.</span>
+
+<span class="sd">        :param entry_id: The index of the entry in self.entries.</span>
+<span class="sd">        :return: The index of the previous sufficient entry before the given one or None, if no such entry exists.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">prio</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">entries</span><span class="p">[</span><span class="n">entry_id</span><span class="p">]</span><span class="o">.</span><span class="n">priority</span>
+        <span class="n">pointer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">priority_pointer</span><span class="p">(</span><span class="n">entry_id</span><span class="p">,</span> <span class="n">prio</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">pointer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="n">zone</span><span class="p">,</span> <span class="n">pointer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">previous_sufficient_pointer</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">pointer</span><span class="p">,</span> <span class="n">entry_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">level_pointers</span><span class="p">[</span><span class="n">zone</span><span class="o">.</span><span class="n">priority</span><span class="p">][</span><span class="n">pointer</span><span class="p">]</span> <span class="k">if</span> <span class="n">pointer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="CursedHR.next_sufficient_pointer"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.CursedHR.next_sufficient_pointer">[docs]</a>    <span class="k">def</span> <span class="nf">next_sufficient_pointer</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">prio_zone</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PriorityZone</span><span class="p">],</span> <span class="n">pointer</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">entry_id</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">PriorityZone</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the index of the next priority pointer after the given one,</span>
+<span class="sd">        which has a sufficiently high priority to be displayed and also passes any filters,</span>
+<span class="sd">        along with the priority zone to which it belongs.</span>
+
+<span class="sd">        If no such pointer exists None is returned for the pointer.</span>
+
+<span class="sd">        :param prio_zone: The zone into which the entry, to which the given pointer points, lies.</span>
+<span class="sd">        :param pointer: The given pointer&#39;s index.</span>
+<span class="sd">        :param entry_id: The index of the entry, to which the given pointer points, in self.entries.</span>
+<span class="sd">        :return: The next priority pointer&#39;s index along the corresponding priority zone.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">zone</span><span class="p">,</span> <span class="n">pointer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">next_sufficient_pointer_without_filters</span><span class="p">(</span>
+            <span class="n">prio_zone</span><span class="p">,</span> <span class="n">pointer</span><span class="p">,</span> <span class="n">entry_id</span>
+        <span class="p">)</span>
+
+        <span class="k">while</span> <span class="n">pointer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_filter</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">level_pointers</span><span class="p">[</span><span class="n">zone</span><span class="o">.</span><span class="n">priority</span><span class="p">][</span><span class="n">pointer</span><span class="p">]</span>
+        <span class="p">):</span>
+            <span class="n">entry_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">level_pointers</span><span class="p">[</span><span class="n">zone</span><span class="o">.</span><span class="n">priority</span><span class="p">][</span><span class="n">pointer</span><span class="p">]</span>
+            <span class="n">zone</span><span class="p">,</span> <span class="n">pointer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">next_sufficient_pointer_without_filters</span><span class="p">(</span>
+                <span class="n">prio_zone</span><span class="p">,</span> <span class="n">pointer</span><span class="p">,</span> <span class="n">entry_id</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">zone</span><span class="p">,</span> <span class="n">pointer</span></div>
+
+<div class="viewcode-block" id="CursedHR.previous_sufficient_pointer"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.CursedHR.previous_sufficient_pointer">[docs]</a>    <span class="k">def</span> <span class="nf">previous_sufficient_pointer</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">prio_zone</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PriorityZone</span><span class="p">],</span> <span class="n">pointer</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">entry_id</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">PriorityZone</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the index of the previous priority pointer before the given one,</span>
+<span class="sd">        which has a sufficiently high priority to be displayed and also passes any filters,</span>
+<span class="sd">        along with the priority zone to which it belongs.</span>
+
+<span class="sd">        If no such pointer exists None is returned for the pointer.</span>
+
+<span class="sd">        :param prio_zone: The zone into which the entry, to which the given pointer points, lies.</span>
+<span class="sd">        :param pointer: The given pointer&#39;s index.</span>
+<span class="sd">        :param entry_id: The index of the entry, to which the given pointer points, in self.entries.</span>
+<span class="sd">        :return: The previous priority pointer&#39;s index along the corresponding priority zone.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">zone</span><span class="p">,</span> <span class="n">pointer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">previous_sufficient_pointer_without_filters</span><span class="p">(</span>
+            <span class="n">prio_zone</span><span class="p">,</span> <span class="n">pointer</span><span class="p">,</span> <span class="n">entry_id</span>
+        <span class="p">)</span>
+
+        <span class="k">while</span> <span class="n">pointer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_filter</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">level_pointers</span><span class="p">[</span><span class="n">zone</span><span class="o">.</span><span class="n">priority</span><span class="p">][</span><span class="n">pointer</span><span class="p">]</span>
+        <span class="p">):</span>
+            <span class="n">entry_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">level_pointers</span><span class="p">[</span><span class="n">zone</span><span class="o">.</span><span class="n">priority</span><span class="p">][</span><span class="n">pointer</span><span class="p">]</span>
+            <span class="n">zone</span><span class="p">,</span> <span class="n">pointer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">previous_sufficient_pointer_without_filters</span><span class="p">(</span>
+                <span class="n">prio_zone</span><span class="p">,</span> <span class="n">pointer</span><span class="p">,</span> <span class="n">entry_id</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">zone</span><span class="p">,</span> <span class="n">pointer</span></div>
+
+<div class="viewcode-block" id="CursedHR.next_sufficient_pointer_without_filters"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.CursedHR.next_sufficient_pointer_without_filters">[docs]</a>    <span class="k">def</span> <span class="nf">next_sufficient_pointer_without_filters</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">prio_zone</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PriorityZone</span><span class="p">],</span> <span class="n">pointer</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">entry_id</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">PriorityZone</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the index of the next priority pointer after the given one,</span>
+<span class="sd">        which has a sufficiently high priority to be displayed, along with the priority zone to which it belongs.</span>
+
+<span class="sd">        If no such pointer exists None is returned for the pointer.</span>
+
+<span class="sd">        :param prio_zone: The zone into which the entry, to which the given pointer points, lies.</span>
+<span class="sd">        :param pointer: The given pointer&#39;s index.</span>
+<span class="sd">        :param entry_id: The index of the entry, to which the given pointer points, in self.entries.</span>
+<span class="sd">        :return: The next priority pointer&#39;s index along the corresponding priority zone.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">zone</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">priority_zones</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">zone</span><span class="o">.</span><span class="n">end</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">entry_id</span> <span class="o">&gt;=</span> <span class="n">zone</span><span class="o">.</span><span class="n">end</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">prio_entries</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">level_pointers</span><span class="p">[</span><span class="n">zone</span><span class="o">.</span><span class="n">priority</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">prio_entries</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">next_pointer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">zone</span> <span class="o">==</span> <span class="n">prio_zone</span> <span class="ow">and</span> <span class="n">pointer</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">prio_entries</span><span class="p">):</span>
+                <span class="n">next_pointer</span> <span class="o">=</span> <span class="n">pointer</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">next_pointer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">priority_pointer</span><span class="p">(</span>
+                    <span class="nb">max</span><span class="p">(</span><span class="n">entry_id</span><span class="p">,</span> <span class="n">zone</span><span class="o">.</span><span class="n">start</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span> <span class="n">zone</span><span class="o">.</span><span class="n">priority</span><span class="p">,</span> <span class="mi">1</span>
+                <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">next_pointer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span>
+                <span class="n">zone</span><span class="o">.</span><span class="n">end</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">prio_entries</span><span class="p">[</span><span class="n">next_pointer</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">zone</span><span class="o">.</span><span class="n">end</span>
+            <span class="p">):</span>
+                <span class="k">return</span> <span class="n">zone</span><span class="p">,</span> <span class="n">next_pointer</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">priority_zones</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="CursedHR.previous_sufficient_pointer_without_filters"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.CursedHR.previous_sufficient_pointer_without_filters">[docs]</a>    <span class="k">def</span> <span class="nf">previous_sufficient_pointer_without_filters</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">prio_zone</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PriorityZone</span><span class="p">],</span> <span class="n">pointer</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">entry_id</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">PriorityZone</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the index of the previous priority pointer before the given one,</span>
+<span class="sd">        which has a sufficiently high priority to be displayed, along with the priority zone to which it belongs.</span>
+
+<span class="sd">        If no such pointer exists None is returned for the pointer.</span>
+
+<span class="sd">        :param prio_zone: The zone into which the entry, to which the given pointer points, lies.</span>
+<span class="sd">        :param pointer: The given pointer&#39;s index.</span>
+<span class="sd">        :param entry_id: The index of the entry, to which the given pointer points, in self.entries.</span>
+<span class="sd">        :return: The previous priority pointer&#39;s index along the corresponding priority zone.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">zone</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">priority_zones</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">entry_id</span> <span class="o">&lt;=</span> <span class="n">zone</span><span class="o">.</span><span class="n">start</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">prio_entries</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">level_pointers</span><span class="p">[</span><span class="n">zone</span><span class="o">.</span><span class="n">priority</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">prio_entries</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">prev_pointer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">zone</span> <span class="o">==</span> <span class="n">prio_zone</span> <span class="ow">and</span> <span class="n">pointer</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">prev_pointer</span> <span class="o">=</span> <span class="n">pointer</span> <span class="o">-</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">prev_pointer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">priority_pointer</span><span class="p">(</span>
+                    <span class="nb">min</span><span class="p">(</span><span class="n">entry_id</span><span class="p">,</span> <span class="n">zone</span><span class="o">.</span><span class="n">end</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">zone</span><span class="o">.</span><span class="n">end</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">entry_id</span><span class="p">,</span>
+                    <span class="n">zone</span><span class="o">.</span><span class="n">priority</span><span class="p">,</span>
+                    <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">prev_pointer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">prio_entries</span><span class="p">[</span><span class="n">prev_pointer</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">zone</span><span class="o">.</span><span class="n">start</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">zone</span><span class="p">,</span> <span class="n">prev_pointer</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">priority_zones</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="CursedHR.priority_pointer"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.CursedHR.priority_pointer">[docs]</a>    <span class="k">def</span> <span class="nf">priority_pointer</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">entry_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">prio</span><span class="p">:</span> <span class="n">MessagePrio</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the index of the level pointer of the entry with the given id,</span>
+<span class="sd">        or depending on the mode the previous or next entry, in the level pointers with the given priority.</span>
+
+<span class="sd">        Depending on the mode parameter different pointer indices can be retrieved:</span>
+<span class="sd">         - case 0: The pointer which points to the exact same entry which is given as the entry id</span>
+<span class="sd">         - case 1: - 1: The pointer with the next bigger entry_id in the level pointers compared to the given entry id</span>
+<span class="sd">         - case -1: The pointer with the next smaller entry_id in the level pointers compared to the given entry id</span>
+
+<span class="sd">         In none of these cases it can be guaranteed that such a pointer exists in the level pointers for the given</span>
+<span class="sd">         priority. If no pointer exists, None is returned.</span>
+
+<span class="sd">        :param entry_id: The index of the entry in self.entries.</span>
+<span class="sd">        :param prio: The priority level for which the index in the corresponding level pointers should be calculated.</span>
+<span class="sd">        :param mode: Determines which pointer index should be returned (must be any of 0, 1 or -1).</span>
+<span class="sd">        :return: The index of the level pointer or None if no such pointer could be identified.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">prio_entries</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">level_pointers</span><span class="p">[</span><span class="n">prio</span><span class="p">]</span>
+
+        <span class="n">upper</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">prio_entries</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">lower</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">pointer</span> <span class="o">=</span> <span class="p">(</span><span class="n">upper</span> <span class="o">+</span> <span class="n">lower</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span>
+
+            <span class="k">if</span> <span class="n">upper</span> <span class="o">==</span> <span class="n">lower</span> <span class="o">+</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">mode</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">pointer</span> <span class="o">=</span> <span class="n">upper</span>
+
+            <span class="n">prio_entry</span> <span class="o">=</span> <span class="n">prio_entries</span><span class="p">[</span><span class="n">pointer</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">upper</span> <span class="o">==</span> <span class="n">lower</span><span class="p">:</span>
+                <span class="k">break</span>
+
+            <span class="c1"># Find the exact match</span>
+            <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">prio_entry</span> <span class="o">&gt;</span> <span class="n">entry_id</span><span class="p">:</span>
+                    <span class="n">upper</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">lower</span><span class="p">,</span> <span class="n">pointer</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">prio_entry</span> <span class="o">&lt;</span> <span class="n">entry_id</span><span class="p">:</span>
+                    <span class="n">lower</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">pointer</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">upper</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">break</span>
+
+            <span class="c1"># Find the next bigger entry</span>
+            <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">prio_entry</span> <span class="o">&gt;</span> <span class="n">entry_id</span><span class="p">:</span>
+                    <span class="n">upper</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">lower</span><span class="p">,</span> <span class="n">pointer</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">lower</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">pointer</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">upper</span><span class="p">)</span>
+
+            <span class="c1"># Find the next smaller entry</span>
+            <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">prio_entry</span> <span class="o">&gt;=</span> <span class="n">entry_id</span><span class="p">:</span>
+                    <span class="n">upper</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">lower</span><span class="p">,</span> <span class="n">pointer</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">lower</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">pointer</span><span class="p">,</span> <span class="n">upper</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">prio_entry</span> <span class="o">!=</span> <span class="n">entry_id</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">prio_entry</span> <span class="o">&lt;=</span> <span class="n">entry_id</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">prio_entry</span> <span class="o">&gt;=</span> <span class="n">entry_id</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">return</span> <span class="n">pointer</span></div>
+
+<div class="viewcode-block" id="CursedHR.handle_io"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.CursedHR.handle_io">[docs]</a>    <span class="k">def</span> <span class="nf">handle_io</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">start_entry</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">max_lines</span><span class="p">,</span> <span class="n">max_columns</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">getmaxyx</span><span class="p">()</span>
+        <span class="n">max_lines</span> <span class="o">-=</span> <span class="mi">1</span>
+        <span class="n">filter_history</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">filter</span><span class="p">]</span>
+
+        <span class="n">display_entries</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_display_entries</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">display</span><span class="p">(</span>
+            <span class="n">display_entries</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="n">display_entries</span><span class="p">,</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">display_entries</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="n">prefix_length</span> <span class="o">=</span> <span class="mi">42</span>
+        <span class="n">cursor</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">prefix_length</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="o">*</span><span class="n">cursor</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">update_selected_zones</span><span class="p">(</span><span class="n">prio</span><span class="p">:</span> <span class="n">MessagePrio</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">nonlocal</span> <span class="n">start_entry</span>
+            <span class="k">nonlocal</span> <span class="n">display_entries</span>
+            <span class="k">nonlocal</span> <span class="n">cursor</span>
+            <span class="k">nonlocal</span> <span class="n">max_lines</span>
+
+            <span class="k">if</span> <span class="n">start_entry</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span>
+
+            <span class="n">stop_display_entry</span> <span class="o">=</span> <span class="n">display_entries</span><span class="p">[</span>
+                <span class="nb">min</span><span class="p">(</span><span class="n">cursor</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">len</span><span class="p">(</span><span class="n">display_entries</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="p">]</span>
+            <span class="n">stop_entry</span> <span class="o">=</span> <span class="n">stop_display_entry</span><span class="o">.</span><span class="n">penlog_entry_number</span>
+
+            <span class="k">if</span> <span class="n">start_entry</span> <span class="o">==</span> <span class="n">stop_entry</span><span class="p">:</span>
+                <span class="n">start_entry</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">previous_sufficient_entry</span><span class="p">(</span><span class="n">start_entry</span><span class="p">)</span>
+                <span class="n">stop_entry_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">next_sufficient_entry</span><span class="p">(</span><span class="n">stop_entry</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">start_entry</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">start_entry</span> <span class="o">=</span> <span class="mi">0</span>
+
+                <span class="k">if</span> <span class="n">stop_entry_</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">stop_entry</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">entries</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">stop_entry</span> <span class="o">=</span> <span class="n">stop_entry_</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">update_zones</span><span class="p">(</span>
+                <span class="n">PriorityZone</span><span class="p">(</span>
+                    <span class="nb">min</span><span class="p">(</span><span class="n">start_entry</span><span class="p">,</span> <span class="n">stop_entry</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">start_entry</span><span class="p">,</span> <span class="n">stop_entry</span><span class="p">),</span> <span class="n">prio</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">start_entry</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">while</span> <span class="p">(</span><span class="n">key</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">getkey</span><span class="p">())</span> <span class="o">!=</span> <span class="s2">&quot;q&quot;</span><span class="p">:</span>
+            <span class="n">entry_start</span> <span class="o">=</span> <span class="n">display_entries</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">penlog_entry_number</span>
+            <span class="n">line_start</span> <span class="o">=</span> <span class="n">display_entries</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">entry_line_number</span>
+            <span class="n">cursor</span> <span class="o">=</span> <span class="n">curses</span><span class="o">.</span><span class="n">getsyx</span><span class="p">()</span>
+            <span class="n">max_lines</span><span class="p">,</span> <span class="n">max_columns</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">getmaxyx</span><span class="p">()</span>
+            <span class="n">max_lines</span> <span class="o">-=</span> <span class="mi">1</span>
+
+            <span class="k">def</span> <span class="nf">page_up</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">nonlocal</span> <span class="n">entry_start</span>
+                <span class="k">nonlocal</span> <span class="n">line_start</span>
+                <span class="k">nonlocal</span> <span class="n">display_entries</span>
+
+                <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_lines</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+                    <span class="n">old_entry_start</span> <span class="o">=</span> <span class="n">entry_start</span>
+                    <span class="n">old_line_start</span> <span class="o">=</span> <span class="n">line_start</span>
+
+                    <span class="k">if</span> <span class="n">display_entries</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">entry_line_number</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">entry_start</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">entry_start</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">display_entries</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">penlog_entry_number</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+                        <span class="n">line_start</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">line_start</span> <span class="o">=</span> <span class="n">display_entries</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">entry_line_number</span> <span class="o">-</span> <span class="mi">1</span>
+
+                    <span class="k">if</span> <span class="n">old_entry_start</span> <span class="o">==</span> <span class="n">entry_start</span> <span class="ow">and</span> <span class="n">old_line_start</span> <span class="o">==</span> <span class="n">line_start</span><span class="p">:</span>
+                        <span class="k">break</span>
+
+                    <span class="n">display_entries</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_display_entries</span><span class="p">(</span>
+                        <span class="n">entry_start</span><span class="p">,</span> <span class="n">line_start</span>
+                    <span class="p">)</span>
+
+            <span class="k">def</span> <span class="nf">line_up</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">nonlocal</span> <span class="n">entry_start</span>
+                <span class="k">nonlocal</span> <span class="n">line_start</span>
+
+                <span class="k">if</span> <span class="n">display_entries</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">entry_line_number</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">entry_start</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">entry_start</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">entry_start</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="n">line_start</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">line_start</span> <span class="o">-=</span> <span class="mi">1</span>
+
+            <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;KEY_UP&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">cursor</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">cursor</span> <span class="o">=</span> <span class="p">(</span><span class="n">cursor</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">cursor</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">line_up</span><span class="p">()</span>
+            <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;KEY_DOWN&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">cursor</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">max_lines</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">cursor</span> <span class="o">=</span> <span class="n">cursor</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">cursor</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">display_entries</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">last_line</span><span class="p">:</span>
+                        <span class="n">entry_start</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">entries</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">entry_start</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                        <span class="n">line_start</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">line_start</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;KEY_PPAGE&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">cursor</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">cursor</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">cursor</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">page_up</span><span class="p">()</span>
+            <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;KEY_NPAGE&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">cursor</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">display_entries</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">cursor</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">display_entries</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">cursor</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">entry_start</span> <span class="o">=</span> <span class="n">display_entries</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">penlog_entry_number</span>
+                    <span class="n">line_start</span> <span class="o">=</span> <span class="n">display_entries</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">entry_line_number</span>
+            <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;g&quot;</span><span class="p">:</span>
+                <span class="n">entry_start</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">line_start</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">cursor</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">cursor</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;G&quot;</span><span class="p">:</span>
+                <span class="n">entry_start</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">entries</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+                <span class="n">line_start</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+
+                <span class="n">display_entries</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_display_entries</span><span class="p">(</span>
+                    <span class="n">entry_start</span><span class="p">,</span> <span class="n">line_start</span>
+                <span class="p">)</span>
+                <span class="n">page_up</span><span class="p">()</span>
+                <span class="n">cursor</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">display_entries</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">cursor</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;KEY_LEFT&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">cursor</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">cursor</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">cursor</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="k">continue</span>
+            <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;KEY_RIGHT&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">cursor</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">max_columns</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">cursor</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">cursor</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="k">continue</span>
+            <span class="k">elif</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;v&quot;</span><span class="p">,</span> <span class="s2">&quot;V&quot;</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">cursor</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">display_entries</span><span class="p">):</span>
+                    <span class="n">start_entry</span> <span class="o">=</span> <span class="n">display_entries</span><span class="p">[</span><span class="n">cursor</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">penlog_entry_number</span>
+            <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="nb">chr</span><span class="p">(</span><span class="n">curses</span><span class="o">.</span><span class="n">ascii</span><span class="o">.</span><span class="n">ESC</span><span class="p">):</span>
+                <span class="n">start_entry</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">elif</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="s2">&quot;P&quot;</span><span class="p">]:</span>
+                <span class="n">function_key</span> <span class="o">=</span> <span class="n">key</span>
+
+                <span class="k">while</span> <span class="p">(</span><span class="n">key</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">getkey</span><span class="p">())</span> <span class="o">!=</span> <span class="s2">&quot;q&quot;</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="nb">chr</span><span class="p">(</span><span class="n">curses</span><span class="o">.</span><span class="n">ascii</span><span class="o">.</span><span class="n">ESC</span><span class="p">):</span>
+                        <span class="n">start_entry</span> <span class="o">=</span> <span class="kc">None</span>
+                        <span class="k">break</span>
+                    <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;m&quot;</span><span class="p">:</span>
+                        <span class="n">prio</span> <span class="o">=</span> <span class="n">MessagePrio</span><span class="o">.</span><span class="n">EMERGENCY</span>
+                    <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;a&quot;</span><span class="p">:</span>
+                        <span class="n">prio</span> <span class="o">=</span> <span class="n">MessagePrio</span><span class="o">.</span><span class="n">ALERT</span>
+                    <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;c&quot;</span><span class="p">:</span>
+                        <span class="n">prio</span> <span class="o">=</span> <span class="n">MessagePrio</span><span class="o">.</span><span class="n">CRITICAL</span>
+                    <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;e&quot;</span><span class="p">:</span>
+                        <span class="n">prio</span> <span class="o">=</span> <span class="n">MessagePrio</span><span class="o">.</span><span class="n">ERROR</span>
+                    <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;w&quot;</span><span class="p">:</span>
+                        <span class="n">prio</span> <span class="o">=</span> <span class="n">MessagePrio</span><span class="o">.</span><span class="n">WARNING</span>
+                    <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;n&quot;</span><span class="p">:</span>
+                        <span class="n">prio</span> <span class="o">=</span> <span class="n">MessagePrio</span><span class="o">.</span><span class="n">NOTICE</span>
+                    <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;i&quot;</span><span class="p">:</span>
+                        <span class="n">prio</span> <span class="o">=</span> <span class="n">MessagePrio</span><span class="o">.</span><span class="n">INFO</span>
+                    <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;d&quot;</span><span class="p">:</span>
+                        <span class="n">prio</span> <span class="o">=</span> <span class="n">MessagePrio</span><span class="o">.</span><span class="n">DEBUG</span>
+                    <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;t&quot;</span><span class="p">:</span>
+                        <span class="n">prio</span> <span class="o">=</span> <span class="n">MessagePrio</span><span class="o">.</span><span class="n">TRACE</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">continue</span>
+
+                    <span class="k">if</span> <span class="n">function_key</span> <span class="o">==</span> <span class="s2">&quot;p&quot;</span><span class="p">:</span>
+                        <span class="n">update_selected_zones</span><span class="p">(</span><span class="n">prio</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">new_configuration</span><span class="p">()</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">priority_zones</span> <span class="o">=</span> <span class="p">[</span>
+                            <span class="n">PriorityZone</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">prio</span><span class="p">)</span>
+                        <span class="p">]</span>
+
+                    <span class="k">break</span>
+            <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;u&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">configuration_index</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">configuration_index</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;r&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">configuration_index</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
+                    <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">configuration_history</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">configuration_index</span> <span class="o">+</span> <span class="mi">1</span>
+                <span class="p">)</span>
+            <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;i&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">new_configuration</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">interpret</span> <span class="o">=</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">interpret</span>
+            <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;f&quot;</span><span class="p">:</span>
+                <span class="c1"># fh is short for filter_history to reduce long unreadable lines</span>
+                <span class="n">fh_tmp</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+                    <span class="s2">&quot;; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">filter_commands</span><span class="p">)</span> <span class="k">for</span> <span class="n">filter_commands</span> <span class="ow">in</span> <span class="n">filter_history</span>
+                <span class="p">)</span>
+                <span class="n">fh_tmp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+                <span class="n">fh_index</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">fh_tmp</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+
+                <span class="n">filter_cursor</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">fh_tmp</span><span class="p">[</span><span class="n">fh_index</span><span class="p">])</span>
+                <span class="n">input_format</span> <span class="o">=</span> <span class="n">curses</span><span class="o">.</span><span class="n">color_pair</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">display</span><span class="p">(</span>
+                    <span class="n">display_entries</span><span class="p">,</span> <span class="p">[</span><span class="n">FormattedText</span><span class="p">(</span><span class="n">fh_tmp</span><span class="p">[</span><span class="n">fh_index</span><span class="p">],</span> <span class="n">input_format</span><span class="p">)]</span>
+                <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">max_lines</span><span class="p">,</span> <span class="n">filter_cursor</span><span class="p">)</span>
+
+                <span class="k">while</span> <span class="p">(</span><span class="n">key</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">getkey</span><span class="p">())</span> <span class="o">!=</span> <span class="nb">chr</span><span class="p">(</span><span class="n">curses</span><span class="o">.</span><span class="n">ascii</span><span class="o">.</span><span class="n">ESC</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">:</span>
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="n">filter_tmp</span> <span class="o">=</span> <span class="n">parse_filter</span><span class="p">(</span><span class="n">fh_tmp</span><span class="p">[</span><span class="n">fh_index</span><span class="p">])</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">debug_log</span><span class="p">(</span><span class="n">filter_tmp</span><span class="p">)</span>
+                            <span class="n">filter_history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">filter_tmp</span><span class="p">)</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">new_configuration</span><span class="p">()</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">filter</span> <span class="o">=</span> <span class="n">filter_tmp</span>
+                            <span class="k">break</span>
+                        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                            <span class="k">pass</span>
+
+                    <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;KEY_BACKSPACE&quot;</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">filter_cursor</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="n">fh_tmp</span><span class="p">[</span><span class="n">fh_index</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                                <span class="n">fh_tmp</span><span class="p">[</span><span class="n">fh_index</span><span class="p">][:</span> <span class="n">filter_cursor</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+                                <span class="o">+</span> <span class="n">fh_tmp</span><span class="p">[</span><span class="n">fh_index</span><span class="p">][</span><span class="n">filter_cursor</span><span class="p">:]</span>
+                            <span class="p">)</span>
+                            <span class="n">filter_cursor</span> <span class="o">-=</span> <span class="mi">1</span>
+                    <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;KEY_DC&quot;</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">filter_cursor</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">fh_tmp</span><span class="p">[</span><span class="n">fh_index</span><span class="p">]):</span>
+                            <span class="n">fh_tmp</span><span class="p">[</span><span class="n">fh_index</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                                <span class="n">fh_tmp</span><span class="p">[</span><span class="n">fh_index</span><span class="p">][:</span><span class="n">filter_cursor</span><span class="p">]</span>
+                                <span class="o">+</span> <span class="n">fh_tmp</span><span class="p">[</span><span class="n">fh_index</span><span class="p">][</span><span class="n">filter_cursor</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:]</span>
+                            <span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;KEY_LEFT&quot;</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">filter_cursor</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="n">filter_cursor</span> <span class="o">-=</span> <span class="mi">1</span>
+                    <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;KEY_RIGHT&quot;</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">filter_cursor</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">fh_tmp</span><span class="p">[</span><span class="n">fh_index</span><span class="p">]):</span>
+                            <span class="n">filter_cursor</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;KEY_UP&quot;</span><span class="p">:</span>
+                        <span class="n">fh_index</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">fh_index</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;KEY_DOWN&quot;</span><span class="p">:</span>
+                        <span class="n">fh_index</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fh_tmp</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">fh_index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">fh_tmp</span><span class="p">[</span><span class="n">fh_index</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                            <span class="n">fh_tmp</span><span class="p">[</span><span class="n">fh_index</span><span class="p">][:</span><span class="n">filter_cursor</span><span class="p">]</span>
+                            <span class="o">+</span> <span class="n">key</span>
+                            <span class="o">+</span> <span class="n">fh_tmp</span><span class="p">[</span><span class="n">fh_index</span><span class="p">][</span><span class="n">filter_cursor</span><span class="p">:]</span>
+                        <span class="p">)</span>
+                        <span class="n">filter_cursor</span> <span class="o">+=</span> <span class="mi">1</span>
+
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">parse_filter</span><span class="p">(</span><span class="n">fh_tmp</span><span class="p">[</span><span class="n">fh_index</span><span class="p">])</span>
+                        <span class="n">input_format</span> <span class="o">=</span> <span class="n">curses</span><span class="o">.</span><span class="n">color_pair</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                        <span class="n">input_format</span> <span class="o">=</span> <span class="n">curses</span><span class="o">.</span><span class="n">color_pair</span><span class="p">(</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">color_ids</span><span class="p">[</span><span class="n">MessagePrio</span><span class="o">.</span><span class="n">WARNING</span><span class="p">]</span>
+                        <span class="p">)</span>
+
+                    <span class="bp">self</span><span class="o">.</span><span class="n">display</span><span class="p">(</span>
+                        <span class="n">display_entries</span><span class="p">,</span> <span class="p">[</span><span class="n">FormattedText</span><span class="p">(</span><span class="n">fh_tmp</span><span class="p">[</span><span class="n">fh_index</span><span class="p">],</span> <span class="n">input_format</span><span class="p">)]</span>
+                    <span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">move</span><span class="p">(</span>
+                        <span class="n">max_lines</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">filter_cursor</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">fh_tmp</span><span class="p">[</span><span class="n">fh_index</span><span class="p">]))</span>
+                    <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+            <span class="n">display_entries</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_display_entries</span><span class="p">(</span><span class="n">entry_start</span><span class="p">,</span> <span class="n">line_start</span><span class="p">)</span>
+
+            <span class="n">previous_entry_start</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">previous_line_start</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">display_entries</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">max_lines</span> <span class="ow">and</span> <span class="p">(</span>
+                <span class="n">previous_entry_start</span> <span class="o">!=</span> <span class="n">entry_start</span> <span class="ow">or</span> <span class="n">previous_line_start</span> <span class="o">!=</span> <span class="n">line_start</span>
+            <span class="p">):</span>
+                <span class="n">previous_entry_start</span> <span class="o">=</span> <span class="n">entry_start</span>
+                <span class="n">previous_line_start</span> <span class="o">=</span> <span class="n">line_start</span>
+                <span class="n">entry_start</span> <span class="o">=</span> <span class="n">display_entries</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">penlog_entry_number</span>
+                <span class="n">line_start</span> <span class="o">=</span> <span class="n">display_entries</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">entry_line_number</span>
+                <span class="n">line_up</span><span class="p">()</span>
+                <span class="n">display_entries</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_display_entries</span><span class="p">(</span>
+                    <span class="n">entry_start</span><span class="p">,</span> <span class="n">line_start</span>
+                <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">start_entry</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">stop_entry</span> <span class="o">=</span> <span class="n">display_entries</span><span class="p">[</span>
+                    <span class="nb">min</span><span class="p">(</span><span class="n">cursor</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">len</span><span class="p">(</span><span class="n">display_entries</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="p">]</span><span class="o">.</span><span class="n">penlog_entry_number</span>
+
+                <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">display_entries</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="p">(</span>
+                        <span class="nb">min</span><span class="p">(</span><span class="n">start_entry</span><span class="p">,</span> <span class="n">stop_entry</span><span class="p">)</span>
+                        <span class="o">&lt;=</span> <span class="n">entry</span><span class="o">.</span><span class="n">penlog_entry_number</span>
+                        <span class="o">&lt;=</span> <span class="nb">max</span><span class="p">(</span><span class="n">start_entry</span><span class="p">,</span> <span class="n">stop_entry</span><span class="p">)</span>
+                    <span class="p">):</span>
+                        <span class="k">for</span> <span class="n">text</span> <span class="ow">in</span> <span class="n">entry</span><span class="o">.</span><span class="n">texts</span><span class="p">:</span>
+                            <span class="n">text</span><span class="o">.</span><span class="n">format</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">format</span> <span class="o">|</span> <span class="n">curses</span><span class="o">.</span><span class="n">A_REVERSE</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">display_entries</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="n">display_entries</span><span class="p">,</span> <span class="n">cursor</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">cursor</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">len</span><span class="p">(</span><span class="n">display_entries</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span> <span class="n">cursor</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="CursedHR.status"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.CursedHR.status">[docs]</a>    <span class="k">def</span> <span class="nf">status</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">display_entries</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">DisplayEntry</span><span class="p">],</span> <span class="n">cursor</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">FormattedText</span><span class="p">]:</span>
+        <span class="n">selected_entry</span> <span class="o">=</span> <span class="n">display_entries</span><span class="p">[</span><span class="nb">min</span><span class="p">(</span><span class="n">cursor</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">len</span><span class="p">(</span><span class="n">display_entries</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)]</span>
+        <span class="n">entry_number</span> <span class="o">=</span> <span class="n">selected_entry</span><span class="o">.</span><span class="n">penlog_entry_number</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">entries</span><span class="p">)</span>
+        <span class="n">zone</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">entry_zone</span><span class="p">(</span><span class="n">selected_entry</span><span class="o">.</span><span class="n">penlog_entry_number</span><span class="p">)</span>
+        <span class="n">zone_info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_text</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Zone </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">priority_zones</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">zone</span><span class="p">)</span><span class="si">:</span><span class="s2"> &gt;2</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">zone</span><span class="o">.</span><span class="n">priority</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">)&quot;</span>
+        <span class="p">)</span>
+        <span class="n">progress</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_text</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">entry_number</span><span class="si">:</span><span class="s2"> &gt;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">n</span><span class="p">))</span><span class="si">}}</span><span class="s2">/</span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="p">(</span><span class="n">entry_number</span> <span class="o">/</span> <span class="n">n</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span><span class="si">:</span><span class="s2">6.2f</span><span class="si">}</span><span class="s2">%)&quot;</span>
+        <span class="p">)</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">max_columns</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">getmaxyx</span><span class="p">()</span>
+        <span class="n">spacing</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_text</span><span class="p">(</span>
+            <span class="s2">&quot; &quot;</span> <span class="o">*</span> <span class="p">(</span><span class="n">max_columns</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">zone_info</span><span class="o">.</span><span class="n">text</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">progress</span><span class="o">.</span><span class="n">text</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">zone_info</span><span class="p">,</span> <span class="n">spacing</span><span class="p">,</span> <span class="n">progress</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="CursedHR.display"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.CursedHR.display">[docs]</a>    <span class="k">def</span> <span class="nf">display</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">display_entries</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">DisplayEntry</span><span class="p">],</span> <span class="n">status_line</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">FormattedText</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">erase</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">display_entry</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">display_entries</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">text</span> <span class="ow">in</span> <span class="n">display_entry</span><span class="o">.</span><span class="n">texts</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">addstr</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">text</span><span class="o">.</span><span class="n">format</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">display_entries</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">addstr</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">getmaxyx</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">text</span> <span class="ow">in</span> <span class="n">status_line</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="o">.</span><span class="n">addstr</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">text</span><span class="o">.</span><span class="n">format</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CursedHR.debug_log"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.CursedHR.debug_log">[docs]</a>    <span class="k">def</span> <span class="nf">debug_log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">debug_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;/tmp/cursed_log&quot;</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">debug_path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">pass</span></div></div>
+
+
+<div class="viewcode-block" id="parse_prio"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.parse_prio">[docs]</a><span class="k">def</span> <span class="nf">parse_prio</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MessagePrio</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">MessagePrio</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">MessagePrio</span><span class="p">[</span><span class="n">text</span><span class="o">.</span><span class="n">upper</span><span class="p">()]</span>
+        <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Not a valid priority&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span></div>
+
+
+<div class="viewcode-block" id="parse_filter"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.parse_filter">[docs]</a><span class="k">def</span> <span class="nf">parse_filter</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="n">test_entry</span> <span class="o">=</span> <span class="n">PenlogEntry</span><span class="p">(</span>
+        <span class="s2">&quot;component&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;data&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;host&quot;</span><span class="p">,</span>
+        <span class="n">MessagePrio</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
+        <span class="s2">&quot;1970-01-01T00:00:00.000000+00:00&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;type&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">commands</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+        <span class="n">command</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">command</span> <span class="ow">in</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;;&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">command</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">0</span>
+    <span class="p">)</span>
+
+    <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="ne">SyntaxWarning</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">command</span> <span class="ow">in</span> <span class="n">commands</span><span class="p">:</span>
+            <span class="nb">eval</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="n">test_entry</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">commands</span></div>
+
+
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../../api/cursed_hr.html#cursed_hr.cursed_hr.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">ArgumentParser</span><span class="p">()</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;file&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">Path</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--priority&quot;</span><span class="p">,</span> <span class="s2">&quot;-p&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">parse_prio</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">MessagePrio</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--filter&quot;</span><span class="p">,</span> <span class="s2">&quot;-f&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">parse_filter</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+    <span class="n">CursedHR</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">file</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">priority</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">filter</span><span class="p">)</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

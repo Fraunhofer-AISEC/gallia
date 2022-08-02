@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gallia.transports.can &mdash; gallia  documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../transports.html">Transports</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../penlog.7.html">penlog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/modules.html">Modules</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>gallia.transports.can</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gallia.transports.can</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-FileCopyrightText: AISEC Pentesting Team</span>
+<span class="c1">#</span>
+<span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">import</span> <span class="nn">errno</span>
+<span class="kn">import</span> <span class="nn">socket</span> <span class="k">as</span> <span class="nn">s</span>
+<span class="kn">import</span> <span class="nn">struct</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">TypedDict</span><span class="p">,</span> <span class="n">cast</span>
+
+<span class="kn">from</span> <span class="nn">can</span> <span class="kn">import</span> <span class="n">Message</span>
+
+<span class="kn">from</span> <span class="nn">gallia.transports.base</span> <span class="kn">import</span> <span class="n">BaseTransport</span><span class="p">,</span> <span class="n">TargetURI</span><span class="p">,</span> <span class="n">_bool_spec</span><span class="p">,</span> <span class="n">_int_spec</span>
+
+<span class="n">CANFD_MTU</span> <span class="o">=</span> <span class="mi">72</span>
+<span class="n">CAN_MTU</span> <span class="o">=</span> <span class="mi">16</span>
+
+
+<span class="n">_ISOTP_SPEC_TYPE</span> <span class="o">=</span> <span class="n">TypedDict</span><span class="p">(</span>
+    <span class="s2">&quot;_ISOTP_SPEC_TYPE&quot;</span><span class="p">,</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;src_addr&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="s2">&quot;dst_addr&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="s2">&quot;is_extended&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="s2">&quot;is_fd&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="s2">&quot;frame_txtime&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="s2">&quot;ext_address&quot;</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="s2">&quot;rx_ext_address&quot;</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="s2">&quot;tx_padding&quot;</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="s2">&quot;rx_padding&quot;</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="s2">&quot;tx_dl&quot;</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="p">},</span>
+<span class="p">)</span>
+
+<span class="n">isotp_spec</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;src_addr&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">_int_spec</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="kc">True</span><span class="p">),</span>
+    <span class="s2">&quot;dst_addr&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">_int_spec</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="kc">True</span><span class="p">),</span>
+    <span class="s2">&quot;is_extended&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">_bool_spec</span><span class="p">(</span><span class="kc">False</span><span class="p">),</span> <span class="kc">False</span><span class="p">),</span>
+    <span class="s2">&quot;is_fd&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">_bool_spec</span><span class="p">(</span><span class="kc">False</span><span class="p">),</span> <span class="kc">False</span><span class="p">),</span>
+    <span class="s2">&quot;frame_txtime&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">_int_spec</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span> <span class="kc">False</span><span class="p">),</span>
+    <span class="s2">&quot;ext_address&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">_int_spec</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span> <span class="kc">False</span><span class="p">),</span>
+    <span class="s2">&quot;rx_ext_address&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">_int_spec</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span> <span class="kc">False</span><span class="p">),</span>
+    <span class="s2">&quot;tx_padding&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">_int_spec</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span> <span class="kc">False</span><span class="p">),</span>
+    <span class="s2">&quot;rx_padding&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">_int_spec</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span> <span class="kc">False</span><span class="p">),</span>
+    <span class="s2">&quot;tx_dl&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">_int_spec</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span> <span class="kc">False</span><span class="p">),</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="ISOTPTransport"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.can.ISOTPTransport">[docs]</a><span class="k">class</span> <span class="nc">ISOTPTransport</span><span class="p">(</span><span class="n">BaseTransport</span><span class="p">,</span> <span class="n">scheme</span><span class="o">=</span><span class="s2">&quot;isotp&quot;</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="n">isotp_spec</span><span class="p">):</span>
+    <span class="c1"># Socket Constants not available in the socket module,</span>
+    <span class="c1"># see linux/can/isotp.h</span>
+    <span class="c1"># TODO: Can be removed in the future…</span>
+    <span class="c1"># https://github.com/python/cpython/pull/23794</span>
+    <span class="n">SOL_CAN_ISOTP</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">SOL_CAN_BASE</span> <span class="o">+</span> <span class="n">s</span><span class="o">.</span><span class="n">CAN_ISOTP</span>
+
+    <span class="c1"># Valuetypes for SOL_CAN_ISOTP</span>
+    <span class="n">CAN_ISOTP_OPTS</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">CAN_ISOTP_RECV_FC</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">CAN_ISOTP_TX_STMIN</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">CAN_ISOTP_RX_STMIN</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">CAN_ISOTP_LL_OPTS</span> <span class="o">=</span> <span class="mi">5</span>
+
+    <span class="c1"># Flags for setsockopt CAN_ISOTP_OPTS</span>
+    <span class="n">CAN_ISOTP_LISTEN_MODE</span> <span class="o">=</span> <span class="mh">0x001</span>
+    <span class="n">CAN_ISOTP_EXTEND_ADDR</span> <span class="o">=</span> <span class="mh">0x002</span>
+    <span class="n">CAN_ISOTP_TX_PADDING</span> <span class="o">=</span> <span class="mh">0x004</span>
+    <span class="n">CAN_ISOTP_RX_PADDING</span> <span class="o">=</span> <span class="mh">0x008</span>
+    <span class="n">CAN_ISOTP_CHK_PAD_LEN</span> <span class="o">=</span> <span class="mh">0x010</span>
+    <span class="n">CAN_ISOTP_CHK_PAD_DATA</span> <span class="o">=</span> <span class="mh">0x020</span>
+    <span class="n">CAN_ISOTP_HALF_DUPLEX</span> <span class="o">=</span> <span class="mh">0x040</span>
+    <span class="n">CAN_ISOTP_FORCE_TXSTMIN</span> <span class="o">=</span> <span class="mh">0x080</span>
+    <span class="n">CAN_ISOTP_FORCE_RXSTMIN</span> <span class="o">=</span> <span class="mh">0x100</span>
+    <span class="n">CAN_ISOTP_RX_EXT_ADDR</span> <span class="o">=</span> <span class="mh">0x200</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">TargetURI</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">_ISOTP_SPEC_TYPE</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_args</span><span class="p">)</span>
+
+        <span class="k">assert</span> <span class="n">target</span><span class="o">.</span><span class="n">hostname</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;empty interface&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">interface</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">hostname</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sock</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">socket</span>
+
+<div class="viewcode-block" id="ISOTPTransport.connect"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.can.ISOTPTransport.connect">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sock</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">PF_CAN</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">SOCK_DGRAM</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">CAN_ISOTP</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sock</span><span class="o">.</span><span class="n">setblocking</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="n">src_addr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_flags</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;src_addr&quot;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;is_extended&quot;</span><span class="p">])</span>
+        <span class="n">dst_addr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_flags</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;dst_addr&quot;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;is_extended&quot;</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_setsockopts</span><span class="p">(</span>
+            <span class="n">frame_txtime</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;frame_txtime&quot;</span><span class="p">],</span>
+            <span class="n">ext_address</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;ext_address&quot;</span><span class="p">],</span>
+            <span class="n">rx_ext_address</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;rx_ext_address&quot;</span><span class="p">],</span>
+            <span class="n">tx_padding</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;tx_padding&quot;</span><span class="p">],</span>
+            <span class="n">rx_padding</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;rx_padding&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+        <span class="c1"># If CAN-FD is used, jumbo frames are possible.</span>
+        <span class="c1"># This fails for non-fd configurations.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;is_fd&quot;</span><span class="p">]:</span>
+            <span class="n">tx_dl</span> <span class="o">=</span> <span class="mi">64</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;tx_dl&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;tx_dl&quot;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_setsockllopts</span><span class="p">(</span><span class="n">canfd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;is_fd&quot;</span><span class="p">],</span> <span class="n">tx_dl</span><span class="o">=</span><span class="n">tx_dl</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sock</span><span class="o">.</span><span class="n">bind</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">interface</span><span class="p">,</span> <span class="n">dst_addr</span><span class="p">,</span> <span class="n">src_addr</span><span class="p">))</span></div>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_set_flags</span><span class="p">(</span><span class="n">can_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">extended</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">extended</span><span class="p">:</span>
+            <span class="n">can_id</span> <span class="o">=</span> <span class="n">can_id</span> <span class="o">&amp;</span> <span class="n">s</span><span class="o">.</span><span class="n">CAN_EFF_MASK</span>
+            <span class="k">return</span> <span class="n">can_id</span> <span class="o">|</span> <span class="n">s</span><span class="o">.</span><span class="n">CAN_EFF_FLAG</span>
+        <span class="k">return</span> <span class="n">can_id</span> <span class="o">&amp;</span> <span class="n">s</span><span class="o">.</span><span class="n">CAN_SFF_MASK</span>
+
+    <span class="k">def</span> <span class="nf">_setsockopts</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">frame_txtime</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">tx_padding</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">rx_padding</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">ext_address</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">rx_ext_address</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">flags</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">ext_address</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">flags</span> <span class="o">|=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CAN_ISOTP_EXTEND_ADDR</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ext_address</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">if</span> <span class="n">rx_ext_address</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">flags</span> <span class="o">|=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CAN_ISOTP_RX_EXT_ADDR</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">rx_ext_address</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">if</span> <span class="n">tx_padding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">flags</span> <span class="o">|=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CAN_ISOTP_TX_PADDING</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tx_padding</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">if</span> <span class="n">rx_padding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">flags</span> <span class="o">|=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CAN_ISOTP_RX_PADDING</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">rx_padding</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span>
+            <span class="s2">&quot;@IIBBBB&quot;</span><span class="p">,</span>
+            <span class="n">flags</span><span class="p">,</span>
+            <span class="n">frame_txtime</span><span class="p">,</span>
+            <span class="n">ext_address</span><span class="p">,</span>
+            <span class="n">tx_padding</span><span class="p">,</span>
+            <span class="n">rx_padding</span><span class="p">,</span>
+            <span class="n">rx_ext_address</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sock</span><span class="o">.</span><span class="n">setsockopt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">SOL_CAN_ISOTP</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">CAN_ISOTP_OPTS</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_setsockfcopts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">stmin</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">wftmax</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">&quot;@BBB&quot;</span><span class="p">,</span> <span class="n">bs</span><span class="p">,</span> <span class="n">stmin</span><span class="p">,</span> <span class="n">wftmax</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sock</span><span class="o">.</span><span class="n">setsockopt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">SOL_CAN_ISOTP</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">CAN_ISOTP_RECV_FC</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_setsockllopts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">canfd</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">tx_dl</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">canmtu</span> <span class="o">=</span> <span class="mi">72</span> <span class="k">if</span> <span class="n">canfd</span> <span class="k">else</span> <span class="mi">16</span>
+        <span class="c1"># The flags are set to 0, since the author marks this as obsolete.</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">&quot;@BBB&quot;</span><span class="p">,</span> <span class="n">canmtu</span><span class="p">,</span> <span class="n">tx_dl</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sock</span><span class="o">.</span><span class="n">setsockopt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">SOL_CAN_ISOTP</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">CAN_ISOTP_LL_OPTS</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ISOTPTransport.write"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.can.ISOTPTransport.write">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">write</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">tags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_write</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">hex</span><span class="p">(),</span> <span class="n">tags</span><span class="o">=</span><span class="n">tags</span><span class="p">)</span>
+        <span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_running_loop</span><span class="p">()</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait_for</span><span class="p">(</span><span class="n">loop</span><span class="o">.</span><span class="n">sock_sendall</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_sock</span><span class="p">,</span> <span class="n">data</span><span class="p">),</span> <span class="n">timeout</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ISOTPTransport.read"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.can.ISOTPTransport.read">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">read</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">tags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_running_loop</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait_for</span><span class="p">(</span>
+                <span class="n">loop</span><span class="o">.</span><span class="n">sock_recv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_sock</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">BUFSIZE</span><span class="p">),</span> <span class="n">timeout</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">errno</span> <span class="o">==</span> <span class="n">errno</span><span class="o">.</span><span class="n">ECOMM</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">BrokenPipeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;isotp flow control frame missing: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+            <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">errno</span> <span class="o">==</span> <span class="n">errno</span><span class="o">.</span><span class="n">EILSEQ</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">BrokenPipeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;invalid consecutive frame numbers: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+            <span class="k">raise</span> <span class="n">e</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_read</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">hex</span><span class="p">(),</span> <span class="n">tags</span><span class="o">=</span><span class="n">tags</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">data</span></div>
+
+<div class="viewcode-block" id="ISOTPTransport.close"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.can.ISOTPTransport.close">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="ISOTPTransport.reconnect"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.can.ISOTPTransport.reconnect">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">reconnect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">pass</span></div></div>
+
+
+<div class="viewcode-block" id="CANMessage"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.can.CANMessage">[docs]</a><span class="k">class</span> <span class="nc">CANMessage</span><span class="p">(</span><span class="n">Message</span><span class="p">):</span>  <span class="c1"># type: ignore</span>
+
+    <span class="c1"># https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/linux/can.h</span>
+    <span class="n">CAN_HEADER_FMT</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">Struct</span><span class="p">(</span><span class="s2">&quot;=IBB2x&quot;</span><span class="p">)</span>
+    <span class="n">CANFD_BRS</span> <span class="o">=</span> <span class="mh">0x01</span>
+    <span class="n">CANFD_ESI</span> <span class="o">=</span> <span class="mh">0x02</span>
+
+    <span class="k">def</span> <span class="nf">_compose_arbitration_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="n">can_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">arbitration_id</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_extended_id</span><span class="p">:</span>
+            <span class="n">can_id</span> <span class="o">|=</span> <span class="n">s</span><span class="o">.</span><span class="n">CAN_EFF_FLAG</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_remote_frame</span><span class="p">:</span>
+            <span class="n">can_id</span> <span class="o">|=</span> <span class="n">s</span><span class="o">.</span><span class="n">CAN_RTR_FLAG</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_error_frame</span><span class="p">:</span>
+            <span class="n">can_id</span> <span class="o">|=</span> <span class="n">s</span><span class="o">.</span><span class="n">CAN_ERR_FLAG</span>
+        <span class="k">return</span> <span class="n">can_id</span>
+
+<div class="viewcode-block" id="CANMessage.pack"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.can.CANMessage.pack">[docs]</a>    <span class="k">def</span> <span class="nf">pack</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="n">can_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compose_arbitration_id</span><span class="p">()</span>
+        <span class="n">flags</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bitrate_switch</span><span class="p">:</span>
+            <span class="n">flags</span> <span class="o">|=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CANFD_BRS</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">error_state_indicator</span><span class="p">:</span>
+            <span class="n">flags</span> <span class="o">|=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CANFD_ESI</span>
+        <span class="n">max_len</span> <span class="o">=</span> <span class="mi">64</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_fd</span> <span class="k">else</span> <span class="mi">8</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="n">max_len</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\x00</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">CAN_HEADER_FMT</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">can_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dlc</span><span class="p">,</span> <span class="n">flags</span><span class="p">)</span> <span class="o">+</span> <span class="n">data</span></div>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_dissect_can_frame</span><span class="p">(</span><span class="n">frame</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">]:</span>
+        <span class="n">can_id</span><span class="p">,</span> <span class="n">can_dlc</span><span class="p">,</span> <span class="n">flags</span> <span class="o">=</span> <span class="n">CANMessage</span><span class="o">.</span><span class="n">CAN_HEADER_FMT</span><span class="o">.</span><span class="n">unpack_from</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span> <span class="o">!=</span> <span class="n">CANFD_MTU</span><span class="p">:</span>
+            <span class="c1"># Flags not valid in non-FD frames</span>
+            <span class="n">flags</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">return</span> <span class="n">can_id</span><span class="p">,</span> <span class="n">can_dlc</span><span class="p">,</span> <span class="n">flags</span><span class="p">,</span> <span class="n">frame</span><span class="p">[</span><span class="mi">8</span> <span class="p">:</span> <span class="mi">8</span> <span class="o">+</span> <span class="n">can_dlc</span><span class="p">]</span>
+
+<div class="viewcode-block" id="CANMessage.unpack"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.can.CANMessage.unpack">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">unpack</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">frame</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CANMessage</span><span class="p">:</span>
+        <span class="n">can_id</span><span class="p">,</span> <span class="n">can_dlc</span><span class="p">,</span> <span class="n">flags</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_dissect_can_frame</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span>
+
+        <span class="c1"># EXT, RTR, ERR flags -&gt; boolean attributes</span>
+        <span class="c1">#   /* special address description flags for the CAN_ID */</span>
+        <span class="c1">#   #define CAN_EFF_FLAG 0x80000000U /* EFF/SFF is set in the MSB */</span>
+        <span class="c1">#   #define CAN_RTR_FLAG 0x40000000U /* remote transmission request */</span>
+        <span class="c1">#   #define CAN_ERR_FLAG 0x20000000U /* error frame */</span>
+        <span class="n">is_extended_frame_format</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">can_id</span> <span class="o">&amp;</span> <span class="n">s</span><span class="o">.</span><span class="n">CAN_EFF_FLAG</span><span class="p">)</span>
+        <span class="n">is_remote_transmission_request</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">can_id</span> <span class="o">&amp;</span> <span class="n">s</span><span class="o">.</span><span class="n">CAN_RTR_FLAG</span><span class="p">)</span>
+        <span class="n">is_error_frame</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">can_id</span> <span class="o">&amp;</span> <span class="n">s</span><span class="o">.</span><span class="n">CAN_ERR_FLAG</span><span class="p">)</span>
+        <span class="n">is_fd</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span> <span class="o">==</span> <span class="n">CANFD_MTU</span>
+        <span class="n">bitrate_switch</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">flags</span> <span class="o">&amp;</span> <span class="bp">cls</span><span class="o">.</span><span class="n">CANFD_BRS</span><span class="p">)</span>
+        <span class="n">error_state_indicator</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">flags</span> <span class="o">&amp;</span> <span class="bp">cls</span><span class="o">.</span><span class="n">CANFD_ESI</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">is_extended_frame_format</span><span class="p">:</span>
+            <span class="n">arbitration_id</span> <span class="o">=</span> <span class="n">can_id</span> <span class="o">&amp;</span> <span class="n">s</span><span class="o">.</span><span class="n">CAN_EFF_MASK</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">arbitration_id</span> <span class="o">=</span> <span class="n">can_id</span> <span class="o">&amp;</span> <span class="n">s</span><span class="o">.</span><span class="n">CAN_SFF_MASK</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">arbitration_id</span><span class="o">=</span><span class="n">arbitration_id</span><span class="p">,</span>
+            <span class="n">is_extended_id</span><span class="o">=</span><span class="n">is_extended_frame_format</span><span class="p">,</span>
+            <span class="n">is_remote_frame</span><span class="o">=</span><span class="n">is_remote_transmission_request</span><span class="p">,</span>
+            <span class="n">is_error_frame</span><span class="o">=</span><span class="n">is_error_frame</span><span class="p">,</span>
+            <span class="n">is_fd</span><span class="o">=</span><span class="n">is_fd</span><span class="p">,</span>
+            <span class="n">bitrate_switch</span><span class="o">=</span><span class="n">bitrate_switch</span><span class="p">,</span>
+            <span class="n">error_state_indicator</span><span class="o">=</span><span class="n">error_state_indicator</span><span class="p">,</span>
+            <span class="n">dlc</span><span class="o">=</span><span class="n">can_dlc</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+        <span class="p">)</span></div></div>
+
+
+<span class="n">_CAN_RAW_SPEC_TYPE</span> <span class="o">=</span> <span class="n">TypedDict</span><span class="p">(</span>
+    <span class="s2">&quot;_CAN_RAW_SPEC_TYPE&quot;</span><span class="p">,</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;src_addr&quot;</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="s2">&quot;dst_addr&quot;</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="s2">&quot;is_extended&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="s2">&quot;is_fd&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="s2">&quot;bind&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="p">},</span>
+<span class="p">)</span>
+
+<span class="n">spec_can_raw</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;src_addr&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">_int_spec</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span> <span class="kc">False</span><span class="p">),</span>
+    <span class="s2">&quot;dst_addr&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">_int_spec</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span> <span class="kc">False</span><span class="p">),</span>
+    <span class="s2">&quot;is_extended&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">_bool_spec</span><span class="p">(</span><span class="kc">False</span><span class="p">),</span> <span class="kc">False</span><span class="p">),</span>
+    <span class="s2">&quot;is_fd&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">_bool_spec</span><span class="p">(</span><span class="kc">False</span><span class="p">),</span> <span class="kc">False</span><span class="p">),</span>
+    <span class="s2">&quot;bind&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">_bool_spec</span><span class="p">(</span><span class="kc">False</span><span class="p">),</span> <span class="kc">False</span><span class="p">),</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="RawCANTransport"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.can.RawCANTransport">[docs]</a><span class="k">class</span> <span class="nc">RawCANTransport</span><span class="p">(</span><span class="n">BaseTransport</span><span class="p">,</span> <span class="n">scheme</span><span class="o">=</span><span class="s2">&quot;can-raw&quot;</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="n">spec_can_raw</span><span class="p">):</span>
+    <span class="c1"># Flags for setsockopt CAN_RAW_FILTER</span>
+    <span class="n">CAN_INV_FILTER</span> <span class="o">=</span> <span class="mh">0x20000000</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">TargetURI</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">_CAN_RAW_SPEC_TYPE</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_args</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connected</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">assert</span> <span class="n">target</span><span class="o">.</span><span class="n">hostname</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;empty interface&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">interface</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">hostname</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sock</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">socket</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_addr</span><span class="p">:</span> <span class="nb">int</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dst_addr</span><span class="p">:</span> <span class="nb">int</span>
+
+<div class="viewcode-block" id="RawCANTransport.connect"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.can.RawCANTransport.connect">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sock</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">PF_CAN</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">SOCK_RAW</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">CAN_RAW</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sock</span><span class="o">.</span><span class="n">bind</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">interface</span><span class="p">,))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;is_fd&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sock</span><span class="o">.</span><span class="n">setsockopt</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">SOL_CAN_RAW</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">CAN_RAW_FD_FRAMES</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sock</span><span class="o">.</span><span class="n">setblocking</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;bind&quot;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bind</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="RawCANTransport.set_filter"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.can.RawCANTransport.set_filter">[docs]</a>    <span class="k">def</span> <span class="nf">set_filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">can_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">inv_filter</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">can_ids</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">filter_mask</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">CAN_EFF_MASK</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;is_extended&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">s</span><span class="o">.</span><span class="n">CAN_SFF_MASK</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">can_id</span> <span class="ow">in</span> <span class="n">can_ids</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">inv_filter</span><span class="p">:</span>
+                <span class="n">can_id</span> <span class="o">|=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CAN_INV_FILTER</span>
+            <span class="n">data</span> <span class="o">+=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">&quot;@II&quot;</span><span class="p">,</span> <span class="n">can_id</span><span class="p">,</span> <span class="n">filter_mask</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sock</span><span class="o">.</span><span class="n">setsockopt</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">SOL_CAN_RAW</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">CAN_RAW_FILTER</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">inv_filter</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sock</span><span class="o">.</span><span class="n">setsockopt</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">SOL_CAN_RAW</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">CAN_RAW_JOIN_FILTERS</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="RawCANTransport.bind"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.can.RawCANTransport.bind">[docs]</a>    <span class="k">def</span> <span class="nf">bind</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;src_addr&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;dst_addr&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;no src_addr/dst_addr set&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_filter</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;src_addr&quot;</span><span class="p">]])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_addr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;src_addr&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dst_addr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;dst_addr&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connected</span> <span class="o">=</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="RawCANTransport.read"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.can.RawCANTransport.read">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">read</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">tags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">connected</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_addr</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;transport is not connected; set bind=true&quot;</span><span class="p">)</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">recvfrom</span><span class="p">(</span><span class="n">timeout</span><span class="p">,</span> <span class="n">tags</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">data</span></div>
+
+<div class="viewcode-block" id="RawCANTransport.write"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.can.RawCANTransport.write">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">write</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">tags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">connected</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">dst_addr</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;transport is not connected; set bind=true&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">sendto</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dst_addr</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="n">tags</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="RawCANTransport.sendto"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.can.RawCANTransport.sendto">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">sendto</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span>
+        <span class="n">dst</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">tags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">CANMessage</span><span class="p">(</span>
+            <span class="n">arbitration_id</span><span class="o">=</span><span class="n">dst</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">is_extended_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;is_extended&quot;</span><span class="p">],</span>
+            <span class="n">is_fd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;is_fd&quot;</span><span class="p">],</span>
+            <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;is_extended&quot;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dst</span><span class="si">:</span><span class="s2">08x</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">data</span><span class="o">.</span><span class="n">hex</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="n">tags</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dst</span><span class="si">:</span><span class="s2">03x</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">data</span><span class="o">.</span><span class="n">hex</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="n">tags</span><span class="p">)</span>
+
+        <span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_running_loop</span><span class="p">()</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait_for</span><span class="p">(</span><span class="n">loop</span><span class="o">.</span><span class="n">sock_sendall</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_sock</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">pack</span><span class="p">()),</span> <span class="n">timeout</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="RawCANTransport.recvfrom"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.can.RawCANTransport.recvfrom">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">recvfrom</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">tags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">]:</span>
+        <span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_running_loop</span><span class="p">()</span>
+        <span class="n">can_frame</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait_for</span><span class="p">(</span>
+            <span class="n">loop</span><span class="o">.</span><span class="n">sock_recv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_sock</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">BUFSIZE</span><span class="p">),</span> <span class="n">timeout</span>
+        <span class="p">)</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">CANMessage</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="n">can_frame</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">is_extended_id</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_read</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">msg</span><span class="o">.</span><span class="n">arbitration_id</span><span class="si">:</span><span class="s2">08x</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">msg</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">hex</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="n">tags</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_read</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">msg</span><span class="o">.</span><span class="n">arbitration_id</span><span class="si">:</span><span class="s2">03x</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">msg</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">hex</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="n">tags</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">msg</span><span class="o">.</span><span class="n">arbitration_id</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">data</span></div>
+
+<div class="viewcode-block" id="RawCANTransport.close"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.can.RawCANTransport.close">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="RawCANTransport.reconnect"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.can.RawCANTransport.reconnect">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">reconnect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="RawCANTransport.get_idle_traffic"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.can.RawCANTransport.get_idle_traffic">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">get_idle_traffic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sniff_time</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Listen to traffic on the bus and return list of IDs</span>
+<span class="sd">        which are seen in the specified period of time.</span>
+<span class="sd">        The output of this function can be used as input to set_filter.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">addr_idle</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="n">t1</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="k">while</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t1</span> <span class="o">&lt;</span> <span class="n">sniff_time</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">addr</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">recvfrom</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">addr</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">addr_idle</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Received a message from </span><span class="si">{</span><span class="n">addr</span><span class="si">:</span><span class="s2">03x</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="n">addr_idle</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">addr</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">TimeoutError</span><span class="p">:</span>
+                <span class="k">continue</span>
+        <span class="n">addr_idle</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">addr_idle</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

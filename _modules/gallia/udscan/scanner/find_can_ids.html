@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gallia.udscan.scanner.find_can_ids &mdash; gallia  documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../index.html" class="icon icon-home"> gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../transports.html">Transports</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../penlog.7.html">penlog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/modules.html">Modules</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      <li>gallia.udscan.scanner.find_can_ids</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gallia.udscan.scanner.find_can_ids</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-FileCopyrightText: AISEC Pentesting Team</span>
+<span class="c1">#</span>
+<span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
+
+<span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">from</span> <span class="nn">argparse</span> <span class="kn">import</span> <span class="n">Namespace</span>
+<span class="kn">from</span> <span class="nn">binascii</span> <span class="kn">import</span> <span class="n">unhexlify</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+
+<span class="kn">from</span> <span class="nn">gallia.transports.base</span> <span class="kn">import</span> <span class="n">TargetURI</span>
+<span class="kn">from</span> <span class="nn">gallia.transports.can</span> <span class="kn">import</span> <span class="n">ISOTPTransport</span><span class="p">,</span> <span class="n">RawCANTransport</span>
+<span class="kn">from</span> <span class="nn">gallia.uds.core.service</span> <span class="kn">import</span> <span class="n">UDSRequest</span><span class="p">,</span> <span class="n">NegativeResponse</span>
+<span class="kn">from</span> <span class="nn">gallia.uds.core.client</span> <span class="kn">import</span> <span class="n">UDSClient</span>
+<span class="kn">from</span> <span class="nn">gallia.udscan.core</span> <span class="kn">import</span> <span class="n">DiscoveryScanner</span>
+<span class="kn">from</span> <span class="nn">gallia.utils</span> <span class="kn">import</span> <span class="n">auto_int</span><span class="p">,</span> <span class="n">can_id_repr</span><span class="p">,</span> <span class="n">g_repr</span><span class="p">,</span> <span class="n">write_target_list</span>
+
+
+<div class="viewcode-block" id="FindCanIDsScanner"><a class="viewcode-back" href="../../../../api/gallia.udscan.scanner.html#gallia.udscan.scanner.find_can_ids.FindCanIDsScanner">[docs]</a><span class="k">class</span> <span class="nc">FindCanIDsScanner</span><span class="p">(</span><span class="n">DiscoveryScanner</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This scanner discovers all UDS endpoints on a ECU using ISO-TP normal addressing.</span>
+<span class="sd">    This is the default protocol used by OBD.</span>
+<span class="sd">    When using normal addressing, the ISO-TP header does not include an address and there is no generic tester address.</span>
+<span class="sd">    Addressing is only done via CAN IDs. Every endpoint has a source and destination CAN ID.</span>
+<span class="sd">    Typically, there is also a broadcast destination ID to address all endpoints.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="FindCanIDsScanner.add_parser"><a class="viewcode-back" href="../../../../api/gallia.udscan.scanner.html#gallia.udscan.scanner.find_can_ids.FindCanIDsScanner.add_parser">[docs]</a>    <span class="k">def</span> <span class="nf">add_parser</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--start&quot;</span><span class="p">,</span>
+            <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;INT&quot;</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="n">auto_int</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;set start address&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--stop&quot;</span><span class="p">,</span>
+            <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;INT&quot;</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="n">auto_int</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;set end address&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--padding&quot;</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="n">auto_int</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;set isotp padding&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--pdu&quot;</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="n">unhexlify</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="nb">bytes</span><span class="p">([</span><span class="mh">0x10</span><span class="p">,</span> <span class="mh">0x01</span><span class="p">]),</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;set pdu used for discovery&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--sleep&quot;</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;set sleeptime between loop iterations&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--extended-addr&quot;</span><span class="p">,</span>
+            <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;use extended isotp addresses&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--tester-addr&quot;</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="n">auto_int</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="mh">0x6F1</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;tester address for --extended&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--query&quot;</span><span class="p">,</span>
+            <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;query ECU description via RDBID&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--info-did&quot;</span><span class="p">,</span>
+            <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;DID&quot;</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="n">auto_int</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="mh">0xF197</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;DID to query ECU description&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--sniff-time&quot;</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+            <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;SECONDS&quot;</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Time in seconds to sniff on bus for current traffic&quot;</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="FindCanIDsScanner.setup"><a class="viewcode-back" href="../../../../api/gallia.udscan.scanner.html#gallia.udscan.scanner.find_can_ids.FindCanIDsScanner.setup">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">target</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">scheme</span> <span class="o">==</span> <span class="n">RawCANTransport</span><span class="o">.</span><span class="n">SCHEME</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Unsupported transport schema </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">scheme</span><span class="si">}</span><span class="s2">; must be can-raw!&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">extended_addr</span> <span class="ow">and</span> <span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">start</span> <span class="o">&gt;</span> <span class="mh">0xFF</span> <span class="ow">or</span> <span class="n">args</span><span class="o">.</span><span class="n">stop</span> <span class="o">&gt;</span> <span class="mh">0xFF</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;--start/--stop maximum value is 0xFF&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">args</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="FindCanIDsScanner.query_description"><a class="viewcode-back" href="../../../../api/gallia.udscan.scanner.html#gallia.udscan.scanner.find_can_ids.FindCanIDsScanner.query_description">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">query_description</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_list</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">TargetURI</span><span class="p">],</span> <span class="n">did</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span><span class="s2">&quot;reading info DID from all discovered endpoints&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">target</span> <span class="ow">in</span> <span class="n">target_list</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span><span class="s2">&quot;----------------------------&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Probing ECU: </span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="n">transport</span> <span class="o">=</span> <span class="n">ISOTPTransport</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+            <span class="k">await</span> <span class="n">transport</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+            <span class="n">uds_client</span> <span class="o">=</span> <span class="n">UDSClient</span><span class="p">(</span><span class="n">transport</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;reading device description at </span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">did</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">resp</span> <span class="o">=</span> <span class="k">await</span> <span class="n">uds_client</span><span class="o">.</span><span class="n">read_data_by_identifier</span><span class="p">(</span><span class="n">did</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">resp</span><span class="p">,</span> <span class="n">NegativeResponse</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;could not read did: </span><span class="si">{</span><span class="n">resp</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;response was: </span><span class="si">{</span><span class="n">resp</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;reading description failed: </span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_build_isotp_frame_extended</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">pdu</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span>
+        <span class="n">ext_addr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="n">isotp_hdr</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">([</span><span class="n">ext_addr</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">pdu</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mh">0x0F</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">isotp_hdr</span> <span class="o">+</span> <span class="n">pdu</span>
+
+    <span class="k">def</span> <span class="nf">_build_isotp_frame</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pdu</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="n">isotp_hdr</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">pdu</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mh">0x0F</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">isotp_hdr</span> <span class="o">+</span> <span class="n">pdu</span>
+
+<div class="viewcode-block" id="FindCanIDsScanner.build_isotp_frame"><a class="viewcode-back" href="../../../../api/gallia.udscan.scanner.html#gallia.udscan.scanner.find_can_ids.FindCanIDsScanner.build_isotp_frame">[docs]</a>    <span class="k">def</span> <span class="nf">build_isotp_frame</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">req</span><span class="p">:</span> <span class="n">UDSRequest</span><span class="p">,</span>
+        <span class="n">ext_addr</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">padding</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="n">pdu</span> <span class="o">=</span> <span class="n">req</span><span class="o">.</span><span class="n">pdu</span>
+        <span class="n">max_pdu_len</span> <span class="o">=</span> <span class="mi">7</span> <span class="k">if</span> <span class="n">ext_addr</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">6</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pdu</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">max_pdu_len</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;UDSRequest too large, ConsecutiveFrames not implemented&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">ext_addr</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_isotp_frame</span><span class="p">(</span><span class="n">pdu</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_isotp_frame_extended</span><span class="p">(</span><span class="n">pdu</span><span class="p">,</span> <span class="n">ext_addr</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">padding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">pad_len</span> <span class="o">=</span> <span class="mi">8</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span>
+            <span class="n">frame</span> <span class="o">+=</span> <span class="nb">bytes</span><span class="p">([</span><span class="n">padding</span><span class="p">])</span> <span class="o">*</span> <span class="n">pad_len</span>
+
+        <span class="k">return</span> <span class="n">frame</span></div>
+
+<div class="viewcode-block" id="FindCanIDsScanner.main"><a class="viewcode-back" href="../../../../api/gallia.udscan.scanner.html#gallia.udscan.scanner.find_can_ids.FindCanIDsScanner.main">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">transport</span> <span class="o">=</span> <span class="n">RawCANTransport</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">target</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">transport</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+        <span class="n">found</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">sniff_time</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">sniff_time</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Recording idle bus communication for </span><span class="si">{</span><span class="n">sniff_time</span><span class="si">}</span><span class="s2">s&quot;</span><span class="p">)</span>
+        <span class="n">addr_idle</span> <span class="o">=</span> <span class="k">await</span> <span class="n">transport</span><span class="o">.</span><span class="n">get_idle_traffic</span><span class="p">(</span><span class="n">sniff_time</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">addr_idle</span><span class="p">)</span><span class="si">}</span><span class="s2"> CAN Addresses on idle Bus&quot;</span><span class="p">)</span>
+        <span class="n">transport</span><span class="o">.</span><span class="n">set_filter</span><span class="p">(</span><span class="n">addr_idle</span><span class="p">,</span> <span class="n">inv_filter</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">req</span> <span class="o">=</span> <span class="n">UDSRequest</span><span class="o">.</span><span class="n">parse_dynamic</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">pdu</span><span class="p">)</span>
+        <span class="n">pdu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_isotp_frame</span><span class="p">(</span><span class="n">req</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">padding</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">ID</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">stop</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">sleep</span><span class="p">)</span>
+
+            <span class="n">dst_addr</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">tester_addr</span> <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">extended_addr</span> <span class="k">else</span> <span class="n">ID</span>
+            <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">extended_addr</span><span class="p">:</span>
+                <span class="n">pdu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_isotp_frame</span><span class="p">(</span><span class="n">req</span><span class="p">,</span> <span class="n">ID</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">padding</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Testing ID </span><span class="si">{</span><span class="n">can_id_repr</span><span class="p">(</span><span class="n">ID</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">is_broadcast</span> <span class="o">=</span> <span class="kc">False</span>
+
+            <span class="k">await</span> <span class="n">transport</span><span class="o">.</span><span class="n">sendto</span><span class="p">(</span><span class="n">pdu</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">dst</span><span class="o">=</span><span class="n">dst_addr</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">addr</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="k">await</span> <span class="n">transport</span><span class="o">.</span><span class="n">recvfrom</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">addr</span> <span class="o">==</span> <span class="n">ID</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;The same CAN ID </span><span class="si">{</span><span class="n">can_id_repr</span><span class="p">(</span><span class="n">ID</span><span class="p">)</span><span class="si">}</span><span class="s2"> answered. Skipping…&quot;</span>
+                    <span class="p">)</span>
+                    <span class="k">continue</span>
+            <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">TimeoutError</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="c1"># The recv buffer needs to be flushed to avoid</span>
+                <span class="c1"># wrong results...</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">new_addr</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="k">await</span> <span class="n">transport</span><span class="o">.</span><span class="n">recvfrom</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">new_addr</span> <span class="o">!=</span> <span class="n">addr</span><span class="p">:</span>
+                        <span class="n">is_broadcast</span> <span class="o">=</span> <span class="kc">True</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;seems that broadcast was triggered on CAN ID </span><span class="si">{</span><span class="n">can_id_repr</span><span class="p">(</span><span class="n">ID</span><span class="p">)</span><span class="si">}</span><span class="s2">, &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;got answer from </span><span class="si">{</span><span class="n">can_id_repr</span><span class="p">(</span><span class="n">new_addr</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;seems like a large ISO-TP packet was received on CAN ID </span><span class="si">{</span><span class="n">can_id_repr</span><span class="p">(</span><span class="n">ID</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="p">)</span>
+                <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">TimeoutError</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">is_broadcast</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;seems that broadcast was triggered on CAN ID </span><span class="si">{</span><span class="n">can_id_repr</span><span class="p">(</span><span class="n">ID</span><span class="p">)</span><span class="si">}</span><span class="s2">, &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;got answer from </span><span class="si">{</span><span class="n">can_id_repr</span><span class="p">(</span><span class="n">addr</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;found endpoint on CAN ID [src:dst]: </span><span class="si">{</span><span class="n">can_id_repr</span><span class="p">(</span><span class="n">ID</span><span class="p">)</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">can_id_repr</span><span class="p">(</span><span class="n">addr</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="p">)</span>
+                        <span class="n">target_args</span> <span class="o">=</span> <span class="p">{}</span>
+                        <span class="n">target_args</span><span class="p">[</span><span class="s2">&quot;is_fd&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">transport</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;is_fd&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+                        <span class="n">target_args</span><span class="p">[</span><span class="s2">&quot;is_extended&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span>
+                            <span class="n">transport</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;is_extended&quot;</span><span class="p">]</span>
+                        <span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+                        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">extended_addr</span><span class="p">:</span>
+                            <span class="n">target_args</span><span class="p">[</span><span class="s2">&quot;ext_address&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">hex</span><span class="p">(</span><span class="n">ID</span><span class="p">)</span>
+                            <span class="n">target_args</span><span class="p">[</span><span class="s2">&quot;rx_ext_address&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">tester_addr</span> <span class="o">&amp;</span> <span class="mh">0xFF</span>
+                            <span class="n">target_args</span><span class="p">[</span><span class="s2">&quot;src_addr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">tester_addr</span>
+                            <span class="n">target_args</span><span class="p">[</span><span class="s2">&quot;dst_addr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">hex</span><span class="p">(</span><span class="n">addr</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">target_args</span><span class="p">[</span><span class="s2">&quot;src_addr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">hex</span><span class="p">(</span><span class="n">ID</span><span class="p">)</span>
+                            <span class="n">target_args</span><span class="p">[</span><span class="s2">&quot;dst_addr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">hex</span><span class="p">(</span><span class="n">addr</span><span class="p">)</span>
+
+                        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">padding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                            <span class="n">target_args</span><span class="p">[</span><span class="s2">&quot;tx_padding&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">padding</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">padding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                            <span class="n">target_args</span><span class="p">[</span><span class="s2">&quot;rx_padding&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">padding</span><span class="si">}</span><span class="s2">&quot;</span>
+
+                        <span class="n">target</span> <span class="o">=</span> <span class="n">TargetURI</span><span class="o">.</span><span class="n">from_parts</span><span class="p">(</span>
+                            <span class="n">ISOTPTransport</span><span class="o">.</span><span class="n">SCHEME</span><span class="p">,</span>
+                            <span class="n">args</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">hostname</span><span class="p">,</span>
+                            <span class="kc">None</span><span class="p">,</span>
+                            <span class="n">target_args</span><span class="p">,</span>
+                        <span class="p">)</span>
+                        <span class="n">found</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+                    <span class="k">break</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;finished; found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">found</span><span class="p">)</span><span class="si">}</span><span class="s2"> UDS endpoints&quot;</span><span class="p">)</span>
+        <span class="n">ecus_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">artifacts_dir</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="s2">&quot;ECUs.txt&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Writing urls to file: </span><span class="si">{</span><span class="n">ecus_file</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">write_target_list</span><span class="p">(</span><span class="n">ecus_file</span><span class="p">,</span> <span class="n">found</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_handler</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">query</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">query_description</span><span class="p">(</span><span class="n">found</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">info_did</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

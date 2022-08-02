@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gallia.cli &mdash; gallia  documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../transports.html">Transports</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../penlog.7.html">penlog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/modules.html">Modules</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      <li>gallia.cli</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gallia.cli</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-FileCopyrightText: AISEC Pentesting Team</span>
+<span class="c1">#</span>
+<span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
+
+<span class="c1"># PYTHON_ARGCOMPLETE_OK</span>
+
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">importlib.metadata</span> <span class="kn">import</span> <span class="n">entry_points</span>
+
+<span class="kn">import</span> <span class="nn">argcomplete</span>
+
+
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../../api/gallia.html#gallia.cli.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+    <span class="n">sp</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_subparsers</span><span class="p">(</span>
+        <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;CHOICE&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">all_entries</span> <span class="o">=</span> <span class="n">entry_points</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="s2">&quot;_ARGCOMPLETE&quot;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+        <span class="n">comp_line</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;COMP_LINE&quot;</span><span class="p">]</span>
+        <span class="n">comp_point</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;COMP_POINT&quot;</span><span class="p">])</span>
+
+        <span class="c1"># For completion only the names are required, which results in a noticeably faster response</span>
+        <span class="c1"># compared to the full loading process, which is necessary for the help</span>
+        <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">all_entries</span><span class="p">[</span><span class="s2">&quot;gallia_scanners&quot;</span><span class="p">]:</span>
+            <span class="n">_parser</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">add_parser</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">comp_line</span><span class="o">.</span><span class="n">lstrip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="n">argcomplete</span><span class="o">.</span><span class="n">autocomplete</span><span class="p">(</span><span class="n">parser</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">entry_prefix_length</span> <span class="o">=</span> <span class="n">comp_line</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+
+            <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;COMP_LINE&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">comp_line</span><span class="p">[</span><span class="n">entry_prefix_length</span><span class="p">:]</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;COMP_POINT&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">comp_point</span> <span class="o">-</span> <span class="n">entry_prefix_length</span><span class="p">)</span>
+
+            <span class="n">chosen_entry</span> <span class="o">=</span> <span class="n">comp_line</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">entry_point</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span>
+                    <span class="n">i</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">all_entries</span><span class="p">[</span><span class="s2">&quot;gallia_scanners&quot;</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">chosen_entry</span>
+                <span class="p">)</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="n">entry_point</span><span class="p">()</span><span class="o">.</span><span class="n">run</span><span class="p">())</span>
+            <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+                <span class="k">pass</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s2">&quot;gallia_scanners&quot;</span> <span class="ow">in</span> <span class="n">all_entries</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">all_entries</span><span class="p">[</span><span class="s2">&quot;gallia_scanners&quot;</span><span class="p">]:</span>
+                <span class="n">scanner_class</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+
+                <span class="n">_parser</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">add_parser</span><span class="p">(</span>
+                    <span class="n">entry</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                    <span class="n">help</span><span class="o">=</span><span class="n">scanner_class</span><span class="o">.</span><span class="vm">__doc__</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">_parser</span><span class="o">.</span><span class="n">set_defaults</span><span class="p">(</span><span class="n">func</span><span class="o">=</span><span class="n">scanner_class</span><span class="p">()</span><span class="o">.</span><span class="n">run</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">&quot;gallia_scripts&quot;</span> <span class="ow">in</span> <span class="n">all_entries</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">all_entries</span><span class="p">[</span><span class="s2">&quot;gallia_scripts&quot;</span><span class="p">]:</span>
+                <span class="n">entry_point</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+
+                <span class="n">_parser</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">add_parser</span><span class="p">(</span>
+                    <span class="n">entry</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                    <span class="n">help</span><span class="o">=</span><span class="n">entry_point</span><span class="o">.</span><span class="vm">__doc__</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">_parser</span><span class="o">.</span><span class="n">set_defaults</span><span class="p">(</span><span class="n">func</span><span class="o">=</span><span class="n">entry_point</span><span class="p">)</span>
+
+        <span class="c1"># Only pass a single argument to the args parser, otherwise it gets confused</span>
+        <span class="c1"># with arguments belonging to one of the subparsers.</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">print_help</span><span class="p">()</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+
+        <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">([</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
+
+        <span class="c1"># Combine the first two arguments for subsequent parsers to work correctly</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="s2">&quot;func&quot;</span><span class="p">):</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">print_help</span><span class="p">()</span>
+            <span class="n">parser</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">func</span><span class="p">())</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

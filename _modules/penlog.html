@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>penlog &mdash; gallia  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../transports.html">Transports</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../penlog.7.html">penlog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/modules.html">Modules</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">Module code</a> &raquo;</li>
+      <li>penlog</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for penlog</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-FileCopyrightText: AISEC Pentesting Team</span>
+<span class="c1">#</span>
+<span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
+
+<span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">socket</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">traceback</span>
+<span class="kn">import</span> <span class="nn">uuid</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">asdict</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span><span class="p">,</span> <span class="n">IntEnum</span><span class="p">,</span> <span class="n">unique</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">TextIO</span><span class="p">,</span> <span class="n">Optional</span>
+
+
+<div class="viewcode-block" id="MessageType"><a class="viewcode-back" href="../api/penlog.html#penlog.MessageType">[docs]</a><span class="nd">@unique</span>
+<span class="k">class</span> <span class="nc">MessageType</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+    <span class="n">MESSAGE</span> <span class="o">=</span> <span class="s2">&quot;message&quot;</span></div>
+
+
+<div class="viewcode-block" id="MessagePrio"><a class="viewcode-back" href="../api/penlog.html#penlog.MessagePrio">[docs]</a><span class="nd">@unique</span>
+<span class="k">class</span> <span class="nc">MessagePrio</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">EMERGENCY</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">ALERT</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">CRITICAL</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">ERROR</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">WARNING</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">NOTICE</span> <span class="o">=</span> <span class="mi">5</span>
+    <span class="n">INFO</span> <span class="o">=</span> <span class="mi">6</span>
+    <span class="n">DEBUG</span> <span class="o">=</span> <span class="mi">7</span>
+    <span class="n">TRACE</span> <span class="o">=</span> <span class="mi">8</span></div>
+
+
+<div class="viewcode-block" id="OutputType"><a class="viewcode-back" href="../api/penlog.html#penlog.OutputType">[docs]</a><span class="nd">@unique</span>
+<span class="k">class</span> <span class="nc">OutputType</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">JSON</span> <span class="o">=</span> <span class="s2">&quot;json&quot;</span>
+    <span class="n">JSON_PRETTY</span> <span class="o">=</span> <span class="s2">&quot;json-pretty&quot;</span>
+    <span class="n">HR</span> <span class="o">=</span> <span class="s2">&quot;hr&quot;</span>
+    <span class="n">HR_TINY</span> <span class="o">=</span> <span class="s2">&quot;hr-tiny&quot;</span>
+    <span class="n">HR_NANO</span> <span class="o">=</span> <span class="s2">&quot;hr-nano&quot;</span></div>
+
+
+<div class="viewcode-block" id="Color"><a class="viewcode-back" href="../api/penlog.html#penlog.Color">[docs]</a><span class="nd">@unique</span>
+<span class="k">class</span> <span class="nc">Color</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">NOP</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">RESET</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[0m&quot;</span>
+    <span class="n">BOLD</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[1m&quot;</span>
+    <span class="n">RED</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[31m&quot;</span>
+    <span class="n">GREEN</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[32m&quot;</span>
+    <span class="n">YELLOW</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[33m&quot;</span>
+    <span class="n">BLUE</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[34m&quot;</span>
+    <span class="n">PURPLE</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[35m&quot;</span>
+    <span class="n">CYAN</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[36m&quot;</span>
+    <span class="n">WHITE</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[37m&quot;</span>
+    <span class="n">GRAY</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[0;38;5;245m&quot;</span></div>
+
+
+<div class="viewcode-block" id="RecordType"><a class="viewcode-back" href="../api/penlog.html#penlog.RecordType">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">RecordType</span><span class="p">:</span>
+    <span class="n">component</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">data</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">host</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">priority</span><span class="p">:</span> <span class="n">MessagePrio</span>
+    <span class="n">timestamp</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="nb">type</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">line</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">stacktrace</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">tags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="colorize"><a class="viewcode-back" href="../api/penlog.html#penlog.colorize">[docs]</a><span class="k">def</span> <span class="nf">colorize</span><span class="p">(</span><span class="n">color</span><span class="p">:</span> <span class="n">Color</span><span class="p">,</span> <span class="n">s</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">color</span> <span class="o">==</span> <span class="n">Color</span><span class="o">.</span><span class="n">NOP</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">s</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">color</span><span class="o">.</span><span class="n">value</span><span class="si">}{</span><span class="n">s</span><span class="si">}{</span><span class="n">Color</span><span class="o">.</span><span class="n">RESET</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<span class="k">def</span> <span class="nf">_get_line_number</span><span class="p">(</span><span class="n">depth</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="n">stack</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">stack</span><span class="p">()</span>
+    <span class="n">frame</span> <span class="o">=</span> <span class="n">stack</span><span class="p">[</span><span class="n">depth</span><span class="p">]</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">frame</span><span class="o">.</span><span class="n">filename</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">frame</span><span class="o">.</span><span class="n">lineno</span><span class="si">}</span><span class="s2">&quot;</span>
+
+
+<div class="viewcode-block" id="str2bool"><a class="viewcode-back" href="../api/penlog.html#penlog.str2bool">[docs]</a><span class="k">def</span> <span class="nf">str2bool</span><span class="p">(</span><span class="n">s</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">s</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;true&quot;</span><span class="p">,</span> <span class="s2">&quot;1&quot;</span><span class="p">,</span> <span class="s2">&quot;t&quot;</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="HRFormatter"><a class="viewcode-back" href="../api/penlog.html#penlog.HRFormatter">[docs]</a><span class="k">class</span> <span class="nc">HRFormatter</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">show_colors</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">show_ids</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">show_lines</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">show_stacktraces</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">show_tags</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">output_type</span><span class="p">:</span> <span class="n">OutputType</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">show_colors</span> <span class="o">=</span> <span class="n">show_colors</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">show_ids</span> <span class="o">=</span> <span class="n">show_ids</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">show_lines</span> <span class="o">=</span> <span class="n">show_lines</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">show_stacktraces</span> <span class="o">=</span> <span class="n">show_stacktraces</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">show_tags</span> <span class="o">=</span> <span class="n">show_tags</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_type</span> <span class="o">=</span> <span class="n">output_type</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_colorize_data</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">prio</span><span class="p">:</span> <span class="n">MessagePrio</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">prio</span> <span class="ow">in</span> <span class="p">(</span>
+            <span class="n">MessagePrio</span><span class="o">.</span><span class="n">EMERGENCY</span><span class="p">,</span>
+            <span class="n">MessagePrio</span><span class="o">.</span><span class="n">ALERT</span><span class="p">,</span>
+            <span class="n">MessagePrio</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">,</span>
+            <span class="n">MessagePrio</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+        <span class="p">):</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">colorize</span><span class="p">(</span><span class="n">Color</span><span class="o">.</span><span class="n">BOLD</span><span class="p">,</span> <span class="n">colorize</span><span class="p">(</span><span class="n">Color</span><span class="o">.</span><span class="n">RED</span><span class="p">,</span> <span class="n">data</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">prio</span> <span class="o">==</span> <span class="n">MessagePrio</span><span class="o">.</span><span class="n">WARNING</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">colorize</span><span class="p">(</span><span class="n">Color</span><span class="o">.</span><span class="n">BOLD</span><span class="p">,</span> <span class="n">colorize</span><span class="p">(</span><span class="n">Color</span><span class="o">.</span><span class="n">YELLOW</span><span class="p">,</span> <span class="n">data</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">prio</span> <span class="o">==</span> <span class="n">MessagePrio</span><span class="o">.</span><span class="n">NOTICE</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">colorize</span><span class="p">(</span><span class="n">Color</span><span class="o">.</span><span class="n">BOLD</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">prio</span> <span class="o">==</span> <span class="n">MessagePrio</span><span class="o">.</span><span class="n">INFO</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">elif</span> <span class="n">prio</span> <span class="ow">in</span> <span class="p">(</span><span class="n">MessagePrio</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span> <span class="n">MessagePrio</span><span class="o">.</span><span class="n">TRACE</span><span class="p">):</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">colorize</span><span class="p">(</span><span class="n">Color</span><span class="o">.</span><span class="n">GRAY</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">data</span>
+
+<div class="viewcode-block" id="HRFormatter.format"><a class="viewcode-back" href="../api/penlog.html#penlog.HRFormatter.format">[docs]</a>    <span class="k">def</span> <span class="nf">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">RecordType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_type</span> <span class="ow">in</span> <span class="p">(</span>
+            <span class="n">OutputType</span><span class="o">.</span><span class="n">HR</span><span class="p">,</span>
+            <span class="n">OutputType</span><span class="o">.</span><span class="n">HR_TINY</span><span class="p">,</span>
+            <span class="n">OutputType</span><span class="o">.</span><span class="n">HR_NANO</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">out</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">ts</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">timestamp</span><span class="p">)</span>
+        <span class="n">ts_formatted</span> <span class="o">=</span> <span class="n">ts</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%b </span><span class="si">%d</span><span class="s2"> %H:%M:%S.</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">)[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">component</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">component</span>
+        <span class="n">msgtype</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">type</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">data</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">show_colors</span><span class="p">:</span>
+            <span class="n">prio</span> <span class="o">=</span> <span class="n">MessagePrio</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">priority</span><span class="p">)</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_colorize_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">prio</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_type</span> <span class="o">==</span> <span class="n">OutputType</span><span class="o">.</span><span class="n">HR_TINY</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ts_formatted</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">data</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_type</span> <span class="o">==</span> <span class="n">OutputType</span><span class="o">.</span><span class="n">HR_NANO</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">data</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_type</span> <span class="o">==</span> <span class="n">OutputType</span><span class="o">.</span><span class="n">HR</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ts_formatted</span><span class="si">}</span><span class="s2"> </span><span class="se">{{</span><span class="si">{</span><span class="n">component</span><span class="si">:</span><span class="s2"> &lt;8</span><span class="se">}}</span><span class="si">}</span><span class="s2"> [</span><span class="si">{</span><span class="n">msgtype</span><span class="si">:</span><span class="s2"> &lt;8</span><span class="si">}</span><span class="s2">]: </span><span class="si">{</span><span class="n">data</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;BUG: this code should not be reachable&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">show_ids</span> <span class="ow">and</span> <span class="n">msg</span><span class="o">.</span><span class="n">id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">show_colors</span><span class="p">:</span>
+                <span class="n">out</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; =&gt; id  : </span><span class="si">{</span><span class="n">colorize</span><span class="p">(</span><span class="n">Color</span><span class="o">.</span><span class="n">YELLOW</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">out</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; =&gt; id  : </span><span class="si">{</span><span class="n">msg</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">show_lines</span> <span class="ow">and</span> <span class="n">msg</span><span class="o">.</span><span class="n">line</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">show_colors</span><span class="p">:</span>
+                <span class="n">out</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; =&gt; line: </span><span class="si">{</span><span class="n">colorize</span><span class="p">(</span><span class="n">Color</span><span class="o">.</span><span class="n">BLUE</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">line</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">out</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; =&gt; line: </span><span class="si">{</span><span class="n">msg</span><span class="o">.</span><span class="n">line</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">show_tags</span> <span class="ow">and</span> <span class="n">msg</span><span class="o">.</span><span class="n">tags</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="n">out</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; =&gt; tags: </span><span class="si">{</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">tags</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">show_stacktraces</span> <span class="ow">and</span> <span class="n">msg</span><span class="o">.</span><span class="n">stacktrace</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="n">out</span> <span class="o">+=</span> <span class="s2">&quot; =&gt; stacktrace:</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">stacktrace</span><span class="o">.</span><span class="n">splitlines</span><span class="p">():</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">show_colors</span><span class="p">:</span>
+                    <span class="n">out</span> <span class="o">+=</span> <span class="n">colorize</span><span class="p">(</span><span class="n">Color</span><span class="o">.</span><span class="n">GRAY</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot; | </span><span class="si">{</span><span class="n">line</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">out</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; | </span><span class="si">{</span><span class="n">line</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="n">out</span></div></div>
+
+
+<div class="viewcode-block" id="Logger"><a class="viewcode-back" href="../api/penlog.html#penlog.Logger">[docs]</a><span class="k">class</span> <span class="nc">Logger</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">component</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;root&quot;</span><span class="p">,</span>
+        <span class="n">flush</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">file_</span><span class="p">:</span> <span class="n">TextIO</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span>
+        <span class="n">loglevel</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">MessagePrio</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">output_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OutputType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">show_colors</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">include_uuid</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">host</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">gethostname</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">component</span> <span class="o">=</span> <span class="n">component</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flush</span> <span class="o">=</span> <span class="n">flush</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file</span> <span class="o">=</span> <span class="n">file_</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">include_uuid</span> <span class="o">=</span> <span class="n">include_uuid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lines</span> <span class="o">=</span> <span class="n">str2bool</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;PENLOG_CAPTURE_LINES&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stacktraces</span> <span class="o">=</span> <span class="n">str2bool</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;PENLOG_CAPTURE_STACKTRACES&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
+
+        <span class="c1"># Default the loglevel to the function argument</span>
+        <span class="c1"># if it is set. Otherwise try to read the environ</span>
+        <span class="c1"># variable. If it is set, validate it. If it is not</span>
+        <span class="c1"># set, default to INFO.</span>
+        <span class="k">if</span> <span class="n">loglevel</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">loglevel</span> <span class="o">=</span> <span class="n">loglevel</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">level</span> <span class="o">:=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;PENLOG_LOGLEVEL&quot;</span><span class="p">))</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">loglevel</span> <span class="o">=</span> <span class="n">MessagePrio</span><span class="o">.</span><span class="n">INFO</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">level_int</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">loglevel</span> <span class="o">=</span> <span class="n">MessagePrio</span><span class="p">(</span><span class="n">level_int</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">level_enum</span> <span class="ow">in</span> <span class="n">MessagePrio</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">level</span> <span class="o">==</span> <span class="n">level_enum</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">loglevel</span> <span class="o">=</span> <span class="n">level_enum</span>
+                            <span class="k">break</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;invalid loglevel&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+
+        <span class="k">if</span> <span class="n">output_type</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">output_type</span> <span class="o">=</span> <span class="n">output_type</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">type_raw</span> <span class="o">:=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;PENLOG_OUTPUT&quot;</span><span class="p">))</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">output_type</span> <span class="o">=</span> <span class="n">OutputType</span><span class="o">.</span><span class="n">HR_NANO</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">output_type</span> <span class="o">=</span> <span class="n">OutputType</span><span class="p">(</span><span class="n">type_raw</span><span class="p">)</span>
+
+        <span class="n">show_colors</span> <span class="o">=</span> <span class="kc">True</span> <span class="k">if</span> <span class="n">show_colors</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">isatty</span><span class="p">()</span> <span class="k">else</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hr_formatter</span> <span class="o">=</span> <span class="n">HRFormatter</span><span class="p">(</span>
+            <span class="n">show_colors</span><span class="o">=</span><span class="n">show_colors</span><span class="p">,</span>
+            <span class="n">show_ids</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">show_lines</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lines</span><span class="p">,</span>
+            <span class="n">show_stacktraces</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stacktraces</span><span class="p">,</span>
+            <span class="n">show_tags</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">output_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_type</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">RecordType</span><span class="p">,</span> <span class="n">depth</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">prio</span> <span class="o">=</span> <span class="n">MessagePrio</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">priority</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">prio</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">loglevel</span><span class="p">:</span>
+                <span class="k">return</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">include_uuid</span><span class="p">:</span>
+            <span class="n">msg</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())</span>
+        <span class="n">msg</span><span class="o">.</span><span class="n">component</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">component</span>
+        <span class="n">msg</span><span class="o">.</span><span class="n">host</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">host</span>
+        <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">astimezone</span><span class="p">()</span>
+        <span class="n">msg</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">=</span> <span class="n">now</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lines</span><span class="p">:</span>
+            <span class="n">msg</span><span class="o">.</span><span class="n">line</span> <span class="o">=</span> <span class="n">_get_line_number</span><span class="p">(</span><span class="n">depth</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stacktraces</span><span class="p">:</span>
+            <span class="n">msg</span><span class="o">.</span><span class="n">stacktrace</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_stack</span><span class="p">())</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_type</span> <span class="o">==</span> <span class="n">OutputType</span><span class="o">.</span><span class="n">JSON</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">asdict</span><span class="p">(</span><span class="n">msg</span><span class="p">)),</span> <span class="n">file</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">flush</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_type</span> <span class="o">==</span> <span class="n">OutputType</span><span class="o">.</span><span class="n">JSON_PRETTY</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">asdict</span><span class="p">(</span><span class="n">msg</span><span class="p">),</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span> <span class="n">file</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">flush</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_type</span> <span class="ow">in</span> <span class="p">(</span>
+            <span class="n">OutputType</span><span class="o">.</span><span class="n">HR</span><span class="p">,</span>
+            <span class="n">OutputType</span><span class="o">.</span><span class="n">HR_TINY</span><span class="p">,</span>
+            <span class="n">OutputType</span><span class="o">.</span><span class="n">HR_NANO</span><span class="p">,</span>
+        <span class="p">):</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hr_formatter</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">flush</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;BUG: invalid penlog output&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Logger.log_msg"><a class="viewcode-back" href="../api/penlog.html#penlog.Logger.log_msg">[docs]</a>    <span class="k">def</span> <span class="nf">log_msg</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="n">type_</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">MESSAGE</span><span class="p">,</span>
+        <span class="n">prio</span><span class="p">:</span> <span class="n">MessagePrio</span> <span class="o">=</span> <span class="n">MessagePrio</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
+        <span class="n">tags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">_depth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">RecordType</span><span class="p">(</span>
+            <span class="n">component</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">data</span><span class="p">),</span>
+            <span class="n">host</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="nb">id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">line</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">priority</span><span class="o">=</span><span class="n">prio</span><span class="p">,</span>
+            <span class="n">stacktrace</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">tags</span><span class="o">=</span><span class="n">tags</span><span class="p">,</span>
+            <span class="n">timestamp</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="n">type_</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">_depth</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Logger.log_trace"><a class="viewcode-back" href="../api/penlog.html#penlog.Logger.log_trace">[docs]</a>    <span class="k">def</span> <span class="nf">log_trace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">tags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_msg</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">MESSAGE</span><span class="p">,</span> <span class="n">MessagePrio</span><span class="o">.</span><span class="n">TRACE</span><span class="p">,</span> <span class="n">tags</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Logger.log_debug"><a class="viewcode-back" href="../api/penlog.html#penlog.Logger.log_debug">[docs]</a>    <span class="k">def</span> <span class="nf">log_debug</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">tags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_msg</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">MESSAGE</span><span class="p">,</span> <span class="n">MessagePrio</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span> <span class="n">tags</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Logger.log_info"><a class="viewcode-back" href="../api/penlog.html#penlog.Logger.log_info">[docs]</a>    <span class="k">def</span> <span class="nf">log_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">tags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_msg</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">MESSAGE</span><span class="p">,</span> <span class="n">MessagePrio</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="n">tags</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Logger.log_notice"><a class="viewcode-back" href="../api/penlog.html#penlog.Logger.log_notice">[docs]</a>    <span class="k">def</span> <span class="nf">log_notice</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">tags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_msg</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">MESSAGE</span><span class="p">,</span> <span class="n">MessagePrio</span><span class="o">.</span><span class="n">NOTICE</span><span class="p">,</span> <span class="n">tags</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Logger.log_warning"><a class="viewcode-back" href="../api/penlog.html#penlog.Logger.log_warning">[docs]</a>    <span class="k">def</span> <span class="nf">log_warning</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">tags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_msg</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">MESSAGE</span><span class="p">,</span> <span class="n">MessagePrio</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span> <span class="n">tags</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Logger.log_error"><a class="viewcode-back" href="../api/penlog.html#penlog.Logger.log_error">[docs]</a>    <span class="k">def</span> <span class="nf">log_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">tags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_msg</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">MESSAGE</span><span class="p">,</span> <span class="n">MessagePrio</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span> <span class="n">tags</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Logger.log_critical"><a class="viewcode-back" href="../api/penlog.html#penlog.Logger.log_critical">[docs]</a>    <span class="k">def</span> <span class="nf">log_critical</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">tags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_msg</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">MESSAGE</span><span class="p">,</span> <span class="n">MessagePrio</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">,</span> <span class="n">tags</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="DiscardLogger"><a class="viewcode-back" href="../api/penlog.html#penlog.DiscardLogger">[docs]</a><span class="k">class</span> <span class="nc">DiscardLogger</span><span class="p">(</span><span class="n">Logger</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">RecordType</span><span class="p">,</span> <span class="n">depth</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">pass</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gallia.utils &mdash; gallia  documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../transports.html">Transports</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../penlog.7.html">penlog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/modules.html">Modules</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      <li>gallia.utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gallia.utils</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-FileCopyrightText: AISEC Pentesting Team</span>
+<span class="c1">#</span>
+<span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
+
+<span class="kn">import</span> <span class="nn">ipaddress</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">argparse</span> <span class="kn">import</span> <span class="n">Action</span><span class="p">,</span> <span class="n">ArgumentError</span><span class="p">,</span> <span class="n">ArgumentParser</span><span class="p">,</span> <span class="n">Namespace</span>
+<span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span> <span class="nn">sys</span> <span class="kn">import</span> <span class="n">stdout</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">urllib.parse</span> <span class="kn">import</span> <span class="n">urlparse</span>
+
+<span class="kn">import</span> <span class="nn">aiofiles</span>
+
+<span class="kn">from</span> <span class="nn">gallia.penlog</span> <span class="kn">import</span> <span class="n">Logger</span>
+<span class="kn">from</span> <span class="nn">gallia.uds.core.service</span> <span class="kn">import</span> <span class="n">NegativeResponse</span>
+<span class="kn">from</span> <span class="nn">gallia.uds.core.utils</span> <span class="kn">import</span> <span class="n">bytes_repr</span><span class="p">,</span> <span class="n">int_repr</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">gallia.db.db_handler</span> <span class="kn">import</span> <span class="n">DBHandler</span>
+    <span class="kn">from</span> <span class="nn">gallia.transports.base</span> <span class="kn">import</span> <span class="n">TargetURI</span>
+
+
+<div class="viewcode-block" id="auto_int"><a class="viewcode-back" href="../../api/gallia.html#gallia.utils.auto_int">[docs]</a><span class="k">def</span> <span class="nf">auto_int</span><span class="p">(</span><span class="n">arg</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="split_host_port"><a class="viewcode-back" href="../../api/gallia.html#gallia.utils.split_host_port">[docs]</a><span class="k">def</span> <span class="nf">split_host_port</span><span class="p">(</span>
+    <span class="n">hostport</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">default_port</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
+    <span class="sd">&quot;&quot;&quot;Splits a combination of ip address/hostname + port into hostname/ip address</span>
+<span class="sd">    and port.  The default_port argument can be used to return a port if it is</span>
+<span class="sd">    absent in the hostport argument.&quot;&quot;&quot;</span>
+    <span class="c1"># Special case: If hostport is an ipv6 then the urlparser does some weird</span>
+    <span class="c1"># things with the colons and tries to parse ports. Catch this case early.</span>
+    <span class="n">host</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">port</span> <span class="o">=</span> <span class="n">default_port</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># If hostport is a valid ip address (v4 or v6) there</span>
+        <span class="c1"># is no port included</span>
+        <span class="n">host</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">ipaddress</span><span class="o">.</span><span class="n">ip_address</span><span class="p">(</span><span class="n">hostport</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+    <span class="c1"># Only parse if hostport is not a valid ip address.</span>
+    <span class="k">if</span> <span class="n">host</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+        <span class="c1"># urlparse() and urlsplit() insists on absolute URLs starting with &quot;//&quot;.</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">urlparse</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;//</span><span class="si">{</span><span class="n">hostport</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">host</span> <span class="o">=</span> <span class="n">url</span><span class="o">.</span><span class="n">hostname</span> <span class="k">if</span> <span class="n">url</span><span class="o">.</span><span class="n">hostname</span> <span class="k">else</span> <span class="n">url</span><span class="o">.</span><span class="n">netloc</span>
+        <span class="n">port</span> <span class="o">=</span> <span class="n">url</span><span class="o">.</span><span class="n">port</span> <span class="k">if</span> <span class="n">url</span><span class="o">.</span><span class="n">port</span> <span class="k">else</span> <span class="n">default_port</span>
+    <span class="k">return</span> <span class="n">host</span><span class="p">,</span> <span class="n">port</span></div>
+
+
+<div class="viewcode-block" id="join_host_port"><a class="viewcode-back" href="../../api/gallia.html#gallia.utils.join_host_port">[docs]</a><span class="k">def</span> <span class="nf">join_host_port</span><span class="p">(</span><span class="n">host</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">port</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">if</span> <span class="s2">&quot;:&quot;</span> <span class="ow">in</span> <span class="n">host</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">host</span><span class="si">}</span><span class="s2">]:port&quot;</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">host</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="camel_to_snake"><a class="viewcode-back" href="../../api/gallia.html#gallia.utils.camel_to_snake">[docs]</a><span class="k">def</span> <span class="nf">camel_to_snake</span><span class="p">(</span><span class="n">s</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Convert a CamelCase string to a snake_case string.&quot;&quot;&quot;</span>
+    <span class="c1"># https://stackoverflow.com/a/12867228</span>
+    <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;((?&lt;=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]))&quot;</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;_\1&quot;</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="camel_to_dash"><a class="viewcode-back" href="../../api/gallia.html#gallia.utils.camel_to_dash">[docs]</a><span class="k">def</span> <span class="nf">camel_to_dash</span><span class="p">(</span><span class="n">s</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Convert a CamelCase string to a dash-case string.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">camel_to_snake</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="isotp_addr_repr"><a class="viewcode-back" href="../../api/gallia.html#gallia.utils.isotp_addr_repr">[docs]</a><span class="k">def</span> <span class="nf">isotp_addr_repr</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Default string representation of a CAN id.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">a</span><span class="si">:</span><span class="s2">02x</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="can_id_repr"><a class="viewcode-back" href="../../api/gallia.html#gallia.utils.can_id_repr">[docs]</a><span class="k">def</span> <span class="nf">can_id_repr</span><span class="p">(</span><span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Default string representation of a CAN id.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">i</span><span class="si">:</span><span class="s2">03x</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="g_repr"><a class="viewcode-back" href="../../api/gallia.html#gallia.utils.g_repr">[docs]</a><span class="k">def</span> <span class="nf">g_repr</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Object string representation with default gallia output settings.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">name</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">repr</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">int_repr</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">x</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">bytes</span><span class="p">,</span> <span class="nb">bytearray</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="n">bytes_repr</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;[</span><span class="si">{</span><span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">g_repr</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">x</span><span class="p">)</span><span class="si">}</span><span class="s1">]&#39;</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="se">{{</span><span class="si">{</span><span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">items</span><span class="p">())</span><span class="si">}</span><span class="se">}}</span><span class="s1">&#39;</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">NegativeResponse</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">repr</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">_unravel</span><span class="p">(</span><span class="n">listing</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+    <span class="n">listing_delimiter</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span>
+    <span class="n">range_delimiter</span> <span class="o">=</span> <span class="s2">&quot;-&quot;</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">range_element</span> <span class="ow">in</span> <span class="n">listing</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">listing_delimiter</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">range_delimiter</span> <span class="ow">in</span> <span class="n">range_element</span><span class="p">:</span>
+            <span class="n">first_tmp</span><span class="p">,</span> <span class="n">last_tmp</span> <span class="o">=</span> <span class="n">range_element</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">range_delimiter</span><span class="p">)</span>
+            <span class="n">first</span> <span class="o">=</span> <span class="n">auto_int</span><span class="p">(</span><span class="n">first_tmp</span><span class="p">)</span>
+            <span class="n">last</span> <span class="o">=</span> <span class="n">auto_int</span><span class="p">(</span><span class="n">last_tmp</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">first</span><span class="p">,</span> <span class="n">last</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="n">result</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">element</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">element</span> <span class="o">=</span> <span class="n">auto_int</span><span class="p">(</span><span class="n">range_element</span><span class="p">)</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">element</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="ParseSkips"><a class="viewcode-back" href="../../api/gallia.html#gallia.utils.ParseSkips">[docs]</a><span class="k">class</span> <span class="nc">ParseSkips</span><span class="p">(</span><span class="n">Action</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">parser</span><span class="p">:</span> <span class="n">ArgumentParser</span><span class="p">,</span>
+        <span class="n">namespace</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">,</span>
+        <span class="n">values</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="kc">None</span><span class="p">],</span>
+        <span class="n">option_string</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">skip_sids</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">values</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">session_skips</span> <span class="ow">in</span> <span class="n">values</span><span class="p">:</span>
+                    <span class="c1"># Whole sessions can be skipped by only giving the session number without ids</span>
+                    <span class="k">if</span> <span class="s2">&quot;:&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">session_skips</span><span class="p">:</span>
+                        <span class="n">session_ids</span> <span class="o">=</span> <span class="n">_unravel</span><span class="p">(</span><span class="n">session_skips</span><span class="p">)</span>
+
+                        <span class="k">for</span> <span class="n">session_id</span> <span class="ow">in</span> <span class="n">session_ids</span><span class="p">:</span>
+                            <span class="n">skip_sids</span><span class="p">[</span><span class="n">session_id</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">session_ids_tmp</span><span class="p">,</span> <span class="n">identifier_ids_tmp</span> <span class="o">=</span> <span class="n">session_skips</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)</span>
+                        <span class="n">session_ids</span> <span class="o">=</span> <span class="n">_unravel</span><span class="p">(</span><span class="n">session_ids_tmp</span><span class="p">)</span>
+                        <span class="n">identifier_ids</span> <span class="o">=</span> <span class="n">_unravel</span><span class="p">(</span><span class="n">identifier_ids_tmp</span><span class="p">)</span>
+
+                        <span class="k">for</span> <span class="n">session_id</span> <span class="ow">in</span> <span class="n">session_ids</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="n">session_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">skip_sids</span><span class="p">:</span>
+                                <span class="n">skip_sids</span><span class="p">[</span><span class="n">session_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+                            <span class="n">session_skips</span> <span class="o">=</span> <span class="n">skip_sids</span><span class="p">[</span><span class="n">session_id</span><span class="p">]</span>
+
+                            <span class="k">if</span> <span class="n">session_skips</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                                <span class="n">session_skips</span> <span class="o">+=</span> <span class="n">identifier_ids</span>
+
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">namespace</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dest</span><span class="p">,</span> <span class="n">skip_sids</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ArgumentError</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;The argument is malformed!&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span></div>
+
+
+<div class="viewcode-block" id="catch_and_log_exception"><a class="viewcode-back" href="../../api/gallia.html#gallia.utils.catch_and_log_exception">[docs]</a><span class="k">async</span> <span class="k">def</span> <span class="nf">catch_and_log_exception</span><span class="p">(</span>
+    <span class="n">logger</span><span class="p">:</span> <span class="n">Logger</span><span class="p">,</span>
+    <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
+    <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Runs an async function. If an exception is raised,</span>
+<span class="sd">    it will be logged via logger.</span>
+
+<span class="sd">    :param logger: an instance of gallia.penlog.Logger</span>
+<span class="sd">    :param func: a async function object which will be awaited</span>
+<span class="sd">    :return: None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">log_error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;func </span><span class="si">{</span><span class="n">func</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> failed: </span><span class="si">{</span><span class="nb">repr</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ANSIEscapes"><a class="viewcode-back" href="../../api/gallia.html#gallia.utils.ANSIEscapes">[docs]</a><span class="k">class</span> <span class="nc">ANSIEscapes</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">stdout</span><span class="o">.</span><span class="n">isatty</span><span class="p">():</span>
+        <span class="n">BOLD</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[1m&quot;</span>
+        <span class="n">ITALIC</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[3m&quot;</span>
+        <span class="n">UNDERSCORE</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[4m&quot;</span>
+        <span class="n">BLINK</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[5m&quot;</span>
+        <span class="n">CROSSED</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[9m&quot;</span>
+
+        <span class="n">BLACK</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[90m&quot;</span>
+        <span class="n">RED</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[91m&quot;</span>
+        <span class="n">GREEN</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[92m&quot;</span>
+        <span class="n">YELLOW</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[93m&quot;</span>
+        <span class="n">BLUE</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[94m&quot;</span>
+        <span class="n">MAGENTA</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[95m&quot;</span>
+        <span class="n">CYAN</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[96m&quot;</span>
+        <span class="n">WHITE</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[97m&quot;</span>
+
+        <span class="n">RESET</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[0m&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">BOLD</span> <span class="o">=</span> <span class="n">ITALIC</span> <span class="o">=</span> <span class="n">UNDERSCORE</span> <span class="o">=</span> <span class="n">BLINK</span> <span class="o">=</span> <span class="n">CROSSED</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">BLACK</span> <span class="o">=</span> <span class="n">RED</span> <span class="o">=</span> <span class="n">GREEN</span> <span class="o">=</span> <span class="n">YELLOW</span> <span class="o">=</span> <span class="n">BLUE</span> <span class="o">=</span> <span class="n">MAGENTA</span> <span class="o">=</span> <span class="n">CYAN</span> <span class="o">=</span> <span class="n">WHITE</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">RESET</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="write_target_list"><a class="viewcode-back" href="../../api/gallia.html#gallia.utils.write_target_list">[docs]</a><span class="k">async</span> <span class="k">def</span> <span class="nf">write_target_list</span><span class="p">(</span>
+    <span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
+    <span class="n">targets</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;TargetURI&quot;</span><span class="p">],</span>
+    <span class="n">db_handler</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;DBHandler&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Write a list of ECU connection strings (urls) into file</span>
+
+<span class="sd">    :param path: output file</span>
+<span class="sd">    :param targets: list of ECUs with ECU specific url and params as dict</span>
+<span class="sd">    :params db_handler: if given, urls are also written to the database as discovery results</span>
+<span class="sd">    :return: None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">urls</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">aiofiles</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">target</span> <span class="ow">in</span> <span class="n">targets</span><span class="p">:</span>
+            <span class="n">urls</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">target</span><span class="p">))</span>
+            <span class="k">await</span> <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">db_handler</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">await</span> <span class="n">db_handler</span><span class="o">.</span><span class="n">insert_discovery_result</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">target</span><span class="p">))</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gallia.udscan.scanner package &mdash; gallia  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="opennetzteil package" href="opennetzteil.html" />
+    <link rel="prev" title="gallia.udscan package" href="gallia.udscan.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../transports.html">Transports</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../penlog.7.html">penlog</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Modules</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="cursed_hr.html">cursed_hr package</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="gallia.html">gallia package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="gallia.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="gallia.db.html">gallia.db package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.services.html">gallia.services package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.transports.html">gallia.transports package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.uds.html">gallia.uds package</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="gallia.udscan.html">gallia.udscan package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gallia.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gallia.html#module-gallia.cli">gallia.cli module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gallia.html#module-gallia.penlab">gallia.penlab module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gallia.html#module-gallia.penlog">gallia.penlog module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gallia.html#module-gallia.utils">gallia.utils module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gallia.html#module-gallia.virtual_ecu">gallia.virtual_ecu module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gallia.html#module-gallia">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="opennetzteil.html">opennetzteil package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="penlog.html">penlog package</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="modules.html">Modules</a> &raquo;</li>
+          <li><a href="gallia.html">gallia package</a> &raquo;</li>
+          <li><a href="gallia.udscan.html">gallia.udscan package</a> &raquo;</li>
+      <li>gallia.udscan.scanner package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/gallia.udscan.scanner.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="gallia-udscan-scanner-package">
+<h1>gallia.udscan.scanner package<a class="headerlink" href="#gallia-udscan-scanner-package" title="Permalink to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-gallia.udscan.scanner.discover_doip">
+<span id="gallia-udscan-scanner-discover-doip-module"></span><h2>gallia.udscan.scanner.discover_doip module<a class="headerlink" href="#module-gallia.udscan.scanner.discover_doip" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.discover_doip.DiscoverDoIP">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.udscan.scanner.discover_doip.</span></span><span class="sig-name descname"><span class="pre">DiscoverDoIP</span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/discover_doip.html#DiscoverDoIP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.discover_doip.DiscoverDoIP" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="gallia.udscan.html#gallia.udscan.core.DiscoveryScanner" title="gallia.udscan.core.DiscoveryScanner"><code class="xref py py-class docutils literal notranslate"><span class="pre">DiscoveryScanner</span></code></a></p>
+<p>ECU and routing discovery scanner for DoIP</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.discover_doip.DiscoverDoIP.add_parser">
+<span class="sig-name descname"><span class="pre">add_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/discover_doip.html#DiscoverDoIP.add_parser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.discover_doip.DiscoverDoIP.add_parser" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.discover_doip.DiscoverDoIP.main">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/discover_doip.html#DiscoverDoIP.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.discover_doip.DiscoverDoIP.main" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.discover_doip.DiscoverDoIP.probe">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">probe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.transports.html#gallia.transports.doip.DoIPConnection" title="gallia.transports.doip.DoIPConnection"><span class="pre">DoIPConnection</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">host</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src_addr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_addr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">activation_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.transports.html#gallia.transports.doip.RoutingActivationRequestTypes" title="gallia.transports.doip.RoutingActivationRequestTypes"><span class="pre">RoutingActivationRequestTypes</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="gallia.transports.html#gallia.transports.base.TargetURI" title="gallia.transports.base.TargetURI"><span class="pre">TargetURI</span></a></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/discover_doip.html#DiscoverDoIP.probe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.discover_doip.DiscoverDoIP.probe" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gallia.udscan.scanner.find_can_ids">
+<span id="gallia-udscan-scanner-find-can-ids-module"></span><h2>gallia.udscan.scanner.find_can_ids module<a class="headerlink" href="#module-gallia.udscan.scanner.find_can_ids" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.find_can_ids.FindCanIDsScanner">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.udscan.scanner.find_can_ids.</span></span><span class="sig-name descname"><span class="pre">FindCanIDsScanner</span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/find_can_ids.html#FindCanIDsScanner"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.find_can_ids.FindCanIDsScanner" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="gallia.udscan.html#gallia.udscan.core.DiscoveryScanner" title="gallia.udscan.core.DiscoveryScanner"><code class="xref py py-class docutils literal notranslate"><span class="pre">DiscoveryScanner</span></code></a></p>
+<p>This scanner discovers all UDS endpoints on a ECU using ISO-TP normal addressing.
+This is the default protocol used by OBD.
+When using normal addressing, the ISO-TP header does not include an address and there is no generic tester address.
+Addressing is only done via CAN IDs. Every endpoint has a source and destination CAN ID.
+Typically, there is also a broadcast destination ID to address all endpoints.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.find_can_ids.FindCanIDsScanner.add_parser">
+<span class="sig-name descname"><span class="pre">add_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/find_can_ids.html#FindCanIDsScanner.add_parser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.find_can_ids.FindCanIDsScanner.add_parser" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.find_can_ids.FindCanIDsScanner.build_isotp_frame">
+<span class="sig-name descname"><span class="pre">build_isotp_frame</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">req</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSRequest" title="gallia.uds.core.service.UDSRequest"><span class="pre">UDSRequest</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">ext_addr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padding</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/find_can_ids.html#FindCanIDsScanner.build_isotp_frame"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.find_can_ids.FindCanIDsScanner.build_isotp_frame" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.find_can_ids.FindCanIDsScanner.main">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/find_can_ids.html#FindCanIDsScanner.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.find_can_ids.FindCanIDsScanner.main" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.find_can_ids.FindCanIDsScanner.query_description">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">query_description</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.transports.html#gallia.transports.base.TargetURI" title="gallia.transports.base.TargetURI"><span class="pre">gallia.transports.base.TargetURI</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">did</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/find_can_ids.html#FindCanIDsScanner.query_description"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.find_can_ids.FindCanIDsScanner.query_description" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.find_can_ids.FindCanIDsScanner.setup">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">setup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/find_can_ids.html#FindCanIDsScanner.setup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.find_can_ids.FindCanIDsScanner.setup" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gallia.udscan.scanner.find_xcp">
+<span id="gallia-udscan-scanner-find-xcp-module"></span><h2>gallia.udscan.scanner.find_xcp module<a class="headerlink" href="#module-gallia.udscan.scanner.find_xcp" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.find_xcp.FindXCP">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.udscan.scanner.find_xcp.</span></span><span class="sig-name descname"><span class="pre">FindXCP</span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/find_xcp.html#FindXCP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.find_xcp.FindXCP" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Find XCP Slave</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.find_xcp.FindXCP.add_parser">
+<span class="sig-name descname"><span class="pre">add_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/find_xcp.html#FindXCP.add_parser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.find_xcp.FindXCP.add_parser" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.find_xcp.FindXCP.main">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/find_xcp.html#FindXCP.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.find_xcp.FindXCP.main" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.find_xcp.FindXCP.pack_xcp_eth">
+<span class="sig-name descname"><span class="pre">pack_xcp_eth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ctr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/find_xcp.html#FindXCP.pack_xcp_eth"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.find_xcp.FindXCP.pack_xcp_eth" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.find_xcp.FindXCP.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/find_xcp.html#FindXCP.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.find_xcp.FindXCP.run" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.find_xcp.FindXCP.test_can">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">test_can</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/find_xcp.html#FindXCP.test_can"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.find_xcp.FindXCP.test_can" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.find_xcp.FindXCP.test_eth_broadcast">
+<span class="sig-name descname"><span class="pre">test_eth_broadcast</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/find_xcp.html#FindXCP.test_eth_broadcast"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.find_xcp.FindXCP.test_eth_broadcast" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.find_xcp.FindXCP.test_tcp">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">test_tcp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/find_xcp.html#FindXCP.test_tcp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.find_xcp.FindXCP.test_tcp" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.find_xcp.FindXCP.test_udp">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">test_udp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/find_xcp.html#FindXCP.test_udp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.find_xcp.FindXCP.test_udp" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.find_xcp.FindXCP.unpack_xcp_eth">
+<span class="sig-name descname"><span class="pre">unpack_xcp_eth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/find_xcp.html#FindXCP.unpack_xcp_eth"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.find_xcp.FindXCP.unpack_xcp_eth" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.find_xcp.FindXCP.xcp_disconnect">
+<span class="sig-name descname"><span class="pre">xcp_disconnect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/find_xcp.html#FindXCP.xcp_disconnect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.find_xcp.FindXCP.xcp_disconnect" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.find_xcp.main">
+<span class="sig-prename descclassname"><span class="pre">gallia.udscan.scanner.find_xcp.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/find_xcp.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.find_xcp.main" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="module-gallia.udscan.scanner.fuzz_payloads">
+<span id="gallia-udscan-scanner-fuzz-payloads-module"></span><h2>gallia.udscan.scanner.fuzz_payloads module<a class="headerlink" href="#module-gallia.udscan.scanner.fuzz_payloads" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.fuzz_payloads.FuzzPayloads">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.udscan.scanner.fuzz_payloads.</span></span><span class="sig-name descname"><span class="pre">FuzzPayloads</span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/fuzz_payloads.html#FuzzPayloads"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.fuzz_payloads.FuzzPayloads" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="gallia.udscan.html#gallia.udscan.core.UDSScanner" title="gallia.udscan.core.UDSScanner"><code class="xref py py-class docutils literal notranslate"><span class="pre">UDSScanner</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.fuzz_payloads.FuzzPayloads.add_parser">
+<span class="sig-name descname"><span class="pre">add_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/fuzz_payloads.html#FuzzPayloads.add_parser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.fuzz_payloads.FuzzPayloads.add_parser" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.fuzz_payloads.FuzzPayloads.generate_payload">
+<span class="sig-name descname"><span class="pre">generate_payload</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/fuzz_payloads.html#FuzzPayloads.generate_payload"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.fuzz_payloads.FuzzPayloads.generate_payload" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.fuzz_payloads.FuzzPayloads.main">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/fuzz_payloads.html#FuzzPayloads.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.fuzz_payloads.FuzzPayloads.main" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.fuzz_payloads.FuzzPayloads.observe_can_messages">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">observe_can_messages</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">can_ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/fuzz_payloads.html#FuzzPayloads.observe_can_messages"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.fuzz_payloads.FuzzPayloads.observe_can_messages" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gallia.udscan.scanner.scan_identifiers">
+<span id="gallia-udscan-scanner-scan-identifiers-module"></span><h2>gallia.udscan.scanner.scan_identifiers module<a class="headerlink" href="#module-gallia.udscan.scanner.scan_identifiers" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.scan_identifiers.ScanIdentifiers">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.udscan.scanner.scan_identifiers.</span></span><span class="sig-name descname"><span class="pre">ScanIdentifiers</span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/scan_identifiers.html#ScanIdentifiers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.scan_identifiers.ScanIdentifiers" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="gallia.udscan.html#gallia.udscan.core.UDSScanner" title="gallia.udscan.core.UDSScanner"><code class="xref py py-class docutils literal notranslate"><span class="pre">UDSScanner</span></code></a></p>
+<p>This scanner scans DataIdentifiers of various
+services. Specific requirements such as for RoutineControl or SecurityAccess
+are considered and implemented in the script.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.scan_identifiers.ScanIdentifiers.add_parser">
+<span class="sig-name descname"><span class="pre">add_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/scan_identifiers.html#ScanIdentifiers.add_parser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.scan_identifiers.ScanIdentifiers.add_parser" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.scan_identifiers.ScanIdentifiers.main">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/scan_identifiers.html#ScanIdentifiers.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.scan_identifiers.ScanIdentifiers.main" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gallia.udscan.scanner.scan_memory_functions">
+<span id="gallia-udscan-scanner-scan-memory-functions-module"></span><h2>gallia.udscan.scanner.scan_memory_functions module<a class="headerlink" href="#module-gallia.udscan.scanner.scan_memory_functions" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.scan_memory_functions.ScanWriteDataByAddress">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.udscan.scanner.scan_memory_functions.</span></span><span class="sig-name descname"><span class="pre">ScanWriteDataByAddress</span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/scan_memory_functions.html#ScanWriteDataByAddress"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.scan_memory_functions.ScanWriteDataByAddress" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="gallia.udscan.html#gallia.udscan.core.UDSScanner" title="gallia.udscan.core.UDSScanner"><code class="xref py py-class docutils literal notranslate"><span class="pre">UDSScanner</span></code></a></p>
+<p>This scanner scans functions with direct access to memory.
+Specifically, these are service 0x3d WriteMemoryByAddress, 0x34 RequestDownload
+and 0x35 RequestUpload, which all share the same packet structure, except for
+0x3d which requires an additional data field.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.scan_memory_functions.ScanWriteDataByAddress.add_parser">
+<span class="sig-name descname"><span class="pre">add_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/scan_memory_functions.html#ScanWriteDataByAddress.add_parser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.scan_memory_functions.ScanWriteDataByAddress.add_parser" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.scan_memory_functions.ScanWriteDataByAddress.main">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/scan_memory_functions.html#ScanWriteDataByAddress.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.scan_memory_functions.ScanWriteDataByAddress.main" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.scan_memory_functions.ScanWriteDataByAddress.scan_memory_address">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">scan_memory_address</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">addr_offset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/scan_memory_functions.html#ScanWriteDataByAddress.scan_memory_address"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.scan_memory_functions.ScanWriteDataByAddress.scan_memory_address" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gallia.udscan.scanner.scan_reset">
+<span id="gallia-udscan-scanner-scan-reset-module"></span><h2>gallia.udscan.scanner.scan_reset module<a class="headerlink" href="#module-gallia.udscan.scanner.scan_reset" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.scan_reset.ScanReset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.udscan.scanner.scan_reset.</span></span><span class="sig-name descname"><span class="pre">ScanReset</span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/scan_reset.html#ScanReset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.scan_reset.ScanReset" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="gallia.udscan.html#gallia.udscan.core.UDSScanner" title="gallia.udscan.core.UDSScanner"><code class="xref py py-class docutils literal notranslate"><span class="pre">UDSScanner</span></code></a></p>
+<p>cmd_scan_reset</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.scan_reset.ScanReset.add_parser">
+<span class="sig-name descname"><span class="pre">add_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/scan_reset.html#ScanReset.add_parser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.scan_reset.ScanReset.add_parser" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.scan_reset.ScanReset.main">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/scan_reset.html#ScanReset.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.scan_reset.ScanReset.main" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gallia.udscan.scanner.scan_sa_dump_seeds">
+<span id="gallia-udscan-scanner-scan-sa-dump-seeds-module"></span><h2>gallia.udscan.scanner.scan_sa_dump_seeds module<a class="headerlink" href="#module-gallia.udscan.scanner.scan_sa_dump_seeds" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.scan_sa_dump_seeds.SaDumpSeeds">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.udscan.scanner.scan_sa_dump_seeds.</span></span><span class="sig-name descname"><span class="pre">SaDumpSeeds</span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/scan_sa_dump_seeds.html#SaDumpSeeds"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.scan_sa_dump_seeds.SaDumpSeeds" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="gallia.udscan.html#gallia.udscan.core.UDSScanner" title="gallia.udscan.core.UDSScanner"><code class="xref py py-class docutils literal notranslate"><span class="pre">UDSScanner</span></code></a></p>
+<p>This scanner tries to enable ProgrammingSession and dump seeds for 12h.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.scan_sa_dump_seeds.SaDumpSeeds.add_parser">
+<span class="sig-name descname"><span class="pre">add_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/scan_sa_dump_seeds.html#SaDumpSeeds.add_parser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.scan_sa_dump_seeds.SaDumpSeeds.add_parser" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.scan_sa_dump_seeds.SaDumpSeeds.log_size">
+<span class="sig-name descname"><span class="pre">log_size</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_delta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/scan_sa_dump_seeds.html#SaDumpSeeds.log_size"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.scan_sa_dump_seeds.SaDumpSeeds.log_size" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.scan_sa_dump_seeds.SaDumpSeeds.main">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/scan_sa_dump_seeds.html#SaDumpSeeds.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.scan_sa_dump_seeds.SaDumpSeeds.main" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.scan_sa_dump_seeds.SaDumpSeeds.request_seed">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">request_seed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/scan_sa_dump_seeds.html#SaDumpSeeds.request_seed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.scan_sa_dump_seeds.SaDumpSeeds.request_seed" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.scan_sa_dump_seeds.SaDumpSeeds.send_key">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">send_key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/scan_sa_dump_seeds.html#SaDumpSeeds.send_key"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.scan_sa_dump_seeds.SaDumpSeeds.send_key" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gallia.udscan.scanner.scan_services">
+<span id="gallia-udscan-scanner-scan-services-module"></span><h2>gallia.udscan.scanner.scan_services module<a class="headerlink" href="#module-gallia.udscan.scanner.scan_services" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.scan_services.ScanServices">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.udscan.scanner.scan_services.</span></span><span class="sig-name descname"><span class="pre">ScanServices</span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/scan_services.html#ScanServices"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.scan_services.ScanServices" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="gallia.udscan.html#gallia.udscan.core.UDSScanner" title="gallia.udscan.core.UDSScanner"><code class="xref py py-class docutils literal notranslate"><span class="pre">UDSScanner</span></code></a></p>
+<p>Iterate sessions and services and find endpoints</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.scan_services.ScanServices.add_parser">
+<span class="sig-name descname"><span class="pre">add_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/scan_services.html#ScanServices.add_parser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.scan_services.ScanServices.add_parser" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.scan_services.ScanServices.main">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/scan_services.html#ScanServices.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.scan_services.ScanServices.main" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gallia.udscan.scanner.scan_sessions">
+<span id="gallia-udscan-scanner-scan-sessions-module"></span><h2>gallia.udscan.scanner.scan_sessions module<a class="headerlink" href="#module-gallia.udscan.scanner.scan_sessions" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.scan_sessions.IterateSessions">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.udscan.scanner.scan_sessions.</span></span><span class="sig-name descname"><span class="pre">IterateSessions</span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/scan_sessions.html#IterateSessions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.scan_sessions.IterateSessions" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="gallia.udscan.html#gallia.udscan.core.UDSScanner" title="gallia.udscan.core.UDSScanner"><code class="xref py py-class docutils literal notranslate"><span class="pre">UDSScanner</span></code></a></p>
+<p>Iterate Sessions</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.scan_sessions.IterateSessions.add_parser">
+<span class="sig-name descname"><span class="pre">add_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/scan_sessions.html#IterateSessions.add_parser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.scan_sessions.IterateSessions.add_parser" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.scan_sessions.IterateSessions.main">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/scan_sessions.html#IterateSessions.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.scan_sessions.IterateSessions.main" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.scan_sessions.IterateSessions.recover_stack">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">recover_stack</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stack</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_hooks</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/scan_sessions.html#IterateSessions.recover_stack"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.scan_sessions.IterateSessions.recover_stack" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.scan_sessions.IterateSessions.set_session_with_hooks_handling">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">set_session_with_hooks_handling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_hooks</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.NegativeResponse" title="gallia.uds.core.service.NegativeResponse"><span class="pre">NegativeResponse</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.DiagnosticSessionControlResponse" title="gallia.uds.core.service.DiagnosticSessionControlResponse"><span class="pre">DiagnosticSessionControlResponse</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/scan_sessions.html#IterateSessions.set_session_with_hooks_handling"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.scan_sessions.IterateSessions.set_session_with_hooks_handling" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gallia.udscan.scanner.simple_dtc">
+<span id="gallia-udscan-scanner-simple-dtc-module"></span><h2>gallia.udscan.scanner.simple_dtc module<a class="headerlink" href="#module-gallia.udscan.scanner.simple_dtc" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_dtc.DTCScanner">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.udscan.scanner.simple_dtc.</span></span><span class="sig-name descname"><span class="pre">DTCScanner</span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_dtc.html#DTCScanner"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_dtc.DTCScanner" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="gallia.udscan.html#gallia.udscan.core.UDSScanner" title="gallia.udscan.core.UDSScanner"><code class="xref py py-class docutils literal notranslate"><span class="pre">UDSScanner</span></code></a></p>
+<p>cmd_dtc</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_dtc.DTCScanner.add_parser">
+<span class="sig-name descname"><span class="pre">add_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_dtc.html#DTCScanner.add_parser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_dtc.DTCScanner.add_parser" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_dtc.DTCScanner.clear">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">clear</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_dtc.html#DTCScanner.clear"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_dtc.DTCScanner.clear" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_dtc.DTCScanner.control">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">control</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_dtc.html#DTCScanner.control"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_dtc.DTCScanner.control" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_dtc.DTCScanner.fetch_error_codes">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fetch_error_codes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">split</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_dtc.html#DTCScanner.fetch_error_codes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_dtc.DTCScanner.fetch_error_codes" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_dtc.DTCScanner.main">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_dtc.html#DTCScanner.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_dtc.DTCScanner.main" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_dtc.DTCScanner.read">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_dtc.html#DTCScanner.read"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_dtc.DTCScanner.read" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_dtc.DTCScanner.show_bit_legend">
+<span class="sig-name descname"><span class="pre">show_bit_legend</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_dtc.html#DTCScanner.show_bit_legend"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_dtc.DTCScanner.show_bit_legend" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_dtc.DTCScanner.show_summary">
+<span class="sig-name descname"><span class="pre">show_summary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dtcs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_dtc.html#DTCScanner.show_summary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_dtc.DTCScanner.show_summary" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gallia.udscan.scanner.simple_ecu_reset">
+<span id="gallia-udscan-scanner-simple-ecu-reset-module"></span><h2>gallia.udscan.scanner.simple_ecu_reset module<a class="headerlink" href="#module-gallia.udscan.scanner.simple_ecu_reset" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_ecu_reset.EcuReset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.udscan.scanner.simple_ecu_reset.</span></span><span class="sig-name descname"><span class="pre">EcuReset</span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_ecu_reset.html#EcuReset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_ecu_reset.EcuReset" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="gallia.udscan.html#gallia.udscan.core.UDSScanner" title="gallia.udscan.core.UDSScanner"><code class="xref py py-class docutils literal notranslate"><span class="pre">UDSScanner</span></code></a></p>
+<p>ECU_Reset</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_ecu_reset.EcuReset.add_parser">
+<span class="sig-name descname"><span class="pre">add_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_ecu_reset.html#EcuReset.add_parser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_ecu_reset.EcuReset.add_parser" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_ecu_reset.EcuReset.main">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_ecu_reset.html#EcuReset.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_ecu_reset.EcuReset.main" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gallia.udscan.scanner.simple_get_vin">
+<span id="gallia-udscan-scanner-simple-get-vin-module"></span><h2>gallia.udscan.scanner.simple_get_vin module<a class="headerlink" href="#module-gallia.udscan.scanner.simple_get_vin" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_get_vin.GetVin">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.udscan.scanner.simple_get_vin.</span></span><span class="sig-name descname"><span class="pre">GetVin</span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_get_vin.html#GetVin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_get_vin.GetVin" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="gallia.udscan.html#gallia.udscan.core.UDSScanner" title="gallia.udscan.core.UDSScanner"><code class="xref py py-class docutils literal notranslate"><span class="pre">UDSScanner</span></code></a></p>
+<p>Request VIN</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_get_vin.GetVin.add_parser">
+<span class="sig-name descname"><span class="pre">add_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_get_vin.html#GetVin.add_parser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_get_vin.GetVin.add_parser" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_get_vin.GetVin.main">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_get_vin.html#GetVin.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_get_vin.GetVin.main" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gallia.udscan.scanner.simple_iocbi">
+<span id="gallia-udscan-scanner-simple-iocbi-module"></span><h2>gallia.udscan.scanner.simple_iocbi module<a class="headerlink" href="#module-gallia.udscan.scanner.simple_iocbi" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_iocbi.IOCBI">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.udscan.scanner.simple_iocbi.</span></span><span class="sig-name descname"><span class="pre">IOCBI</span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_iocbi.html#IOCBI"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_iocbi.IOCBI" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="gallia.udscan.html#gallia.udscan.core.UDSScanner" title="gallia.udscan.core.UDSScanner"><code class="xref py py-class docutils literal notranslate"><span class="pre">UDSScanner</span></code></a></p>
+<p>Input output control</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_iocbi.IOCBI.add_parser">
+<span class="sig-name descname"><span class="pre">add_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_iocbi.html#IOCBI.add_parser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_iocbi.IOCBI.add_parser" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_iocbi.IOCBI.main">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_iocbi.html#IOCBI.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_iocbi.IOCBI.main" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gallia.udscan.scanner.simple_ping">
+<span id="gallia-udscan-scanner-simple-ping-module"></span><h2>gallia.udscan.scanner.simple_ping module<a class="headerlink" href="#module-gallia.udscan.scanner.simple_ping" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_ping.Ping">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.udscan.scanner.simple_ping.</span></span><span class="sig-name descname"><span class="pre">Ping</span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_ping.html#Ping"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_ping.Ping" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="gallia.udscan.html#gallia.udscan.core.UDSScanner" title="gallia.udscan.core.UDSScanner"><code class="xref py py-class docutils literal notranslate"><span class="pre">UDSScanner</span></code></a></p>
+<p>Ping ECU via Tester Present</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_ping.Ping.add_parser">
+<span class="sig-name descname"><span class="pre">add_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_ping.html#Ping.add_parser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_ping.Ping.add_parser" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_ping.Ping.main">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_ping.html#Ping.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_ping.Ping.main" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gallia.udscan.scanner.simple_read_by_identifier">
+<span id="gallia-udscan-scanner-simple-read-by-identifier-module"></span><h2>gallia.udscan.scanner.simple_read_by_identifier module<a class="headerlink" href="#module-gallia.udscan.scanner.simple_read_by_identifier" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_read_by_identifier.ReadByIdentifier">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.udscan.scanner.simple_read_by_identifier.</span></span><span class="sig-name descname"><span class="pre">ReadByIdentifier</span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_read_by_identifier.html#ReadByIdentifier"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_read_by_identifier.ReadByIdentifier" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="gallia.udscan.html#gallia.udscan.core.UDSScanner" title="gallia.udscan.core.UDSScanner"><code class="xref py py-class docutils literal notranslate"><span class="pre">UDSScanner</span></code></a></p>
+<p>cmd_readByIdentifier</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_read_by_identifier.ReadByIdentifier.add_parser">
+<span class="sig-name descname"><span class="pre">add_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_read_by_identifier.html#ReadByIdentifier.add_parser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_read_by_identifier.ReadByIdentifier.add_parser" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_read_by_identifier.ReadByIdentifier.main">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_read_by_identifier.html#ReadByIdentifier.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_read_by_identifier.ReadByIdentifier.main" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gallia.udscan.scanner.simple_read_error_log">
+<span id="gallia-udscan-scanner-simple-read-error-log-module"></span><h2>gallia.udscan.scanner.simple_read_error_log module<a class="headerlink" href="#module-gallia.udscan.scanner.simple_read_error_log" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_read_error_log.ReadErrorLog">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.udscan.scanner.simple_read_error_log.</span></span><span class="sig-name descname"><span class="pre">ReadErrorLog</span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_read_error_log.html#ReadErrorLog"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_read_error_log.ReadErrorLog" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="gallia.udscan.html#gallia.udscan.core.UDSScanner" title="gallia.udscan.core.UDSScanner"><code class="xref py py-class docutils literal notranslate"><span class="pre">UDSScanner</span></code></a></p>
+<p>read_error_log</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_read_error_log.ReadErrorLog.add_parser">
+<span class="sig-name descname"><span class="pre">add_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_read_error_log.html#ReadErrorLog.add_parser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_read_error_log.ReadErrorLog.add_parser" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_read_error_log.ReadErrorLog.main">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_read_error_log.html#ReadErrorLog.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_read_error_log.ReadErrorLog.main" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gallia.udscan.scanner.simple_rmba">
+<span id="gallia-udscan-scanner-simple-rmba-module"></span><h2>gallia.udscan.scanner.simple_rmba module<a class="headerlink" href="#module-gallia.udscan.scanner.simple_rmba" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_rmba.ReadMemoryByAddressScanner">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.udscan.scanner.simple_rmba.</span></span><span class="sig-name descname"><span class="pre">ReadMemoryByAddressScanner</span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_rmba.html#ReadMemoryByAddressScanner"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_rmba.ReadMemoryByAddressScanner" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="gallia.udscan.html#gallia.udscan.core.UDSScanner" title="gallia.udscan.core.UDSScanner"><code class="xref py py-class docutils literal notranslate"><span class="pre">UDSScanner</span></code></a></p>
+<p>Read memory by address</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_rmba.ReadMemoryByAddressScanner.add_parser">
+<span class="sig-name descname"><span class="pre">add_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_rmba.html#ReadMemoryByAddressScanner.add_parser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_rmba.ReadMemoryByAddressScanner.add_parser" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_rmba.ReadMemoryByAddressScanner.main">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_rmba.html#ReadMemoryByAddressScanner.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_rmba.ReadMemoryByAddressScanner.main" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gallia.udscan.scanner.simple_rtcl">
+<span id="gallia-udscan-scanner-simple-rtcl-module"></span><h2>gallia.udscan.scanner.simple_rtcl module<a class="headerlink" href="#module-gallia.udscan.scanner.simple_rtcl" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_rtcl.RTCL">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.udscan.scanner.simple_rtcl.</span></span><span class="sig-name descname"><span class="pre">RTCL</span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_rtcl.html#RTCL"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_rtcl.RTCL" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="gallia.udscan.html#gallia.udscan.core.UDSScanner" title="gallia.udscan.core.UDSScanner"><code class="xref py py-class docutils literal notranslate"><span class="pre">UDSScanner</span></code></a></p>
+<p>Start or stop a provided routine or request its results</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_rtcl.RTCL.add_parser">
+<span class="sig-name descname"><span class="pre">add_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_rtcl.html#RTCL.add_parser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_rtcl.RTCL.add_parser" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_rtcl.RTCL.main">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_rtcl.html#RTCL.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_rtcl.RTCL.main" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gallia.udscan.scanner.simple_send_pdu">
+<span id="gallia-udscan-scanner-simple-send-pdu-module"></span><h2>gallia.udscan.scanner.simple_send_pdu module<a class="headerlink" href="#module-gallia.udscan.scanner.simple_send_pdu" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_send_pdu.SendPDU">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.udscan.scanner.simple_send_pdu.</span></span><span class="sig-name descname"><span class="pre">SendPDU</span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_send_pdu.html#SendPDU"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_send_pdu.SendPDU" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="gallia.udscan.html#gallia.udscan.core.UDSScanner" title="gallia.udscan.core.UDSScanner"><code class="xref py py-class docutils literal notranslate"><span class="pre">UDSScanner</span></code></a></p>
+<p>A raw scanner to send a plain pdu</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_send_pdu.SendPDU.add_parser">
+<span class="sig-name descname"><span class="pre">add_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_send_pdu.html#SendPDU.add_parser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_send_pdu.SendPDU.add_parser" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_send_pdu.SendPDU.main">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_send_pdu.html#SendPDU.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_send_pdu.SendPDU.main" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gallia.udscan.scanner.simple_test_xcp">
+<span id="gallia-udscan-scanner-simple-test-xcp-module"></span><h2>gallia.udscan.scanner.simple_test_xcp module<a class="headerlink" href="#module-gallia.udscan.scanner.simple_test_xcp" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_test_xcp.TestXCP">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.udscan.scanner.simple_test_xcp.</span></span><span class="sig-name descname"><span class="pre">TestXCP</span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_test_xcp.html#TestXCP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_test_xcp.TestXCP" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="gallia.udscan.html#gallia.udscan.core.Scanner" title="gallia.udscan.core.Scanner"><code class="xref py py-class docutils literal notranslate"><span class="pre">Scanner</span></code></a></p>
+<p>Test XCP Slave</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_test_xcp.TestXCP.add_parser">
+<span class="sig-name descname"><span class="pre">add_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_test_xcp.html#TestXCP.add_parser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_test_xcp.TestXCP.add_parser" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_test_xcp.TestXCP.main">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_test_xcp.html#TestXCP.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_test_xcp.TestXCP.main" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gallia.udscan.scanner.simple_wmba">
+<span id="gallia-udscan-scanner-simple-wmba-module"></span><h2>gallia.udscan.scanner.simple_wmba module<a class="headerlink" href="#module-gallia.udscan.scanner.simple_wmba" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_wmba.WriteMemoryByAddressScanner">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.udscan.scanner.simple_wmba.</span></span><span class="sig-name descname"><span class="pre">WriteMemoryByAddressScanner</span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_wmba.html#WriteMemoryByAddressScanner"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_wmba.WriteMemoryByAddressScanner" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="gallia.udscan.html#gallia.udscan.core.UDSScanner" title="gallia.udscan.core.UDSScanner"><code class="xref py py-class docutils literal notranslate"><span class="pre">UDSScanner</span></code></a></p>
+<p>Write memory by address</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_wmba.WriteMemoryByAddressScanner.add_parser">
+<span class="sig-name descname"><span class="pre">add_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_wmba.html#WriteMemoryByAddressScanner.add_parser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_wmba.WriteMemoryByAddressScanner.add_parser" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_wmba.WriteMemoryByAddressScanner.main">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_wmba.html#WriteMemoryByAddressScanner.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_wmba.WriteMemoryByAddressScanner.main" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gallia.udscan.scanner.simple_write_by_identifier">
+<span id="gallia-udscan-scanner-simple-write-by-identifier-module"></span><h2>gallia.udscan.scanner.simple_write_by_identifier module<a class="headerlink" href="#module-gallia.udscan.scanner.simple_write_by_identifier" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_write_by_identifier.WriteByIdentifier">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.udscan.scanner.simple_write_by_identifier.</span></span><span class="sig-name descname"><span class="pre">WriteByIdentifier</span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_write_by_identifier.html#WriteByIdentifier"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_write_by_identifier.WriteByIdentifier" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="gallia.udscan.html#gallia.udscan.core.UDSScanner" title="gallia.udscan.core.UDSScanner"><code class="xref py py-class docutils literal notranslate"><span class="pre">UDSScanner</span></code></a></p>
+<p>A simple scanner to talk to the write by identifier service</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_write_by_identifier.WriteByIdentifier.add_parser">
+<span class="sig-name descname"><span class="pre">add_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_write_by_identifier.html#WriteByIdentifier.add_parser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_write_by_identifier.WriteByIdentifier.add_parser" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.udscan.scanner.simple_write_by_identifier.WriteByIdentifier.main">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/udscan/scanner/simple_write_by_identifier.html#WriteByIdentifier.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.udscan.scanner.simple_write_by_identifier.WriteByIdentifier.main" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gallia.udscan.scanner">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-gallia.udscan.scanner" title="Permalink to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="gallia.udscan.html" class="btn btn-neutral float-left" title="gallia.udscan package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="opennetzteil.html" class="btn btn-neutral float-right" title="opennetzteil package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

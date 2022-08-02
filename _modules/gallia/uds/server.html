@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gallia.uds.server &mdash; gallia  documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../transports.html">Transports</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../penlog.7.html">penlog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/modules.html">Modules</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>gallia.uds.server</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gallia.uds.server</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-FileCopyrightText: AISEC Pentesting Team</span>
+<span class="c1">#</span>
+<span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
+
+<span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">traceback</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span> <span class="nn">binascii</span> <span class="kn">import</span> <span class="n">b2a_hex</span><span class="p">,</span> <span class="n">unhexlify</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">copy</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">time</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">aiosqlite</span>
+
+<span class="kn">from</span> <span class="nn">gallia.penlog</span> <span class="kn">import</span> <span class="n">Logger</span>
+<span class="kn">from</span> <span class="nn">gallia.transports.base</span> <span class="kn">import</span> <span class="n">TargetURI</span>
+<span class="kn">from</span> <span class="nn">gallia.transports.can</span> <span class="kn">import</span> <span class="n">ISOTPTransport</span>
+<span class="kn">from</span> <span class="nn">gallia.uds.core</span> <span class="kn">import</span> <span class="n">service</span>
+<span class="kn">from</span> <span class="nn">gallia.uds.core.constants</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">DataIdentifier</span><span class="p">,</span>
+    <span class="n">ERSubFuncs</span><span class="p">,</span>
+    <span class="n">RCSubFuncs</span><span class="p">,</span>
+    <span class="n">RDTCISubFuncs</span><span class="p">,</span>
+    <span class="n">UDSErrorCodes</span><span class="p">,</span>
+    <span class="n">UDSIsoServices</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">gallia.uds.core.utils</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">bytes_repr</span><span class="p">,</span>
+    <span class="n">int_repr</span><span class="p">,</span>
+    <span class="n">service_repr</span><span class="p">,</span>
+    <span class="n">to_bytes</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">gallia.uds.ecu</span> <span class="kn">import</span> <span class="n">ECUState</span>
+
+
+<div class="viewcode-block" id="UDSServer"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.UDSServer">[docs]</a><span class="k">class</span> <span class="nc">UDSServer</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="n">ECUState</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">Logger</span><span class="p">(</span><span class="n">component</span><span class="o">=</span><span class="s2">&quot;v-ecu&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_default_response_if_service_not_supported</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_default_response_if_missing_sub_function</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_default_response_if_sub_function_not_supported</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_default_response_if_incorrect_format</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_default_response_if_session_change</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_default_response_if_session_read</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_default_response_if_tester_present</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_default_response_if_none</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_default_response_if_suppress</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="nd">@property</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">supported_services</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="n">UDSIsoServices</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]]:</span>
+        <span class="o">...</span>
+
+<div class="viewcode-block" id="UDSServer.default_response_if_service_not_supported"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.UDSServer.default_response_if_service_not_supported">[docs]</a>    <span class="k">def</span> <span class="nf">default_response_if_service_not_supported</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSRequest</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span><span class="p">]:</span>
+        <span class="k">assert</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">supported_services</span>
+        <span class="p">),</span> <span class="s2">&quot;Virtual ECU in unsupported session&quot;</span>
+
+        <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">service_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">supported_services</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">service_id</span> <span class="ow">in</span> <span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">supported_services</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+                <span class="n">nrc</span> <span class="o">=</span> <span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">serviceNotSupportedInActiveSession</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">nrc</span> <span class="o">=</span> <span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">serviceNotSupported</span>
+
+            <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">service_id</span><span class="p">,</span> <span class="n">nrc</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+    <span class="k">def</span> <span class="nf">_is_sub_function_service</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">service_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">service_class</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">service</span><span class="o">.</span><span class="n">UDSService</span><span class="o">.</span><span class="n">_SERVICES</span><span class="p">[</span>  <span class="c1"># pylint: disable=protected-access</span>
+                    <span class="n">UDSIsoServices</span><span class="p">(</span><span class="n">service_id</span><span class="p">)</span>
+                <span class="p">]</span>
+            <span class="p">)</span>
+
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="nb">issubclass</span><span class="p">(</span><span class="n">service_class</span><span class="p">,</span> <span class="n">service</span><span class="o">.</span><span class="n">SpecializedSubFunctionService</span><span class="p">)</span>
+                <span class="ow">or</span> <span class="n">service_class</span><span class="o">.</span><span class="n">Request</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="ow">and</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">service_class</span><span class="o">.</span><span class="n">Request</span><span class="p">,</span> <span class="n">service</span><span class="o">.</span><span class="n">SubFunctionRequest</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="nf">_is_sub_function_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_sub_function_service</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">service_id</span><span class="p">)</span>
+
+<div class="viewcode-block" id="UDSServer.default_response_if_missing_sub_function"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.UDSServer.default_response_if_missing_sub_function">[docs]</a>    <span class="k">def</span> <span class="nf">default_response_if_missing_sub_function</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSRequest</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span><span class="p">]:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_sub_function_request</span><span class="p">(</span><span class="n">request</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">pdu</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span><span class="p">(</span>
+                    <span class="n">request</span><span class="o">.</span><span class="n">service_id</span><span class="p">,</span>
+                    <span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">incorrectMessageLengthOrInvalidFormat</span><span class="p">,</span>
+                <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="UDSServer.default_response_if_sub_function_not_supported"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.UDSServer.default_response_if_sub_function_not_supported">[docs]</a>    <span class="k">def</span> <span class="nf">default_response_if_sub_function_not_supported</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSRequest</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span><span class="p">]:</span>
+        <span class="k">assert</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">supported_services</span>
+        <span class="p">),</span> <span class="s2">&quot;Virtual ECU in unsupported session&quot;</span>
+
+        <span class="c1"># The standards explicitly excludes RoutineControl for this check because the availability of a sub function</span>
+        <span class="c1"># depends on the routineIdentifier</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_is_sub_function_request</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="n">request</span><span class="o">.</span><span class="n">service_id</span> <span class="o">!=</span> <span class="n">UDSIsoServices</span><span class="o">.</span><span class="n">RoutineControl</span>
+        <span class="p">):</span>
+            <span class="n">supported_in_active_session</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">supported_in_other_session</span> <span class="o">=</span> <span class="kc">False</span>
+
+            <span class="k">for</span> <span class="n">session</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">supported_services</span><span class="p">:</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="n">UDSIsoServices</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">service_id</span><span class="p">)</span>
+                    <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">supported_services</span><span class="p">[</span><span class="n">session</span><span class="p">]</span>
+                <span class="p">):</span>
+                    <span class="k">continue</span>
+
+                <span class="n">supported_sub_functions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">supported_services</span><span class="p">[</span><span class="n">session</span><span class="p">][</span>
+                    <span class="n">UDSIsoServices</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">service_id</span><span class="p">)</span>
+                <span class="p">]</span>
+
+                <span class="k">assert</span> <span class="p">(</span>
+                    <span class="n">supported_sub_functions</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="p">),</span> <span class="s2">&quot;Sub function services must have a (potentially empty) list of supported sub functions&quot;</span>
+
+                <span class="n">sub_function</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">pdu</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">%</span> <span class="mh">0x80</span>
+
+                <span class="k">if</span> <span class="n">sub_function</span> <span class="ow">in</span> <span class="n">supported_sub_functions</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">session</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span><span class="p">:</span>
+                        <span class="n">supported_in_active_session</span> <span class="o">=</span> <span class="kc">True</span>
+                        <span class="k">break</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">supported_in_other_session</span> <span class="o">=</span> <span class="kc">True</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">supported_in_active_session</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">supported_in_other_session</span><span class="p">:</span>
+                    <span class="n">nrc</span> <span class="o">=</span> <span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">subFunctionNotSupportedInActiveSession</span>
+
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">nrc</span> <span class="o">=</span> <span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">subFunctionNotSupported</span>
+
+                <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">service_id</span><span class="p">,</span> <span class="n">nrc</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="UDSServer.default_response_if_incorrect_format"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.UDSServer.default_response_if_incorrect_format">[docs]</a>    <span class="k">def</span> <span class="nf">default_response_if_incorrect_format</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSRequest</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">service</span><span class="o">.</span><span class="n">RawRequest</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span><span class="p">(</span>
+                <span class="n">request</span><span class="o">.</span><span class="n">service_id</span><span class="p">,</span> <span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">incorrectMessageLengthOrInvalidFormat</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="UDSServer.default_response_if_session_change"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.UDSServer.default_response_if_session_change">[docs]</a>    <span class="k">def</span> <span class="nf">default_response_if_session_change</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSRequest</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span>
+        <span class="n">Union</span><span class="p">[</span><span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span><span class="p">,</span> <span class="n">service</span><span class="o">.</span><span class="n">DiagnosticSessionControlResponse</span><span class="p">]</span>
+    <span class="p">]:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">service</span><span class="o">.</span><span class="n">DiagnosticSessionControlRequest</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="n">DiagnosticSessionControlResponse</span><span class="p">(</span>
+                <span class="n">request</span><span class="o">.</span><span class="n">diagnostic_session_type</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="UDSServer.default_response_if_session_read"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.UDSServer.default_response_if_session_read">[docs]</a>    <span class="k">def</span> <span class="nf">default_response_if_session_read</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSRequest</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">service</span><span class="o">.</span><span class="n">ReadDataByIdentifierResponse</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">service</span><span class="o">.</span><span class="n">ReadDataByIdentifierRequest</span><span class="p">):</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="n">request</span><span class="o">.</span><span class="n">data_identifier</span>
+                <span class="o">==</span> <span class="n">DataIdentifier</span><span class="o">.</span><span class="n">ActiveDiagnosticSessionDataIdentifier</span>
+            <span class="p">):</span>
+                <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="n">ReadDataByIdentifierResponse</span><span class="p">(</span>
+                    <span class="n">request</span><span class="o">.</span><span class="n">data_identifier</span><span class="p">,</span> <span class="n">to_bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="p">)</span>
+
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="UDSServer.default_response_if_tester_present"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.UDSServer.default_response_if_tester_present">[docs]</a>    <span class="k">def</span> <span class="nf">default_response_if_tester_present</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSRequest</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">service</span><span class="o">.</span><span class="n">TesterPresentResponse</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">service</span><span class="o">.</span><span class="n">TesterPresentRequest</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="n">TesterPresentResponse</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="UDSServer.default_response_if_none"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.UDSServer.default_response_if_none">[docs]</a>    <span class="k">def</span> <span class="nf">default_response_if_none</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSRequest</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">service_id</span><span class="p">,</span> <span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">generalReject</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="UDSServer.default_response_if_suppress"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.UDSServer.default_response_if_suppress">[docs]</a>    <span class="k">def</span> <span class="nf">default_response_if_suppress</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSRequest</span><span class="p">,</span> <span class="n">response</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSResponse</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">service</span><span class="o">.</span><span class="n">UDSResponse</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">service</span><span class="o">.</span><span class="n">SubFunctionRequest</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="ow">not</span> <span class="n">request</span><span class="o">.</span><span class="n">suppress_response</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="n">response</span>
+
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="UDSServer.update_state"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.UDSServer.update_state">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">update_state</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSRequest</span><span class="p">,</span> <span class="n">response</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSResponse</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">service</span><span class="o">.</span><span class="n">DiagnosticSessionControlResponse</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">diagnostic_session_type</span>
+
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">service</span><span class="o">.</span><span class="n">SecurityAccessResponse</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="n">response</span><span class="o">.</span><span class="n">security_access_type</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span>
+        <span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">security_access_level</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">security_access_type</span> <span class="o">-</span> <span class="mi">1</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">service</span><span class="o">.</span><span class="n">ECUResetResponse</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="UDSServer.setup"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.UDSServer.setup">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="UDSServer.teardown"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.UDSServer.teardown">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">teardown</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">pass</span></div>
+
+    <span class="c1"># pylint: disable=too-many-return-statements</span>
+<div class="viewcode-block" id="UDSServer.respond_without_state_change"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.UDSServer.respond_without_state_change">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">respond_without_state_change</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSRequest</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">service</span><span class="o">.</span><span class="n">UDSResponse</span><span class="p">]:</span>
+        <span class="n">response</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">service</span><span class="o">.</span><span class="n">UDSResponse</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">use_default_response_if_service_not_supported</span>
+            <span class="ow">and</span> <span class="p">(</span><span class="n">response</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_response_if_service_not_supported</span><span class="p">(</span><span class="n">request</span><span class="p">))</span>
+            <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="n">response</span>
+
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">use_default_response_if_missing_sub_function</span>
+            <span class="ow">and</span> <span class="p">(</span><span class="n">response</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_response_if_missing_sub_function</span><span class="p">(</span><span class="n">request</span><span class="p">))</span>
+            <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="n">response</span>
+
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">use_default_response_if_sub_function_not_supported</span>
+            <span class="ow">and</span> <span class="p">(</span>
+                <span class="n">response</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_response_if_sub_function_not_supported</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="n">response</span>
+
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">use_default_response_if_incorrect_format</span>
+            <span class="ow">and</span> <span class="p">(</span><span class="n">response</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_response_if_incorrect_format</span><span class="p">(</span><span class="n">request</span><span class="p">))</span>
+            <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="n">response</span>
+
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">use_default_response_if_session_change</span>
+            <span class="ow">and</span> <span class="p">(</span><span class="n">response</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_response_if_session_change</span><span class="p">(</span><span class="n">request</span><span class="p">))</span>
+            <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="n">response</span>
+
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">use_default_response_if_session_read</span>
+            <span class="ow">and</span> <span class="p">(</span><span class="n">response</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_response_if_session_read</span><span class="p">(</span><span class="n">request</span><span class="p">))</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="n">response</span>
+
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">use_default_response_if_tester_present</span>
+            <span class="ow">and</span> <span class="p">(</span><span class="n">response</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_response_if_tester_present</span><span class="p">(</span><span class="n">request</span><span class="p">))</span>
+            <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="n">response</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">response</span> <span class="o">:=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">respond_after_default</span><span class="p">(</span><span class="n">request</span><span class="p">))</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">response</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_default_response_if_none</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_response_if_none</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="UDSServer.respond"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.UDSServer.respond">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">respond</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSRequest</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">service</span><span class="o">.</span><span class="n">UDSResponse</span><span class="p">]:</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">respond_without_state_change</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">response</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">old_state</span> <span class="o">=</span> <span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">)</span>
+
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">update_state</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">response</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="vm">__dict__</span> <span class="o">!=</span> <span class="n">old_state</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Changed state to </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_default_response_if_suppress</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_response_if_suppress</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">response</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">response</span></div>
+
+<div class="viewcode-block" id="UDSServer.respond_after_default"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.UDSServer.respond_after_default">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">respond_after_default</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSRequest</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">service</span><span class="o">.</span><span class="n">UDSResponse</span><span class="p">]:</span>
+        <span class="o">...</span></div></div>
+
+
+<div class="viewcode-block" id="RNG"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.RNG">[docs]</a><span class="k">class</span> <span class="nc">RNG</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">Random</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">seeds</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_seeds</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+
+<div class="viewcode-block" id="RNG.set_seeds"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.RNG.set_seeds">[docs]</a>    <span class="k">def</span> <span class="nf">set_seeds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seeds</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">seeds</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">seed</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span> <span class="k">for</span> <span class="n">seed</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">seeds</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="RNG.add_seeds"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.RNG.add_seeds">[docs]</a>    <span class="k">def</span> <span class="nf">add_seeds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_seeds</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">seeds</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="RNG.random_bool"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.RNG.random_bool">[docs]</a>    <span class="k">def</span> <span class="nf">random_bool</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p_true</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">&lt;=</span> <span class="n">p_true</span></div>
+
+<div class="viewcode-block" id="RNG.random_payload"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.RNG.random_payload">[docs]</a>    <span class="k">def</span> <span class="nf">random_payload</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">min_len</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">max_len</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="c1"># Mean length should be a few bytes (here 8)</span>
+        <span class="n">byte_length</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">min_len</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expovariate</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">8</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">max_len</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">byte_length</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">max_len</span><span class="p">,</span> <span class="n">byte_length</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">byte_length</span><span class="p">))</span></div></div>
+
+
+<div class="viewcode-block" id="RNGEcuState"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.RNGEcuState">[docs]</a><span class="k">class</span> <span class="nc">RNGEcuState</span><span class="p">(</span><span class="n">ECUState</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_sa_response</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">service</span><span class="o">.</span><span class="n">SecurityAccessResponse</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="RNGEcuState.reset"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.RNGEcuState.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_sa_response</span> <span class="o">=</span> <span class="kc">None</span></div></div>
+
+
+<div class="viewcode-block" id="RandomUDSServer"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.RandomUDSServer">[docs]</a><span class="k">class</span> <span class="nc">RandomUDSServer</span><span class="p">(</span><span class="n">UDSServer</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">:</span> <span class="n">RNGEcuState</span> <span class="o">=</span> <span class="n">RNGEcuState</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">seed</span> <span class="o">=</span> <span class="n">seed</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">mandatory_sessions</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">optional_sessions</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mh">0x40</span><span class="p">,</span> <span class="mh">0x7F</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_session</span> <span class="o">=</span> <span class="mf">0.05</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">services</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="n">UDSIsoServices</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mandatory_services</span> <span class="o">=</span> <span class="p">[</span><span class="n">UDSIsoServices</span><span class="o">.</span><span class="n">DiagnosticSessionControl</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">optional_services</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+            <span class="nb">set</span><span class="p">(</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">UDSIsoServices</span><span class="p">)</span>
+            <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mandatory_services</span> <span class="o">+</span> <span class="p">[</span><span class="n">UDSIsoServices</span><span class="o">.</span><span class="n">NegativeResponse</span><span class="p">])</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_service</span> <span class="o">=</span> <span class="mf">0.2</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_sub_function</span> <span class="o">=</span> <span class="mf">0.05</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_identifier</span> <span class="o">=</span> <span class="mf">0.005</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_correct_payload_format</span> <span class="o">=</span> <span class="mf">0.1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_dtc_status_mask</span> <span class="o">=</span> <span class="mf">0.9</span>
+
+<div class="viewcode-block" id="RandomUDSServer.setup"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.RandomUDSServer.setup">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">randomize</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_notice</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Initialized random UDS server with seed </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">seed</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span>
+                <span class="nb">dict</span><span class="p">(</span>
+                    <span class="p">(</span>
+                        <span class="n">int_repr</span><span class="p">(</span><span class="n">session</span><span class="p">),</span>
+                        <span class="nb">dict</span><span class="p">(</span>
+                            <span class="p">(</span>
+                                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">int_repr</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">value</span><span class="p">)</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">service_repr</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">,</span>
+                                <span class="nb">str</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">int_repr</span><span class="p">(</span><span class="n">sf</span><span class="p">)</span> <span class="k">for</span> <span class="n">sf</span> <span class="ow">in</span> <span class="n">sfs</span><span class="p">))</span>
+                                <span class="k">if</span> <span class="n">sfs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                                <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                            <span class="p">)</span>
+                            <span class="k">for</span> <span class="n">s</span><span class="p">,</span> <span class="n">sfs</span> <span class="ow">in</span> <span class="n">services</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                        <span class="p">),</span>
+                    <span class="p">)</span>
+                    <span class="k">for</span> <span class="n">session</span><span class="p">,</span> <span class="n">services</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">services</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                <span class="p">),</span>
+                <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+                <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="RandomUDSServer.randomize"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.RandomUDSServer.randomize">[docs]</a>    <span class="k">def</span> <span class="nf">randomize</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">rng</span> <span class="o">=</span> <span class="n">RNG</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">seed</span><span class="p">)</span>
+
+        <span class="n">level</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">default_session</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">level_sessions</span> <span class="o">=</span> <span class="p">{</span><span class="n">default_session</span><span class="p">}</span>
+        <span class="n">session_transitions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">set</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mh">0x7F</span><span class="p">))</span>
+        <span class="n">session_transitions</span><span class="p">[</span><span class="n">default_session</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">default_session</span><span class="p">}</span>
+        <span class="n">combined_sessions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mandatory_sessions</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">optional_sessions</span>
+
+        <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">level_sessions</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">p_transition</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_session</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">level_sessions</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">**</span> <span class="p">(</span><span class="n">level</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">)</span>
+            <span class="n">next_level_sessions</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+            <span class="n">available_sessions</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+                <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">session_transitions</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+            <span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">session</span> <span class="ow">in</span> <span class="n">level_sessions</span><span class="p">:</span>
+                <span class="n">transitions</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+                    <span class="n">session</span>
+                    <span class="k">for</span> <span class="n">session</span> <span class="ow">in</span> <span class="n">combined_sessions</span>
+                    <span class="k">if</span> <span class="n">rng</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">p_transition</span>
+                <span class="p">)</span>
+                <span class="n">session_transitions</span><span class="p">[</span><span class="n">session</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">transitions</span><span class="p">)</span>
+                <span class="n">next_level_sessions</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">transitions</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">session</span> <span class="ow">in</span> <span class="n">next_level_sessions</span><span class="p">:</span>
+                <span class="n">session_transitions</span><span class="p">[</span><span class="n">session</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">default_session</span><span class="p">)</span>
+
+            <span class="n">level_sessions</span> <span class="o">=</span> <span class="n">next_level_sessions</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">available_sessions</span><span class="p">)</span>
+            <span class="n">level</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="k">for</span> <span class="n">session</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mandatory_sessions</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">session_transitions</span><span class="p">[</span><span class="n">session</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">available_sessions</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+                    <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">session_transitions</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+                <span class="p">)</span>
+                <span class="n">session_transitions</span><span class="p">[</span><span class="n">rng</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">available_sessions</span><span class="p">)]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+                <span class="n">session_transitions</span><span class="p">[</span><span class="n">session</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">default_session</span><span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">services</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">for</span> <span class="n">session</span><span class="p">,</span> <span class="n">session_specific_transitions</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">session_transitions</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">session_specific_transitions</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">services</span><span class="p">[</span><span class="n">session</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+            <span class="k">for</span> <span class="n">supported_service</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mandatory_services</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span>
+                <span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">optional_services</span> <span class="k">if</span> <span class="n">rng</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_service</span>
+            <span class="p">):</span>
+                <span class="n">supported_sub_functions</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_sub_function_service</span><span class="p">(</span><span class="n">supported_service</span><span class="p">):</span>
+                    <span class="c1"># For SecurityAccess there are always two consecutive sub functions, the uneven one for RequestSeed,</span>
+                    <span class="c1"># the even one (+1) for SendKey</span>
+                    <span class="k">if</span> <span class="n">supported_service</span> <span class="o">==</span> <span class="n">UDSIsoServices</span><span class="o">.</span><span class="n">TesterPresent</span><span class="p">:</span>
+                        <span class="n">supported_sub_functions</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="k">elif</span> <span class="n">supported_service</span> <span class="o">==</span> <span class="n">UDSIsoServices</span><span class="o">.</span><span class="n">DiagnosticSessionControl</span><span class="p">:</span>
+                        <span class="n">supported_sub_functions</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">session_specific_transitions</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">supported_service</span> <span class="o">==</span> <span class="n">UDSIsoServices</span><span class="o">.</span><span class="n">SecurityAccess</span><span class="p">:</span>
+                        <span class="n">supported_sub_functions_tmp</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+                            <span class="n">sf</span>
+                            <span class="k">for</span> <span class="n">sf</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mh">0x7E</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">rng</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_sub_function</span> <span class="o">/</span> <span class="mi">2</span>
+                        <span class="p">)</span>
+                        <span class="n">supported_sub_functions</span> <span class="o">=</span> <span class="p">[]</span>
+
+                        <span class="k">for</span> <span class="n">sf</span> <span class="ow">in</span> <span class="n">supported_sub_functions_tmp</span><span class="p">:</span>
+                            <span class="n">supported_sub_functions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sf</span><span class="p">)</span>
+                            <span class="n">supported_sub_functions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sf</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">supported_service</span> <span class="o">==</span> <span class="n">UDSIsoServices</span><span class="o">.</span><span class="n">RoutineControl</span><span class="p">:</span>
+                        <span class="n">supported_sub_functions</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">sf</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">sf</span> <span class="ow">in</span> <span class="n">RCSubFuncs</span><span class="p">)</span>
+                    <span class="c1"># Currently only this sub function is supported so it doesn&#39;t make sense to gamble a lot here</span>
+                    <span class="k">elif</span> <span class="n">supported_service</span> <span class="o">==</span> <span class="n">UDSIsoServices</span><span class="o">.</span><span class="n">ReadDTCInformation</span><span class="p">:</span>
+                        <span class="n">supported_sub_functions</span> <span class="o">=</span> <span class="p">[</span><span class="n">RDTCISubFuncs</span><span class="o">.</span><span class="n">RDTCBSM</span><span class="p">]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">supported_sub_functions</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+                            <span class="n">sf</span>
+                            <span class="k">for</span> <span class="n">sf</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mh">0x80</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">rng</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_sub_function</span>
+                        <span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">services</span><span class="p">[</span><span class="n">session</span><span class="p">][</span><span class="n">supported_service</span><span class="p">]</span> <span class="o">=</span> <span class="n">supported_sub_functions</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">supported_services</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="n">UDSIsoServices</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">services</span>
+
+<div class="viewcode-block" id="RandomUDSServer.stateful_rng"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.RandomUDSServer.stateful_rng">[docs]</a>    <span class="k">def</span> <span class="nf">stateful_rng</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RNG</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">RNG</span><span class="p">(</span>
+            <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">seed</span><span class="p">)</span>
+            <span class="o">+</span> <span class="s2">&quot;|&quot;</span>
+            <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span><span class="p">)</span>
+            <span class="o">+</span> <span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">)</span>
+        <span class="p">)</span></div>
+
+    <span class="c1"># pylint: disable=too-many-return-statements</span>
+<div class="viewcode-block" id="RandomUDSServer.respond_after_default"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.RandomUDSServer.respond_after_default">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">respond_after_default</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSRequest</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">service</span><span class="o">.</span><span class="n">UDSResponse</span><span class="p">]:</span>
+        <span class="c1"># Service specific handling starts here</span>
+        <span class="c1"># It is assumed, that the service and sub-function, if any, are both supported</span>
+        <span class="c1"># Furthermore, it is assumed that the request is a valid request for that particular service and sub-function</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">service</span><span class="o">.</span><span class="n">ECUResetRequest</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecu_reset</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span>
+            <span class="n">request</span><span class="p">,</span> <span class="n">service</span><span class="o">.</span><span class="n">_SecurityAccessRequest</span>  <span class="c1"># pylint: disable=protected-access</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">security_access</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">service</span><span class="o">.</span><span class="n">RoutineControlRequest</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">routine_control</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">service</span><span class="o">.</span><span class="n">ReadDataByIdentifierRequest</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_data_by_identifier</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">service</span><span class="o">.</span><span class="n">WriteDataByIdentifierRequest</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_data_by_identifier</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">service</span><span class="o">.</span><span class="n">InputOutputControlByIdentifierRequest</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_output_control_by_identifier</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">service</span><span class="o">.</span><span class="n">ClearDiagnosticInformationRequest</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">clear_diagnostic_information</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">request</span><span class="o">.</span><span class="n">service_id</span> <span class="o">==</span> <span class="n">UDSIsoServices</span><span class="o">.</span><span class="n">ReadDTCInformation</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_dtc_information</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="RandomUDSServer.update_state"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.RandomUDSServer.update_state">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">update_state</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSRequest</span><span class="p">,</span> <span class="n">response</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSResponse</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">await</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">update_state</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">response</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">service</span><span class="o">.</span><span class="n">TesterPresentResponse</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">last_sa_response</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">response</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">service</span><span class="o">.</span><span class="n">SecurityAccessResponse</span><span class="p">)</span>
+                <span class="k">else</span> <span class="kc">None</span>
+            <span class="p">)</span></div>
+
+<div class="viewcode-block" id="RandomUDSServer.ecu_reset"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.RandomUDSServer.ecu_reset">[docs]</a>    <span class="k">def</span> <span class="nf">ecu_reset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">ECUResetRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSResponse</span><span class="p">:</span>
+        <span class="n">rng</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stateful_rng</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">pdu</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">reset_type</span> <span class="o">==</span> <span class="n">ERSubFuncs</span><span class="o">.</span><span class="n">ERPSD</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="n">ECUResetResponse</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">reset_type</span><span class="p">,</span> <span class="n">rng</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="n">ECUResetResponse</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">reset_type</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="RandomUDSServer.security_access"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.RandomUDSServer.security_access">[docs]</a>    <span class="k">def</span> <span class="nf">security_access</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">_SecurityAccessRequest</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSResponse</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">service</span><span class="o">.</span><span class="n">RequestSeedRequest</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="n">SecurityAccessResponse</span><span class="p">(</span>
+                <span class="n">request</span><span class="o">.</span><span class="n">security_access_type</span><span class="p">,</span> <span class="n">RNG</span><span class="p">()</span><span class="o">.</span><span class="n">random_payload</span><span class="p">()</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">service</span><span class="o">.</span><span class="n">SendKeyRequest</span><span class="p">):</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">last_sa_response</span> <span class="ow">is</span> <span class="kc">None</span>
+                <span class="ow">or</span> <span class="n">request</span><span class="o">.</span><span class="n">security_access_type</span>
+                <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">last_sa_response</span><span class="o">.</span><span class="n">security_access_type</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="p">):</span>
+                <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span><span class="p">(</span>
+                    <span class="n">request</span><span class="o">.</span><span class="n">service_id</span><span class="p">,</span> <span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">requestSequenceError</span>
+                <span class="p">)</span>
+
+            <span class="c1"># Let&#39;s use the identity as a valid key</span>
+            <span class="n">expected_key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">last_sa_response</span><span class="o">.</span><span class="n">security_seed</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">last_sa_response</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">security_key</span> <span class="o">==</span> <span class="n">expected_key</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="n">SecurityAccessResponse</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">security_access_type</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span><span class="p">(</span>
+                <span class="n">request</span><span class="o">.</span><span class="n">service_id</span><span class="p">,</span> <span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">invalidKey</span>
+            <span class="p">)</span>
+
+        <span class="k">assert</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="RandomUDSServer.routine_control"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.RandomUDSServer.routine_control">[docs]</a>    <span class="k">def</span> <span class="nf">routine_control</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">RoutineControlRequest</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSResponse</span><span class="p">:</span>
+        <span class="n">rng</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stateful_rng</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">service_id</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">routine_identifier</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">rng</span><span class="o">.</span><span class="n">random_bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_identifier</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span><span class="p">(</span>
+                <span class="n">request</span><span class="o">.</span><span class="n">service_id</span><span class="p">,</span> <span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">requestOutOfRange</span>
+            <span class="p">)</span>
+
+        <span class="n">rng</span><span class="o">.</span><span class="n">add_seeds</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">sub_function</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">rng</span><span class="o">.</span><span class="n">random_bool</span><span class="p">(</span><span class="mi">2</span> <span class="o">/</span> <span class="mi">3</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span><span class="p">(</span>
+                <span class="n">request</span><span class="o">.</span><span class="n">service_id</span><span class="p">,</span> <span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">subFunctionNotSupported</span>
+            <span class="p">)</span>
+
+        <span class="n">rng</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stateful_rng</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">pdu</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">rng</span><span class="o">.</span><span class="n">random_bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_correct_payload_format</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span><span class="p">(</span>
+                <span class="n">request</span><span class="o">.</span><span class="n">service_id</span><span class="p">,</span> <span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">incorrectMessageLengthOrInvalidFormat</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">request</span><span class="o">.</span><span class="n">RESPONSE_TYPE</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">routine_identifier</span><span class="p">,</span> <span class="n">rng</span><span class="o">.</span><span class="n">random_payload</span><span class="p">())</span>  <span class="c1"># type: ignore</span></div>
+
+<div class="viewcode-block" id="RandomUDSServer.read_data_by_identifier"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.RandomUDSServer.read_data_by_identifier">[docs]</a>    <span class="k">def</span> <span class="nf">read_data_by_identifier</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">ReadDataByIdentifierRequest</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSResponse</span><span class="p">:</span>
+        <span class="n">rng</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stateful_rng</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">pdu</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">rng</span><span class="o">.</span><span class="n">random_bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_identifier</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span><span class="p">(</span>
+                <span class="n">request</span><span class="o">.</span><span class="n">service_id</span><span class="p">,</span> <span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">requestOutOfRange</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="n">ReadDataByIdentifierResponse</span><span class="p">(</span>
+            <span class="n">request</span><span class="o">.</span><span class="n">data_identifier</span><span class="p">,</span> <span class="n">rng</span><span class="o">.</span><span class="n">random_payload</span><span class="p">(</span><span class="n">min_len</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="RandomUDSServer.write_data_by_identifier"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.RandomUDSServer.write_data_by_identifier">[docs]</a>    <span class="k">def</span> <span class="nf">write_data_by_identifier</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">WriteDataByIdentifierRequest</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSResponse</span><span class="p">:</span>
+        <span class="n">rng</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stateful_rng</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">service_id</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">data_identifier</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">rng</span><span class="o">.</span><span class="n">random_bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_identifier</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span><span class="p">(</span>
+                <span class="n">request</span><span class="o">.</span><span class="n">service_id</span><span class="p">,</span> <span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">requestOutOfRange</span>
+            <span class="p">)</span>
+
+        <span class="n">rng</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stateful_rng</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">pdu</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">rng</span><span class="o">.</span><span class="n">random_bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_correct_payload_format</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span><span class="p">(</span>
+                <span class="n">request</span><span class="o">.</span><span class="n">service_id</span><span class="p">,</span> <span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">incorrectMessageLengthOrInvalidFormat</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="n">WriteDataByIdentifierResponse</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">data_identifier</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="RandomUDSServer.input_output_control_by_identifier"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.RandomUDSServer.input_output_control_by_identifier">[docs]</a>    <span class="k">def</span> <span class="nf">input_output_control_by_identifier</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">InputOutputControlByIdentifierRequest</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSResponse</span><span class="p">:</span>
+        <span class="n">rng</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stateful_rng</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">service_id</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">data_identifier</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">rng</span><span class="o">.</span><span class="n">random_bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_identifier</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span><span class="p">(</span>
+                <span class="n">request</span><span class="o">.</span><span class="n">service_id</span><span class="p">,</span> <span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">requestOutOfRange</span>
+            <span class="p">)</span>
+
+        <span class="n">rng</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stateful_rng</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">pdu</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">rng</span><span class="o">.</span><span class="n">random_bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_correct_payload_format</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span><span class="p">(</span>
+                <span class="n">request</span><span class="o">.</span><span class="n">service_id</span><span class="p">,</span> <span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">incorrectMessageLengthOrInvalidFormat</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">request</span><span class="o">.</span><span class="n">RESPONSE_TYPE</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">data_identifier</span><span class="p">,</span> <span class="n">rng</span><span class="o">.</span><span class="n">random_payload</span><span class="p">(</span><span class="n">min_len</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>  <span class="c1"># type: ignore</span></div>
+
+<div class="viewcode-block" id="RandomUDSServer.clear_diagnostic_information"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.RandomUDSServer.clear_diagnostic_information">[docs]</a>    <span class="k">def</span> <span class="nf">clear_diagnostic_information</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">ClearDiagnosticInformationRequest</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSResponse</span><span class="p">:</span>
+        <span class="n">rng</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stateful_rng</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">service_id</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">group_of_dtc</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">rng</span><span class="o">.</span><span class="n">random_bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_dtc_status_mask</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span><span class="p">(</span>
+                <span class="n">request</span><span class="o">.</span><span class="n">service_id</span><span class="p">,</span> <span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">requestOutOfRange</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="n">ClearDiagnosticInformationResponse</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="RandomUDSServer.read_dtc_information"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.RandomUDSServer.read_dtc_information">[docs]</a>    <span class="k">def</span> <span class="nf">read_dtc_information</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSResponse</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">request</span><span class="o">.</span><span class="n">service_id</span> <span class="o">==</span> <span class="n">UDSIsoServices</span><span class="o">.</span><span class="n">ReadDTCInformation</span>
+
+        <span class="c1"># Currently only this sub function is supported</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">service</span><span class="o">.</span><span class="n">ReportDTCByStatusMaskRequest</span><span class="p">):</span>
+            <span class="c1"># The supported dtc status bits should be equal for all requests</span>
+            <span class="c1"># and only differ among different ECUs and states</span>
+            <span class="n">dtc_status_availability_mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stateful_rng</span><span class="p">()</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">)</span>
+
+            <span class="n">rng</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stateful_rng</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">service_id</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">dtc_status_mask</span><span class="p">)</span>
+            <span class="n">dtc_and_status_record</span> <span class="o">=</span> <span class="p">{}</span>
+
+            <span class="c1"># On average around 50 dtcs should be fine</span>
+            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">rng</span><span class="o">.</span><span class="n">expovariate</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">50</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">)):</span>
+                <span class="n">dtc_and_status_record</span><span class="p">[</span><span class="n">rng</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">256</span><span class="o">**</span><span class="mi">3</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)]</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">rng</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">dtc_status_availability_mask</span>
+                <span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="n">ReportDTCByStatusMaskResponse</span><span class="p">(</span>
+                <span class="n">dtc_status_availability_mask</span><span class="p">,</span> <span class="n">dtc_and_status_record</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span><span class="p">(</span>
+            <span class="n">request</span><span class="o">.</span><span class="n">service_id</span><span class="p">,</span> <span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">subFunctionNotSupported</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="DBUDSServer"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.DBUDSServer">[docs]</a><span class="k">class</span> <span class="nc">DBUDSServer</span><span class="p">(</span><span class="n">UDSServer</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">db_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">ecu</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">properties</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">db_path</span> <span class="o">=</span> <span class="n">db_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ecu</span> <span class="o">=</span> <span class="n">ecu</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">properties</span> <span class="o">=</span> <span class="n">properties</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">aiosqlite</span><span class="o">.</span><span class="n">Connection</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_response</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+
+        <span class="c1"># Override defaults</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_default_response_if_service_not_supported</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_default_response_if_missing_sub_function</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_default_response_if_sub_function_not_supported</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_default_response_if_incorrect_format</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_default_response_if_session_change</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_default_response_if_session_read</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_default_response_if_tester_present</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_default_response_if_none</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_default_response_if_suppress</span> <span class="o">=</span> <span class="kc">False</span>
+
+<div class="viewcode-block" id="DBUDSServer.setup"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.DBUDSServer.setup">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connection</span> <span class="o">=</span> <span class="k">await</span> <span class="n">aiosqlite</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">db_path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DBUDSServer.teardown"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.DBUDSServer.teardown">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">teardown</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">supported_services</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="n">UDSIsoServices</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]]:</span>
+        <span class="k">return</span> <span class="p">{}</span>
+
+<div class="viewcode-block" id="DBUDSServer.respond_after_default"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.DBUDSServer.respond_after_default">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">respond_after_default</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSRequest</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">service</span><span class="o">.</span><span class="n">UDSResponse</span><span class="p">]:</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+        <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;SELECT r.id, r.response_pdu FROM scan_result r WHERE &quot;</span>
+        <span class="n">parameters</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecu</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">query</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="s2">&quot;SELECT r.id, r.response_pdu &quot;</span>
+                <span class="s2">&quot;FROM scan_result r, scan_run s WHERE r.run = s.id AND &quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecu</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">query</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="s2">&quot;SELECT r.id, r.response_pdu &quot;</span>
+                <span class="s2">&quot;FROM scan_run s, scan_result r, address a, ecu e &quot;</span>
+                <span class="s2">&quot;WHERE r.run = s.id AND s.address = a.id AND a.ecu = e.id &quot;</span>
+                <span class="s2">&quot;AND e.name = ? AND &quot;</span>
+            <span class="p">)</span>
+
+            <span class="n">parameters</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ecu</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">query</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;json_extract(r.state, &#39;$.</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39;) IS NULL AND &quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">query</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;json_extract(r.state, &#39;$.</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39;) = ? AND &quot;</span>
+                <span class="n">parameters</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="n">value</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span> <span class="k">else</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">query</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;json_extract(s.properties_pre, &#39;$.</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39;) IS NULL AND &quot;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">query</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;json_extract(s.properties_pre, &#39;$.</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39;) = ? AND &quot;</span>
+                    <span class="n">parameters</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="n">value</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span> <span class="k">else</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                    <span class="p">)</span>
+
+        <span class="n">query</span> <span class="o">+=</span> <span class="s2">&quot;r.request_pdu = ? &quot;</span>
+
+        <span class="n">final_query</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">query</span><span class="si">}</span><span class="s2"> AND r.id &gt; ? ORDER BY r.id LIMIT 1 &quot;</span>
+
+        <span class="n">parameters</span> <span class="o">+=</span> <span class="p">[</span><span class="n">bytes_repr</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">pdu</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_response</span><span class="p">]</span>
+        <span class="n">cursor</span><span class="p">:</span> <span class="n">aiosqlite</span><span class="o">.</span><span class="n">Cursor</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+            <span class="n">final_query</span><span class="p">,</span> <span class="n">parameters</span>
+        <span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cursor</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">result</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">final_query</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">query</span><span class="si">}</span><span class="s2"> AND r.id &lt;= ? ORDER BY r.id LIMIT 1 &quot;</span>
+            <span class="n">cursor</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">final_query</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cursor</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">result</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">last_response</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">response_pdu</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">response_pdu</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSResponse</span><span class="o">.</span><span class="n">parse_dynamic</span><span class="p">(</span><span class="n">unhexlify</span><span class="p">(</span><span class="n">response_pdu</span><span class="p">))</span>
+                <span class="k">return</span> <span class="n">response</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span><span class="s2">&quot;Reset ECU due to missing response&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="kc">None</span></div></div>
+
+
+<div class="viewcode-block" id="UDSServerTransport"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.UDSServerTransport">[docs]</a><span class="k">class</span> <span class="nc">UDSServerTransport</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">:</span> <span class="n">UDSServer</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">TargetURI</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">server</span> <span class="o">=</span> <span class="n">server</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target</span> <span class="o">=</span> <span class="n">target</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">Logger</span><span class="p">(</span><span class="n">component</span><span class="o">=</span><span class="s2">&quot;v-ecu&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_time_active</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+
+<div class="viewcode-block" id="UDSServerTransport.run"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.UDSServerTransport.run">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="o">...</span></div>
+
+<div class="viewcode-block" id="UDSServerTransport.handle_request"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.UDSServerTransport.handle_request">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">handle_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request_pdu</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">bytes</span><span class="p">],</span> <span class="nb">float</span><span class="p">]:</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">start</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_time_active</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span><span class="s2">&quot;Server state reset due to inactivity&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+
+        <span class="n">request</span> <span class="o">=</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSRequest</span><span class="o">.</span><span class="n">parse_dynamic</span><span class="p">(</span><span class="n">request_pdu</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;---&gt; </span><span class="si">{</span><span class="n">request</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_time_active</span> <span class="o">=</span> <span class="n">end</span>
+
+        <span class="k">if</span> <span class="n">response</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;  &lt;--- </span><span class="si">{</span><span class="n">response</span><span class="si">}</span><span class="s2"> after </span><span class="si">{</span><span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> ms&quot;</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">pdu</span><span class="p">,</span> <span class="n">end</span> <span class="o">-</span> <span class="n">start</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;  x--- NO RESPONSE after </span><span class="si">{</span><span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> ms&quot;</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="n">end</span> <span class="o">-</span> <span class="n">start</span></div></div>
+
+
+<div class="viewcode-block" id="TCPUDSServerTransport"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.TCPUDSServerTransport">[docs]</a><span class="k">class</span> <span class="nc">TCPUDSServerTransport</span><span class="p">(</span><span class="n">UDSServerTransport</span><span class="p">):</span>
+<div class="viewcode-block" id="TCPUDSServerTransport.handle_client"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.TCPUDSServerTransport.handle_client">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">handle_client</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">reader</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamReader</span><span class="p">,</span> <span class="n">writer</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamWriter</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_notice</span><span class="p">(</span><span class="s2">&quot;New connection&quot;</span><span class="p">)</span>
+        <span class="n">response_times</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="k">await</span> <span class="n">reader</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">line</span><span class="p">:</span>
+                    <span class="k">break</span>
+
+                <span class="n">tcp_request</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;ascii&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="n">uds_request_raw</span> <span class="o">=</span> <span class="n">unhexlify</span><span class="p">(</span><span class="n">tcp_request</span><span class="p">)</span>
+                <span class="n">uds_response_raw</span><span class="p">,</span> <span class="n">response_time</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">handle_request</span><span class="p">(</span>
+                    <span class="n">uds_request_raw</span>
+                <span class="p">)</span>
+                <span class="n">response_times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">response_time</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">uds_response_raw</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">b2a_hex</span><span class="p">(</span><span class="n">uds_response_raw</span><span class="p">)</span> <span class="o">+</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="n">traceback</span><span class="o">.</span><span class="n">print_exc</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_notice</span><span class="p">(</span><span class="s2">&quot;Connection closed&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Average response time: </span><span class="si">{</span><span class="nb">sum</span><span class="p">(</span><span class="n">response_times</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">response_times</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">ms&quot;</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="TCPUDSServerTransport.run"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.TCPUDSServerTransport.run">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">server</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">start_server</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">handle_client</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">hostname</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">port</span>
+        <span class="p">)</span>
+
+        <span class="k">async</span> <span class="k">with</span> <span class="n">server</span><span class="p">:</span>
+            <span class="k">await</span> <span class="n">server</span><span class="o">.</span><span class="n">serve_forever</span><span class="p">()</span></div></div>
+
+
+<div class="viewcode-block" id="ISOTPUDSServerTransport"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.ISOTPUDSServerTransport">[docs]</a><span class="k">class</span> <span class="nc">ISOTPUDSServerTransport</span><span class="p">(</span><span class="n">UDSServerTransport</span><span class="p">):</span>
+<div class="viewcode-block" id="ISOTPUDSServerTransport.run"><a class="viewcode-back" href="../../../api/gallia.uds.html#gallia.uds.server.ISOTPUDSServerTransport.run">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">transport</span> <span class="o">=</span> <span class="n">ISOTPTransport</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">transport</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">uds_request_raw</span> <span class="o">=</span> <span class="k">await</span> <span class="n">transport</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+                <span class="n">uds_response_raw</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">handle_request</span><span class="p">(</span><span class="n">uds_request_raw</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">uds_response_raw</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">await</span> <span class="n">transport</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">uds_response_raw</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="n">traceback</span><span class="o">.</span><span class="n">print_exc</span><span class="p">()</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

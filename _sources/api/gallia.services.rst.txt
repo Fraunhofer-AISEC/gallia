@@ -1,0 +1,18 @@
+gallia.services package
+=======================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   gallia.services.xcp
+
+Module contents
+---------------
+
+.. automodule:: gallia.services
+   :members:
+   :undoc-members:
+   :show-inheritance:

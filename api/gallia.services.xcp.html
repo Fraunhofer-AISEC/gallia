@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gallia.services.xcp package &mdash; gallia  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="gallia.transports package" href="gallia.transports.html" />
+    <link rel="prev" title="gallia.services package" href="gallia.services.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../transports.html">Transports</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../penlog.7.html">penlog</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Modules</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="cursed_hr.html">cursed_hr package</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="gallia.html">gallia package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="gallia.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="gallia.db.html">gallia.db package</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="gallia.services.html">gallia.services package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.transports.html">gallia.transports package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.uds.html">gallia.uds package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.udscan.html">gallia.udscan package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gallia.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gallia.html#module-gallia.cli">gallia.cli module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gallia.html#module-gallia.penlab">gallia.penlab module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gallia.html#module-gallia.penlog">gallia.penlog module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gallia.html#module-gallia.utils">gallia.utils module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gallia.html#module-gallia.virtual_ecu">gallia.virtual_ecu module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gallia.html#module-gallia">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="opennetzteil.html">opennetzteil package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="penlog.html">penlog package</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="modules.html">Modules</a> &raquo;</li>
+          <li><a href="gallia.html">gallia package</a> &raquo;</li>
+          <li><a href="gallia.services.html">gallia.services package</a> &raquo;</li>
+      <li>gallia.services.xcp package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/gallia.services.xcp.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="gallia-services-xcp-package">
+<h1>gallia.services.xcp package<a class="headerlink" href="#gallia-services-xcp-package" title="Permalink to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-gallia.services.xcp.types">
+<span id="gallia-services-xcp-types-module"></span><h2>gallia.services.xcp.types module<a class="headerlink" href="#module-gallia.services.xcp.types" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.services.xcp.types.</span></span><span class="sig-name descname"><span class="pre">Command</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gallia/services/xcp/types.html#Command"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.services.xcp.types.Command" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">IntEnum</span></code></p>
+<p>An enumeration.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.ALLOC_DAQ">
+<span class="sig-name descname"><span class="pre">ALLOC_DAQ</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">213</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.ALLOC_DAQ" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.ALLOC_ODT">
+<span class="sig-name descname"><span class="pre">ALLOC_ODT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">212</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.ALLOC_ODT" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.ALLOC_ODT_ENTRY">
+<span class="sig-name descname"><span class="pre">ALLOC_ODT_ENTRY</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">211</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.ALLOC_ODT_ENTRY" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.BUILD_CHECKSUM">
+<span class="sig-name descname"><span class="pre">BUILD_CHECKSUM</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">243</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.BUILD_CHECKSUM" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.CLEAR_DAQ_LIST">
+<span class="sig-name descname"><span class="pre">CLEAR_DAQ_LIST</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">227</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.CLEAR_DAQ_LIST" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.CONNECT">
+<span class="sig-name descname"><span class="pre">CONNECT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">255</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.CONNECT" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.COPY_CAL_PAGE">
+<span class="sig-name descname"><span class="pre">COPY_CAL_PAGE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">228</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.COPY_CAL_PAGE" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.DBG_ATTACH">
+<span class="sig-name descname"><span class="pre">DBG_ATTACH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">12647424</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.DBG_ATTACH" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.DBG_EXCLUSIVE_TARGET_ACCESS">
+<span class="sig-name descname"><span class="pre">DBG_EXCLUSIVE_TARGET_ACCESS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">12647432</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.DBG_EXCLUSIVE_TARGET_ACCESS" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.DBG_GET_HWIO_INFO">
+<span class="sig-name descname"><span class="pre">DBG_GET_HWIO_INFO</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">12647429</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.DBG_GET_HWIO_INFO" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.DBG_GET_JTAG_ID">
+<span class="sig-name descname"><span class="pre">DBG_GET_JTAG_ID</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">12647427</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.DBG_GET_JTAG_ID" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.DBG_GET_MODE_INFO">
+<span class="sig-name descname"><span class="pre">DBG_GET_MODE_INFO</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">12647426</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.DBG_GET_MODE_INFO" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.DBG_GET_TRI_DESC_TBL">
+<span class="sig-name descname"><span class="pre">DBG_GET_TRI_DESC_TBL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">12647444</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.DBG_GET_TRI_DESC_TBL" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.DBG_GET_VENDOR_INFO">
+<span class="sig-name descname"><span class="pre">DBG_GET_VENDOR_INFO</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">12647425</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.DBG_GET_VENDOR_INFO" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.DBG_HALT_AFTER_RESET">
+<span class="sig-name descname"><span class="pre">DBG_HALT_AFTER_RESET</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">12647428</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.DBG_HALT_AFTER_RESET" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.DBG_HWIO_CONTROL">
+<span class="sig-name descname"><span class="pre">DBG_HWIO_CONTROL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">12647431</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.DBG_HWIO_CONTROL" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.DBG_LLBT">
+<span class="sig-name descname"><span class="pre">DBG_LLBT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">12647445</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.DBG_LLBT" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.DBG_LLT">
+<span class="sig-name descname"><span class="pre">DBG_LLT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">12647434</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.DBG_LLT" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.DBG_READ">
+<span class="sig-name descname"><span class="pre">DBG_READ</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">12647441</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.DBG_READ" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.DBG_READ_CAN1">
+<span class="sig-name descname"><span class="pre">DBG_READ_CAN1</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">12647442</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.DBG_READ_CAN1" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.DBG_READ_CAN2">
+<span class="sig-name descname"><span class="pre">DBG_READ_CAN2</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">12647443</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.DBG_READ_CAN2" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.DBG_READ_MODIFY_WRITE">
+<span class="sig-name descname"><span class="pre">DBG_READ_MODIFY_WRITE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">12647435</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.DBG_READ_MODIFY_WRITE" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.DBG_SEQUENCE_MULTIPLE">
+<span class="sig-name descname"><span class="pre">DBG_SEQUENCE_MULTIPLE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">12647433</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.DBG_SEQUENCE_MULTIPLE" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.DBG_SET_HWIO_EVENT">
+<span class="sig-name descname"><span class="pre">DBG_SET_HWIO_EVENT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">12647430</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.DBG_SET_HWIO_EVENT" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.DBG_WRITE">
+<span class="sig-name descname"><span class="pre">DBG_WRITE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">12647436</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.DBG_WRITE" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.DBG_WRITE_CAN1">
+<span class="sig-name descname"><span class="pre">DBG_WRITE_CAN1</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">12647438</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.DBG_WRITE_CAN1" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.DBG_WRITE_CAN2">
+<span class="sig-name descname"><span class="pre">DBG_WRITE_CAN2</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">12647439</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.DBG_WRITE_CAN2" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.DBG_WRITE_CAN_NEXT">
+<span class="sig-name descname"><span class="pre">DBG_WRITE_CAN_NEXT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">12647440</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.DBG_WRITE_CAN_NEXT" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.DBG_WRITE_NEXT">
+<span class="sig-name descname"><span class="pre">DBG_WRITE_NEXT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">12647437</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.DBG_WRITE_NEXT" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.DISCONNECT">
+<span class="sig-name descname"><span class="pre">DISCONNECT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">254</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.DISCONNECT" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.DOWNLOAD">
+<span class="sig-name descname"><span class="pre">DOWNLOAD</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">240</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.DOWNLOAD" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.DOWNLOAD_MAX">
+<span class="sig-name descname"><span class="pre">DOWNLOAD_MAX</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">238</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.DOWNLOAD_MAX" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.DOWNLOAD_NEXT">
+<span class="sig-name descname"><span class="pre">DOWNLOAD_NEXT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">239</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.DOWNLOAD_NEXT" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.DTO_CTR_PROPERTIES">
+<span class="sig-name descname"><span class="pre">DTO_CTR_PROPERTIES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">197</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.DTO_CTR_PROPERTIES" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.FREE_DAQ">
+<span class="sig-name descname"><span class="pre">FREE_DAQ</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">214</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.FREE_DAQ" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.GET_CAL_PAGE">
+<span class="sig-name descname"><span class="pre">GET_CAL_PAGE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">234</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.GET_CAL_PAGE" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.GET_COMM_MODE_INFO">
+<span class="sig-name descname"><span class="pre">GET_COMM_MODE_INFO</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">251</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.GET_COMM_MODE_INFO" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.GET_DAQ_CLOCK">
+<span class="sig-name descname"><span class="pre">GET_DAQ_CLOCK</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">220</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.GET_DAQ_CLOCK" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.GET_DAQ_EVENT_INFO">
+<span class="sig-name descname"><span class="pre">GET_DAQ_EVENT_INFO</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">215</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.GET_DAQ_EVENT_INFO" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.GET_DAQ_LIST_INFO">
+<span class="sig-name descname"><span class="pre">GET_DAQ_LIST_INFO</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">216</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.GET_DAQ_LIST_INFO" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.GET_DAQ_LIST_MODE">
+<span class="sig-name descname"><span class="pre">GET_DAQ_LIST_MODE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">223</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.GET_DAQ_LIST_MODE" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.GET_DAQ_PACKED_MODE">
+<span class="sig-name descname"><span class="pre">GET_DAQ_PACKED_MODE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">49154</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.GET_DAQ_PACKED_MODE" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.GET_DAQ_PROCESSOR_INFO">
+<span class="sig-name descname"><span class="pre">GET_DAQ_PROCESSOR_INFO</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">218</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.GET_DAQ_PROCESSOR_INFO" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.GET_DAQ_RESOLUTION_INFO">
+<span class="sig-name descname"><span class="pre">GET_DAQ_RESOLUTION_INFO</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">217</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.GET_DAQ_RESOLUTION_INFO" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.GET_ID">
+<span class="sig-name descname"><span class="pre">GET_ID</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">250</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.GET_ID" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.GET_PAGE_INFO">
+<span class="sig-name descname"><span class="pre">GET_PAGE_INFO</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">231</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.GET_PAGE_INFO" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.GET_PAG_PROCESSOR_INFO">
+<span class="sig-name descname"><span class="pre">GET_PAG_PROCESSOR_INFO</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">233</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.GET_PAG_PROCESSOR_INFO" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.GET_PGM_PROCESSOR_INFO">
+<span class="sig-name descname"><span class="pre">GET_PGM_PROCESSOR_INFO</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">206</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.GET_PGM_PROCESSOR_INFO" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.GET_SECTOR_INFO">
+<span class="sig-name descname"><span class="pre">GET_SECTOR_INFO</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">205</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.GET_SECTOR_INFO" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.GET_SEED">
+<span class="sig-name descname"><span class="pre">GET_SEED</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">248</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.GET_SEED" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.GET_SEGMENT_INFO">
+<span class="sig-name descname"><span class="pre">GET_SEGMENT_INFO</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">232</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.GET_SEGMENT_INFO" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.GET_SEGMENT_MODE">
+<span class="sig-name descname"><span class="pre">GET_SEGMENT_MODE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">229</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.GET_SEGMENT_MODE" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.GET_STATUS">
+<span class="sig-name descname"><span class="pre">GET_STATUS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">253</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.GET_STATUS" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.GET_VERSION">
+<span class="sig-name descname"><span class="pre">GET_VERSION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">49152</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.GET_VERSION" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.MODIFY_BITS">
+<span class="sig-name descname"><span class="pre">MODIFY_BITS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">236</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.MODIFY_BITS" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.PROGRAM">
+<span class="sig-name descname"><span class="pre">PROGRAM</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">208</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.PROGRAM" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.PROGRAM_CLEAR">
+<span class="sig-name descname"><span class="pre">PROGRAM_CLEAR</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">209</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.PROGRAM_CLEAR" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.PROGRAM_FORMAT">
+<span class="sig-name descname"><span class="pre">PROGRAM_FORMAT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">203</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.PROGRAM_FORMAT" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.PROGRAM_MAX">
+<span class="sig-name descname"><span class="pre">PROGRAM_MAX</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">201</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.PROGRAM_MAX" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.PROGRAM_NEXT">
+<span class="sig-name descname"><span class="pre">PROGRAM_NEXT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">202</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.PROGRAM_NEXT" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.PROGRAM_PREPARE">
+<span class="sig-name descname"><span class="pre">PROGRAM_PREPARE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">204</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.PROGRAM_PREPARE" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.PROGRAM_RESET">
+<span class="sig-name descname"><span class="pre">PROGRAM_RESET</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">207</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.PROGRAM_RESET" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.PROGRAM_START">
+<span class="sig-name descname"><span class="pre">PROGRAM_START</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">210</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.PROGRAM_START" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.PROGRAM_VERIFY">
+<span class="sig-name descname"><span class="pre">PROGRAM_VERIFY</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">200</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.PROGRAM_VERIFY" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.READ_DAQ">
+<span class="sig-name descname"><span class="pre">READ_DAQ</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">219</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.READ_DAQ" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.SET_CAL_PAGE">
+<span class="sig-name descname"><span class="pre">SET_CAL_PAGE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">235</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.SET_CAL_PAGE" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.SET_DAQ_LIST_MODE">
+<span class="sig-name descname"><span class="pre">SET_DAQ_LIST_MODE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">224</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.SET_DAQ_LIST_MODE" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.SET_DAQ_PACKED_MODE">
+<span class="sig-name descname"><span class="pre">SET_DAQ_PACKED_MODE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">49153</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.SET_DAQ_PACKED_MODE" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.SET_DAQ_PTR">
+<span class="sig-name descname"><span class="pre">SET_DAQ_PTR</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">226</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.SET_DAQ_PTR" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.SET_MTA">
+<span class="sig-name descname"><span class="pre">SET_MTA</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">246</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.SET_MTA" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.SET_REQUEST">
+<span class="sig-name descname"><span class="pre">SET_REQUEST</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">249</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.SET_REQUEST" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.SET_SEGMENT_MODE">
+<span class="sig-name descname"><span class="pre">SET_SEGMENT_MODE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">230</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.SET_SEGMENT_MODE" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.SHORT_DOWNLOAD">
+<span class="sig-name descname"><span class="pre">SHORT_DOWNLOAD</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">237</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.SHORT_DOWNLOAD" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.SHORT_UPLOAD">
+<span class="sig-name descname"><span class="pre">SHORT_UPLOAD</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">244</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.SHORT_UPLOAD" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.START_STOP_DAQ_LIST">
+<span class="sig-name descname"><span class="pre">START_STOP_DAQ_LIST</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">222</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.START_STOP_DAQ_LIST" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.START_STOP_SYNCH">
+<span class="sig-name descname"><span class="pre">START_STOP_SYNCH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">221</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.START_STOP_SYNCH" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.SYNCH">
+<span class="sig-name descname"><span class="pre">SYNCH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">252</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.SYNCH" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.TIME_CORRELATION_PROPERTIES">
+<span class="sig-name descname"><span class="pre">TIME_CORRELATION_PROPERTIES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">198</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.TIME_CORRELATION_PROPERTIES" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.TRANSPORT_LAYER_CMD">
+<span class="sig-name descname"><span class="pre">TRANSPORT_LAYER_CMD</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">242</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.TRANSPORT_LAYER_CMD" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.UNLOCK">
+<span class="sig-name descname"><span class="pre">UNLOCK</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">247</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.UNLOCK" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.UPLOAD">
+<span class="sig-name descname"><span class="pre">UPLOAD</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">245</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.UPLOAD" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.USER_CMD">
+<span class="sig-name descname"><span class="pre">USER_CMD</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">241</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.USER_CMD" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.WRITE_DAQ">
+<span class="sig-name descname"><span class="pre">WRITE_DAQ</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">225</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.WRITE_DAQ" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Command.WRITE_DAQ_MULTIPLE">
+<span class="sig-name descname"><span class="pre">WRITE_DAQ_MULTIPLE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">199</span></em><a class="headerlink" href="#gallia.services.xcp.types.Command.WRITE_DAQ_MULTIPLE" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.CommandCategory">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.services.xcp.types.</span></span><span class="sig-name descname"><span class="pre">CommandCategory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gallia/services/xcp/types.html#CommandCategory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.services.xcp.types.CommandCategory" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">IntEnum</span></code></p>
+<p>Values reflect resources (resource protection status / unlock).</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.CommandCategory.CAL_PAG">
+<span class="sig-name descname"><span class="pre">CAL_PAG</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#gallia.services.xcp.types.CommandCategory.CAL_PAG" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.CommandCategory.DAQ">
+<span class="sig-name descname"><span class="pre">DAQ</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">4</span></em><a class="headerlink" href="#gallia.services.xcp.types.CommandCategory.DAQ" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.CommandCategory.PGM">
+<span class="sig-name descname"><span class="pre">PGM</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">16</span></em><a class="headerlink" href="#gallia.services.xcp.types.CommandCategory.PGM" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.CommandCategory.STD">
+<span class="sig-name descname"><span class="pre">STD</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="headerlink" href="#gallia.services.xcp.types.CommandCategory.STD" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.CommandCategory.STIM">
+<span class="sig-name descname"><span class="pre">STIM</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">8</span></em><a class="headerlink" href="#gallia.services.xcp.types.CommandCategory.STIM" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.DaqPtr">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.services.xcp.types.</span></span><span class="sig-name descname"><span class="pre">DaqPtr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">daqListNumber</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">odtNumber</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">odtEntryNumber</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gallia.services.xcp.types.DaqPtr" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.DaqPtr.daqListNumber">
+<span class="sig-name descname"><span class="pre">daqListNumber</span></span><a class="headerlink" href="#gallia.services.xcp.types.DaqPtr.daqListNumber" title="Permalink to this definition"></a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.DaqPtr.odtEntryNumber">
+<span class="sig-name descname"><span class="pre">odtEntryNumber</span></span><a class="headerlink" href="#gallia.services.xcp.types.DaqPtr.odtEntryNumber" title="Permalink to this definition"></a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.DaqPtr.odtNumber">
+<span class="sig-name descname"><span class="pre">odtNumber</span></span><a class="headerlink" href="#gallia.services.xcp.types.DaqPtr.odtNumber" title="Permalink to this definition"></a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Event">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.services.xcp.types.</span></span><span class="sig-name descname"><span class="pre">Event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gallia/services/xcp/types.html#Event"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.services.xcp.types.Event" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">IntEnum</span></code></p>
+<p>XCP Event Codes</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Event.EV_CLEAR_DAQ">
+<span class="sig-name descname"><span class="pre">EV_CLEAR_DAQ</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#gallia.services.xcp.types.Event.EV_CLEAR_DAQ" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Event.EV_CMD_PENDING">
+<span class="sig-name descname"><span class="pre">EV_CMD_PENDING</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">5</span></em><a class="headerlink" href="#gallia.services.xcp.types.Event.EV_CMD_PENDING" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Event.EV_DAQ_OVERLOAD">
+<span class="sig-name descname"><span class="pre">EV_DAQ_OVERLOAD</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">6</span></em><a class="headerlink" href="#gallia.services.xcp.types.Event.EV_DAQ_OVERLOAD" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Event.EV_RESUME_MODE">
+<span class="sig-name descname"><span class="pre">EV_RESUME_MODE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="headerlink" href="#gallia.services.xcp.types.Event.EV_RESUME_MODE" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Event.EV_SESSION_TERMINATED">
+<span class="sig-name descname"><span class="pre">EV_SESSION_TERMINATED</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">7</span></em><a class="headerlink" href="#gallia.services.xcp.types.Event.EV_SESSION_TERMINATED" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Event.EV_SLEEP">
+<span class="sig-name descname"><span class="pre">EV_SLEEP</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">10</span></em><a class="headerlink" href="#gallia.services.xcp.types.Event.EV_SLEEP" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Event.EV_STIM_TIMEOUT">
+<span class="sig-name descname"><span class="pre">EV_STIM_TIMEOUT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">9</span></em><a class="headerlink" href="#gallia.services.xcp.types.Event.EV_STIM_TIMEOUT" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Event.EV_STORE_CAL">
+<span class="sig-name descname"><span class="pre">EV_STORE_CAL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="headerlink" href="#gallia.services.xcp.types.Event.EV_STORE_CAL" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Event.EV_STORE_DAQ">
+<span class="sig-name descname"><span class="pre">EV_STORE_DAQ</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="headerlink" href="#gallia.services.xcp.types.Event.EV_STORE_DAQ" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Event.EV_TIME_SYNC">
+<span class="sig-name descname"><span class="pre">EV_TIME_SYNC</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">8</span></em><a class="headerlink" href="#gallia.services.xcp.types.Event.EV_TIME_SYNC" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Event.EV_TRANSPORT">
+<span class="sig-name descname"><span class="pre">EV_TRANSPORT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">255</span></em><a class="headerlink" href="#gallia.services.xcp.types.Event.EV_TRANSPORT" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Event.EV_USER">
+<span class="sig-name descname"><span class="pre">EV_USER</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">254</span></em><a class="headerlink" href="#gallia.services.xcp.types.Event.EV_USER" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.Event.EV_WAKE_UP">
+<span class="sig-name descname"><span class="pre">EV_WAKE_UP</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">11</span></em><a class="headerlink" href="#gallia.services.xcp.types.Event.EV_WAKE_UP" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.MtaType">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.services.xcp.types.</span></span><span class="sig-name descname"><span class="pre">MtaType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">address</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ext</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gallia.services.xcp.types.MtaType" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.MtaType.address">
+<span class="sig-name descname"><span class="pre">address</span></span><a class="headerlink" href="#gallia.services.xcp.types.MtaType.address" title="Permalink to this definition"></a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.MtaType.ext">
+<span class="sig-name descname"><span class="pre">ext</span></span><a class="headerlink" href="#gallia.services.xcp.types.MtaType.ext" title="Permalink to this definition"></a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.XcpGetIdType">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.services.xcp.types.</span></span><span class="sig-name descname"><span class="pre">XcpGetIdType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gallia/services/xcp/types.html#XcpGetIdType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.services.xcp.types.XcpGetIdType" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">IntEnum</span></code></p>
+<p>An enumeration.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.XcpGetIdType.ASCII_TEXT">
+<span class="sig-name descname"><span class="pre">ASCII_TEXT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="headerlink" href="#gallia.services.xcp.types.XcpGetIdType.ASCII_TEXT" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.XcpGetIdType.ECU">
+<span class="sig-name descname"><span class="pre">ECU</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">6</span></em><a class="headerlink" href="#gallia.services.xcp.types.XcpGetIdType.ECU" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.XcpGetIdType.EPK">
+<span class="sig-name descname"><span class="pre">EPK</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">5</span></em><a class="headerlink" href="#gallia.services.xcp.types.XcpGetIdType.EPK" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.XcpGetIdType.FILENAME">
+<span class="sig-name descname"><span class="pre">FILENAME</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#gallia.services.xcp.types.XcpGetIdType.FILENAME" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.XcpGetIdType.FILE_AND_PATH">
+<span class="sig-name descname"><span class="pre">FILE_AND_PATH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="headerlink" href="#gallia.services.xcp.types.XcpGetIdType.FILE_AND_PATH" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.XcpGetIdType.FILE_TO_UPLOAD">
+<span class="sig-name descname"><span class="pre">FILE_TO_UPLOAD</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">4</span></em><a class="headerlink" href="#gallia.services.xcp.types.XcpGetIdType.FILE_TO_UPLOAD" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.XcpGetIdType.SYSID">
+<span class="sig-name descname"><span class="pre">SYSID</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">7</span></em><a class="headerlink" href="#gallia.services.xcp.types.XcpGetIdType.SYSID" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.XcpGetIdType.URL">
+<span class="sig-name descname"><span class="pre">URL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="headerlink" href="#gallia.services.xcp.types.XcpGetIdType.URL" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.XcpGetIdType.VECTOR_MAPNAMES">
+<span class="sig-name descname"><span class="pre">VECTOR_MAPNAMES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">219</span></em><a class="headerlink" href="#gallia.services.xcp.types.XcpGetIdType.VECTOR_MAPNAMES" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.XcpGetIdType.VECTOR_MDI">
+<span class="sig-name descname"><span class="pre">VECTOR_MDI</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">220</span></em><a class="headerlink" href="#gallia.services.xcp.types.XcpGetIdType.VECTOR_MDI" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.XcpGetSeedMode">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.services.xcp.types.</span></span><span class="sig-name descname"><span class="pre">XcpGetSeedMode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gallia/services/xcp/types.html#XcpGetSeedMode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.services.xcp.types.XcpGetSeedMode" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">IntEnum</span></code></p>
+<p>An enumeration.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.XcpGetSeedMode.FIRST_PART">
+<span class="sig-name descname"><span class="pre">FIRST_PART</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="headerlink" href="#gallia.services.xcp.types.XcpGetSeedMode.FIRST_PART" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.services.xcp.types.XcpGetSeedMode.REMAINING">
+<span class="sig-name descname"><span class="pre">REMAINING</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#gallia.services.xcp.types.XcpGetSeedMode.REMAINING" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gallia.services.xcp">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-gallia.services.xcp" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.services.xcp.XCPService">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.services.xcp.</span></span><span class="sig-name descname"><span class="pre">XCPService</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transport</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.transports.html#gallia.transports.base.BaseTransport" title="gallia.transports.base.BaseTransport"><span class="pre">BaseTransport</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gallia/services/xcp.html#XCPService"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.services.xcp.XCPService" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.services.xcp.XCPService.connect">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">connect</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/services/xcp.html#XCPService.connect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.services.xcp.XCPService.connect" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.services.xcp.XCPService.disconnect">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">disconnect</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/services/xcp.html#XCPService.disconnect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.services.xcp.XCPService.disconnect" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.services.xcp.XCPService.get_comm_mode_info">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_comm_mode_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/services/xcp.html#XCPService.get_comm_mode_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.services.xcp.XCPService.get_comm_mode_info" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.services.xcp.XCPService.get_id">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id_</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/services/xcp.html#XCPService.get_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.services.xcp.XCPService.get_id" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.services.xcp.XCPService.get_status">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_status</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/services/xcp.html#XCPService.get_status"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.services.xcp.XCPService.get_status" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.services.xcp.XCPService.request">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">request</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="reference internal" href="../_modules/gallia/services/xcp.html#XCPService.request"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.services.xcp.XCPService.request" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.services.xcp.XCPService.upload">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">upload</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/services/xcp.html#XCPService.upload"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.services.xcp.XCPService.upload" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="gallia.services.html" class="btn btn-neutral float-left" title="gallia.services package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="gallia.transports.html" class="btn btn-neutral float-right" title="gallia.transports package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

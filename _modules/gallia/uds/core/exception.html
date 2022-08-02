@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gallia.uds.core.exception &mdash; gallia  documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../index.html" class="icon icon-home"> gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../transports.html">Transports</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../penlog.7.html">penlog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/modules.html">Modules</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      <li>gallia.uds.core.exception</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gallia.uds.core.exception</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-FileCopyrightText: AISEC Pentesting Team</span>
+<span class="c1">#</span>
+<span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Type</span>
+
+<span class="kn">from</span> <span class="nn">gallia.uds.core.constants</span> <span class="kn">import</span> <span class="n">UDSErrorCodes</span>
+<span class="kn">from</span> <span class="nn">gallia.uds.core.service</span> <span class="kn">import</span> <span class="n">NegativeResponse</span><span class="p">,</span> <span class="n">UDSRequest</span><span class="p">,</span> <span class="n">UDSResponse</span>
+
+<span class="c1"># ****************</span>
+<span class="c1"># * Base classes *</span>
+<span class="c1"># ****************</span>
+
+
+<div class="viewcode-block" id="UDSException"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.UDSException">[docs]</a><span class="k">class</span> <span class="nc">UDSException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">UDSRequest</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">request</span> <span class="o">=</span> <span class="n">request</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="n">message</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_message_core</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;triggered by </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_message_core</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2">; </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">message</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="k">return</span> <span class="n">message</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">(</span><span class="si">{</span><span class="nb">repr</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span><span class="si">}</span><span class="s2">)&quot;</span></div>
+
+
+<div class="viewcode-block" id="MissingResponse"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.MissingResponse">[docs]</a><span class="k">class</span> <span class="nc">MissingResponse</span><span class="p">(</span><span class="n">UDSException</span><span class="p">,</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">TimeoutError</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_message_core</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;triggered by </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="ResponseException"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.ResponseException">[docs]</a><span class="k">class</span> <span class="nc">ResponseException</span><span class="p">(</span><span class="n">UDSException</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">UDSRequest</span><span class="p">,</span> <span class="n">response</span><span class="p">:</span> <span class="n">UDSResponse</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">response</span> <span class="o">=</span> <span class="n">response</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_message_core</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">response</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="IllegalResponse"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.IllegalResponse">[docs]</a><span class="k">class</span> <span class="nc">IllegalResponse</span><span class="p">(</span><span class="n">ResponseException</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="RequestResponseMismatch"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.RequestResponseMismatch">[docs]</a><span class="k">class</span> <span class="nc">RequestResponseMismatch</span><span class="p">(</span><span class="n">IllegalResponse</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_message_core</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">response</span><span class="p">)</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="MalformedResponse"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.MalformedResponse">[docs]</a><span class="k">class</span> <span class="nc">MalformedResponse</span><span class="p">(</span><span class="n">IllegalResponse</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="UnexpectedResponse"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.UnexpectedResponse">[docs]</a><span class="k">class</span> <span class="nc">UnexpectedResponse</span><span class="p">(</span><span class="n">ResponseException</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="UnexpectedNegativeResponse"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.UnexpectedNegativeResponse">[docs]</a><span class="k">class</span> <span class="nc">UnexpectedNegativeResponse</span><span class="p">(</span><span class="n">UnexpectedResponse</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+    <span class="n">RESPONSE_CODE</span><span class="p">:</span> <span class="n">UDSErrorCodes</span>
+    <span class="n">_CONCRETE_EXCEPTIONS</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">UDSErrorCodes</span><span class="p">],</span> <span class="n">Type</span><span class="p">[</span><span class="n">UnexpectedNegativeResponse</span><span class="p">]</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span> <span class="nf">__init_subclass__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="n">response_code</span><span class="p">:</span> <span class="n">UDSErrorCodes</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init_subclass__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">cls</span><span class="o">.</span><span class="n">RESPONSE_CODE</span> <span class="o">=</span> <span class="n">response_code</span>
+        <span class="n">UnexpectedNegativeResponse</span><span class="o">.</span><span class="n">_CONCRETE_EXCEPTIONS</span><span class="p">[</span><span class="n">response_code</span><span class="p">]</span> <span class="o">=</span> <span class="bp">cls</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">UDSRequest</span><span class="p">,</span>
+        <span class="n">response</span><span class="p">:</span> <span class="n">NegativeResponse</span><span class="p">,</span>
+        <span class="n">message</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">response</span><span class="p">:</span> <span class="n">NegativeResponse</span> <span class="o">=</span> <span class="n">response</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">response</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span>
+
+<div class="viewcode-block" id="UnexpectedNegativeResponse.parse_dynamic"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.UnexpectedNegativeResponse.parse_dynamic">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">parse_dynamic</span><span class="p">(</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">UDSRequest</span><span class="p">,</span> <span class="n">response</span><span class="p">:</span> <span class="n">NegativeResponse</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UnexpectedNegativeResponse</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">UnexpectedNegativeResponse</span><span class="o">.</span><span class="n">_CONCRETE_EXCEPTIONS</span><span class="p">[</span><span class="n">response</span><span class="o">.</span><span class="n">response_code</span><span class="p">](</span>
+            <span class="n">request</span><span class="p">,</span> <span class="n">response</span><span class="p">,</span> <span class="n">message</span>
+        <span class="p">)</span></div></div>
+
+
+<span class="c1"># ******************************************</span>
+<span class="c1"># * Concrete Unexpected Negative Responses *</span>
+<span class="c1"># ******************************************</span>
+
+<span class="c1"># Auto-generated using the following code snippet:</span>
+<span class="c1"># for ec in UDSErrorCodes:</span>
+<span class="c1">#     print(f&#39;class {ec.name[0].upper()}{ec.name[1:]}(&#39;</span>
+<span class="c1">#           f&#39;\n        UnexpectedNegativeResponse, response_code={str(ec)}):\n    pass\n\n&#39;)</span>
+
+
+<div class="viewcode-block" id="GeneralReject"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.GeneralReject">[docs]</a><span class="k">class</span> <span class="nc">GeneralReject</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">generalReject</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="ServiceNotSupported"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.ServiceNotSupported">[docs]</a><span class="k">class</span> <span class="nc">ServiceNotSupported</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">serviceNotSupported</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="SubFunctionNotSupported"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.SubFunctionNotSupported">[docs]</a><span class="k">class</span> <span class="nc">SubFunctionNotSupported</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">subFunctionNotSupported</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="IncorrectMessageLengthOrInvalidFormat"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.IncorrectMessageLengthOrInvalidFormat">[docs]</a><span class="k">class</span> <span class="nc">IncorrectMessageLengthOrInvalidFormat</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span>
+    <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">incorrectMessageLengthOrInvalidFormat</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="ResponseTooLong"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.ResponseTooLong">[docs]</a><span class="k">class</span> <span class="nc">ResponseTooLong</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">responseTooLong</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="BusyRepeatRequest"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.BusyRepeatRequest">[docs]</a><span class="k">class</span> <span class="nc">BusyRepeatRequest</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">busyRepeatRequest</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="ConditionsNotCorrect"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.ConditionsNotCorrect">[docs]</a><span class="k">class</span> <span class="nc">ConditionsNotCorrect</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">conditionsNotCorrect</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="RequestSequenceError"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.RequestSequenceError">[docs]</a><span class="k">class</span> <span class="nc">RequestSequenceError</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">requestSequenceError</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="NoResponseFromSubnetComponent"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.NoResponseFromSubnetComponent">[docs]</a><span class="k">class</span> <span class="nc">NoResponseFromSubnetComponent</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span>
+    <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">noResponseFromSubnetComponent</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="RequestOutOfRange"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.RequestOutOfRange">[docs]</a><span class="k">class</span> <span class="nc">RequestOutOfRange</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">requestOutOfRange</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="SecurityAccessDenied"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.SecurityAccessDenied">[docs]</a><span class="k">class</span> <span class="nc">SecurityAccessDenied</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">securityAccessDenied</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="AuthenticationRequired"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.AuthenticationRequired">[docs]</a><span class="k">class</span> <span class="nc">AuthenticationRequired</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">authenticationRequired</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="InvalidKey"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.InvalidKey">[docs]</a><span class="k">class</span> <span class="nc">InvalidKey</span><span class="p">(</span><span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">invalidKey</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="ExceededNumberOfAttempts"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.ExceededNumberOfAttempts">[docs]</a><span class="k">class</span> <span class="nc">ExceededNumberOfAttempts</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">exceededNumberOfAttempts</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="RequiredTimeDelayNotExpired"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.RequiredTimeDelayNotExpired">[docs]</a><span class="k">class</span> <span class="nc">RequiredTimeDelayNotExpired</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">requiredTimeDelayNotExpired</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="SecureDataTransmissionRequired"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.SecureDataTransmissionRequired">[docs]</a><span class="k">class</span> <span class="nc">SecureDataTransmissionRequired</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span>
+    <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">secureDataTransmissionRequired</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="SecureDataTransmissionNotAllowed"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.SecureDataTransmissionNotAllowed">[docs]</a><span class="k">class</span> <span class="nc">SecureDataTransmissionNotAllowed</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span>
+    <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">secureDataTransmissionNotAllowed</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="SecureDataVerificationFailed"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.SecureDataVerificationFailed">[docs]</a><span class="k">class</span> <span class="nc">SecureDataVerificationFailed</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">secureDataVerificationFailed</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="CertificateVerificationFailedInvalidTimePeriod"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.CertificateVerificationFailedInvalidTimePeriod">[docs]</a><span class="k">class</span> <span class="nc">CertificateVerificationFailedInvalidTimePeriod</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span>
+    <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">certificateVerificationFailedInvalidTimePeriod</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="CertificateVerificationFailedInvalidSignature"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.CertificateVerificationFailedInvalidSignature">[docs]</a><span class="k">class</span> <span class="nc">CertificateVerificationFailedInvalidSignature</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span>
+    <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">certificateVerificationFailedInvalidSignature</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="CertificateVerificationFailedInvalidChainOfTrust"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.CertificateVerificationFailedInvalidChainOfTrust">[docs]</a><span class="k">class</span> <span class="nc">CertificateVerificationFailedInvalidChainOfTrust</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span>
+    <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">certificateVerificationFailedInvalidChainOfTrust</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="CertificateVerificationFailedInvalidType"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.CertificateVerificationFailedInvalidType">[docs]</a><span class="k">class</span> <span class="nc">CertificateVerificationFailedInvalidType</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span>
+    <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">certificateVerificationFailedInvalidType</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="CertificateVerificationFailedInvalidFormat"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.CertificateVerificationFailedInvalidFormat">[docs]</a><span class="k">class</span> <span class="nc">CertificateVerificationFailedInvalidFormat</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span>
+    <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">certificateVerificationFailedInvalidFormat</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="CertificateVerificationFailedInvalidContent"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.CertificateVerificationFailedInvalidContent">[docs]</a><span class="k">class</span> <span class="nc">CertificateVerificationFailedInvalidContent</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span>
+    <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">certificateVerificationFailedInvalidContent</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="CertificateVerificationFailedInvalidScope"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.CertificateVerificationFailedInvalidScope">[docs]</a><span class="k">class</span> <span class="nc">CertificateVerificationFailedInvalidScope</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span>
+    <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">certificateVerificationFailedInvalidScope</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="CertificateVerificationFailedInvalidCertificateRevoked"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.CertificateVerificationFailedInvalidCertificateRevoked">[docs]</a><span class="k">class</span> <span class="nc">CertificateVerificationFailedInvalidCertificateRevoked</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span>
+    <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">certificateVerificationFailedInvalidCertificateRevoked</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="OwnershipVerificationFailed"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.OwnershipVerificationFailed">[docs]</a><span class="k">class</span> <span class="nc">OwnershipVerificationFailed</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">ownershipVerificationFailed</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="ChallengeCalculationFailed"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.ChallengeCalculationFailed">[docs]</a><span class="k">class</span> <span class="nc">ChallengeCalculationFailed</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">challengeCalculationFailed</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="SettingAccessRightsFailed"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.SettingAccessRightsFailed">[docs]</a><span class="k">class</span> <span class="nc">SettingAccessRightsFailed</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">settingAccessRightsFailed</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="SessionKeyCreationOrDerivationFailed"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.SessionKeyCreationOrDerivationFailed">[docs]</a><span class="k">class</span> <span class="nc">SessionKeyCreationOrDerivationFailed</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span>
+    <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">sessionKeyCreationOrDerivationFailed</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="ConfigurationDataUsageFailed"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.ConfigurationDataUsageFailed">[docs]</a><span class="k">class</span> <span class="nc">ConfigurationDataUsageFailed</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">configurationDataUsageFailed</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="DeAuthenticationFailed"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.DeAuthenticationFailed">[docs]</a><span class="k">class</span> <span class="nc">DeAuthenticationFailed</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">deAuthenticationFailed</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="UploadDownloadNotAccepted"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.UploadDownloadNotAccepted">[docs]</a><span class="k">class</span> <span class="nc">UploadDownloadNotAccepted</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">uploadDownloadNotAccepted</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="TransferDataSuspended"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.TransferDataSuspended">[docs]</a><span class="k">class</span> <span class="nc">TransferDataSuspended</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">transferDataSuspended</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="GeneralProgrammingFailure"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.GeneralProgrammingFailure">[docs]</a><span class="k">class</span> <span class="nc">GeneralProgrammingFailure</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">generalProgrammingFailure</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="WrongBlockSequenceCounter"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.WrongBlockSequenceCounter">[docs]</a><span class="k">class</span> <span class="nc">WrongBlockSequenceCounter</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">wrongBlockSequenceCounter</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="RequestCorrectlyReceivedResponsePending"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.RequestCorrectlyReceivedResponsePending">[docs]</a><span class="k">class</span> <span class="nc">RequestCorrectlyReceivedResponsePending</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span>
+    <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">requestCorrectlyReceivedResponsePending</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="SubFunctionNotSupportedInActiveSession"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.SubFunctionNotSupportedInActiveSession">[docs]</a><span class="k">class</span> <span class="nc">SubFunctionNotSupportedInActiveSession</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span>
+    <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">subFunctionNotSupportedInActiveSession</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="ServiceNotSupportedInActiveSession"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.ServiceNotSupportedInActiveSession">[docs]</a><span class="k">class</span> <span class="nc">ServiceNotSupportedInActiveSession</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span>
+    <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">serviceNotSupportedInActiveSession</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="RpmTooHigh"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.RpmTooHigh">[docs]</a><span class="k">class</span> <span class="nc">RpmTooHigh</span><span class="p">(</span><span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">rpmTooHigh</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="RpmTooLow"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.RpmTooLow">[docs]</a><span class="k">class</span> <span class="nc">RpmTooLow</span><span class="p">(</span><span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">rpmTooLow</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="EngineIsRunning"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.EngineIsRunning">[docs]</a><span class="k">class</span> <span class="nc">EngineIsRunning</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">engineIsRunning</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="EngineIsNotRunning"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.EngineIsNotRunning">[docs]</a><span class="k">class</span> <span class="nc">EngineIsNotRunning</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">engineIsNotRunning</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="EngineRunTimeTooLow"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.EngineRunTimeTooLow">[docs]</a><span class="k">class</span> <span class="nc">EngineRunTimeTooLow</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">engineRunTimeTooLow</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="TemperatureTooHigh"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.TemperatureTooHigh">[docs]</a><span class="k">class</span> <span class="nc">TemperatureTooHigh</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">temperatureTooHigh</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="TemperatureTooLow"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.TemperatureTooLow">[docs]</a><span class="k">class</span> <span class="nc">TemperatureTooLow</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">temperatureTooLow</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="VehicleSpeedTooHigh"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.VehicleSpeedTooHigh">[docs]</a><span class="k">class</span> <span class="nc">VehicleSpeedTooHigh</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">vehicleSpeedTooHigh</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="VehicleSpeedTooLow"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.VehicleSpeedTooLow">[docs]</a><span class="k">class</span> <span class="nc">VehicleSpeedTooLow</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">vehicleSpeedTooLow</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="ThrottlePedalTooHigh"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.ThrottlePedalTooHigh">[docs]</a><span class="k">class</span> <span class="nc">ThrottlePedalTooHigh</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">throttlePedalTooHigh</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="ThrottlePedalTooLow"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.ThrottlePedalTooLow">[docs]</a><span class="k">class</span> <span class="nc">ThrottlePedalTooLow</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">throttlePedalTooLow</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="TransmissionRangeNotInNeutral"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.TransmissionRangeNotInNeutral">[docs]</a><span class="k">class</span> <span class="nc">TransmissionRangeNotInNeutral</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span>
+    <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">transmissionRangeNotInNeutral</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="TransmissionRangeNotInGear"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.TransmissionRangeNotInGear">[docs]</a><span class="k">class</span> <span class="nc">TransmissionRangeNotInGear</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">transmissionRangeNotInGear</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="BrakeSwitchNotClosed"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.BrakeSwitchNotClosed">[docs]</a><span class="k">class</span> <span class="nc">BrakeSwitchNotClosed</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">brakeSwitchNotClosed</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="ShifterLeverNotInPark"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.ShifterLeverNotInPark">[docs]</a><span class="k">class</span> <span class="nc">ShifterLeverNotInPark</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">shifterLeverNotInPark</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="TorqueConverterClutchLocked"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.TorqueConverterClutchLocked">[docs]</a><span class="k">class</span> <span class="nc">TorqueConverterClutchLocked</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">torqueConverterClutchLocked</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="VoltageTooHigh"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.VoltageTooHigh">[docs]</a><span class="k">class</span> <span class="nc">VoltageTooHigh</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">voltageTooHigh</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="VoltageTooLow"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.VoltageTooLow">[docs]</a><span class="k">class</span> <span class="nc">VoltageTooLow</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span> <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">voltageTooLow</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="ResourceTemporarilyNotAvailable"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.ResourceTemporarilyNotAvailable">[docs]</a><span class="k">class</span> <span class="nc">ResourceTemporarilyNotAvailable</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span>
+    <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">resourceTemporarilyNotAvailable</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="VehicleManufacturerSpecificConditionsNotCorrectF0"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.VehicleManufacturerSpecificConditionsNotCorrectF0">[docs]</a><span class="k">class</span> <span class="nc">VehicleManufacturerSpecificConditionsNotCorrectF0</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span>
+    <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">vehicleManufacturerSpecificConditionsNotCorrectF0</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="VehicleManufacturerSpecificConditionsNotCorrectF1"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.VehicleManufacturerSpecificConditionsNotCorrectF1">[docs]</a><span class="k">class</span> <span class="nc">VehicleManufacturerSpecificConditionsNotCorrectF1</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span>
+    <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">vehicleManufacturerSpecificConditionsNotCorrectF1</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="VehicleManufacturerSpecificConditionsNotCorrectF2"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.VehicleManufacturerSpecificConditionsNotCorrectF2">[docs]</a><span class="k">class</span> <span class="nc">VehicleManufacturerSpecificConditionsNotCorrectF2</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span>
+    <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">vehicleManufacturerSpecificConditionsNotCorrectF2</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="VehicleManufacturerSpecificConditionsNotCorrectF3"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.VehicleManufacturerSpecificConditionsNotCorrectF3">[docs]</a><span class="k">class</span> <span class="nc">VehicleManufacturerSpecificConditionsNotCorrectF3</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span>
+    <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">vehicleManufacturerSpecificConditionsNotCorrectF3</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="VehicleManufacturerSpecificConditionsNotCorrectF4"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.VehicleManufacturerSpecificConditionsNotCorrectF4">[docs]</a><span class="k">class</span> <span class="nc">VehicleManufacturerSpecificConditionsNotCorrectF4</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span>
+    <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">vehicleManufacturerSpecificConditionsNotCorrectF4</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="VehicleManufacturerSpecificConditionsNotCorrectF5"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.VehicleManufacturerSpecificConditionsNotCorrectF5">[docs]</a><span class="k">class</span> <span class="nc">VehicleManufacturerSpecificConditionsNotCorrectF5</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span>
+    <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">vehicleManufacturerSpecificConditionsNotCorrectF5</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="VehicleManufacturerSpecificConditionsNotCorrectF6"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.VehicleManufacturerSpecificConditionsNotCorrectF6">[docs]</a><span class="k">class</span> <span class="nc">VehicleManufacturerSpecificConditionsNotCorrectF6</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span>
+    <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">vehicleManufacturerSpecificConditionsNotCorrectF6</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="VehicleManufacturerSpecificConditionsNotCorrectF7"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.VehicleManufacturerSpecificConditionsNotCorrectF7">[docs]</a><span class="k">class</span> <span class="nc">VehicleManufacturerSpecificConditionsNotCorrectF7</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span>
+    <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">vehicleManufacturerSpecificConditionsNotCorrectF7</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="VehicleManufacturerSpecificConditionsNotCorrectF8"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.VehicleManufacturerSpecificConditionsNotCorrectF8">[docs]</a><span class="k">class</span> <span class="nc">VehicleManufacturerSpecificConditionsNotCorrectF8</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span>
+    <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">vehicleManufacturerSpecificConditionsNotCorrectF8</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="VehicleManufacturerSpecificConditionsNotCorrectF9"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.VehicleManufacturerSpecificConditionsNotCorrectF9">[docs]</a><span class="k">class</span> <span class="nc">VehicleManufacturerSpecificConditionsNotCorrectF9</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span>
+    <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">vehicleManufacturerSpecificConditionsNotCorrectF9</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="VehicleManufacturerSpecificConditionsNotCorrectFA"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.VehicleManufacturerSpecificConditionsNotCorrectFA">[docs]</a><span class="k">class</span> <span class="nc">VehicleManufacturerSpecificConditionsNotCorrectFA</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span>
+    <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">vehicleManufacturerSpecificConditionsNotCorrectFA</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="VehicleManufacturerSpecificConditionsNotCorrectFB"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.VehicleManufacturerSpecificConditionsNotCorrectFB">[docs]</a><span class="k">class</span> <span class="nc">VehicleManufacturerSpecificConditionsNotCorrectFB</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span>
+    <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">vehicleManufacturerSpecificConditionsNotCorrectFB</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="VehicleManufacturerSpecificConditionsNotCorrectFC"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.VehicleManufacturerSpecificConditionsNotCorrectFC">[docs]</a><span class="k">class</span> <span class="nc">VehicleManufacturerSpecificConditionsNotCorrectFC</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span>
+    <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">vehicleManufacturerSpecificConditionsNotCorrectFC</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="VehicleManufacturerSpecificConditionsNotCorrectFD"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.VehicleManufacturerSpecificConditionsNotCorrectFD">[docs]</a><span class="k">class</span> <span class="nc">VehicleManufacturerSpecificConditionsNotCorrectFD</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span>
+    <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">vehicleManufacturerSpecificConditionsNotCorrectFD</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="VehicleManufacturerSpecificConditionsNotCorrectFE"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.exception.VehicleManufacturerSpecificConditionsNotCorrectFE">[docs]</a><span class="k">class</span> <span class="nc">VehicleManufacturerSpecificConditionsNotCorrectFE</span><span class="p">(</span>
+    <span class="n">UnexpectedNegativeResponse</span><span class="p">,</span>
+    <span class="n">response_code</span><span class="o">=</span><span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">vehicleManufacturerSpecificConditionsNotCorrectFE</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">pass</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

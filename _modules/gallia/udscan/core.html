@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gallia.udscan.core &mdash; gallia  documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../transports.html">Transports</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../penlog.7.html">penlog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/modules.html">Modules</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>gallia.udscan.core</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gallia.udscan.core</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-FileCopyrightText: AISEC Pentesting Team</span>
+<span class="c1">#</span>
+<span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
+
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">signal</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">traceback</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span> <span class="nn">argparse</span> <span class="kn">import</span> <span class="n">ArgumentDefaultsHelpFormatter</span><span class="p">,</span> <span class="n">Namespace</span>
+<span class="kn">from</span> <span class="nn">asyncio</span> <span class="kn">import</span> <span class="n">Task</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timezone</span>
+<span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span><span class="p">,</span> <span class="n">IntEnum</span><span class="p">,</span> <span class="n">unique</span>
+<span class="kn">from</span> <span class="nn">importlib.metadata</span> <span class="kn">import</span> <span class="n">EntryPoint</span><span class="p">,</span> <span class="n">entry_points</span><span class="p">,</span> <span class="n">version</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span> <span class="nn">secrets</span> <span class="kn">import</span> <span class="n">token_urlsafe</span>
+<span class="kn">from</span> <span class="nn">tempfile</span> <span class="kn">import</span> <span class="n">gettempdir</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">cast</span>
+
+<span class="kn">import</span> <span class="nn">aiofiles</span>
+<span class="kn">import</span> <span class="nn">argcomplete</span>
+
+<span class="kn">from</span> <span class="nn">gallia.db.db_handler</span> <span class="kn">import</span> <span class="n">DBHandler</span>
+<span class="kn">from</span> <span class="nn">gallia.penlab</span> <span class="kn">import</span> <span class="n">Dumpcap</span><span class="p">,</span> <span class="n">PowerSupply</span><span class="p">,</span> <span class="n">PowerSupplyURI</span>
+<span class="kn">from</span> <span class="nn">gallia.penlog</span> <span class="kn">import</span> <span class="n">Logger</span>
+<span class="kn">from</span> <span class="nn">gallia.transports.base</span> <span class="kn">import</span> <span class="n">BaseTransport</span><span class="p">,</span> <span class="n">TargetURI</span>
+<span class="kn">from</span> <span class="nn">gallia.transports.can</span> <span class="kn">import</span> <span class="n">ISOTPTransport</span><span class="p">,</span> <span class="n">RawCANTransport</span>
+<span class="kn">from</span> <span class="nn">gallia.transports.doip</span> <span class="kn">import</span> <span class="n">DoIPTransport</span>
+<span class="kn">from</span> <span class="nn">gallia.transports.tcp</span> <span class="kn">import</span> <span class="n">TCPLineSepTransport</span>
+<span class="kn">from</span> <span class="nn">gallia.uds.core.service</span> <span class="kn">import</span> <span class="n">NegativeResponse</span><span class="p">,</span> <span class="n">UDSResponse</span>
+<span class="kn">from</span> <span class="nn">gallia.uds.ecu</span> <span class="kn">import</span> <span class="n">ECU</span>
+<span class="kn">from</span> <span class="nn">gallia.uds.helpers</span> <span class="kn">import</span> <span class="n">raise_for_error</span>
+<span class="kn">from</span> <span class="nn">gallia.utils</span> <span class="kn">import</span> <span class="n">camel_to_snake</span><span class="p">,</span> <span class="n">g_repr</span>
+
+
+<div class="viewcode-block" id="ExitCodes"><a class="viewcode-back" href="../../../api/gallia.udscan.html#gallia.udscan.core.ExitCodes">[docs]</a><span class="nd">@unique</span>
+<span class="k">class</span> <span class="nc">ExitCodes</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">SUCCESS</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">GENERIC_ERROR</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">SETUP_FAILED</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="n">TEARDOWN_FAILED</span> <span class="o">=</span> <span class="mi">11</span></div>
+
+
+<div class="viewcode-block" id="FileNames"><a class="viewcode-back" href="../../../api/gallia.udscan.html#gallia.udscan.core.FileNames">[docs]</a><span class="nd">@unique</span>
+<span class="k">class</span> <span class="nc">FileNames</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">PROPERTIES_PRE</span> <span class="o">=</span> <span class="s2">&quot;PROPERTIES_PRE.json&quot;</span>
+    <span class="n">PROPERTIES_POST</span> <span class="o">=</span> <span class="s2">&quot;PROPERTIES_POST.json&quot;</span></div>
+
+
+<div class="viewcode-block" id="Formatter"><a class="viewcode-back" href="../../../api/gallia.udscan.html#gallia.udscan.core.Formatter">[docs]</a><span class="k">class</span> <span class="nc">Formatter</span><span class="p">(</span><span class="n">ArgumentDefaultsHelpFormatter</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># This is for steff.</span>
+        <span class="n">help_width</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;GALLIA_HELP_WIDTH&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">help_width</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;width&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">help_width</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="load_transport"><a class="viewcode-back" href="../../../api/gallia.udscan.html#gallia.udscan.core.load_transport">[docs]</a><span class="k">def</span> <span class="nf">load_transport</span><span class="p">(</span><span class="n">target</span><span class="p">:</span> <span class="n">TargetURI</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseTransport</span><span class="p">:</span>
+    <span class="n">transports</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">ISOTPTransport</span><span class="p">,</span>
+        <span class="n">RawCANTransport</span><span class="p">,</span>
+        <span class="n">DoIPTransport</span><span class="p">,</span>
+        <span class="n">TCPLineSepTransport</span><span class="p">,</span>
+    <span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">EntryPoint</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">type</span><span class="p">[</span><span class="n">BaseTransport</span><span class="p">]:</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">BaseTransport</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="si">}</span><span class="s2"> is not derived from BaseTransport&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="nb">type</span><span class="p">[</span><span class="n">BaseTransport</span><span class="p">],</span> <span class="n">t</span><span class="p">)</span>
+
+    <span class="n">eps</span> <span class="o">=</span> <span class="n">entry_points</span><span class="p">()</span>
+    <span class="k">if</span> <span class="s2">&quot;gallia_transports&quot;</span> <span class="ow">in</span> <span class="n">eps</span><span class="p">:</span>
+        <span class="n">transports_eps</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">eps</span><span class="p">[</span><span class="s2">&quot;gallia_transports&quot;</span><span class="p">])</span>
+        <span class="n">transports</span> <span class="o">+=</span> <span class="n">transports_eps</span>
+
+    <span class="k">for</span> <span class="n">transport</span> <span class="ow">in</span> <span class="n">transports</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">target</span><span class="o">.</span><span class="n">scheme</span> <span class="o">==</span> <span class="n">transport</span><span class="o">.</span><span class="n">SCHEME</span><span class="p">:</span>  <span class="c1"># type: ignore</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">transport</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">t</span>
+
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;no transport for </span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="load_ecu"><a class="viewcode-back" href="../../../api/gallia.udscan.html#gallia.udscan.core.load_ecu">[docs]</a><span class="k">def</span> <span class="nf">load_ecu</span><span class="p">(</span><span class="n">vendor</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">type</span><span class="p">[</span><span class="n">ECU</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">vendor</span> <span class="o">==</span> <span class="s2">&quot;default&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ECU</span>
+
+    <span class="n">eps</span> <span class="o">=</span> <span class="n">entry_points</span><span class="p">()</span>
+    <span class="k">if</span> <span class="s2">&quot;gallia_ecus&quot;</span> <span class="ow">in</span> <span class="n">eps</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">entry_point</span> <span class="ow">in</span> <span class="n">eps</span><span class="p">[</span><span class="s2">&quot;gallia_ecus&quot;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">vendor</span> <span class="o">==</span> <span class="n">entry_point</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">entry_point</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;no such OEM: &#39;</span><span class="si">{</span><span class="n">vendor</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="GalliaBase"><a class="viewcode-back" href="../../../api/gallia.udscan.html#gallia.udscan.core.GalliaBase">[docs]</a><span class="k">class</span> <span class="nc">GalliaBase</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;GalliaBase is a baseclass for all gallia commands.</span>
+<span class="sd">    In order to register cli arguments:</span>
+
+<span class="sd">    - `add_class_parser()` can be overwritten to create</span>
+<span class="sd">       e.g. scanner related arguments shared by all scanners</span>
+<span class="sd">    - `add_parser()` can be overwritten to create specific</span>
+<span class="sd">      arguments for a specific scanner.</span>
+
+<span class="sd">    The main entry_point is `run()`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__doc__</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">Logger</span><span class="p">(</span><span class="n">component</span><span class="o">=</span><span class="s2">&quot;gallia&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db_handler</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DBHandler</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="p">,</span> <span class="n">formatter_class</span><span class="o">=</span><span class="n">Formatter</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">camel_to_snake</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_class_parser</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parser</span><span class="p">()</span>
+
+<div class="viewcode-block" id="GalliaBase.add_class_parser"><a class="viewcode-back" href="../../../api/gallia.udscan.html#gallia.udscan.core.GalliaBase.add_class_parser">[docs]</a>    <span class="k">def</span> <span class="nf">add_class_parser</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="o">...</span></div>
+
+<div class="viewcode-block" id="GalliaBase.add_parser"><a class="viewcode-back" href="../../../api/gallia.udscan.html#gallia.udscan.core.GalliaBase.add_parser">[docs]</a>    <span class="k">def</span> <span class="nf">add_parser</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="o">...</span></div>
+
+<div class="viewcode-block" id="GalliaBase.run"><a class="viewcode-back" href="../../../api/gallia.udscan.html#gallia.udscan.core.GalliaBase.run">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="o">...</span></div></div>
+
+
+<div class="viewcode-block" id="Script"><a class="viewcode-back" href="../../../api/gallia.udscan.html#gallia.udscan.core.Script">[docs]</a><span class="k">class</span> <span class="nc">Script</span><span class="p">(</span><span class="n">GalliaBase</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Script is a base class for a syncronous gallia command.</span>
+<span class="sd">    To implement a script, create a subclass and implement the</span>
+<span class="sd">    .main() method.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Script.main"><a class="viewcode-back" href="../../../api/gallia.udscan.html#gallia.udscan.core.Script.main">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="o">...</span></div>
+
+<div class="viewcode-block" id="Script.run"><a class="viewcode-back" href="../../../api/gallia.udscan.html#gallia.udscan.core.Script.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="n">argcomplete</span><span class="o">.</span><span class="n">autocomplete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="p">)</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">128</span> <span class="o">+</span> <span class="n">signal</span><span class="o">.</span><span class="n">SIGINT</span></div></div>
+
+
+<div class="viewcode-block" id="AsyncScript"><a class="viewcode-back" href="../../../api/gallia.udscan.html#gallia.udscan.core.AsyncScript">[docs]</a><span class="k">class</span> <span class="nc">AsyncScript</span><span class="p">(</span><span class="n">GalliaBase</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;AsyncScript is a base class for a asyncronous gallia command.</span>
+<span class="sd">    To implement an async script, create a subclass and implement</span>
+<span class="sd">    the .main() method.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="AsyncScript.main"><a class="viewcode-back" href="../../../api/gallia.udscan.html#gallia.udscan.core.AsyncScript.main">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="o">...</span></div>
+
+<div class="viewcode-block" id="AsyncScript.run"><a class="viewcode-back" href="../../../api/gallia.udscan.html#gallia.udscan.core.AsyncScript.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="n">argcomplete</span><span class="o">.</span><span class="n">autocomplete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="p">)</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="n">args</span><span class="p">))</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">128</span> <span class="o">+</span> <span class="n">signal</span><span class="o">.</span><span class="n">SIGINT</span></div></div>
+
+
+<div class="viewcode-block" id="Scanner"><a class="viewcode-back" href="../../../api/gallia.udscan.html#gallia.udscan.core.Scanner">[docs]</a><span class="k">class</span> <span class="nc">Scanner</span><span class="p">(</span><span class="n">GalliaBase</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Scanner is a base class for all scanning related commands.</span>
+<span class="sd">    A scanner has the following properties:</span>
+
+<span class="sd">    - It is async.</span>
+<span class="sd">    - It loads transports via TargetURIs; available via `self.transport`.</span>
+<span class="sd">    - Controlling PowerSupplies via the opennetzteil API is supported.</span>
+<span class="sd">    - `setup()` can be overwritten (do not forget to call `super().setup()`)</span>
+<span class="sd">      for preparation tasks, such as estabshling a network connection or</span>
+<span class="sd">      starting background tasks.</span>
+<span class="sd">    - pcap logfiles can be recorded via a Dumpcap background task.</span>
+<span class="sd">    - `teardown()` can be overwritten (do not forget to call `super().teardown()`)</span>
+<span class="sd">      for cleanup tasks, such as terminating a network connection or background</span>
+<span class="sd">      tasks.</span>
+<span class="sd">    - `main()` is the relevant entry_point for the scanner and must be implemented.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">artifacts_dir</span><span class="p">:</span> <span class="n">Path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">power_supply</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PowerSupply</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dumpcap</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dumpcap</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="Scanner.main"><a class="viewcode-back" href="../../../api/gallia.udscan.html#gallia.udscan.core.Scanner.main">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="o">...</span></div>
+
+<div class="viewcode-block" id="Scanner.setup"><a class="viewcode-back" href="../../../api/gallia.udscan.html#gallia.udscan.core.Scanner.setup">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">power_supply</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">power_supply</span> <span class="o">=</span> <span class="k">await</span> <span class="n">PowerSupply</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">power_supply</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">time_</span> <span class="o">:=</span> <span class="n">args</span><span class="o">.</span><span class="n">power_cycle</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">power_supply</span><span class="o">.</span><span class="n">power_cycle</span><span class="p">(</span><span class="n">time_</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">power_cycle</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;--power-cycle needs --power-supply&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Start dumpcap as the first subprocess; otherwise network</span>
+        <span class="c1"># traffic might be missing.</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">dumpcap</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dumpcap</span> <span class="o">=</span> <span class="k">await</span> <span class="n">Dumpcap</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">target</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">artifacts_dir</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">dumpcap</span><span class="o">.</span><span class="n">sync</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Scanner.teardown"><a class="viewcode-back" href="../../../api/gallia.udscan.html#gallia.udscan.core.Scanner.teardown">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">teardown</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dumpcap</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">dumpcap</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Scanner.add_class_parser"><a class="viewcode-back" href="../../../api/gallia.udscan.html#gallia.udscan.core.Scanner.add_class_parser">[docs]</a>    <span class="k">def</span> <span class="nf">add_class_parser</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">add_class_parser</span><span class="p">()</span>
+
+        <span class="n">group</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s2">&quot;generic gallia arguments&quot;</span><span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--data-dir&quot;</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;PENRUN_ARTIFACTS&quot;</span><span class="p">),</span>
+            <span class="nb">type</span><span class="o">=</span><span class="n">Path</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Folder for artifacts&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--db&quot;</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;GALLIA_DB&quot;</span><span class="p">),</span>
+            <span class="nb">type</span><span class="o">=</span><span class="n">Path</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to sqlite3 database&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">group</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s2">&quot;transport mode related arguments&quot;</span><span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--target&quot;</span><span class="p">,</span>
+            <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;TARGET&quot;</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;GALLIA_TARGET&quot;</span><span class="p">),</span>
+            <span class="nb">type</span><span class="o">=</span><span class="n">TargetURI</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;URI that describes the target&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">group</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s2">&quot;power supply related arguments&quot;</span><span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--power-supply&quot;</span><span class="p">,</span>
+            <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;URI&quot;</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;GALLIA_POWER_SUPPLY&quot;</span><span class="p">),</span>
+            <span class="nb">type</span><span class="o">=</span><span class="n">PowerSupplyURI</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;URI specifying the location of the relevant opennetzteil server&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--power-cycle&quot;</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;GALLIA_POWER_CYCLE&quot;</span><span class="p">),</span>
+            <span class="n">const</span><span class="o">=</span><span class="mf">5.0</span><span class="p">,</span>
+            <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;?&quot;</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">&quot;trigger a powercycle before starting the scan; &quot;</span>
+                <span class="s2">&quot;optional argument specifies the sleep time in secs&quot;</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--dumpcap&quot;</span><span class="p">,</span>
+            <span class="n">action</span><span class="o">=</span><span class="n">argparse</span><span class="o">.</span><span class="n">BooleanOptionalAction</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Enable/Disable creating a pcap file&quot;</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="Scanner.prepare_artifactsdir"><a class="viewcode-back" href="../../../api/gallia.udscan.html#gallia.udscan.core.Scanner.prepare_artifactsdir">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_artifactsdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">base</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">gettempdir</span><span class="p">())</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">base</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y%m</span><span class="si">%d</span><span class="s2">-%H%M%S&quot;</span><span class="p">)</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">token_urlsafe</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span>
+            <span class="p">)</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">p</span>
+
+        <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">path</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Data directory </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2"> is not an existing directory.&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></div>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="n">exit_code</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">ExitCodes</span><span class="o">.</span><span class="n">SUCCESS</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">db</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">db_handler</span> <span class="o">=</span> <span class="n">DBHandler</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">db</span><span class="p">)</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_handler</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_handler</span><span class="o">.</span><span class="n">insert_run_meta</span><span class="p">(</span>
+                    <span class="n">script</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+                    <span class="n">arguments</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span>
+                    <span class="n">start_time</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span><span class="o">.</span><span class="n">astimezone</span><span class="p">(),</span>
+                    <span class="n">path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">artifacts_dir</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">BrokenPipeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">exit_code</span> <span class="o">=</span> <span class="n">ExitCodes</span><span class="o">.</span><span class="n">GENERIC_ERROR</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_critical</span><span class="p">(</span><span class="n">g_repr</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_critical</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;setup failed: </span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="n">ExitCodes</span><span class="o">.</span><span class="n">SETUP_FAILED</span><span class="p">)</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">exit_code</span> <span class="o">=</span> <span class="n">ExitCodes</span><span class="o">.</span><span class="n">GENERIC_ERROR</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_critical</span><span class="p">(</span><span class="n">g_repr</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+                    <span class="n">traceback</span><span class="o">.</span><span class="n">print_exc</span><span class="p">()</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">teardown</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_critical</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;teardown failed: </span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="n">ExitCodes</span><span class="o">.</span><span class="n">TEARDOWN_FAILED</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">exit_code</span>
+        <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+            <span class="n">exit_code</span> <span class="o">=</span> <span class="mi">128</span> <span class="o">+</span> <span class="n">signal</span><span class="o">.</span><span class="n">SIGINT</span>
+            <span class="k">raise</span>
+        <span class="k">except</span> <span class="ne">SystemExit</span> <span class="k">as</span> <span class="n">se</span><span class="p">:</span>
+            <span class="n">exit_code</span> <span class="o">=</span> <span class="n">se</span><span class="o">.</span><span class="n">code</span>
+            <span class="k">raise</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_handler</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_handler</span><span class="o">.</span><span class="n">connection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_handler</span><span class="o">.</span><span class="n">meta</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_handler</span><span class="o">.</span><span class="n">complete_run_meta</span><span class="p">(</span>
+                            <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span><span class="o">.</span><span class="n">astimezone</span><span class="p">(),</span> <span class="n">exit_code</span>
+                        <span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_warning</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;Could not write the run meta to the database: </span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="p">)</span>
+
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_handler</span><span class="o">.</span><span class="n">disconnect</span><span class="p">()</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_error</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Could not close the database connection properly: </span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+
+<div class="viewcode-block" id="Scanner.run"><a class="viewcode-back" href="../../../api/gallia.udscan.html#gallia.udscan.core.Scanner.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="n">argcomplete</span><span class="o">.</span><span class="n">autocomplete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="p">)</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">artifacts_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prepare_artifactsdir</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">data_dir</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_preamble</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Storing artifacts at </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">artifacts_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_preamble</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s1">&#39;Starting &quot;</span><span class="si">{</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s1">&quot; (</span><span class="si">{</span><span class="n">version</span><span class="p">(</span><span class="s2">&quot;gallia&quot;</span><span class="p">)</span><span class="si">}</span><span class="s1">) with [</span><span class="si">{</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span><span class="si">}</span><span class="s1">]&#39;</span>
+        <span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">(</span><span class="n">args</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_critical</span><span class="p">(</span><span class="s2">&quot;ctrl+c received. Terminating…&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="mi">128</span> <span class="o">+</span> <span class="n">signal</span><span class="o">.</span><span class="n">SIGINT</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;The scan results are located at: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">artifacts_dir</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="UDSScanner"><a class="viewcode-back" href="../../../api/gallia.udscan.html#gallia.udscan.core.UDSScanner">[docs]</a><span class="k">class</span> <span class="nc">UDSScanner</span><span class="p">(</span><span class="n">Scanner</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;UDSScanner is a baseclass, particularly for scanning tasks</span>
+<span class="sd">    related to the UDS protocol. The differences to Scanner are:</span>
+
+<span class="sd">    - `self.ecu` contains a OEM specific UDS client object.</span>
+<span class="sd">    - A background tasks sends TesterPresent regularly to avoid timeouts.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ecu</span><span class="p">:</span> <span class="n">ECU</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transport</span><span class="p">:</span> <span class="n">BaseTransport</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tester_present_task</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Task</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_implicit_logging</span> <span class="o">=</span> <span class="kc">True</span>
+
+<div class="viewcode-block" id="UDSScanner.add_class_parser"><a class="viewcode-back" href="../../../api/gallia.udscan.html#gallia.udscan.core.UDSScanner.add_class_parser">[docs]</a>    <span class="k">def</span> <span class="nf">add_class_parser</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">add_class_parser</span><span class="p">()</span>
+
+        <span class="n">group</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s2">&quot;UDS scanner related arguments&quot;</span><span class="p">)</span>
+
+        <span class="n">eps</span> <span class="o">=</span> <span class="n">entry_points</span><span class="p">()</span>
+        <span class="n">choices</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">eps</span><span class="p">[</span><span class="s2">&quot;gallia_ecus&quot;</span><span class="p">]]</span>
+            <span class="k">if</span> <span class="s2">&quot;gallia_ecus&quot;</span> <span class="ow">in</span> <span class="n">eps</span>
+            <span class="k">else</span> <span class="p">[</span><span class="s2">&quot;default&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">choices</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;default&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">choices</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--ecu-reset&quot;</span><span class="p">,</span>
+            <span class="n">const</span><span class="o">=</span><span class="mh">0x01</span><span class="p">,</span>
+            <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;?&quot;</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Trigger an initial ecu_reset via UDS; reset level is optional&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--oem&quot;</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;GALLIA_OEM&quot;</span><span class="p">,</span> <span class="s2">&quot;default&quot;</span><span class="p">),</span>
+            <span class="n">choices</span><span class="o">=</span><span class="n">choices</span><span class="p">,</span>
+            <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;OEM&quot;</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;The OEM of the ECU, used to choose a OEM specific ECU implementation&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--timeout&quot;</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+            <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;SECONDS&quot;</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Timeout value to wait for a response from the ECU&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--max-retries&quot;</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+            <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;INT&quot;</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Number of maximum retries while sending UDS requests&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--ping&quot;</span><span class="p">,</span>
+            <span class="n">action</span><span class="o">=</span><span class="n">argparse</span><span class="o">.</span><span class="n">BooleanOptionalAction</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Enable/Disable initial TesterPresent request&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--tester-present-interval&quot;</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+            <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;SECONDS&quot;</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Modify the interval of the cyclic tester present packets&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--tester-present&quot;</span><span class="p">,</span>
+            <span class="n">action</span><span class="o">=</span><span class="n">argparse</span><span class="o">.</span><span class="n">BooleanOptionalAction</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Enable/Disable tester present background worker&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--properties&quot;</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">action</span><span class="o">=</span><span class="n">argparse</span><span class="o">.</span><span class="n">BooleanOptionalAction</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Read and store the ECU proporties prior and after scan&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--compare-properties&quot;</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">action</span><span class="o">=</span><span class="n">argparse</span><span class="o">.</span><span class="n">BooleanOptionalAction</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Compare properties before and after the scan&quot;</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_tester_present_worker</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interval</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">transport</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_debug</span><span class="p">(</span><span class="s2">&quot;tester present worker started&quot;</span><span class="p">)</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">mutex</span><span class="p">:</span>
+                    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">bytes</span><span class="p">([</span><span class="mh">0x3E</span><span class="p">,</span> <span class="mh">0x80</span><span class="p">]),</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;IGNORE&quot;</span><span class="p">])</span>
+
+                    <span class="c1"># Hold the mutex for 10 ms to synchronize this background</span>
+                    <span class="c1"># worker with the main sender task.</span>
+                    <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.01</span><span class="p">)</span>
+
+                    <span class="c1"># The BCP might send us an error. Everything</span>
+                    <span class="c1"># will break if we do not read it back. Since</span>
+                    <span class="c1"># this read() call is only intended to flush</span>
+                    <span class="c1"># errors caused by the previous write(), it is</span>
+                    <span class="c1"># sane to ignore the error here.</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">TimeoutError</span><span class="p">:</span>
+                        <span class="k">pass</span>
+                <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">interval</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_debug</span><span class="p">(</span><span class="s2">&quot;tester present worker terminated&quot;</span><span class="p">)</span>
+                <span class="k">break</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;tester present got </span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="c1"># Wait until the stack recovers, but not for too long…</span>
+                <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">implicit_logging</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_implicit_logging</span>
+
+    <span class="nd">@implicit_logging</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">implicit_logging</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_implicit_logging</span> <span class="o">=</span> <span class="n">value</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_handler</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_apply_implicit_logging_setting</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_apply_implicit_logging_setting</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_implicit_logging</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ecu</span><span class="o">.</span><span class="n">db_handler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_handler</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ecu</span><span class="o">.</span><span class="n">db_handler</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="UDSScanner.setup"><a class="viewcode-back" href="../../../api/gallia.udscan.html#gallia.udscan.core.UDSScanner.setup">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">await</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">transport</span> <span class="o">=</span> <span class="n">load_transport</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">target</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ecu</span> <span class="o">=</span> <span class="n">load_ecu</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">oem</span><span class="p">)(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">transport</span><span class="p">,</span>
+            <span class="n">timeout</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">timeout</span><span class="p">,</span>
+            <span class="n">max_retry</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">max_retries</span><span class="p">,</span>
+            <span class="n">power_supply</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">power_supply</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_handler</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_handler</span><span class="o">.</span><span class="n">insert_scan_run</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">target</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_apply_implicit_logging_setting</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Could not write the scan run to the database: </span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">ecu_reset</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">resp</span><span class="p">:</span> <span class="n">UDSResponse</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecu</span><span class="o">.</span><span class="n">ecu_reset</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">ecu_reset</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">resp</span><span class="p">,</span> <span class="n">NegativeResponse</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ECUReset failed: </span><span class="si">{</span><span class="n">resp</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_warning</span><span class="p">(</span><span class="s2">&quot;Switching to default session&quot;</span><span class="p">)</span>
+                <span class="n">raise_for_error</span><span class="p">(</span><span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecu</span><span class="o">.</span><span class="n">set_session</span><span class="p">(</span><span class="mh">0x01</span><span class="p">))</span>
+                <span class="n">resp</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecu</span><span class="o">.</span><span class="n">ecu_reset</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">ecu_reset</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">resp</span><span class="p">,</span> <span class="n">NegativeResponse</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ECUReset in session 0x01 failed: </span><span class="si">{</span><span class="n">resp</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Handles connecting to the target and waits</span>
+        <span class="c1"># until it is ready.</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">ping</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecu</span><span class="o">.</span><span class="n">wait_for_ecu</span><span class="p">()</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecu</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">tester_present</span><span class="p">:</span>
+            <span class="n">coroutine</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tester_present_worker</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">tester_present_interval</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tester_present_task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">coroutine</span><span class="p">)</span>
+
+            <span class="c1"># enforce context switch</span>
+            <span class="c1"># this ensures, that the task is executed at least once</span>
+            <span class="c1"># if the task is not executed, task.cancel will fail with CancelledError</span>
+            <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">properties</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">artifacts_dir</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="n">FileNames</span><span class="o">.</span><span class="n">PROPERTIES_PRE</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+            <span class="k">async</span> <span class="k">with</span> <span class="n">aiofiles</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+                <span class="k">await</span> <span class="n">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecu</span><span class="o">.</span><span class="n">properties</span><span class="p">(</span><span class="kc">True</span><span class="p">),</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">))</span>
+                <span class="k">await</span> <span class="n">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_handler</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_handler</span><span class="o">.</span><span class="n">insert_scan_run_properties_pre</span><span class="p">(</span>
+                    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecu</span><span class="o">.</span><span class="n">properties</span><span class="p">()</span>
+                <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_apply_implicit_logging_setting</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Could not write the properties_pre to the database: </span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span></div>
+
+<div class="viewcode-block" id="UDSScanner.teardown"><a class="viewcode-back" href="../../../api/gallia.udscan.html#gallia.udscan.core.UDSScanner.teardown">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">teardown</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">properties</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">artifacts_dir</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="n">FileNames</span><span class="o">.</span><span class="n">PROPERTIES_POST</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+            <span class="k">async</span> <span class="k">with</span> <span class="n">aiofiles</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+                <span class="k">await</span> <span class="n">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecu</span><span class="o">.</span><span class="n">properties</span><span class="p">(</span><span class="kc">True</span><span class="p">),</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">))</span>
+                <span class="k">await</span> <span class="n">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="n">path_pre</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">artifacts_dir</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="n">FileNames</span><span class="o">.</span><span class="n">PROPERTIES_PRE</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+            <span class="k">async</span> <span class="k">with</span> <span class="n">aiofiles</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">path_pre</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+                <span class="n">prop_pre</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="k">await</span> <span class="n">file</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+
+            <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">compare_properties</span> <span class="ow">and</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecu</span><span class="o">.</span><span class="n">properties</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span> <span class="o">!=</span> <span class="n">prop_pre</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_warning</span><span class="p">(</span><span class="s2">&quot;ecu properties differ, please investigate!&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_handler</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_handler</span><span class="o">.</span><span class="n">complete_scan_run</span><span class="p">(</span>
+                    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecu</span><span class="o">.</span><span class="n">properties</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Could not write the scan run to the database: </span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tester_present_task</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tester_present_task</span><span class="o">.</span><span class="n">cancel</span><span class="p">()</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">tester_present_task</span>
+
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="c1"># This must be the last one.</span>
+        <span class="k">await</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">teardown</span><span class="p">(</span><span class="n">args</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="DiscoveryScanner"><a class="viewcode-back" href="../../../api/gallia.udscan.html#gallia.udscan.core.DiscoveryScanner">[docs]</a><span class="k">class</span> <span class="nc">DiscoveryScanner</span><span class="p">(</span><span class="n">Scanner</span><span class="p">):</span>
+<div class="viewcode-block" id="DiscoveryScanner.add_class_parser"><a class="viewcode-back" href="../../../api/gallia.udscan.html#gallia.udscan.core.DiscoveryScanner.add_class_parser">[docs]</a>    <span class="k">def</span> <span class="nf">add_class_parser</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">add_class_parser</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--timeout&quot;</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;timeout value for request&quot;</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="DiscoveryScanner.setup"><a class="viewcode-back" href="../../../api/gallia.udscan.html#gallia.udscan.core.DiscoveryScanner.setup">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">await</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_handler</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_handler</span><span class="o">.</span><span class="n">insert_discovery_run</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">url</span><span class="o">.</span><span class="n">scheme</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Could not write the discovery run to the database: </span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

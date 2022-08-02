@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gallia package &mdash; gallia  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="gallia.db package" href="gallia.db.html" />
+    <link rel="prev" title="cursed_hr package" href="cursed_hr.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../transports.html">Transports</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../penlog.7.html">penlog</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Modules</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="cursed_hr.html">cursed_hr package</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">gallia package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#subpackages">Subpackages</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gallia.db.html">gallia.db package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.services.html">gallia.services package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.transports.html">gallia.transports package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.uds.html">gallia.uds package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.udscan.html">gallia.udscan package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-gallia.cli">gallia.cli module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-gallia.penlab">gallia.penlab module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-gallia.penlog">gallia.penlog module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-gallia.utils">gallia.utils module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-gallia.virtual_ecu">gallia.virtual_ecu module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-gallia">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="opennetzteil.html">opennetzteil package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="penlog.html">penlog package</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="modules.html">Modules</a> &raquo;</li>
+      <li>gallia package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/gallia.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="gallia-package">
+<h1>gallia package<a class="headerlink" href="#gallia-package" title="Permalink to this heading"></a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="gallia.db.html">gallia.db package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="gallia.db.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gallia.db.html#module-gallia.db.db_handler">gallia.db.db_handler module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gallia.db.html#module-gallia.db">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="gallia.services.html">gallia.services package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="gallia.services.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="gallia.services.xcp.html">gallia.services.xcp package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gallia.services.xcp.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.services.xcp.html#module-gallia.services.xcp.types">gallia.services.xcp.types module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.services.xcp.html#module-gallia.services.xcp">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="gallia.services.html#module-gallia.services">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="gallia.transports.html">gallia.transports package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="gallia.transports.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gallia.transports.html#module-gallia.transports.base">gallia.transports.base module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gallia.transports.html#module-gallia.transports.can">gallia.transports.can module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gallia.transports.html#module-gallia.transports.doip">gallia.transports.doip module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gallia.transports.html#module-gallia.transports.tcp">gallia.transports.tcp module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gallia.transports.html#module-gallia.transports">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="gallia.uds.html">gallia.uds package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="gallia.uds.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="gallia.uds.core.html">gallia.uds.core package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gallia.uds.core.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.uds.core.html#module-gallia.uds.core.client">gallia.uds.core.client module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.uds.core.html#module-gallia.uds.core.constants">gallia.uds.core.constants module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.uds.core.html#module-gallia.uds.core.exception">gallia.uds.core.exception module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.uds.core.html#module-gallia.uds.core.service">gallia.uds.core.service module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.uds.core.html#module-gallia.uds.core.utils">gallia.uds.core.utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.uds.core.html#module-gallia.uds.core">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="gallia.uds.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gallia.uds.html#module-gallia.uds.ecu">gallia.uds.ecu module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gallia.uds.html#module-gallia.uds.helpers">gallia.uds.helpers module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gallia.uds.html#module-gallia.uds.nrv">gallia.uds.nrv module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gallia.uds.html#module-gallia.uds.server">gallia.uds.server module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gallia.uds.html#module-gallia.uds">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="gallia.udscan.html">gallia.udscan package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="gallia.udscan.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="gallia.udscan.scanner.html">gallia.udscan.scanner package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gallia.udscan.scanner.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.udscan.scanner.html#module-gallia.udscan.scanner.discover_doip">gallia.udscan.scanner.discover_doip module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.udscan.scanner.html#module-gallia.udscan.scanner.find_can_ids">gallia.udscan.scanner.find_can_ids module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.udscan.scanner.html#module-gallia.udscan.scanner.find_xcp">gallia.udscan.scanner.find_xcp module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.udscan.scanner.html#module-gallia.udscan.scanner.fuzz_payloads">gallia.udscan.scanner.fuzz_payloads module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.udscan.scanner.html#module-gallia.udscan.scanner.scan_identifiers">gallia.udscan.scanner.scan_identifiers module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.udscan.scanner.html#module-gallia.udscan.scanner.scan_memory_functions">gallia.udscan.scanner.scan_memory_functions module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.udscan.scanner.html#module-gallia.udscan.scanner.scan_reset">gallia.udscan.scanner.scan_reset module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.udscan.scanner.html#module-gallia.udscan.scanner.scan_sa_dump_seeds">gallia.udscan.scanner.scan_sa_dump_seeds module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.udscan.scanner.html#module-gallia.udscan.scanner.scan_services">gallia.udscan.scanner.scan_services module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.udscan.scanner.html#module-gallia.udscan.scanner.scan_sessions">gallia.udscan.scanner.scan_sessions module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.udscan.scanner.html#module-gallia.udscan.scanner.simple_dtc">gallia.udscan.scanner.simple_dtc module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.udscan.scanner.html#module-gallia.udscan.scanner.simple_ecu_reset">gallia.udscan.scanner.simple_ecu_reset module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.udscan.scanner.html#module-gallia.udscan.scanner.simple_get_vin">gallia.udscan.scanner.simple_get_vin module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.udscan.scanner.html#module-gallia.udscan.scanner.simple_iocbi">gallia.udscan.scanner.simple_iocbi module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.udscan.scanner.html#module-gallia.udscan.scanner.simple_ping">gallia.udscan.scanner.simple_ping module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.udscan.scanner.html#module-gallia.udscan.scanner.simple_read_by_identifier">gallia.udscan.scanner.simple_read_by_identifier module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.udscan.scanner.html#module-gallia.udscan.scanner.simple_read_error_log">gallia.udscan.scanner.simple_read_error_log module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.udscan.scanner.html#module-gallia.udscan.scanner.simple_rmba">gallia.udscan.scanner.simple_rmba module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.udscan.scanner.html#module-gallia.udscan.scanner.simple_rtcl">gallia.udscan.scanner.simple_rtcl module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.udscan.scanner.html#module-gallia.udscan.scanner.simple_send_pdu">gallia.udscan.scanner.simple_send_pdu module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.udscan.scanner.html#module-gallia.udscan.scanner.simple_test_xcp">gallia.udscan.scanner.simple_test_xcp module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.udscan.scanner.html#module-gallia.udscan.scanner.simple_wmba">gallia.udscan.scanner.simple_wmba module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.udscan.scanner.html#module-gallia.udscan.scanner.simple_write_by_identifier">gallia.udscan.scanner.simple_write_by_identifier module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.udscan.scanner.html#module-gallia.udscan.scanner">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="gallia.udscan.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gallia.udscan.html#module-gallia.udscan.core">gallia.udscan.core module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gallia.udscan.html#module-gallia.udscan">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-gallia.cli">
+<span id="gallia-cli-module"></span><h2>gallia.cli module<a class="headerlink" href="#module-gallia.cli" title="Permalink to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="gallia.cli.main">
+<span class="sig-prename descclassname"><span class="pre">gallia.cli.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/cli.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.cli.main" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="module-gallia.penlab">
+<span id="gallia-penlab-module"></span><h2>gallia.penlab module<a class="headerlink" href="#module-gallia.penlab" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.penlab.Dumpcap">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.penlab.</span></span><span class="sig-name descname"><span class="pre">Dumpcap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">proc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Process</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#gallia.penlog.Logger" title="gallia.penlog.Logger"><span class="pre">Logger</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">artifacts_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outfile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cleanup</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gallia/penlab.html#Dumpcap"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.penlab.Dumpcap" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.penlab.Dumpcap.BUFSIZE">
+<span class="sig-name descname"><span class="pre">BUFSIZE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">8192</span></em><a class="headerlink" href="#gallia.penlab.Dumpcap.BUFSIZE" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.penlab.Dumpcap.start">
+<em class="property"><span class="pre">async</span><span class="w"> </span><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.transports.html#gallia.transports.base.TargetURI" title="gallia.transports.base.TargetURI"><span class="pre">TargetURI</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">artifacts_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">PathLike</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#gallia.penlab.Dumpcap" title="gallia.penlab.Dumpcap"><span class="pre">Dumpcap</span></a></span></span><a class="reference internal" href="../_modules/gallia/penlab.html#Dumpcap.start"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.penlab.Dumpcap.start" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.penlab.Dumpcap.stop">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">stop</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/penlab.html#Dumpcap.stop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.penlab.Dumpcap.stop" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.penlab.Dumpcap.sync">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">sync</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/penlab.html#Dumpcap.sync"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.penlab.Dumpcap.sync" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.penlab.PowerSupply">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.penlab.</span></span><span class="sig-name descname"><span class="pre">PowerSupply</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channel_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">client</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="opennetzteil.html#opennetzteil.Netzteil" title="opennetzteil.Netzteil"><span class="pre">Netzteil</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gallia/penlab.html#PowerSupply"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.penlab.PowerSupply" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.penlab.PowerSupply.connect">
+<em class="property"><span class="pre">async</span><span class="w"> </span><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">connect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#gallia.penlab.PowerSupplyURI" title="gallia.penlab.PowerSupplyURI"><span class="pre">PowerSupplyURI</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#gallia.penlab.PowerSupply" title="gallia.penlab.PowerSupply"><span class="pre">PowerSupply</span></a></span></span><a class="reference internal" href="../_modules/gallia/penlab.html#PowerSupply.connect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.penlab.PowerSupply.connect" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.penlab.PowerSupply.power_cycle">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">power_cycle</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sleep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">callback</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/penlab.html#PowerSupply.power_cycle"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.penlab.PowerSupply.power_cycle" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.penlab.PowerSupply.power_down">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">power_down</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/penlab.html#PowerSupply.power_down"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.penlab.PowerSupply.power_down" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.penlab.PowerSupply.power_up">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">power_up</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/penlab.html#PowerSupply.power_up"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.penlab.PowerSupply.power_up" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.penlab.PowerSupplyURI">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.penlab.</span></span><span class="sig-name descname"><span class="pre">PowerSupplyURI</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gallia/penlab.html#PowerSupplyURI"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.penlab.PowerSupplyURI" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="gallia.transports.html#gallia.transports.base.TargetURI" title="gallia.transports.base.TargetURI"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetURI</span></code></a></p>
+<dl class="py property">
+<dt class="sig sig-object py" id="gallia.penlab.PowerSupplyURI.channel">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">channel</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#gallia.penlab.PowerSupplyURI.channel" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="gallia.penlab.PowerSupplyURI.id">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#gallia.penlab.PowerSupplyURI.id" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gallia.penlog">
+<span id="gallia-penlog-module"></span><h2>gallia.penlog module<a class="headerlink" href="#module-gallia.penlog" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.penlog.DiscardLogger">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.penlog.</span></span><span class="sig-name descname"><span class="pre">DiscardLogger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">component:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'root'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flush:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_:</span> <span class="pre">~typing.TextIO</span> <span class="pre">=</span> <span class="pre">&lt;_io.TextIOWrapper</span> <span class="pre">name='&lt;stderr&gt;'</span> <span class="pre">mode='w'</span> <span class="pre">encoding='utf-8'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loglevel:</span> <span class="pre">~typing.Optional[~penlog.MessagePrio]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_type:</span> <span class="pre">~typing.Optional[~penlog.OutputType]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_colors:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_uuid:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gallia/penlog.html#DiscardLogger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.penlog.DiscardLogger" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gallia.penlog.Logger" title="gallia.penlog.Logger"><code class="xref py py-class docutils literal notranslate"><span class="pre">Logger</span></code></a></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.penlog.Logger">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.penlog.</span></span><span class="sig-name descname"><span class="pre">Logger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">component:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'root'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flush:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_:</span> <span class="pre">~typing.TextIO</span> <span class="pre">=</span> <span class="pre">&lt;_io.TextIOWrapper</span> <span class="pre">name='&lt;stderr&gt;'</span> <span class="pre">mode='w'</span> <span class="pre">encoding='utf-8'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loglevel:</span> <span class="pre">~typing.Optional[~penlog.MessagePrio]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_type:</span> <span class="pre">~typing.Optional[~penlog.OutputType]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_colors:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_uuid:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gallia/penlog.html#Logger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.penlog.Logger" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="penlog.html#penlog.Logger" title="penlog.Logger"><code class="xref py py-class docutils literal notranslate"><span class="pre">Logger</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.penlog.Logger.log_preamble">
+<span class="sig-name descname"><span class="pre">log_preamble</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/penlog.html#Logger.log_preamble"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.penlog.Logger.log_preamble" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.penlog.Logger.log_read">
+<span class="sig-name descname"><span class="pre">log_read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tags</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/penlog.html#Logger.log_read"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.penlog.Logger.log_read" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.penlog.Logger.log_summary">
+<span class="sig-name descname"><span class="pre">log_summary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tags</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/penlog.html#Logger.log_summary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.penlog.Logger.log_summary" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.penlog.Logger.log_write">
+<span class="sig-name descname"><span class="pre">log_write</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tags</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/penlog.html#Logger.log_write"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.penlog.Logger.log_write" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.penlog.Logger.stack_depth">
+<span class="sig-name descname"><span class="pre">stack_depth</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">4</span></em><a class="headerlink" href="#gallia.penlog.Logger.stack_depth" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.penlog.MessageType">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.penlog.</span></span><span class="sig-name descname"><span class="pre">MessageType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gallia/penlog.html#MessageType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.penlog.MessageType" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
+<p>An enumeration.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.penlog.MessageType.MESSAGE">
+<span class="sig-name descname"><span class="pre">MESSAGE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'message'</span></em><a class="headerlink" href="#gallia.penlog.MessageType.MESSAGE" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.penlog.MessageType.PREAMBLE">
+<span class="sig-name descname"><span class="pre">PREAMBLE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'preamble'</span></em><a class="headerlink" href="#gallia.penlog.MessageType.PREAMBLE" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.penlog.MessageType.READ">
+<span class="sig-name descname"><span class="pre">READ</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'read'</span></em><a class="headerlink" href="#gallia.penlog.MessageType.READ" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.penlog.MessageType.SUMMARY">
+<span class="sig-name descname"><span class="pre">SUMMARY</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'summary'</span></em><a class="headerlink" href="#gallia.penlog.MessageType.SUMMARY" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.penlog.MessageType.WRITE">
+<span class="sig-name descname"><span class="pre">WRITE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'write'</span></em><a class="headerlink" href="#gallia.penlog.MessageType.WRITE" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gallia.utils">
+<span id="gallia-utils-module"></span><h2>gallia.utils module<a class="headerlink" href="#module-gallia.utils" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.utils.ANSIEscapes">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.utils.</span></span><span class="sig-name descname"><span class="pre">ANSIEscapes</span></span><a class="reference internal" href="../_modules/gallia/utils.html#ANSIEscapes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.utils.ANSIEscapes" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.utils.ANSIEscapes.BLACK">
+<span class="sig-name descname"><span class="pre">BLACK</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">''</span></em><a class="headerlink" href="#gallia.utils.ANSIEscapes.BLACK" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.utils.ANSIEscapes.BLINK">
+<span class="sig-name descname"><span class="pre">BLINK</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">''</span></em><a class="headerlink" href="#gallia.utils.ANSIEscapes.BLINK" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.utils.ANSIEscapes.BLUE">
+<span class="sig-name descname"><span class="pre">BLUE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">''</span></em><a class="headerlink" href="#gallia.utils.ANSIEscapes.BLUE" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.utils.ANSIEscapes.BOLD">
+<span class="sig-name descname"><span class="pre">BOLD</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">''</span></em><a class="headerlink" href="#gallia.utils.ANSIEscapes.BOLD" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.utils.ANSIEscapes.CROSSED">
+<span class="sig-name descname"><span class="pre">CROSSED</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">''</span></em><a class="headerlink" href="#gallia.utils.ANSIEscapes.CROSSED" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.utils.ANSIEscapes.CYAN">
+<span class="sig-name descname"><span class="pre">CYAN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">''</span></em><a class="headerlink" href="#gallia.utils.ANSIEscapes.CYAN" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.utils.ANSIEscapes.GREEN">
+<span class="sig-name descname"><span class="pre">GREEN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">''</span></em><a class="headerlink" href="#gallia.utils.ANSIEscapes.GREEN" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.utils.ANSIEscapes.ITALIC">
+<span class="sig-name descname"><span class="pre">ITALIC</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">''</span></em><a class="headerlink" href="#gallia.utils.ANSIEscapes.ITALIC" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.utils.ANSIEscapes.MAGENTA">
+<span class="sig-name descname"><span class="pre">MAGENTA</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">''</span></em><a class="headerlink" href="#gallia.utils.ANSIEscapes.MAGENTA" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.utils.ANSIEscapes.RED">
+<span class="sig-name descname"><span class="pre">RED</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">''</span></em><a class="headerlink" href="#gallia.utils.ANSIEscapes.RED" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.utils.ANSIEscapes.RESET">
+<span class="sig-name descname"><span class="pre">RESET</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">''</span></em><a class="headerlink" href="#gallia.utils.ANSIEscapes.RESET" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.utils.ANSIEscapes.UNDERSCORE">
+<span class="sig-name descname"><span class="pre">UNDERSCORE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">''</span></em><a class="headerlink" href="#gallia.utils.ANSIEscapes.UNDERSCORE" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.utils.ANSIEscapes.WHITE">
+<span class="sig-name descname"><span class="pre">WHITE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">''</span></em><a class="headerlink" href="#gallia.utils.ANSIEscapes.WHITE" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gallia.utils.ANSIEscapes.YELLOW">
+<span class="sig-name descname"><span class="pre">YELLOW</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">''</span></em><a class="headerlink" href="#gallia.utils.ANSIEscapes.YELLOW" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.utils.ParseSkips">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.utils.</span></span><span class="sig-name descname"><span class="pre">ParseSkips</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">option_strings</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dest</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">const</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">choices</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">required</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">help</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metavar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gallia/utils.html#ParseSkips"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.utils.ParseSkips" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Action</span></code></p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gallia.utils.auto_int">
+<span class="sig-prename descclassname"><span class="pre">gallia.utils.</span></span><span class="sig-name descname"><span class="pre">auto_int</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="../_modules/gallia/utils.html#auto_int"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.utils.auto_int" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gallia.utils.camel_to_dash">
+<span class="sig-prename descclassname"><span class="pre">gallia.utils.</span></span><span class="sig-name descname"><span class="pre">camel_to_dash</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../_modules/gallia/utils.html#camel_to_dash"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.utils.camel_to_dash" title="Permalink to this definition"></a></dt>
+<dd><p>Convert a CamelCase string to a dash-case string.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gallia.utils.camel_to_snake">
+<span class="sig-prename descclassname"><span class="pre">gallia.utils.</span></span><span class="sig-name descname"><span class="pre">camel_to_snake</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../_modules/gallia/utils.html#camel_to_snake"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.utils.camel_to_snake" title="Permalink to this definition"></a></dt>
+<dd><p>Convert a CamelCase string to a snake_case string.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gallia.utils.can_id_repr">
+<span class="sig-prename descclassname"><span class="pre">gallia.utils.</span></span><span class="sig-name descname"><span class="pre">can_id_repr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">i</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../_modules/gallia/utils.html#can_id_repr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.utils.can_id_repr" title="Permalink to this definition"></a></dt>
+<dd><p>Default string representation of a CAN id.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gallia.utils.catch_and_log_exception">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.utils.</span></span><span class="sig-name descname"><span class="pre">catch_and_log_exception</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#gallia.penlog.Logger" title="gallia.penlog.Logger"><span class="pre">Logger</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/utils.html#catch_and_log_exception"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.utils.catch_and_log_exception" title="Permalink to this definition"></a></dt>
+<dd><p>Runs an async function. If an exception is raised,
+it will be logged via logger.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>logger</strong> – an instance of gallia.penlog.Logger</p></li>
+<li><p><strong>func</strong> – a async function object which will be awaited</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gallia.utils.g_repr">
+<span class="sig-prename descclassname"><span class="pre">gallia.utils.</span></span><span class="sig-name descname"><span class="pre">g_repr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../_modules/gallia/utils.html#g_repr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.utils.g_repr" title="Permalink to this definition"></a></dt>
+<dd><p>Object string representation with default gallia output settings.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gallia.utils.isotp_addr_repr">
+<span class="sig-prename descclassname"><span class="pre">gallia.utils.</span></span><span class="sig-name descname"><span class="pre">isotp_addr_repr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../_modules/gallia/utils.html#isotp_addr_repr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.utils.isotp_addr_repr" title="Permalink to this definition"></a></dt>
+<dd><p>Default string representation of a CAN id.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gallia.utils.join_host_port">
+<span class="sig-prename descclassname"><span class="pre">gallia.utils.</span></span><span class="sig-name descname"><span class="pre">join_host_port</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">host</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../_modules/gallia/utils.html#join_host_port"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.utils.join_host_port" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gallia.utils.split_host_port">
+<span class="sig-prename descclassname"><span class="pre">gallia.utils.</span></span><span class="sig-name descname"><span class="pre">split_host_port</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hostport</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/gallia/utils.html#split_host_port"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.utils.split_host_port" title="Permalink to this definition"></a></dt>
+<dd><p>Splits a combination of ip address/hostname + port into hostname/ip address
+and port.  The default_port argument can be used to return a port if it is
+absent in the hostport argument.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gallia.utils.write_target_list">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.utils.</span></span><span class="sig-name descname"><span class="pre">write_target_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'TargetURI'</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">db_handler</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.db.html#gallia.db.db_handler.DBHandler" title="gallia.db.db_handler.DBHandler"><span class="pre">DBHandler</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/utils.html#write_target_list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.utils.write_target_list" title="Permalink to this definition"></a></dt>
+<dd><p>Write a list of ECU connection strings (urls) into file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – output file</p></li>
+<li><p><strong>targets</strong> – list of ECUs with ECU specific url and params as dict</p></li>
+</ul>
+</dd>
+<dt class="field-even">Params db_handler</dt>
+<dd class="field-even"><p>if given, urls are also written to the database as discovery results</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-gallia.virtual_ecu">
+<span id="gallia-virtual-ecu-module"></span><h2>gallia.virtual_ecu module<a class="headerlink" href="#module-gallia.virtual_ecu" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.virtual_ecu.VirtualECU">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.virtual_ecu.</span></span><span class="sig-name descname"><span class="pre">VirtualECU</span></span><a class="reference internal" href="../_modules/gallia/virtual_ecu.html#VirtualECU"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.virtual_ecu.VirtualECU" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="gallia.udscan.html#gallia.udscan.core.AsyncScript" title="gallia.udscan.core.AsyncScript"><code class="xref py py-class docutils literal notranslate"><span class="pre">AsyncScript</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.virtual_ecu.VirtualECU.add_parser">
+<span class="sig-name descname"><span class="pre">add_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/virtual_ecu.html#VirtualECU.add_parser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.virtual_ecu.VirtualECU.add_parser" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.virtual_ecu.VirtualECU.main">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Namespace</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/virtual_ecu.html#VirtualECU.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.virtual_ecu.VirtualECU.main" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gallia">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-gallia" title="Permalink to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="cursed_hr.html" class="btn btn-neutral float-left" title="cursed_hr package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="gallia.db.html" class="btn btn-neutral float-right" title="gallia.db package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

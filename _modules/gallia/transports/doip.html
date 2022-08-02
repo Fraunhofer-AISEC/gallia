@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gallia.transports.doip &mdash; gallia  documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../transports.html">Transports</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../penlog.7.html">penlog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/modules.html">Modules</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>gallia.transports.doip</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gallia.transports.doip</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-FileCopyrightText: AISEC Pentesting Team</span>
+<span class="c1">#</span>
+<span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">import</span> <span class="nn">struct</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">IntEnum</span><span class="p">,</span> <span class="n">unique</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">TypedDict</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">cast</span>
+
+<span class="kn">from</span> <span class="nn">gallia.penlog</span> <span class="kn">import</span> <span class="n">Logger</span>
+<span class="kn">from</span> <span class="nn">gallia.transports.base</span> <span class="kn">import</span> <span class="n">BaseTransport</span><span class="p">,</span> <span class="n">TargetURI</span><span class="p">,</span> <span class="n">_int_spec</span>
+
+
+<div class="viewcode-block" id="ProtocolVersions"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.ProtocolVersions">[docs]</a><span class="nd">@unique</span>
+<span class="k">class</span> <span class="nc">ProtocolVersions</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">ISO_13400_2_2010</span> <span class="o">=</span> <span class="mh">0x01</span>
+    <span class="n">ISO_13400_2_2012</span> <span class="o">=</span> <span class="mh">0x02</span></div>
+
+
+<div class="viewcode-block" id="RoutingActivationRequestTypes"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.RoutingActivationRequestTypes">[docs]</a><span class="nd">@unique</span>
+<span class="k">class</span> <span class="nc">RoutingActivationRequestTypes</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">Default</span> <span class="o">=</span> <span class="mh">0x00</span>
+    <span class="n">WWH_OBD</span> <span class="o">=</span> <span class="mh">0x01</span>
+    <span class="n">CentralSecurity</span> <span class="o">=</span> <span class="mh">0xE0</span></div>
+
+
+<div class="viewcode-block" id="RoutingActivationResponseCodes"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.RoutingActivationResponseCodes">[docs]</a><span class="nd">@unique</span>
+<span class="k">class</span> <span class="nc">RoutingActivationResponseCodes</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">UnknownSourceAddress</span> <span class="o">=</span> <span class="mh">0x00</span>
+    <span class="n">NoRessources</span> <span class="o">=</span> <span class="mh">0x01</span>
+    <span class="n">InvalidConnectionEntry</span> <span class="o">=</span> <span class="mh">0x02</span>
+    <span class="n">AlreadyActived</span> <span class="o">=</span> <span class="mh">0x03</span>
+    <span class="n">AuthenticationMissing</span> <span class="o">=</span> <span class="mh">0x04</span>
+    <span class="n">ConfirmationRejected</span> <span class="o">=</span> <span class="mh">0x05</span>
+    <span class="n">UnsupportedActivationType</span> <span class="o">=</span> <span class="mh">0x06</span>
+    <span class="n">Success</span> <span class="o">=</span> <span class="mh">0x10</span>
+    <span class="n">SuccessConfirmationRequired</span> <span class="o">=</span> <span class="mh">0x11</span></div>
+
+
+<div class="viewcode-block" id="PayloadTypes"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.PayloadTypes">[docs]</a><span class="nd">@unique</span>
+<span class="k">class</span> <span class="nc">PayloadTypes</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">NegativeAcknowledge</span> <span class="o">=</span> <span class="mh">0x0000</span>
+    <span class="n">VehicleIdentificationRequestMessage</span> <span class="o">=</span> <span class="mh">0x0002</span>
+    <span class="n">VehicleIdentificationRequestMessageWithEID</span> <span class="o">=</span> <span class="mh">0x0003</span>
+    <span class="n">VehicleIdentificationRequestMessageWithVIN</span> <span class="o">=</span> <span class="mh">0x0004</span>
+    <span class="n">RoutingActivationRequest</span> <span class="o">=</span> <span class="mh">0x0005</span>
+    <span class="n">RoutingActivationResponse</span> <span class="o">=</span> <span class="mh">0x0006</span>
+    <span class="n">AliveCheckRequest</span> <span class="o">=</span> <span class="mh">0x0007</span>
+    <span class="n">AliveCheckResponse</span> <span class="o">=</span> <span class="mh">0x0008</span>
+    <span class="n">DoIPEntityStatusRequest</span> <span class="o">=</span> <span class="mh">0x4001</span>
+    <span class="n">DoIPEntityStatusResponse</span> <span class="o">=</span> <span class="mh">0x4002</span>
+    <span class="n">DiagnosticMessage</span> <span class="o">=</span> <span class="mh">0x8001</span>
+    <span class="n">DiagnosticMessagePositiveAcknowledgement</span> <span class="o">=</span> <span class="mh">0x8002</span>
+    <span class="n">DiagnosticMessageNegativeAcknowledgement</span> <span class="o">=</span> <span class="mh">0x8003</span></div>
+
+
+<div class="viewcode-block" id="DiagnosticMessagePositiveAckCodes"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.DiagnosticMessagePositiveAckCodes">[docs]</a><span class="nd">@unique</span>
+<span class="k">class</span> <span class="nc">DiagnosticMessagePositiveAckCodes</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">Success</span> <span class="o">=</span> <span class="mh">0x00</span></div>
+
+
+<div class="viewcode-block" id="DiagnosticMessageNegativeAckCodes"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.DiagnosticMessageNegativeAckCodes">[docs]</a><span class="nd">@unique</span>
+<span class="k">class</span> <span class="nc">DiagnosticMessageNegativeAckCodes</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">InvalidSourceAddress</span> <span class="o">=</span> <span class="mh">0x02</span>
+    <span class="n">UnknownTargetAddress</span> <span class="o">=</span> <span class="mh">0x03</span>
+    <span class="n">DiagnosticMessageTooLarge</span> <span class="o">=</span> <span class="mh">0x04</span>
+    <span class="n">OutOfMemory</span> <span class="o">=</span> <span class="mh">0x05</span>
+    <span class="n">TargetUnreachable</span> <span class="o">=</span> <span class="mh">0x06</span>
+    <span class="n">UnknownNetwork</span> <span class="o">=</span> <span class="mh">0x07</span>
+    <span class="n">TransportProtocolError</span> <span class="o">=</span> <span class="mh">0x08</span></div>
+
+
+<div class="viewcode-block" id="GenericHeaderNACKCodes"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.GenericHeaderNACKCodes">[docs]</a><span class="nd">@unique</span>
+<span class="k">class</span> <span class="nc">GenericHeaderNACKCodes</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">IncorrectPatternFormat</span> <span class="o">=</span> <span class="mh">0x01</span>
+    <span class="n">UnknownPayloadType</span> <span class="o">=</span> <span class="mh">0x02</span>
+    <span class="n">MessageTooLarge</span> <span class="o">=</span> <span class="mh">0x03</span>
+    <span class="n">OutOfMemory</span> <span class="o">=</span> <span class="mh">0x04</span>
+    <span class="n">InvalidPayloadLength</span> <span class="o">=</span> <span class="mh">0x05</span></div>
+
+
+<div class="viewcode-block" id="TimingAndCommunicationParameters"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.TimingAndCommunicationParameters">[docs]</a><span class="k">class</span> <span class="nc">TimingAndCommunicationParameters</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">CtrlTimeout</span> <span class="o">=</span> <span class="mi">2000</span>
+    <span class="n">AnnounceWait</span> <span class="o">=</span> <span class="mi">500</span>
+    <span class="n">AnnounceInterval</span> <span class="o">=</span> <span class="mi">500</span>
+    <span class="n">AnnounceNum</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">DiagnosticMessageMessageAckTimeout</span> <span class="o">=</span> <span class="mi">50</span>
+    <span class="n">DiagnosticMessageMessageTimeout</span> <span class="o">=</span> <span class="mi">2000</span>
+    <span class="n">TCPGeneralInactivityTimeout</span> <span class="o">=</span> <span class="mi">5000</span>
+    <span class="n">TCPInitalInactivityTimeout</span> <span class="o">=</span> <span class="mi">2000</span>
+    <span class="n">TCPAliveCheckTimeout</span> <span class="o">=</span> <span class="mi">500</span>
+    <span class="n">ProcessingTimeout</span> <span class="o">=</span> <span class="mi">2000</span>
+    <span class="n">VecicleDiscoveryTimeout</span> <span class="o">=</span> <span class="mi">5000</span></div>
+
+
+<div class="viewcode-block" id="GenericHeader"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.GenericHeader">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">GenericHeader</span><span class="p">:</span>
+    <span class="n">ProtocolVersion</span><span class="p">:</span> <span class="n">ProtocolVersions</span>
+    <span class="n">PayloadType</span><span class="p">:</span> <span class="n">PayloadTypes</span>
+    <span class="n">PayloadLength</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">PayloadTypeSpecificMessageContent</span><span class="p">:</span> <span class="nb">bytes</span>
+
+<div class="viewcode-block" id="GenericHeader.pack"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.GenericHeader.pack">[docs]</a>    <span class="k">def</span> <span class="nf">pack</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span>
+            <span class="s2">&quot;!BBHL&quot;</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ProtocolVersion</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ProtocolVersion</span> <span class="o">^</span> <span class="mh">0xFF</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">PayloadType</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">PayloadLength</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="GenericHeader.unpack"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.GenericHeader.unpack">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">unpack</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GenericHeader</span><span class="p">:</span>
+        <span class="p">(</span>
+            <span class="n">protocol_version</span><span class="p">,</span>
+            <span class="n">inverse_protocol_version</span><span class="p">,</span>
+            <span class="n">payload_type</span><span class="p">,</span>
+            <span class="n">payload_length</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s2">&quot;!BBHL&quot;</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">protocol_version</span> <span class="o">!=</span> <span class="n">inverse_protocol_version</span> <span class="o">^</span> <span class="mh">0xFF</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;inverse protocol_version is invalid&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">protocol_version</span><span class="p">,</span>
+            <span class="n">PayloadTypes</span><span class="p">(</span><span class="n">payload_type</span><span class="p">),</span>
+            <span class="n">payload_length</span><span class="p">,</span>
+            <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="GenericHeaderNegativeAcknowledge"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.GenericHeaderNegativeAcknowledge">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">GenericHeaderNegativeAcknowledge</span><span class="p">:</span>
+    <span class="n">GenericHeaderNACKCode</span><span class="p">:</span> <span class="n">GenericHeaderNACKCodes</span></div>
+
+
+<div class="viewcode-block" id="RoutingActivationRequest"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.RoutingActivationRequest">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">RoutingActivationRequest</span><span class="p">:</span>
+    <span class="n">SourceAddress</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">ActivationType</span><span class="p">:</span> <span class="n">RoutingActivationRequestTypes</span>
+    <span class="n">Reserved</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mh">0x00000000</span>  <span class="c1"># Not used, default value.</span>
+    <span class="c1"># OEMReserved uint32</span>
+
+<div class="viewcode-block" id="RoutingActivationRequest.pack"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.RoutingActivationRequest.pack">[docs]</a>    <span class="k">def</span> <span class="nf">pack</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span>
+            <span class="s2">&quot;!HBI&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">SourceAddress</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ActivationType</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Reserved</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="RoutingActivationResponse"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.RoutingActivationResponse">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">RoutingActivationResponse</span><span class="p">:</span>
+    <span class="n">SourceAddress</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">TargetAddress</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">RoutingActivationResponseCode</span><span class="p">:</span> <span class="n">RoutingActivationResponseCodes</span>
+    <span class="n">Reserved</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mh">0x00000000</span>  <span class="c1"># Not used, default value.</span>
+    <span class="c1"># OEMReserved uint32</span>
+
+<div class="viewcode-block" id="RoutingActivationResponse.unpack"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.RoutingActivationResponse.unpack">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">unpack</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RoutingActivationResponse</span><span class="p">:</span>
+        <span class="p">(</span>
+            <span class="n">source_address</span><span class="p">,</span>
+            <span class="n">target_address</span><span class="p">,</span>
+            <span class="n">routing_activation_response_code</span><span class="p">,</span>
+            <span class="n">reserved</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s2">&quot;!HHBI&quot;</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">reserved</span> <span class="o">!=</span> <span class="mh">0x00000000</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;reserved field contains data&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">source_address</span><span class="p">,</span> <span class="n">target_address</span><span class="p">,</span> <span class="n">routing_activation_response_code</span><span class="p">,</span> <span class="n">reserved</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="DiagnosticMessage"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.DiagnosticMessage">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">DiagnosticMessage</span><span class="p">:</span>
+    <span class="n">SourceAddress</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">TargetAddress</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">UserData</span><span class="p">:</span> <span class="nb">bytes</span>
+
+<div class="viewcode-block" id="DiagnosticMessage.pack"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.DiagnosticMessage.pack">[docs]</a>    <span class="k">def</span> <span class="nf">pack</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span>
+                <span class="s2">&quot;!HH&quot;</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">SourceAddress</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">TargetAddress</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">UserData</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="DiagnosticMessage.unpack"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.DiagnosticMessage.unpack">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">unpack</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DiagnosticMessage</span><span class="p">:</span>
+        <span class="n">source_address</span><span class="p">,</span> <span class="n">target_address</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s2">&quot;!HH&quot;</span><span class="p">,</span> <span class="n">data</span><span class="p">[:</span><span class="mi">4</span><span class="p">])</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">4</span><span class="p">:]</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">source_address</span><span class="p">,</span> <span class="n">target_address</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="DiagnosticMessageAcknowledgement"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.DiagnosticMessageAcknowledgement">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">DiagnosticMessageAcknowledgement</span><span class="p">:</span>
+    <span class="n">SourceAddress</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">TargetAddress</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">ACKCode</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">PreviousDiagnosticMessageData</span><span class="p">:</span> <span class="nb">bytes</span>
+
+<div class="viewcode-block" id="DiagnosticMessageAcknowledgement.pack"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.DiagnosticMessageAcknowledgement.pack">[docs]</a>    <span class="k">def</span> <span class="nf">pack</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span>
+                <span class="s2">&quot;!HHB&quot;</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">SourceAddress</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">TargetAddress</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ACKCode</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">PreviousDiagnosticMessageData</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="DiagnosticMessagePositiveAcknowledgement"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.DiagnosticMessagePositiveAcknowledgement">[docs]</a><span class="k">class</span> <span class="nc">DiagnosticMessagePositiveAcknowledgement</span><span class="p">(</span><span class="n">DiagnosticMessageAcknowledgement</span><span class="p">):</span>
+    <span class="n">ACKCode</span><span class="p">:</span> <span class="n">DiagnosticMessagePositiveAckCodes</span>
+
+<div class="viewcode-block" id="DiagnosticMessagePositiveAcknowledgement.unpack"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.DiagnosticMessagePositiveAcknowledgement.unpack">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">unpack</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DiagnosticMessagePositiveAcknowledgement</span><span class="p">:</span>
+        <span class="n">source_address</span><span class="p">,</span> <span class="n">target_address</span><span class="p">,</span> <span class="n">ack_code</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s2">&quot;!HHB&quot;</span><span class="p">,</span> <span class="n">data</span><span class="p">[:</span><span class="mi">5</span><span class="p">])</span>
+        <span class="n">prev_data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">5</span><span class="p">:]</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">source_address</span><span class="p">,</span>
+            <span class="n">target_address</span><span class="p">,</span>
+            <span class="n">DiagnosticMessagePositiveAckCodes</span><span class="p">(</span><span class="n">ack_code</span><span class="p">),</span>
+            <span class="n">prev_data</span><span class="p">,</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="DiagnosticMessageNegativeAcknowledgement"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.DiagnosticMessageNegativeAcknowledgement">[docs]</a><span class="k">class</span> <span class="nc">DiagnosticMessageNegativeAcknowledgement</span><span class="p">(</span><span class="n">DiagnosticMessageAcknowledgement</span><span class="p">):</span>
+    <span class="n">ACKCode</span><span class="p">:</span> <span class="n">DiagnosticMessageNegativeAckCodes</span>
+
+<div class="viewcode-block" id="DiagnosticMessageNegativeAcknowledgement.unpack"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.DiagnosticMessageNegativeAcknowledgement.unpack">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">unpack</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DiagnosticMessageNegativeAcknowledgement</span><span class="p">:</span>
+        <span class="n">source_address</span><span class="p">,</span> <span class="n">target_address</span><span class="p">,</span> <span class="n">ack_code</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s2">&quot;!HHB&quot;</span><span class="p">,</span> <span class="n">data</span><span class="p">[:</span><span class="mi">5</span><span class="p">])</span>
+        <span class="n">prev_data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">5</span><span class="p">:]</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">source_address</span><span class="p">,</span>
+            <span class="n">target_address</span><span class="p">,</span>
+            <span class="n">DiagnosticMessageNegativeAckCodes</span><span class="p">(</span><span class="n">ack_code</span><span class="p">),</span>
+            <span class="n">prev_data</span><span class="p">,</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="AliveCheckRequest"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.AliveCheckRequest">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">AliveCheckRequest</span><span class="p">:</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="AliveCheckResponse"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.AliveCheckResponse">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">AliveCheckResponse</span><span class="p">:</span>
+    <span class="n">SourceAddress</span><span class="p">:</span> <span class="nb">int</span>
+
+<div class="viewcode-block" id="AliveCheckResponse.pack"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.AliveCheckResponse.pack">[docs]</a>    <span class="k">def</span> <span class="nf">pack</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">&quot;!H&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">SourceAddress</span><span class="p">)</span></div></div>
+
+
+<span class="c1"># Messages expected to be sent by the DoIP gateway.</span>
+<span class="n">DoIPInData</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span>
+    <span class="n">RoutingActivationResponse</span><span class="p">,</span>
+    <span class="n">DiagnosticMessage</span><span class="p">,</span>
+    <span class="n">DiagnosticMessagePositiveAcknowledgement</span><span class="p">,</span>
+    <span class="n">DiagnosticMessageNegativeAcknowledgement</span><span class="p">,</span>
+    <span class="n">AliveCheckRequest</span><span class="p">,</span>
+<span class="p">]</span>
+<span class="c1"># Messages expected to be sent by us.</span>
+<span class="n">DoIPOutData</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span>
+    <span class="n">RoutingActivationRequest</span><span class="p">,</span>
+    <span class="n">DiagnosticMessage</span><span class="p">,</span>
+    <span class="n">AliveCheckResponse</span><span class="p">,</span>
+<span class="p">]</span>
+<span class="n">DoIPFrame</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">[</span>
+    <span class="n">GenericHeader</span><span class="p">,</span>
+    <span class="n">Union</span><span class="p">[</span><span class="n">DoIPInData</span><span class="p">,</span> <span class="n">DoIPOutData</span><span class="p">],</span>
+<span class="p">]</span>
+<span class="n">DoIPDiagFrame</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">GenericHeader</span><span class="p">,</span> <span class="n">DiagnosticMessage</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="DoIPConnection"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.DoIPConnection">[docs]</a><span class="k">class</span> <span class="nc">DoIPConnection</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">reader</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamReader</span><span class="p">,</span>
+        <span class="n">writer</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamWriter</span><span class="p">,</span>
+        <span class="n">src_addr</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="n">target_addr</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">Logger</span><span class="p">(</span><span class="n">component</span><span class="o">=</span><span class="s2">&quot;doip&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reader</span> <span class="o">=</span> <span class="n">reader</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">writer</span> <span class="o">=</span> <span class="n">writer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_addr</span> <span class="o">=</span> <span class="n">src_addr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_addr</span> <span class="o">=</span> <span class="n">target_addr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_read_queue</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Queue</span><span class="p">[</span><span class="n">DoIPFrame</span><span class="p">]</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Queue</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_read_task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_read_worker</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_closed</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mutex</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+
+<div class="viewcode-block" id="DoIPConnection.connect"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.DoIPConnection.connect">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">host</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">port</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">src_addr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">target_addr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DoIPConnection</span><span class="p">:</span>
+        <span class="n">reader</span><span class="p">,</span> <span class="n">writer</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">open_connection</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">reader</span><span class="p">,</span> <span class="n">writer</span><span class="p">,</span> <span class="n">src_addr</span><span class="p">,</span> <span class="n">target_addr</span><span class="p">)</span></div>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_read_frame</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DoIPFrame</span><span class="p">:</span>
+        <span class="c1"># Header is fixed size 8 byte.</span>
+        <span class="n">hdr_buf</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">readexactly</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
+        <span class="n">hdr</span> <span class="o">=</span> <span class="n">GenericHeader</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="n">hdr_buf</span><span class="p">)</span>
+
+        <span class="n">payload_buf</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">readexactly</span><span class="p">(</span><span class="n">hdr</span><span class="o">.</span><span class="n">PayloadLength</span><span class="p">)</span>
+        <span class="n">payload</span><span class="p">:</span> <span class="n">DoIPInData</span>
+        <span class="k">if</span> <span class="n">hdr</span><span class="o">.</span><span class="n">PayloadType</span> <span class="o">==</span> <span class="n">PayloadTypes</span><span class="o">.</span><span class="n">RoutingActivationResponse</span><span class="p">:</span>
+            <span class="n">payload</span> <span class="o">=</span> <span class="n">RoutingActivationResponse</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="n">payload_buf</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">hdr</span><span class="o">.</span><span class="n">PayloadType</span> <span class="o">==</span> <span class="n">PayloadTypes</span><span class="o">.</span><span class="n">DiagnosticMessagePositiveAcknowledgement</span><span class="p">:</span>
+            <span class="n">payload</span> <span class="o">=</span> <span class="n">DiagnosticMessagePositiveAcknowledgement</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="n">payload_buf</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">hdr</span><span class="o">.</span><span class="n">PayloadType</span> <span class="o">==</span> <span class="n">PayloadTypes</span><span class="o">.</span><span class="n">DiagnosticMessageNegativeAcknowledgement</span><span class="p">:</span>
+            <span class="n">payload</span> <span class="o">=</span> <span class="n">DiagnosticMessageNegativeAcknowledgement</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="n">payload_buf</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">hdr</span><span class="o">.</span><span class="n">PayloadType</span> <span class="o">==</span> <span class="n">PayloadTypes</span><span class="o">.</span><span class="n">DiagnosticMessage</span><span class="p">:</span>
+            <span class="n">payload</span> <span class="o">=</span> <span class="n">DiagnosticMessage</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="n">payload_buf</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">hdr</span><span class="o">.</span><span class="n">PayloadType</span> <span class="o">==</span> <span class="n">PayloadTypes</span><span class="o">.</span><span class="n">AliveCheckRequest</span><span class="p">:</span>
+            <span class="n">payload</span> <span class="o">=</span> <span class="n">AliveCheckRequest</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">BrokenPipeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;unexpected DoIP message: </span><span class="si">{</span><span class="n">hdr</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">payload_buf</span><span class="o">.</span><span class="n">hex</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">hdr</span><span class="p">,</span> <span class="n">payload</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_read_worker</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="n">hdr</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_frame</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">hdr</span><span class="o">.</span><span class="n">PayloadType</span> <span class="o">==</span> <span class="n">PayloadTypes</span><span class="o">.</span><span class="n">DiagnosticMessage</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span>
+                    <span class="n">data</span><span class="p">,</span> <span class="n">AliveCheckRequest</span>
+                <span class="p">):</span>
+                    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_alive_check_response</span><span class="p">()</span>
+                    <span class="k">continue</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_queue</span><span class="o">.</span><span class="n">put</span><span class="p">((</span><span class="n">hdr</span><span class="p">,</span> <span class="n">data</span><span class="p">))</span>
+        <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_debug</span><span class="p">(</span><span class="s2">&quot;read worker cancelled&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DoIPConnection.read_frame_unsafe"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.DoIPConnection.read_frame_unsafe">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">read_frame_unsafe</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DoIPFrame</span><span class="p">:</span>
+        <span class="c1"># Avoid waiting on the queue forever when</span>
+        <span class="c1"># the connection has been terminated.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_closed</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ConnectionError</span><span class="p">()</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_queue</span><span class="o">.</span><span class="n">get</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="DoIPConnection.read_frame"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.DoIPConnection.read_frame">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">read_frame</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DoIPFrame</span><span class="p">:</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mutex</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_frame_unsafe</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="DoIPConnection.read_diag_request_raw"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.DoIPConnection.read_diag_request_raw">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">read_diag_request_raw</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DoIPDiagFrame</span><span class="p">:</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">hdr</span><span class="p">,</span> <span class="n">payload</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_frame</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="n">DiagnosticMessage</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">BrokenPipeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;unexpected DoIP message: </span><span class="si">{</span><span class="n">hdr</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">payload</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">payload</span><span class="o">.</span><span class="n">SourceAddress</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_addr</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;unexpected DoIP src address: </span><span class="si">{</span><span class="n">payload</span><span class="o">.</span><span class="n">SourceAddress</span><span class="si">:</span><span class="s2">#04x</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">payload</span><span class="o">.</span><span class="n">TargetAddress</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_addr</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;unexpected DoIP target address: </span><span class="si">{</span><span class="n">payload</span><span class="o">.</span><span class="n">TargetAddress</span><span class="si">:</span><span class="s2">#04x</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="k">return</span> <span class="n">hdr</span><span class="p">,</span> <span class="n">payload</span></div>
+
+<div class="viewcode-block" id="DoIPConnection.read_diag_request"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.DoIPConnection.read_diag_request">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">read_diag_request</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">payload</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_diag_request_raw</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">payload</span><span class="o">.</span><span class="n">UserData</span></div>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_read_ack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prev_data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">hdr</span><span class="p">,</span> <span class="n">payload</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_frame_unsafe</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="n">DiagnosticMessageNegativeAcknowledgement</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">BrokenPipeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;request denied: </span><span class="si">{</span><span class="n">hdr</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">payload</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="n">DiagnosticMessagePositiveAcknowledgement</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">BrokenPipeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;unexpected DoIP message: </span><span class="si">{</span><span class="n">hdr</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">payload</span><span class="si">}</span><span class="s2">, expected positive ACK&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">payload</span><span class="o">.</span><span class="n">SourceAddress</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_addr</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_warning</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;ack: unexpected src_addr: </span><span class="si">{</span><span class="n">payload</span><span class="o">.</span><span class="n">SourceAddress</span><span class="si">:</span><span class="s2">#04x</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">payload</span><span class="o">.</span><span class="n">TargetAddress</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_addr</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_warning</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;ack: unexpected dst_addr: </span><span class="si">{</span><span class="n">payload</span><span class="o">.</span><span class="n">TargetAddress</span><span class="si">:</span><span class="s2">#04x</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">payload</span><span class="o">.</span><span class="n">PreviousDiagnosticMessageData</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+            <span class="ow">and</span> <span class="n">prev_data</span> <span class="o">!=</span> <span class="n">payload</span><span class="o">.</span><span class="n">PreviousDiagnosticMessageData</span>
+        <span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_warning</span><span class="p">(</span><span class="s2">&quot;ack: previous data differs from request&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_warning</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;ack: got: </span><span class="si">{</span><span class="n">payload</span><span class="o">.</span><span class="n">PreviousDiagnosticMessageData</span><span class="o">.</span><span class="n">hex</span><span class="p">()</span><span class="si">}</span><span class="s2"> expected </span><span class="si">{</span><span class="n">prev_data</span><span class="o">.</span><span class="n">hex</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_read_routing_activation_response</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">hdr</span><span class="p">,</span> <span class="n">payload</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_frame_unsafe</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">hdr</span><span class="o">.</span><span class="n">PayloadType</span> <span class="o">!=</span> <span class="n">PayloadTypes</span><span class="o">.</span><span class="n">RoutingActivationResponse</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span>
+            <span class="n">payload</span><span class="p">,</span> <span class="n">RoutingActivationResponse</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">BrokenPipeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;unexpected DoIP message: </span><span class="si">{</span><span class="n">hdr</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">payload</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">payload</span><span class="o">.</span><span class="n">RoutingActivationResponseCode</span>
+            <span class="o">!=</span> <span class="n">RoutingActivationResponseCodes</span><span class="o">.</span><span class="n">Success</span>
+        <span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">code</span> <span class="o">=</span> <span class="n">RoutingActivationResponseCodes</span><span class="p">(</span>
+                    <span class="n">payload</span><span class="o">.</span><span class="n">RoutingActivationResponseCode</span>
+                <span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ConnectionAbortedError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;unknown routing_activation_response_code: </span><span class="si">{</span><span class="n">payload</span><span class="o">.</span><span class="n">RoutingActivationResponseCode</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+            <span class="k">raise</span> <span class="ne">ConnectionAbortedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;routing activation denied: </span><span class="si">{</span><span class="n">code</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DoIPConnection.write_request_raw"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.DoIPConnection.write_request_raw">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">write_request_raw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hdr</span><span class="p">:</span> <span class="n">GenericHeader</span><span class="p">,</span> <span class="n">payload</span><span class="p">:</span> <span class="n">DoIPOutData</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mutex</span><span class="p">:</span>
+            <span class="n">buf</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
+            <span class="n">buf</span> <span class="o">+=</span> <span class="n">hdr</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
+            <span class="n">buf</span> <span class="o">+=</span> <span class="n">payload</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">buf</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">drain</span><span class="p">()</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_trace</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;hdr: </span><span class="si">{</span><span class="n">hdr</span><span class="si">}</span><span class="s2">, payload: </span><span class="si">{</span><span class="n">payload</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="n">DiagnosticMessage</span><span class="p">):</span>
+                    <span class="c1"># Now an ACK message is expected.</span>
+                    <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait_for</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_read_ack</span><span class="p">(</span><span class="n">payload</span><span class="o">.</span><span class="n">UserData</span><span class="p">),</span>
+                        <span class="n">TimingAndCommunicationParameters</span><span class="o">.</span><span class="n">DiagnosticMessageMessageAckTimeout</span>
+                        <span class="o">/</span> <span class="mi">1000</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="n">RoutingActivationRequest</span><span class="p">):</span>
+                    <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait_for</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_read_routing_activation_response</span><span class="p">(),</span>
+                        <span class="n">TimingAndCommunicationParameters</span><span class="o">.</span><span class="n">DiagnosticMessageMessageAckTimeout</span>
+                        <span class="o">/</span> <span class="mi">1000</span><span class="p">,</span>
+                    <span class="p">)</span>
+            <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">TimeoutError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="k">raise</span> <span class="ne">BrokenPipeError</span><span class="p">()</span> <span class="kn">from</span> <span class="nn">e</span></div>
+
+<div class="viewcode-block" id="DoIPConnection.write_diag_request"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.DoIPConnection.write_diag_request">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">write_diag_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_addr</span><span class="p">,</span> <span class="s2">&quot;src_addr is not set&quot;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_addr</span><span class="p">,</span> <span class="s2">&quot;target_addr is not set&quot;</span>
+
+        <span class="n">hdr</span> <span class="o">=</span> <span class="n">GenericHeader</span><span class="p">(</span>
+            <span class="n">ProtocolVersion</span><span class="o">=</span><span class="n">ProtocolVersions</span><span class="o">.</span><span class="n">ISO_13400_2_2012</span><span class="p">,</span>
+            <span class="n">PayloadType</span><span class="o">=</span><span class="n">PayloadTypes</span><span class="o">.</span><span class="n">DiagnosticMessage</span><span class="p">,</span>
+            <span class="n">PayloadLength</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">+</span> <span class="mi">4</span><span class="p">,</span>
+            <span class="n">PayloadTypeSpecificMessageContent</span><span class="o">=</span><span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="n">DiagnosticMessage</span><span class="p">(</span>
+            <span class="n">SourceAddress</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">src_addr</span><span class="p">,</span>
+            <span class="n">TargetAddress</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">target_addr</span><span class="p">,</span>
+            <span class="n">UserData</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_request_raw</span><span class="p">(</span><span class="n">hdr</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DoIPConnection.write_routing_activation_request"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.DoIPConnection.write_routing_activation_request">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">write_routing_activation_request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">activation_type</span><span class="p">:</span> <span class="n">RoutingActivationRequestTypes</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_addr</span><span class="p">,</span> <span class="s2">&quot;src_addr is not set&quot;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_addr</span><span class="p">,</span> <span class="s2">&quot;target_addr is not set&quot;</span>
+
+        <span class="n">hdr</span> <span class="o">=</span> <span class="n">GenericHeader</span><span class="p">(</span>
+            <span class="n">ProtocolVersion</span><span class="o">=</span><span class="n">ProtocolVersions</span><span class="o">.</span><span class="n">ISO_13400_2_2012</span><span class="p">,</span>
+            <span class="n">PayloadType</span><span class="o">=</span><span class="n">PayloadTypes</span><span class="o">.</span><span class="n">RoutingActivationRequest</span><span class="p">,</span>
+            <span class="n">PayloadLength</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>
+            <span class="n">PayloadTypeSpecificMessageContent</span><span class="o">=</span><span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="n">RoutingActivationRequest</span><span class="p">(</span>
+            <span class="n">SourceAddress</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">src_addr</span><span class="p">,</span>
+            <span class="n">ActivationType</span><span class="o">=</span><span class="n">activation_type</span><span class="p">,</span>
+            <span class="n">Reserved</span><span class="o">=</span><span class="mh">0x00</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_request_raw</span><span class="p">(</span><span class="n">hdr</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DoIPConnection.write_alive_check_response"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.DoIPConnection.write_alive_check_response">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">write_alive_check_response</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_addr</span><span class="p">,</span> <span class="s2">&quot;src_addr is not set&quot;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_addr</span><span class="p">,</span> <span class="s2">&quot;target_addr is not set&quot;</span>
+
+        <span class="n">hdr</span> <span class="o">=</span> <span class="n">GenericHeader</span><span class="p">(</span>
+            <span class="n">ProtocolVersion</span><span class="o">=</span><span class="n">ProtocolVersions</span><span class="o">.</span><span class="n">ISO_13400_2_2012</span><span class="p">,</span>
+            <span class="n">PayloadType</span><span class="o">=</span><span class="n">PayloadTypes</span><span class="o">.</span><span class="n">AliveCheckResponse</span><span class="p">,</span>
+            <span class="n">PayloadLength</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+            <span class="n">PayloadTypeSpecificMessageContent</span><span class="o">=</span><span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="n">AliveCheckResponse</span><span class="p">(</span>
+            <span class="n">SourceAddress</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">src_addr</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_request_raw</span><span class="p">(</span><span class="n">hdr</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DoIPConnection.close"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.DoIPConnection.close">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_read_task</span><span class="o">.</span><span class="n">cancel</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">wait_closed</span><span class="p">()</span></div></div>
+
+
+<span class="n">_DoIP_SPEC_TYPE</span> <span class="o">=</span> <span class="n">TypedDict</span><span class="p">(</span>
+    <span class="s2">&quot;_DoIP_SPEC_TYPE&quot;</span><span class="p">,</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;src_addr&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="s2">&quot;dst_addr&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="s2">&quot;activation_type&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="p">},</span>
+<span class="p">)</span>
+
+<span class="n">doip_spec</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;src_addr&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">_int_spec</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="kc">True</span><span class="p">),</span>
+    <span class="s2">&quot;dst_addr&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">_int_spec</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="kc">True</span><span class="p">),</span>
+    <span class="s2">&quot;activation_type&quot;</span><span class="p">:</span> <span class="p">(</span>
+        <span class="n">_int_spec</span><span class="p">(</span><span class="n">RoutingActivationRequestTypes</span><span class="o">.</span><span class="n">WWH_OBD</span><span class="p">),</span>
+        <span class="kc">False</span><span class="p">,</span>
+    <span class="p">),</span>
+<span class="p">}</span>
+
+<span class="n">assertion_str</span> <span class="o">=</span> <span class="s2">&quot;bug: doip not connected&quot;</span>
+
+
+<div class="viewcode-block" id="DoIPTransport"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.DoIPTransport">[docs]</a><span class="k">class</span> <span class="nc">DoIPTransport</span><span class="p">(</span><span class="n">BaseTransport</span><span class="p">,</span> <span class="n">scheme</span><span class="o">=</span><span class="s2">&quot;doip&quot;</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="n">doip_spec</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">TargetURI</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">target</span><span class="o">.</span><span class="n">hostname</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;no hostname specified&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">port</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">port</span> <span class="k">if</span> <span class="n">target</span><span class="o">.</span><span class="n">port</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">6801</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">_DoIP_SPEC_TYPE</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_args</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DoIPConnection</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_connect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">hostname</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;bug: no hostname&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">connection</span> <span class="o">=</span> <span class="k">await</span> <span class="n">DoIPConnection</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">hostname</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;src_addr&quot;</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;dst_addr&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">write_routing_activation_request</span><span class="p">(</span>
+            <span class="n">RoutingActivationRequestTypes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;activation_type&quot;</span><span class="p">])</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="DoIPTransport.connect"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.DoIPTransport.connect">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">hostname</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;bug: no hostname&quot;</span>
+
+        <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">mutex</span><span class="p">:</span>
+            <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait_for</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_connect</span><span class="p">(),</span> <span class="n">timeout</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DoIPTransport.reconnect"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.DoIPTransport.reconnect">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">reconnect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">hostname</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;bug: no hostname&quot;</span>
+
+        <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">mutex</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait_for</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_connect</span><span class="p">(),</span> <span class="n">timeout</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DoIPTransport.close"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.DoIPTransport.close">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="n">assertion_str</span>
+
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="DoIPTransport.read"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.DoIPTransport.read">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">read</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">tags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="n">assertion_str</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait_for</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">read_diag_request</span><span class="p">(),</span> <span class="n">timeout</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_read</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">hex</span><span class="p">(),</span> <span class="n">tags</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">data</span></div>
+
+<div class="viewcode-block" id="DoIPTransport.write"><a class="viewcode-back" href="../../../api/gallia.transports.html#gallia.transports.doip.DoIPTransport.write">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">write</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">tags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="n">assertion_str</span>
+
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait_for</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">write_diag_request</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">timeout</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_write</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">hex</span><span class="p">(),</span> <span class="n">tags</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

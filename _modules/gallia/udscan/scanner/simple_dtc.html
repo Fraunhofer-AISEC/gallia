@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gallia.udscan.scanner.simple_dtc &mdash; gallia  documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../index.html" class="icon icon-home"> gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../transports.html">Transports</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../penlog.7.html">penlog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/modules.html">Modules</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      <li>gallia.udscan.scanner.simple_dtc</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gallia.udscan.scanner.simple_dtc</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-FileCopyrightText: AISEC Pentesting Team</span>
+<span class="c1">#</span>
+<span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">argparse</span> <span class="kn">import</span> <span class="n">Namespace</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span>
+
+<span class="kn">from</span> <span class="nn">tabulate</span> <span class="kn">import</span> <span class="n">tabulate</span>
+
+<span class="kn">from</span> <span class="nn">gallia.uds.core.constants</span> <span class="kn">import</span> <span class="n">CDTCSSubFuncs</span><span class="p">,</span> <span class="n">DSCSubFuncs</span><span class="p">,</span> <span class="n">UDSErrorCodes</span>
+<span class="kn">from</span> <span class="nn">gallia.uds.core.service</span> <span class="kn">import</span> <span class="n">NegativeResponse</span>
+<span class="kn">from</span> <span class="nn">gallia.udscan.core</span> <span class="kn">import</span> <span class="n">UDSScanner</span>
+<span class="kn">from</span> <span class="nn">gallia.utils</span> <span class="kn">import</span> <span class="n">auto_int</span><span class="p">,</span> <span class="n">g_repr</span>
+
+
+<div class="viewcode-block" id="DTCScanner"><a class="viewcode-back" href="../../../../api/gallia.udscan.scanner.html#gallia.udscan.scanner.simple_dtc.DTCScanner">[docs]</a><span class="k">class</span> <span class="nc">DTCScanner</span><span class="p">(</span><span class="n">UDSScanner</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;cmd_dtc&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="DTCScanner.add_parser"><a class="viewcode-back" href="../../../../api/gallia.udscan.scanner.html#gallia.udscan.scanner.simple_dtc.DTCScanner.add_parser">[docs]</a>    <span class="k">def</span> <span class="nf">add_parser</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">set_defaults</span><span class="p">(</span><span class="n">properties</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--session&quot;</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="n">DSCSubFuncs</span><span class="o">.</span><span class="n">DS</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="n">auto_int</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Session to perform test in&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">sub_parser</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_subparsers</span><span class="p">(</span><span class="n">dest</span><span class="o">=</span><span class="s2">&quot;cmd&quot;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">read_parser</span> <span class="o">=</span> <span class="n">sub_parser</span><span class="o">.</span><span class="n">add_parser</span><span class="p">(</span>
+            <span class="s2">&quot;read&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Read the DTCs using the ReadDTCInformation service&quot;</span>
+        <span class="p">)</span>
+        <span class="n">read_parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--mask&quot;</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="n">partial</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="mi">16</span><span class="p">),</span>
+            <span class="n">default</span><span class="o">=</span><span class="mh">0xFF</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;The bitmask which is sent to the ECU in order to select the relevant DTCs according to their &quot;</span>
+            <span class="s2">&quot;error state. By default, all error codes are returned (c.f. ISO 14229-1,D.2).&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">read_parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--show-legend&quot;</span><span class="p">,</span>
+            <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Show the legend of the bit interpretation according to ISO 14229-1,D.2&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">read_parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--show-failed&quot;</span><span class="p">,</span>
+            <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Show a summary of the codes which failed&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">read_parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--show-uncompleted&quot;</span><span class="p">,</span>
+            <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Show a summary of the codes which have not completed&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">clear_parser</span> <span class="o">=</span> <span class="n">sub_parser</span><span class="o">.</span><span class="n">add_parser</span><span class="p">(</span>
+            <span class="s2">&quot;clear&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Clear the DTCs using the ClearDiagnosticInformation service&quot;</span>
+        <span class="p">)</span>
+        <span class="n">clear_parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--group-of-dtc&quot;</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="mh">0xFFFFFF</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Only clear a particular DTC or the DTCs belonging to the given group. &quot;</span>
+            <span class="s2">&quot;By default, all error codes are cleared.&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">control_parser</span> <span class="o">=</span> <span class="n">sub_parser</span><span class="o">.</span><span class="n">add_parser</span><span class="p">(</span>
+            <span class="s2">&quot;control&quot;</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Stop or resume the setting of DTCs using the &quot;</span>
+            <span class="s2">&quot;ControlDTCSetting service&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">control_group</span> <span class="o">=</span> <span class="n">control_parser</span><span class="o">.</span><span class="n">add_mutually_exclusive_group</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">control_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--stop&quot;</span><span class="p">,</span>
+            <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Stop the setting of DTCs. If already disabled, this has no effect.&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">control_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--resume&quot;</span><span class="p">,</span>
+            <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Resume the setting of DTCs. If already enabled, this has no effect.&quot;</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="DTCScanner.fetch_error_codes"><a class="viewcode-back" href="../../../../api/gallia.udscan.scanner.html#gallia.udscan.scanner.simple_dtc.DTCScanner.fetch_error_codes">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">fetch_error_codes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mask</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">split</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+        <span class="n">ecu_response</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecu</span><span class="o">.</span><span class="n">read_dtc_information_report_dtc_by_status_mask</span><span class="p">(</span>
+            <span class="n">mask</span>
+        <span class="p">)</span>
+        <span class="n">dtcs</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ecu_response</span><span class="p">,</span> <span class="n">NegativeResponse</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">ecu_response</span><span class="o">.</span><span class="n">response_code</span> <span class="o">==</span> <span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">responseTooLong</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_error</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;There are too many codes for (sub)mask </span><span class="si">{</span><span class="n">mask</span><span class="si">}</span><span class="s2">. Consider setting --mask &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;with a parameter that excludes one or more of the corresponding bits.&quot;</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">split</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_warning</span><span class="p">(</span>
+                        <span class="s2">&quot;Trying to fetch the error codes iteratively.&quot;</span>
+                    <span class="p">)</span>
+
+                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">8</span><span class="p">):</span>
+                        <span class="n">sub_mask</span> <span class="o">=</span> <span class="n">mask</span> <span class="o">&amp;</span> <span class="mi">2</span><span class="o">**</span><span class="n">i</span>
+
+                        <span class="k">if</span> <span class="n">sub_mask</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span>
+                                <span class="sa">f</span><span class="s2">&quot;Trying to fetch with mask </span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">sub_mask</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                            <span class="p">)</span>
+                            <span class="n">dtcs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">fetch_error_codes</span><span class="p">(</span><span class="n">sub_mask</span><span class="p">,</span> <span class="kc">False</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_critical</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Could not fetch error codes: </span><span class="si">{</span><span class="n">ecu_response</span><span class="si">}</span><span class="s2">; exiting…&quot;</span>
+                <span class="p">)</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dtcs</span> <span class="o">=</span> <span class="n">ecu_response</span><span class="o">.</span><span class="n">dtc_and_status_record</span>
+
+        <span class="k">return</span> <span class="n">dtcs</span></div>
+
+<div class="viewcode-block" id="DTCScanner.read"><a class="viewcode-back" href="../../../../api/gallia.udscan.scanner.html#gallia.udscan.scanner.simple_dtc.DTCScanner.read">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">dtcs</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">fetch_error_codes</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">mask</span><span class="p">)</span>
+
+        <span class="n">failed_dtcs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">uncompleted_dtcs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">dtc</span><span class="p">,</span> <span class="n">error_state</span> <span class="ow">in</span> <span class="n">dtcs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">raw_output</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dtc</span><span class="si">:</span><span class="s2">06X</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">error_state</span><span class="si">:</span><span class="s2">02X</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">bit_string</span> <span class="o">=</span> <span class="nb">bin</span><span class="p">(</span><span class="n">error_state</span> <span class="o">+</span> <span class="mh">0x100</span><span class="p">)[</span>
+                <span class="mi">3</span><span class="p">:</span>
+            <span class="p">]</span>  <span class="c1"># Transform error_state into a bit-string with leading zeros</span>
+            <span class="n">table_output</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dtc</span><span class="si">:</span><span class="s2">06X</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">error_state</span><span class="si">:</span><span class="s2">02X</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span>
+                <span class="s2">&quot;X&quot;</span> <span class="k">if</span> <span class="n">b</span> <span class="o">==</span> <span class="s2">&quot;1&quot;</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">bit_string</span>
+            <span class="p">]</span>
+
+            <span class="c1"># if any kind of test failure</span>
+            <span class="k">if</span> <span class="n">error_state</span> <span class="o">&amp;</span> <span class="mh">0xAF</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_warning</span><span class="p">(</span><span class="n">raw_output</span><span class="p">)</span>
+                <span class="n">failed_dtcs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">table_output</span><span class="p">)</span>
+            <span class="c1"># if not failed but also not completed yet (i.e. not yet in this cycle or since last clear)</span>
+            <span class="k">elif</span> <span class="n">error_state</span> <span class="o">&amp;</span> <span class="mh">0x50</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span><span class="n">raw_output</span><span class="p">)</span>
+                <span class="n">uncompleted_dtcs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">table_output</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">show_legend</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">show_bit_legend</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">show_failed</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span><span class="s2">&quot;Failed codes:&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">show_summary</span><span class="p">(</span><span class="n">failed_dtcs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">show_uncompleted</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span><span class="s2">&quot;Uncompleted codes:&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">show_summary</span><span class="p">(</span><span class="n">uncompleted_dtcs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DTCScanner.show_bit_legend"><a class="viewcode-back" href="../../../../api/gallia.udscan.scanner.html#gallia.udscan.scanner.simple_dtc.DTCScanner.show_bit_legend">[docs]</a>    <span class="k">def</span> <span class="nf">show_bit_legend</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">bit_descriptions</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;0 = testFailed: most recent test failed&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;1 = testFailedThisOperationCycle: failed in current cycle&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;2 = pendingDTC: failed in current or last cycle&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;3 = confirmedDTC: failed often enough to be stored in long term memory&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;4 = testNotCompletedSinceLastClear: not completed since last clear&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;5 = testFailedSinceLastClear: failed since last clear&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;6 = testNotCompletedThisOperationCycle: not completed in current cycle&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;7 = warningIndicatorRequested: existing warning indicators (e.g. lamp, display)&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="p">(</span>
+            <span class="n">tabulate</span><span class="p">([[</span><span class="n">d</span><span class="p">]</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">bit_descriptions</span><span class="p">],</span> <span class="n">headers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;bit descriptions&quot;</span><span class="p">])</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">splitlines</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span><span class="n">line</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DTCScanner.show_summary"><a class="viewcode-back" href="../../../../api/gallia.udscan.scanner.html#gallia.udscan.scanner.simple_dtc.DTCScanner.show_summary">[docs]</a>    <span class="k">def</span> <span class="nf">show_summary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dtcs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">dtcs</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+
+        <span class="n">header</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;DTC&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;error state&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;0&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;1&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;2&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;3&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;4&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;5&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;6&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;7&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">tabulate</span><span class="p">(</span><span class="n">dtcs</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">header</span><span class="p">,</span> <span class="n">tablefmt</span><span class="o">=</span><span class="s2">&quot;fancy_grid&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">splitlines</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span><span class="n">line</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DTCScanner.clear"><a class="viewcode-back" href="../../../../api/gallia.udscan.scanner.html#gallia.udscan.scanner.simple_dtc.DTCScanner.clear">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">group_of_dtc</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">group_of_dtc</span>
+
+        <span class="n">min_group_of_dtc</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">max_group_of_dtc</span> <span class="o">=</span> <span class="mh">0xFFFFFF</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">min_group_of_dtc</span> <span class="o">&lt;=</span> <span class="n">group_of_dtc</span> <span class="o">&lt;=</span> <span class="n">max_group_of_dtc</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_error</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;The parameter group_of_dtc must be in the range </span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">min_group_of_dtc</span><span class="p">)</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">max_group_of_dtc</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">resp</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecu</span><span class="o">.</span><span class="n">clear_diagnostic_information</span><span class="p">(</span><span class="n">group_of_dtc</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">resp</span><span class="p">,</span> <span class="n">NegativeResponse</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_error</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span><span class="s2">&quot;Success&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DTCScanner.control"><a class="viewcode-back" href="../../../../api/gallia.udscan.scanner.html#gallia.udscan.scanner.simple_dtc.DTCScanner.control">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">control</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">stop</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecu</span><span class="o">.</span><span class="n">control_dtc_setting</span><span class="p">(</span><span class="n">CDTCSSubFuncs</span><span class="o">.</span><span class="n">OFF</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecu</span><span class="o">.</span><span class="n">control_dtc_setting</span><span class="p">(</span><span class="n">CDTCSSubFuncs</span><span class="o">.</span><span class="n">ON</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DTCScanner.main"><a class="viewcode-back" href="../../../../api/gallia.udscan.scanner.html#gallia.udscan.scanner.simple_dtc.DTCScanner.main">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecu</span><span class="o">.</span><span class="n">set_session</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">session</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">cmd</span> <span class="o">==</span> <span class="s2">&quot;clear&quot;</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">clear</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">cmd</span> <span class="o">==</span> <span class="s2">&quot;control&quot;</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">control</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">cmd</span> <span class="o">==</span> <span class="s2">&quot;read&quot;</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_critical</span><span class="p">(</span><span class="s2">&quot;Unhandled command&quot;</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

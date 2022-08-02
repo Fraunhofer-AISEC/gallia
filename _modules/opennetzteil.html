@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>opennetzteil &mdash; gallia  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../transports.html">Transports</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../penlog.7.html">penlog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/modules.html">Modules</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">Module code</a> &raquo;</li>
+      <li>opennetzteil</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for opennetzteil</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-FileCopyrightText: AISEC Pentesting Team</span>
+<span class="c1">#</span>
+<span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span> <span class="nn">urllib.parse</span> <span class="kn">import</span> <span class="n">urljoin</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">cast</span>
+
+<span class="kn">import</span> <span class="nn">aiohttp</span>
+
+
+<div class="viewcode-block" id="Netzteil"><a class="viewcode-back" href="../api/opennetzteil.html#opennetzteil.Netzteil">[docs]</a><span class="k">class</span> <span class="nc">Netzteil</span><span class="p">:</span>
+    <span class="n">URL_PREFIX</span> <span class="o">=</span> <span class="s2">&quot;/_netzteil/api/&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">session</span><span class="p">:</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">ClientSession</span><span class="p">,</span>
+        <span class="n">host</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">ident</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">device</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">host</span> <span class="o">=</span> <span class="n">host</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">baseurl</span> <span class="o">=</span> <span class="n">urljoin</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">URL_PREFIX</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">device</span> <span class="o">=</span> <span class="n">device</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">session</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ident</span> <span class="o">=</span> <span class="n">ident</span>
+
+<div class="viewcode-block" id="Netzteil.connect"><a class="viewcode-back" href="../api/opennetzteil.html#opennetzteil.Netzteil.connect">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">host</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">device</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Netzteil</span><span class="p">:</span>
+        <span class="n">baseurl</span> <span class="o">=</span> <span class="n">urljoin</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="n">URL_PREFIX</span><span class="p">)</span>
+        <span class="n">u</span> <span class="o">=</span> <span class="n">urljoin</span><span class="p">(</span><span class="n">baseurl</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;devices/</span><span class="si">{</span><span class="n">device</span><span class="si">}</span><span class="s2">/ident&quot;</span><span class="p">)</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">ClientSession</span><span class="p">()</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="k">await</span> <span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+        <span class="n">r</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+        <span class="n">ident</span> <span class="o">=</span> <span class="k">await</span> <span class="n">r</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">ident</span><span class="p">,</span> <span class="n">device</span><span class="p">)</span></div>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_put_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">channel</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">val</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;devices/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="si">}</span><span class="s2">/channels/</span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">endpoint</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">u</span> <span class="o">=</span> <span class="n">urljoin</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">baseurl</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">val</span><span class="p">)</span>
+        <span class="n">r</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_get_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">channel</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;devices/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="si">}</span><span class="s2">/channels/</span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">endpoint</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">u</span> <span class="o">=</span> <span class="n">urljoin</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">baseurl</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+        <span class="n">r</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">r</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Netzteil.set_channel"><a class="viewcode-back" href="../api/opennetzteil.html#opennetzteil.Netzteil.set_channel">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">set_channel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_put_value</span><span class="p">(</span><span class="s2">&quot;out&quot;</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">enabled</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Netzteil.get_channel"><a class="viewcode-back" href="../api/opennetzteil.html#opennetzteil.Netzteil.get_channel">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">get_channel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="nb">bool</span><span class="p">,</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_value</span><span class="p">(</span><span class="s2">&quot;out&quot;</span><span class="p">,</span> <span class="n">channel</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="Netzteil.set_master"><a class="viewcode-back" href="../api/opennetzteil.html#opennetzteil.Netzteil.set_master">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">set_master</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_channel</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">enabled</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Netzteil.get_master"><a class="viewcode-back" href="../api/opennetzteil.html#opennetzteil.Netzteil.get_master">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">get_master</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_channel</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Netzteil.set_current"><a class="viewcode-back" href="../api/opennetzteil.html#opennetzteil.Netzteil.set_current">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">set_current</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">val</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_put_value</span><span class="p">(</span><span class="s2">&quot;out&quot;</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Netzteil.get_current"><a class="viewcode-back" href="../api/opennetzteil.html#opennetzteil.Netzteil.get_current">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">get_current</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_value</span><span class="p">(</span><span class="s2">&quot;out&quot;</span><span class="p">,</span> <span class="n">channel</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="Netzteil.set_voltage"><a class="viewcode-back" href="../api/opennetzteil.html#opennetzteil.Netzteil.set_voltage">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">set_voltage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">val</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_put_value</span><span class="p">(</span><span class="s2">&quot;voltage&quot;</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Netzteil.get_voltage"><a class="viewcode-back" href="../api/opennetzteil.html#opennetzteil.Netzteil.get_voltage">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">get_voltage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_value</span><span class="p">(</span><span class="s2">&quot;voltage&quot;</span><span class="p">,</span> <span class="n">channel</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="Netzteil.set_ocp"><a class="viewcode-back" href="../api/opennetzteil.html#opennetzteil.Netzteil.set_ocp">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">set_ocp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_put_value</span><span class="p">(</span><span class="s2">&quot;ocp&quot;</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">enabled</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Netzteil.get_ocp"><a class="viewcode-back" href="../api/opennetzteil.html#opennetzteil.Netzteil.get_ocp">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">get_ocp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="nb">bool</span><span class="p">,</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_value</span><span class="p">(</span><span class="s2">&quot;ocp&quot;</span><span class="p">,</span> <span class="n">channel</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="Netzteil.set_ovp"><a class="viewcode-back" href="../api/opennetzteil.html#opennetzteil.Netzteil.set_ovp">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">set_ovp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_put_value</span><span class="p">(</span><span class="s2">&quot;ovp&quot;</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">enabled</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Netzteil.get_ovp"><a class="viewcode-back" href="../api/opennetzteil.html#opennetzteil.Netzteil.get_ovp">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">get_ovp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="nb">bool</span><span class="p">,</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_value</span><span class="p">(</span><span class="s2">&quot;ovp&quot;</span><span class="p">,</span> <span class="n">channel</span><span class="p">))</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

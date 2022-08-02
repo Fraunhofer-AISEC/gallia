@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>cursed_hr package &mdash; gallia  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="gallia package" href="gallia.html" />
+    <link rel="prev" title="Modules" href="modules.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../transports.html">Transports</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../penlog.7.html">penlog</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">cursed_hr package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-cursed_hr.cursed_hr">cursed_hr.cursed_hr module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-cursed_hr">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="gallia.html">gallia package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="opennetzteil.html">opennetzteil package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="penlog.html">penlog package</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="modules.html">Modules</a> &raquo;</li>
+      <li>cursed_hr package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/cursed_hr.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="cursed-hr-package">
+<h1>cursed_hr package<a class="headerlink" href="#cursed-hr-package" title="Permalink to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-cursed_hr.cursed_hr">
+<span id="cursed-hr-cursed-hr-module"></span><h2>cursed_hr.cursed_hr module<a class="headerlink" href="#module-cursed_hr.cursed_hr" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.Configuration">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cursed_hr.cursed_hr.</span></span><span class="sig-name descname"><span class="pre">Configuration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">priority_zones</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="s"><span class="pre">'list[PriorityZone]'</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="s"><span class="pre">'list[str]'</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpret</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="s"><span class="pre">'bool'</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#Configuration"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.Configuration" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.Configuration.filter">
+<span class="sig-name descname"><span class="pre">filter</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#cursed_hr.cursed_hr.Configuration.filter" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.Configuration.interpret">
+<span class="sig-name descname"><span class="pre">interpret</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#cursed_hr.cursed_hr.Configuration.interpret" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.Configuration.priority_zones">
+<span class="sig-name descname"><span class="pre">priority_zones</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#cursed_hr.cursed_hr.PriorityZone" title="cursed_hr.cursed_hr.PriorityZone"><span class="pre">cursed_hr.cursed_hr.PriorityZone</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#cursed_hr.cursed_hr.Configuration.priority_zones" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.CursedHR">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cursed_hr.cursed_hr.</span></span><span class="sig-name descname"><span class="pre">CursedHR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">priority</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="penlog.html#penlog.MessagePrio" title="penlog.MessagePrio"><span class="pre">MessagePrio</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">MessagePrio.DEBUG</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filters</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#CursedHR"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.CursedHR" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A curses based interactive reader for log files complying to penlog.</p>
+<dl class="simple">
+<dt>It supports the following features:</dt><dd><ul class="simple">
+<li><p>interactive display of penlog files (similar to less)</p></li>
+<li><p>coloring and formatting of entries based on the priority level</p></li>
+<li><p>optimized sectional filtering based on priority</p></li>
+<li><p>unoptimized sectional filtering based on any penlog entry attribute</p></li>
+<li><p>in-line interpretation of UDS messages using the Gallia UDS implementation</p></li>
+</ul>
+</dd>
+</dl>
+<p>See <a class="reference external" href="https://github.com/Fraunhofer-AISEC/penlog">https://github.com/Fraunhofer-AISEC/penlog</a> for the penlog specification.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.CursedHR.calculate_display_entries">
+<span class="sig-name descname"><span class="pre">calculate_display_entries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start_entry</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">entry_line</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#cursed_hr.cursed_hr.DisplayEntry" title="cursed_hr.cursed_hr.DisplayEntry"><span class="pre">cursed_hr.cursed_hr.DisplayEntry</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#CursedHR.calculate_display_entries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.CursedHR.calculate_display_entries" title="Permalink to this definition"></a></dt>
+<dd><p>Returns a list of display entries starting from the given start entry, which qualify to be displayed by having
+a sufficient priority as well as passing any other filter.</p>
+<p>The display entries may start from a different entry than the one pointed to by the given parameter,
+in case that entry itself does not qualify itself.
+In that case previous entries are taken into account if the entry_line is set to -1
+and if there is at least oneprevious entry which qualifies.
+Otherwise only entries following the given one are taken into account.</p>
+<p>The number of entries which is returned is limited by the number of lines in the console.</p>
+<p>The list is guaranteed to be not empty.
+If there would be no entries to be displayed there will be an info message,
+which informs the user, that no entries are available with the current filtering settings.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>start_entry</strong> – The starting point for the search for the actual first entry (which qualifies) in the list.</p></li>
+<li><p><strong>entry_line</strong> – The index in the list of formatted lines as created for the corresponding penlog entry.
+Most importantly, a value of 0 indicates to start from the first line,
+a value of -1 to start from the last line. Other negative values are not supported.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The list of display entries.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.CursedHR.check_filter">
+<span class="sig-name descname"><span class="pre">check_filter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">entry_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#CursedHR.check_filter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.CursedHR.check_filter" title="Permalink to this definition"></a></dt>
+<dd><p>Check if the entry which is referred to by the given entry id, is still to be displayed after applying filters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>entry_id</strong> – The index of the entry.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The formatted display entries for the given entry.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.CursedHR.configuration">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">configuration</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#cursed_hr.cursed_hr.Configuration" title="cursed_hr.cursed_hr.Configuration"><span class="pre">Configuration</span></a></em><a class="headerlink" href="#cursed_hr.cursed_hr.CursedHR.configuration" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.CursedHR.debug_log">
+<span class="sig-name descname"><span class="pre">debug_log</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#CursedHR.debug_log"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.CursedHR.debug_log" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.CursedHR.default_text">
+<span class="sig-name descname"><span class="pre">default_text</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#cursed_hr.cursed_hr.FormattedText" title="cursed_hr.cursed_hr.FormattedText"><span class="pre">FormattedText</span></a></span></span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#CursedHR.default_text"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.CursedHR.default_text" title="Permalink to this definition"></a></dt>
+<dd><p>Returns a formatted text with the content of the given text and the default formatting.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>text</strong> – The text.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The formatted text.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.CursedHR.define_colors">
+<span class="sig-name descname"><span class="pre">define_colors</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#CursedHR.define_colors"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.CursedHR.define_colors" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.CursedHR.display">
+<span class="sig-name descname"><span class="pre">display</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">display_entries</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#cursed_hr.cursed_hr.DisplayEntry" title="cursed_hr.cursed_hr.DisplayEntry"><span class="pre">cursed_hr.cursed_hr.DisplayEntry</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status_line</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#cursed_hr.cursed_hr.FormattedText" title="cursed_hr.cursed_hr.FormattedText"><span class="pre">cursed_hr.cursed_hr.FormattedText</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#CursedHR.display"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.CursedHR.display" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.CursedHR.entry_zone">
+<span class="sig-name descname"><span class="pre">entry_zone</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">entry_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#cursed_hr.cursed_hr.PriorityZone" title="cursed_hr.cursed_hr.PriorityZone"><span class="pre">PriorityZone</span></a></span></span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#CursedHR.entry_zone"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.CursedHR.entry_zone" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the zone into which the entry with the given id falls.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Params entry_id</dt>
+<dd class="field-odd"><p>The index of the entry.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The zone into which the entry with the given id falls.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.CursedHR.format_text">
+<span class="sig-name descname"><span class="pre">format_text</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">entry</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#cursed_hr.cursed_hr.PenlogEntry" title="cursed_hr.cursed_hr.PenlogEntry"><span class="pre">PenlogEntry</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#cursed_hr.cursed_hr.FormattedText" title="cursed_hr.cursed_hr.FormattedText"><span class="pre">FormattedText</span></a></span></span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#CursedHR.format_text"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.CursedHR.format_text" title="Permalink to this definition"></a></dt>
+<dd><p>Returns a formatted text according to the properties of the corresponding penlog entry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text</strong> – The text to be formatted.</p></li>
+<li><p><strong>entry</strong> – The penlog entry to which the text corresponds.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The formatted text.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.CursedHR.formatted_entry">
+<span class="sig-name descname"><span class="pre">formatted_entry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">entry_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#cursed_hr.cursed_hr.DisplayEntry" title="cursed_hr.cursed_hr.DisplayEntry"><span class="pre">cursed_hr.cursed_hr.DisplayEntry</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#CursedHR.formatted_entry"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.CursedHR.formatted_entry" title="Permalink to this definition"></a></dt>
+<dd><p>Returns a list of formatted entries, each corresponding to a single line of the entry referred to by the
+given entry id, as displayed in the console.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>entry_id</strong> – The index of the entry.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The formatted display entries for the given entry.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.CursedHR.handle_io">
+<span class="sig-name descname"><span class="pre">handle_io</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#CursedHR.handle_io"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.CursedHR.handle_io" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.CursedHR.init_curses">
+<span class="sig-name descname"><span class="pre">init_curses</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#CursedHR.init_curses"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.CursedHR.init_curses" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.CursedHR.interpret_entry">
+<span class="sig-name descname"><span class="pre">interpret_entry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">entry</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#cursed_hr.cursed_hr.PenlogEntry" title="cursed_hr.cursed_hr.PenlogEntry"><span class="pre">PenlogEntry</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#CursedHR.interpret_entry"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.CursedHR.interpret_entry" title="Permalink to this definition"></a></dt>
+<dd><p>Adds an interpretation to the entry, if the entry can be identified as referring to a UDS request or response.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>entry</strong> – The entry to be interpreted.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.CursedHR.new_configuration">
+<span class="sig-name descname"><span class="pre">new_configuration</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#CursedHR.new_configuration"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.CursedHR.new_configuration" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.CursedHR.next_sufficient_entry">
+<span class="sig-name descname"><span class="pre">next_sufficient_entry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">entry_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#CursedHR.next_sufficient_entry"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.CursedHR.next_sufficient_entry" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the index of the next entry after the given one,
+which has a sufficiently high priority to be displayed and also passes any filters.</p>
+<p>If no such entry exists None is returned.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>entry_id</strong> – The index of the entry in self.entries.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The index of the next sufficient entry after the given one or None, if no such entry exists.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.CursedHR.next_sufficient_pointer">
+<span class="sig-name descname"><span class="pre">next_sufficient_pointer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prio_zone</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#cursed_hr.cursed_hr.PriorityZone" title="cursed_hr.cursed_hr.PriorityZone"><span class="pre">PriorityZone</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pointer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">entry_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#cursed_hr.cursed_hr.PriorityZone" title="cursed_hr.cursed_hr.PriorityZone"><span class="pre">cursed_hr.cursed_hr.PriorityZone</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#CursedHR.next_sufficient_pointer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.CursedHR.next_sufficient_pointer" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the index of the next priority pointer after the given one,
+which has a sufficiently high priority to be displayed and also passes any filters,
+along with the priority zone to which it belongs.</p>
+<p>If no such pointer exists None is returned for the pointer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>prio_zone</strong> – The zone into which the entry, to which the given pointer points, lies.</p></li>
+<li><p><strong>pointer</strong> – The given pointer’s index.</p></li>
+<li><p><strong>entry_id</strong> – The index of the entry, to which the given pointer points, in self.entries.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The next priority pointer’s index along the corresponding priority zone.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.CursedHR.next_sufficient_pointer_without_filters">
+<span class="sig-name descname"><span class="pre">next_sufficient_pointer_without_filters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prio_zone</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#cursed_hr.cursed_hr.PriorityZone" title="cursed_hr.cursed_hr.PriorityZone"><span class="pre">PriorityZone</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pointer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">entry_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#cursed_hr.cursed_hr.PriorityZone" title="cursed_hr.cursed_hr.PriorityZone"><span class="pre">cursed_hr.cursed_hr.PriorityZone</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#CursedHR.next_sufficient_pointer_without_filters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.CursedHR.next_sufficient_pointer_without_filters" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the index of the next priority pointer after the given one,
+which has a sufficiently high priority to be displayed, along with the priority zone to which it belongs.</p>
+<p>If no such pointer exists None is returned for the pointer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>prio_zone</strong> – The zone into which the entry, to which the given pointer points, lies.</p></li>
+<li><p><strong>pointer</strong> – The given pointer’s index.</p></li>
+<li><p><strong>entry_id</strong> – The index of the entry, to which the given pointer points, in self.entries.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The next priority pointer’s index along the corresponding priority zone.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.CursedHR.parse_structure">
+<span class="sig-name descname"><span class="pre">parse_structure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">BinaryIO</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">mmap</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#CursedHR.parse_structure"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.CursedHR.parse_structure" title="Permalink to this definition"></a></dt>
+<dd><p>Parses an (already uncompressed) penlog file to a skeleton containing structural information but no data.</p>
+<p>This process enables handling relatively large penlog entries efficiently by extracting information on the
+priority from each entry, which can later be used to quickly jump to adjacent entries of at least same priority.
+This is accomplished by the following two data structures:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt>self.entry_positions: Stores the absolute offsets of each penlog entry inside the input file.</dt><dd><p>This offset can later be used to efficiently retrieve the data for a penlog entry
+from the input file without the need to store it in memory.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>self.level_pointers: Stores the entries which have at least a certain priority (i.e. less or equal).</dt><dd><p>More precisely, the indices of the corresponding entries in self.entry_positions.
+There exists on such list for each priority level.
+This allows to quickly find entries which are to be displayed inside a priority zone
+even if there are many entries with filtered out priority in between.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.CursedHR.previous_sufficient_entry">
+<span class="sig-name descname"><span class="pre">previous_sufficient_entry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">entry_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#CursedHR.previous_sufficient_entry"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.CursedHR.previous_sufficient_entry" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the index of the previous entry after the given one,
+which has a sufficiently high priority to be displayed and also passes any filters.</p>
+<p>If no such entry exists None is returned.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>entry_id</strong> – The index of the entry in self.entries.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The index of the previous sufficient entry before the given one or None, if no such entry exists.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.CursedHR.previous_sufficient_pointer">
+<span class="sig-name descname"><span class="pre">previous_sufficient_pointer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prio_zone</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#cursed_hr.cursed_hr.PriorityZone" title="cursed_hr.cursed_hr.PriorityZone"><span class="pre">PriorityZone</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pointer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">entry_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#cursed_hr.cursed_hr.PriorityZone" title="cursed_hr.cursed_hr.PriorityZone"><span class="pre">cursed_hr.cursed_hr.PriorityZone</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#CursedHR.previous_sufficient_pointer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.CursedHR.previous_sufficient_pointer" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the index of the previous priority pointer before the given one,
+which has a sufficiently high priority to be displayed and also passes any filters,
+along with the priority zone to which it belongs.</p>
+<p>If no such pointer exists None is returned for the pointer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>prio_zone</strong> – The zone into which the entry, to which the given pointer points, lies.</p></li>
+<li><p><strong>pointer</strong> – The given pointer’s index.</p></li>
+<li><p><strong>entry_id</strong> – The index of the entry, to which the given pointer points, in self.entries.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The previous priority pointer’s index along the corresponding priority zone.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.CursedHR.previous_sufficient_pointer_without_filters">
+<span class="sig-name descname"><span class="pre">previous_sufficient_pointer_without_filters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prio_zone</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#cursed_hr.cursed_hr.PriorityZone" title="cursed_hr.cursed_hr.PriorityZone"><span class="pre">PriorityZone</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pointer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">entry_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#cursed_hr.cursed_hr.PriorityZone" title="cursed_hr.cursed_hr.PriorityZone"><span class="pre">cursed_hr.cursed_hr.PriorityZone</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#CursedHR.previous_sufficient_pointer_without_filters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.CursedHR.previous_sufficient_pointer_without_filters" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the index of the previous priority pointer before the given one,
+which has a sufficiently high priority to be displayed, along with the priority zone to which it belongs.</p>
+<p>If no such pointer exists None is returned for the pointer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>prio_zone</strong> – The zone into which the entry, to which the given pointer points, lies.</p></li>
+<li><p><strong>pointer</strong> – The given pointer’s index.</p></li>
+<li><p><strong>entry_id</strong> – The index of the entry, to which the given pointer points, in self.entries.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The previous priority pointer’s index along the corresponding priority zone.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.CursedHR.priority_pointer">
+<span class="sig-name descname"><span class="pre">priority_pointer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">entry_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="penlog.html#penlog.MessagePrio" title="penlog.MessagePrio"><span class="pre">MessagePrio</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#CursedHR.priority_pointer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.CursedHR.priority_pointer" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the index of the level pointer of the entry with the given id,
+or depending on the mode the previous or next entry, in the level pointers with the given priority.</p>
+<dl>
+<dt>Depending on the mode parameter different pointer indices can be retrieved:</dt><dd><ul class="simple">
+<li><p>case 0: The pointer which points to the exact same entry which is given as the entry id</p></li>
+<li><p>case 1: - 1: The pointer with the next bigger entry_id in the level pointers compared to the given entry id</p></li>
+<li><p>case -1: The pointer with the next smaller entry_id in the level pointers compared to the given entry id</p></li>
+</ul>
+<p>In none of these cases it can be guaranteed that such a pointer exists in the level pointers for the given
+priority. If no pointer exists, None is returned.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>entry_id</strong> – The index of the entry in self.entries.</p></li>
+<li><p><strong>prio</strong> – The priority level for which the index in the corresponding level pointers should be calculated.</p></li>
+<li><p><strong>mode</strong> – Determines which pointer index should be returned (must be any of 0, 1 or -1).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The index of the level pointer or None if no such pointer could be identified.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.CursedHR.status">
+<span class="sig-name descname"><span class="pre">status</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">display_entries</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#cursed_hr.cursed_hr.DisplayEntry" title="cursed_hr.cursed_hr.DisplayEntry"><span class="pre">cursed_hr.cursed_hr.DisplayEntry</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cursor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#cursed_hr.cursed_hr.FormattedText" title="cursed_hr.cursed_hr.FormattedText"><span class="pre">cursed_hr.cursed_hr.FormattedText</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#CursedHR.status"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.CursedHR.status" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.CursedHR.terminate_curses">
+<span class="sig-name descname"><span class="pre">terminate_curses</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#CursedHR.terminate_curses"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.CursedHR.terminate_curses" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.CursedHR.uncompressed_file">
+<span class="sig-name descname"><span class="pre">uncompressed_file</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">BinaryIO</span></span></span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#CursedHR.uncompressed_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.CursedHR.uncompressed_file" title="Permalink to this definition"></a></dt>
+<dd><p>Returns an uncompressed version of the input file as referenced by self.in_file.</p>
+<p>In case the input file is already uncompressed, the original file is returned.
+In any other case, the input file is decompressed to a temporary file (potentially on disk).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.CursedHR.update_zones">
+<span class="sig-name descname"><span class="pre">update_zones</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_zone</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#cursed_hr.cursed_hr.PriorityZone" title="cursed_hr.cursed_hr.PriorityZone"><span class="pre">PriorityZone</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#CursedHR.update_zones"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.CursedHR.update_zones" title="Permalink to this definition"></a></dt>
+<dd><p>Inserts the given zone into the current set of zones.</p>
+<p>Adds a new list of zones into the zone history, which contains the previous zones and the new zone.
+In the process of integrating the new zone, itself as well as old zones may be altered or completely removed.
+It is guaranteed, that the zones are always ordered and do not overlap.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>new_zone</strong> – The zone to be added.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.DisplayEntry">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cursed_hr.cursed_hr.</span></span><span class="sig-name descname"><span class="pre">DisplayEntry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">texts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#cursed_hr.cursed_hr.FormattedText" title="cursed_hr.cursed_hr.FormattedText"><span class="pre">cursed_hr.cursed_hr.FormattedText</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">penlog_entry_number</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">entry_line_number</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#DisplayEntry"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.DisplayEntry" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Represents one single line of a single formatted penlog entry as displayed in the console.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>texts</strong> – The (differently) formatted text fragments of the displayed line.</p></li>
+<li><p><strong>penlog_entry_number</strong> – The line number of the corresponding penlog entry.</p></li>
+<li><p><strong>entry_line_number</strong> – The index in the list of formatted lines as created for the corresponding penlog entry.</p></li>
+<li><p><strong>last_line</strong> – True if and only if this entry refers to the last of the formatted lines as created for the
+corresponding penlog entry.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.DisplayEntry.entry_line_number">
+<span class="sig-name descname"><span class="pre">entry_line_number</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#cursed_hr.cursed_hr.DisplayEntry.entry_line_number" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.DisplayEntry.last_line">
+<span class="sig-name descname"><span class="pre">last_line</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#cursed_hr.cursed_hr.DisplayEntry.last_line" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.DisplayEntry.penlog_entry_number">
+<span class="sig-name descname"><span class="pre">penlog_entry_number</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#cursed_hr.cursed_hr.DisplayEntry.penlog_entry_number" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.DisplayEntry.texts">
+<span class="sig-name descname"><span class="pre">texts</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#cursed_hr.cursed_hr.FormattedText" title="cursed_hr.cursed_hr.FormattedText"><span class="pre">cursed_hr.cursed_hr.FormattedText</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#cursed_hr.cursed_hr.DisplayEntry.texts" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.EntryCache">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cursed_hr.cursed_hr.</span></span><span class="sig-name descname"><span class="pre">EntryCache</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">BinaryIO</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">mmap</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">entry_positions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">20000</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#EntryCache"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.EntryCache" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A simple two level cache that stores the latest accessed penlog entries.</p>
+<p>This is used to speed up the processing of penlog entries by reducing the number of necessary fetches from the
+input file. It may be ineffective if the whole file is kept in memory.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.FormattedText">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cursed_hr.cursed_hr.</span></span><span class="sig-name descname"><span class="pre">FormattedText</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="s"><span class="pre">'str'</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">format</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="s"><span class="pre">'int'</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#FormattedText"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.FormattedText" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.FormattedText.format">
+<span class="sig-name descname"><span class="pre">format</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#cursed_hr.cursed_hr.FormattedText.format" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.FormattedText.text">
+<span class="sig-name descname"><span class="pre">text</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#cursed_hr.cursed_hr.FormattedText.text" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.InterpretationColor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cursed_hr.cursed_hr.</span></span><span class="sig-name descname"><span class="pre">InterpretationColor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#InterpretationColor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.InterpretationColor" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">IntEnum</span></code></p>
+<p>An enumeration.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.InterpretationColor.DEFAULT">
+<span class="sig-name descname"><span class="pre">DEFAULT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">42</span></em><a class="headerlink" href="#cursed_hr.cursed_hr.InterpretationColor.DEFAULT" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.InterpretationColor.UDS_NEGATIVE_RESPONSE">
+<span class="sig-name descname"><span class="pre">UDS_NEGATIVE_RESPONSE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">45</span></em><a class="headerlink" href="#cursed_hr.cursed_hr.InterpretationColor.UDS_NEGATIVE_RESPONSE" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.InterpretationColor.UDS_POSITIVE_RESPONSE">
+<span class="sig-name descname"><span class="pre">UDS_POSITIVE_RESPONSE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">44</span></em><a class="headerlink" href="#cursed_hr.cursed_hr.InterpretationColor.UDS_POSITIVE_RESPONSE" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.InterpretationColor.UDS_REQUEST">
+<span class="sig-name descname"><span class="pre">UDS_REQUEST</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">43</span></em><a class="headerlink" href="#cursed_hr.cursed_hr.InterpretationColor.UDS_REQUEST" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.PenlogEntry">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cursed_hr.cursed_hr.</span></span><span class="sig-name descname"><span class="pre">PenlogEntry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">component:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">host:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">priority:</span> <span class="pre">penlog.MessagePrio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestamp:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id:</span> <span class="pre">Optional[str]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">line:</span> <span class="pre">Optional[str]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stacktrace:</span> <span class="pre">Optional[str]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tags:</span> <span class="pre">Optional[list[str]]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpretation:</span> <span class="pre">'Optional[str]'</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpretation_color:</span> <span class="pre">'InterpretationColor'</span> <span class="pre">=</span> <span class="pre">&lt;InterpretationColor.DEFAULT:</span> <span class="pre">42&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#PenlogEntry"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.PenlogEntry" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="penlog.html#penlog.RecordType" title="penlog.RecordType"><code class="xref py py-class docutils literal notranslate"><span class="pre">RecordType</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.PenlogEntry.interpretation">
+<span class="sig-name descname"><span class="pre">interpretation</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#cursed_hr.cursed_hr.PenlogEntry.interpretation" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.PenlogEntry.interpretation_color">
+<span class="sig-name descname"><span class="pre">interpretation_color</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#cursed_hr.cursed_hr.InterpretationColor" title="cursed_hr.cursed_hr.InterpretationColor"><span class="pre">InterpretationColor</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">42</span></em><a class="headerlink" href="#cursed_hr.cursed_hr.PenlogEntry.interpretation_color" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.PriorityZone">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cursed_hr.cursed_hr.</span></span><span class="sig-name descname"><span class="pre">PriorityZone</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">priority</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="penlog.html#penlog.MessagePrio" title="penlog.MessagePrio"><span class="pre">MessagePrio</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#PriorityZone"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.PriorityZone" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Represents a continuous range (including start and end) of entries for which a certain priority filter applies.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>start</strong> – The first penlog entry of the zone.</p></li>
+<li><p><strong>end</strong> – The last penlog entry of the zone.</p></li>
+<li><p><strong>priority</strong> – The filtering priority to be applied on all entries in in the zone.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.PriorityZone.end">
+<span class="sig-name descname"><span class="pre">end</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#cursed_hr.cursed_hr.PriorityZone.end" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.PriorityZone.priority">
+<span class="sig-name descname"><span class="pre">priority</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="penlog.html#penlog.MessagePrio" title="penlog.MessagePrio"><span class="pre">MessagePrio</span></a></em><a class="headerlink" href="#cursed_hr.cursed_hr.PriorityZone.priority" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.PriorityZone.start">
+<span class="sig-name descname"><span class="pre">start</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#cursed_hr.cursed_hr.PriorityZone.start" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.main">
+<span class="sig-prename descclassname"><span class="pre">cursed_hr.cursed_hr.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.main" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.parse_filter">
+<span class="sig-prename descclassname"><span class="pre">cursed_hr.cursed_hr.</span></span><span class="sig-name descname"><span class="pre">parse_filter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#parse_filter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.parse_filter" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="cursed_hr.cursed_hr.parse_prio">
+<span class="sig-prename descclassname"><span class="pre">cursed_hr.cursed_hr.</span></span><span class="sig-name descname"><span class="pre">parse_prio</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="penlog.html#penlog.MessagePrio" title="penlog.MessagePrio"><span class="pre">MessagePrio</span></a></span></span><a class="reference internal" href="../_modules/cursed_hr/cursed_hr.html#parse_prio"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cursed_hr.cursed_hr.parse_prio" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="module-cursed_hr">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-cursed_hr" title="Permalink to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="modules.html" class="btn btn-neutral float-left" title="Modules" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="gallia.html" class="btn btn-neutral float-right" title="gallia package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

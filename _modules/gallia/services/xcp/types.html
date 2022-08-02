@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gallia.services.xcp.types &mdash; gallia  documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../index.html" class="icon icon-home"> gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../transports.html">Transports</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../penlog.7.html">penlog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/modules.html">Modules</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+          <li><a href="../xcp.html">gallia.services.xcp</a> &raquo;</li>
+      <li>gallia.services.xcp.types</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gallia.services.xcp.types</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-FileCopyrightText: Christoph Schueler &lt;cpu12.gems@googlemail.com&gt;</span>
+<span class="c1">#</span>
+<span class="c1"># SPDX-License-Identifier: LGPL-3.0-only</span>
+<span class="c1">#</span>
+<span class="c1"># https://github.com/christoph2/pyxcp/blob/9d37f4bb422e3d1948f76da159dbf112cca5adcd/pyxcp/types.py</span>
+
+<span class="kn">import</span> <span class="nn">enum</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">namedtuple</span>
+
+<span class="kn">from</span> <span class="nn">construct</span> <span class="kn">import</span> <span class="n">BitsInteger</span>
+<span class="kn">from</span> <span class="nn">construct</span> <span class="kn">import</span> <span class="n">BitStruct</span>
+<span class="kn">from</span> <span class="nn">construct</span> <span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span> <span class="nn">construct</span> <span class="kn">import</span> <span class="n">Flag</span>
+<span class="kn">from</span> <span class="nn">construct</span> <span class="kn">import</span> <span class="n">GreedyBytes</span>
+<span class="kn">from</span> <span class="nn">construct</span> <span class="kn">import</span> <span class="n">GreedyRange</span>
+<span class="kn">from</span> <span class="nn">construct</span> <span class="kn">import</span> <span class="n">If</span>
+<span class="kn">from</span> <span class="nn">construct</span> <span class="kn">import</span> <span class="n">IfThenElse</span>
+<span class="kn">from</span> <span class="nn">construct</span> <span class="kn">import</span> <span class="n">Int16ub</span>
+<span class="kn">from</span> <span class="nn">construct</span> <span class="kn">import</span> <span class="n">Int16ul</span>
+<span class="kn">from</span> <span class="nn">construct</span> <span class="kn">import</span> <span class="n">Int32ub</span>
+<span class="kn">from</span> <span class="nn">construct</span> <span class="kn">import</span> <span class="n">Int32ul</span>
+<span class="kn">from</span> <span class="nn">construct</span> <span class="kn">import</span> <span class="n">Int64ub</span>
+<span class="kn">from</span> <span class="nn">construct</span> <span class="kn">import</span> <span class="n">Int64ul</span>
+<span class="kn">from</span> <span class="nn">construct</span> <span class="kn">import</span> <span class="n">Int8ul</span>
+<span class="kn">from</span> <span class="nn">construct</span> <span class="kn">import</span> <span class="n">Padding</span>
+<span class="kn">from</span> <span class="nn">construct</span> <span class="kn">import</span> <span class="n">Struct</span>
+<span class="kn">from</span> <span class="nn">construct</span> <span class="kn">import</span> <span class="n">Switch</span>
+<span class="kn">from</span> <span class="nn">construct</span> <span class="kn">import</span> <span class="n">this</span>
+
+
+<span class="n">NumericType</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+<span class="n">MtaType</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s2">&quot;MtaType&quot;</span><span class="p">,</span> <span class="s2">&quot;address ext&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="XcpGetIdType"><a class="viewcode-back" href="../../../../api/gallia.services.xcp.html#gallia.services.xcp.types.XcpGetIdType">[docs]</a><span class="k">class</span> <span class="nc">XcpGetIdType</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">ASCII_TEXT</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">FILENAME</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">FILE_AND_PATH</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">URL</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">FILE_TO_UPLOAD</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">EPK</span> <span class="o">=</span> <span class="mi">5</span>
+    <span class="n">ECU</span> <span class="o">=</span> <span class="mi">6</span>
+    <span class="n">SYSID</span> <span class="o">=</span> <span class="mi">7</span>
+    <span class="c1"># Extensions by Vector Informatik.</span>
+    <span class="n">VECTOR_MAPNAMES</span> <span class="o">=</span> <span class="mh">0xDB</span>
+    <span class="n">VECTOR_MDI</span> <span class="o">=</span> <span class="mh">0xDC</span></div>
+
+
+<div class="viewcode-block" id="Command"><a class="viewcode-back" href="../../../../api/gallia.services.xcp.html#gallia.services.xcp.types.Command">[docs]</a><span class="k">class</span> <span class="nc">Command</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">IntEnum</span><span class="p">):</span>
+
+    <span class="c1"># STD</span>
+
+    <span class="c1"># Mandatory Commands</span>
+    <span class="n">CONNECT</span> <span class="o">=</span> <span class="mh">0xFF</span>
+    <span class="n">DISCONNECT</span> <span class="o">=</span> <span class="mh">0xFE</span>
+    <span class="n">GET_STATUS</span> <span class="o">=</span> <span class="mh">0xFD</span>
+    <span class="n">SYNCH</span> <span class="o">=</span> <span class="mh">0xFC</span>
+
+    <span class="c1"># Optional Commands</span>
+    <span class="n">GET_COMM_MODE_INFO</span> <span class="o">=</span> <span class="mh">0xFB</span>
+    <span class="n">GET_ID</span> <span class="o">=</span> <span class="mh">0xFA</span>
+    <span class="n">SET_REQUEST</span> <span class="o">=</span> <span class="mh">0xF9</span>
+    <span class="n">GET_SEED</span> <span class="o">=</span> <span class="mh">0xF8</span>
+    <span class="n">UNLOCK</span> <span class="o">=</span> <span class="mh">0xF7</span>
+    <span class="n">SET_MTA</span> <span class="o">=</span> <span class="mh">0xF6</span>
+    <span class="n">UPLOAD</span> <span class="o">=</span> <span class="mh">0xF5</span>
+    <span class="n">SHORT_UPLOAD</span> <span class="o">=</span> <span class="mh">0xF4</span>
+    <span class="n">BUILD_CHECKSUM</span> <span class="o">=</span> <span class="mh">0xF3</span>
+    <span class="n">TRANSPORT_LAYER_CMD</span> <span class="o">=</span> <span class="mh">0xF2</span>
+    <span class="n">USER_CMD</span> <span class="o">=</span> <span class="mh">0xF1</span>
+    <span class="n">GET_VERSION</span> <span class="o">=</span> <span class="mh">0xC000</span>
+
+    <span class="c1"># CAL</span>
+
+    <span class="c1"># Mandatory Commands</span>
+    <span class="n">DOWNLOAD</span> <span class="o">=</span> <span class="mh">0xF0</span>
+
+    <span class="c1"># Optional Commands</span>
+    <span class="n">DOWNLOAD_NEXT</span> <span class="o">=</span> <span class="mh">0xEF</span>
+    <span class="n">DOWNLOAD_MAX</span> <span class="o">=</span> <span class="mh">0xEE</span>
+    <span class="n">SHORT_DOWNLOAD</span> <span class="o">=</span> <span class="mh">0xED</span>
+    <span class="n">MODIFY_BITS</span> <span class="o">=</span> <span class="mh">0xEC</span>
+
+    <span class="c1"># PAG</span>
+
+    <span class="c1"># Mandatory Commands</span>
+    <span class="n">SET_CAL_PAGE</span> <span class="o">=</span> <span class="mh">0xEB</span>
+    <span class="n">GET_CAL_PAGE</span> <span class="o">=</span> <span class="mh">0xEA</span>
+
+    <span class="c1"># Optional Commands</span>
+    <span class="n">GET_PAG_PROCESSOR_INFO</span> <span class="o">=</span> <span class="mh">0xE9</span>
+    <span class="n">GET_SEGMENT_INFO</span> <span class="o">=</span> <span class="mh">0xE8</span>
+    <span class="n">GET_PAGE_INFO</span> <span class="o">=</span> <span class="mh">0xE7</span>
+    <span class="n">SET_SEGMENT_MODE</span> <span class="o">=</span> <span class="mh">0xE6</span>
+    <span class="n">GET_SEGMENT_MODE</span> <span class="o">=</span> <span class="mh">0xE5</span>
+    <span class="n">COPY_CAL_PAGE</span> <span class="o">=</span> <span class="mh">0xE4</span>
+
+    <span class="c1"># DAQ</span>
+
+    <span class="c1"># Mandatory Commands</span>
+    <span class="n">CLEAR_DAQ_LIST</span> <span class="o">=</span> <span class="mh">0xE3</span>
+    <span class="n">SET_DAQ_PTR</span> <span class="o">=</span> <span class="mh">0xE2</span>
+    <span class="n">WRITE_DAQ</span> <span class="o">=</span> <span class="mh">0xE1</span>
+    <span class="n">WRITE_DAQ_MULTIPLE</span> <span class="o">=</span> <span class="mh">0xC7</span>
+    <span class="n">SET_DAQ_LIST_MODE</span> <span class="o">=</span> <span class="mh">0xE0</span>
+    <span class="n">GET_DAQ_LIST_MODE</span> <span class="o">=</span> <span class="mh">0xDF</span>
+    <span class="n">START_STOP_DAQ_LIST</span> <span class="o">=</span> <span class="mh">0xDE</span>
+    <span class="n">START_STOP_SYNCH</span> <span class="o">=</span> <span class="mh">0xDD</span>
+
+    <span class="c1"># Optional Commands</span>
+    <span class="n">GET_DAQ_CLOCK</span> <span class="o">=</span> <span class="mh">0xDC</span>
+    <span class="n">READ_DAQ</span> <span class="o">=</span> <span class="mh">0xDB</span>
+    <span class="n">GET_DAQ_PROCESSOR_INFO</span> <span class="o">=</span> <span class="mh">0xDA</span>
+    <span class="n">GET_DAQ_RESOLUTION_INFO</span> <span class="o">=</span> <span class="mh">0xD9</span>
+    <span class="n">GET_DAQ_LIST_INFO</span> <span class="o">=</span> <span class="mh">0xD8</span>
+    <span class="n">GET_DAQ_EVENT_INFO</span> <span class="o">=</span> <span class="mh">0xD7</span>
+    <span class="n">DTO_CTR_PROPERTIES</span> <span class="o">=</span> <span class="mh">0xC5</span>
+    <span class="n">SET_DAQ_PACKED_MODE</span> <span class="o">=</span> <span class="mh">0xC001</span>
+    <span class="n">GET_DAQ_PACKED_MODE</span> <span class="o">=</span> <span class="mh">0xC002</span>
+    <span class="n">FREE_DAQ</span> <span class="o">=</span> <span class="mh">0xD6</span>
+    <span class="n">ALLOC_DAQ</span> <span class="o">=</span> <span class="mh">0xD5</span>
+    <span class="n">ALLOC_ODT</span> <span class="o">=</span> <span class="mh">0xD4</span>
+    <span class="n">ALLOC_ODT_ENTRY</span> <span class="o">=</span> <span class="mh">0xD3</span>
+
+    <span class="c1"># PGM</span>
+
+    <span class="c1"># Mandatory Commands</span>
+    <span class="n">PROGRAM_START</span> <span class="o">=</span> <span class="mh">0xD2</span>
+    <span class="n">PROGRAM_CLEAR</span> <span class="o">=</span> <span class="mh">0xD1</span>
+    <span class="n">PROGRAM</span> <span class="o">=</span> <span class="mh">0xD0</span>
+    <span class="n">PROGRAM_RESET</span> <span class="o">=</span> <span class="mh">0xCF</span>
+
+    <span class="c1"># Optional Commands</span>
+    <span class="n">GET_PGM_PROCESSOR_INFO</span> <span class="o">=</span> <span class="mh">0xCE</span>
+    <span class="n">GET_SECTOR_INFO</span> <span class="o">=</span> <span class="mh">0xCD</span>
+    <span class="n">PROGRAM_PREPARE</span> <span class="o">=</span> <span class="mh">0xCC</span>
+    <span class="n">PROGRAM_FORMAT</span> <span class="o">=</span> <span class="mh">0xCB</span>
+    <span class="n">PROGRAM_NEXT</span> <span class="o">=</span> <span class="mh">0xCA</span>
+    <span class="n">PROGRAM_MAX</span> <span class="o">=</span> <span class="mh">0xC9</span>
+    <span class="n">PROGRAM_VERIFY</span> <span class="o">=</span> <span class="mh">0xC8</span>
+
+    <span class="n">TIME_CORRELATION_PROPERTIES</span> <span class="o">=</span> <span class="mh">0xC6</span>
+
+    <span class="c1"># DBG</span>
+
+    <span class="n">DBG_ATTACH</span> <span class="o">=</span> <span class="mh">0xC0FC00</span>
+    <span class="n">DBG_GET_VENDOR_INFO</span> <span class="o">=</span> <span class="mh">0xC0FC01</span>
+    <span class="n">DBG_GET_MODE_INFO</span> <span class="o">=</span> <span class="mh">0xC0FC02</span>
+    <span class="n">DBG_GET_JTAG_ID</span> <span class="o">=</span> <span class="mh">0xC0FC03</span>
+    <span class="n">DBG_HALT_AFTER_RESET</span> <span class="o">=</span> <span class="mh">0xC0FC04</span>
+    <span class="n">DBG_GET_HWIO_INFO</span> <span class="o">=</span> <span class="mh">0xC0FC05</span>
+    <span class="n">DBG_SET_HWIO_EVENT</span> <span class="o">=</span> <span class="mh">0xC0FC06</span>
+    <span class="n">DBG_HWIO_CONTROL</span> <span class="o">=</span> <span class="mh">0xC0FC07</span>
+    <span class="n">DBG_EXCLUSIVE_TARGET_ACCESS</span> <span class="o">=</span> <span class="mh">0xC0FC08</span>
+    <span class="n">DBG_SEQUENCE_MULTIPLE</span> <span class="o">=</span> <span class="mh">0xC0FC09</span>
+    <span class="n">DBG_LLT</span> <span class="o">=</span> <span class="mh">0xC0FC0A</span>
+    <span class="n">DBG_READ_MODIFY_WRITE</span> <span class="o">=</span> <span class="mh">0xC0FC0B</span>
+    <span class="n">DBG_WRITE</span> <span class="o">=</span> <span class="mh">0xC0FC0C</span>
+    <span class="n">DBG_WRITE_NEXT</span> <span class="o">=</span> <span class="mh">0xC0FC0D</span>
+    <span class="n">DBG_WRITE_CAN1</span> <span class="o">=</span> <span class="mh">0xC0FC0E</span>
+    <span class="n">DBG_WRITE_CAN2</span> <span class="o">=</span> <span class="mh">0xC0FC0F</span>
+    <span class="n">DBG_WRITE_CAN_NEXT</span> <span class="o">=</span> <span class="mh">0xC0FC10</span>
+    <span class="n">DBG_READ</span> <span class="o">=</span> <span class="mh">0xC0FC11</span>
+    <span class="n">DBG_READ_CAN1</span> <span class="o">=</span> <span class="mh">0xC0FC12</span>
+    <span class="n">DBG_READ_CAN2</span> <span class="o">=</span> <span class="mh">0xC0FC13</span>
+    <span class="n">DBG_GET_TRI_DESC_TBL</span> <span class="o">=</span> <span class="mh">0xC0FC14</span>
+    <span class="n">DBG_LLBT</span> <span class="o">=</span> <span class="mh">0xC0FC15</span></div>
+
+
+<div class="viewcode-block" id="CommandCategory"><a class="viewcode-back" href="../../../../api/gallia.services.xcp.html#gallia.services.xcp.types.CommandCategory">[docs]</a><span class="k">class</span> <span class="nc">CommandCategory</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Values reflect resources (resource protection status / unlock).&quot;&quot;&quot;</span>
+
+    <span class="n">STD</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">CAL_PAG</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">DAQ</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">STIM</span> <span class="o">=</span> <span class="mi">8</span>
+    <span class="n">PGM</span> <span class="o">=</span> <span class="mi">16</span></div>
+
+
+<span class="n">COMMAND_CATEGORIES</span> <span class="o">=</span> <span class="p">{</span>  <span class="c1"># Mainly needed to automatically UNLOCK.</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">CONNECT</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">STD</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">DISCONNECT</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">STD</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">GET_STATUS</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">STD</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">SYNCH</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">STD</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">GET_COMM_MODE_INFO</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">STD</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">GET_ID</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">STD</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">SET_REQUEST</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">STD</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">GET_SEED</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">STD</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">UNLOCK</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">STD</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">SET_MTA</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">STD</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">UPLOAD</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">STD</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">SHORT_UPLOAD</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">STD</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">BUILD_CHECKSUM</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">STD</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">TRANSPORT_LAYER_CMD</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">STD</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">USER_CMD</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">STD</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">GET_VERSION</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">STD</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">DOWNLOAD</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">CAL_PAG</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">DOWNLOAD_NEXT</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">CAL_PAG</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">DOWNLOAD_MAX</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">CAL_PAG</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">SHORT_DOWNLOAD</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">CAL_PAG</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">MODIFY_BITS</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">CAL_PAG</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">SET_CAL_PAGE</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">CAL_PAG</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">GET_CAL_PAGE</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">CAL_PAG</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">GET_PAG_PROCESSOR_INFO</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">CAL_PAG</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">GET_SEGMENT_INFO</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">CAL_PAG</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">GET_PAGE_INFO</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">CAL_PAG</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">SET_SEGMENT_MODE</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">CAL_PAG</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">GET_SEGMENT_MODE</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">CAL_PAG</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">COPY_CAL_PAGE</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">CAL_PAG</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">CLEAR_DAQ_LIST</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">DAQ</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">SET_DAQ_PTR</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">DAQ</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">WRITE_DAQ</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">DAQ</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">WRITE_DAQ_MULTIPLE</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">DAQ</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">SET_DAQ_LIST_MODE</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">DAQ</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">GET_DAQ_LIST_MODE</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">DAQ</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">START_STOP_DAQ_LIST</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">DAQ</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">START_STOP_SYNCH</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">DAQ</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">GET_DAQ_CLOCK</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">DAQ</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">READ_DAQ</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">DAQ</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">GET_DAQ_PROCESSOR_INFO</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">DAQ</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">GET_DAQ_RESOLUTION_INFO</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">DAQ</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">GET_DAQ_LIST_INFO</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">DAQ</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">GET_DAQ_EVENT_INFO</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">DAQ</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">DTO_CTR_PROPERTIES</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">DAQ</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">SET_DAQ_PACKED_MODE</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">DAQ</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">GET_DAQ_PACKED_MODE</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">DAQ</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">FREE_DAQ</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">DAQ</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">ALLOC_DAQ</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">DAQ</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">ALLOC_ODT</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">DAQ</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">ALLOC_ODT_ENTRY</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">DAQ</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">PROGRAM_START</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">PGM</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">PROGRAM_CLEAR</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">PGM</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">PROGRAM</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">PGM</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">PROGRAM_RESET</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">PGM</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">GET_PGM_PROCESSOR_INFO</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">PGM</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">GET_SECTOR_INFO</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">PGM</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">PROGRAM_PREPARE</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">PGM</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">PROGRAM_FORMAT</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">PGM</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">PROGRAM_NEXT</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">PGM</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">PROGRAM_MAX</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">PGM</span><span class="p">,</span>
+    <span class="n">Command</span><span class="o">.</span><span class="n">PROGRAM_VERIFY</span><span class="p">:</span> <span class="n">CommandCategory</span><span class="o">.</span><span class="n">PGM</span><span class="p">,</span>
+    <span class="c1"># Well... ?</span>
+    <span class="c1"># TIME_CORRELATION_PROPERTIES</span>
+<span class="p">}</span>
+
+<span class="n">XcpError</span> <span class="o">=</span> <span class="n">Enum</span><span class="p">(</span>
+    <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="n">ERR_CMD_SYNCH</span><span class="o">=</span><span class="mh">0x00</span><span class="p">,</span>  <span class="c1"># Command processor synchronization. S0</span>
+    <span class="n">ERR_CMD_BUSY</span><span class="o">=</span><span class="mh">0x10</span><span class="p">,</span>  <span class="c1"># Command was not executed. S2</span>
+    <span class="n">ERR_DAQ_ACTIVE</span><span class="o">=</span><span class="mh">0x11</span><span class="p">,</span>  <span class="c1"># Command rejected because DAQ is running. S2</span>
+    <span class="n">ERR_PGM_ACTIVE</span><span class="o">=</span><span class="mh">0x12</span><span class="p">,</span>  <span class="c1"># Command rejected because PGM is running. S2</span>
+    <span class="n">ERR_CMD_UNKNOWN</span><span class="o">=</span><span class="mh">0x20</span><span class="p">,</span>  <span class="c1"># Unknown command or not implemented optional</span>
+    <span class="c1"># command. S2</span>
+    <span class="n">ERR_CMD_SYNTAX</span><span class="o">=</span><span class="mh">0x21</span><span class="p">,</span>  <span class="c1"># Command syntax invalid. S2</span>
+    <span class="n">ERR_OUT_OF_RANGE</span><span class="o">=</span><span class="mh">0x22</span><span class="p">,</span>  <span class="c1"># Command syntax valid but command parameter(s)</span>
+    <span class="c1"># out of range. S2</span>
+    <span class="n">ERR_WRITE_PROTECTED</span><span class="o">=</span><span class="mh">0x23</span><span class="p">,</span>  <span class="c1"># The memory location is write protected. S2</span>
+    <span class="n">ERR_ACCESS_DENIED</span><span class="o">=</span><span class="mh">0x24</span><span class="p">,</span>  <span class="c1"># The memory location is not accessible. S2</span>
+    <span class="n">ERR_ACCESS_LOCKED</span><span class="o">=</span><span class="mh">0x25</span><span class="p">,</span>  <span class="c1"># Access denied, Seed &amp; Key is required. S2</span>
+    <span class="n">ERR_PAGE_NOT_VALID</span><span class="o">=</span><span class="mh">0x26</span><span class="p">,</span>  <span class="c1"># Selected page not available. S2</span>
+    <span class="n">ERR_MODE_NOT_VALID</span><span class="o">=</span><span class="mh">0x27</span><span class="p">,</span>  <span class="c1"># Selected page mode not available. S2</span>
+    <span class="n">ERR_SEGMENT_NOT_VALID</span><span class="o">=</span><span class="mh">0x28</span><span class="p">,</span>  <span class="c1"># Selected segment not valid. S2</span>
+    <span class="n">ERR_SEQUENCE</span><span class="o">=</span><span class="mh">0x29</span><span class="p">,</span>  <span class="c1"># Sequence error. S2</span>
+    <span class="n">ERR_DAQ_CONFIG</span><span class="o">=</span><span class="mh">0x2A</span><span class="p">,</span>  <span class="c1"># DAQ configuration not valid. S2</span>
+    <span class="n">ERR_MEMORY_OVERFLOW</span><span class="o">=</span><span class="mh">0x30</span><span class="p">,</span>  <span class="c1"># Memory overflow error. S2</span>
+    <span class="n">ERR_GENERIC</span><span class="o">=</span><span class="mh">0x31</span><span class="p">,</span>  <span class="c1"># Generic error. S2</span>
+    <span class="n">ERR_VERIFY</span><span class="o">=</span><span class="mh">0x32</span><span class="p">,</span>  <span class="c1"># The slave internal program verify routine detects an</span>
+    <span class="c1"># error. S3</span>
+    <span class="c1"># NEW IN 1.1</span>
+    <span class="n">ERR_RESOURCE_TEMPORARY_NOT_ACCESSIBLE</span><span class="o">=</span><span class="mh">0x33</span><span class="p">,</span>
+    <span class="c1"># Access to the requested resource is temporary not possible. S3</span>
+    <span class="n">ERR_TIMEOUT</span><span class="o">=</span><span class="mh">0xFF</span><span class="p">,</span>  <span class="c1"># Used by errorhandler; not an offical errorcode.</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="Event"><a class="viewcode-back" href="../../../../api/gallia.services.xcp.html#gallia.services.xcp.types.Event">[docs]</a><span class="k">class</span> <span class="nc">Event</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;XCP Event Codes&quot;&quot;&quot;</span>
+
+    <span class="n">EV_RESUME_MODE</span> <span class="o">=</span> <span class="mh">0x00</span>
+    <span class="n">EV_CLEAR_DAQ</span> <span class="o">=</span> <span class="mh">0x01</span>
+    <span class="n">EV_STORE_DAQ</span> <span class="o">=</span> <span class="mh">0x02</span>
+    <span class="n">EV_STORE_CAL</span> <span class="o">=</span> <span class="mh">0x03</span>
+    <span class="n">EV_CMD_PENDING</span> <span class="o">=</span> <span class="mh">0x05</span>
+    <span class="n">EV_DAQ_OVERLOAD</span> <span class="o">=</span> <span class="mh">0x06</span>
+    <span class="n">EV_SESSION_TERMINATED</span> <span class="o">=</span> <span class="mh">0x07</span>
+    <span class="n">EV_TIME_SYNC</span> <span class="o">=</span> <span class="mh">0x08</span>
+    <span class="n">EV_STIM_TIMEOUT</span> <span class="o">=</span> <span class="mh">0x09</span>
+    <span class="n">EV_SLEEP</span> <span class="o">=</span> <span class="mh">0x0A</span>
+    <span class="n">EV_WAKE_UP</span> <span class="o">=</span> <span class="mh">0x0B</span>
+    <span class="n">EV_USER</span> <span class="o">=</span> <span class="mh">0xFE</span>
+    <span class="n">EV_TRANSPORT</span> <span class="o">=</span> <span class="mh">0xFF</span></div>
+
+
+<span class="n">Response</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="s2">&quot;type&quot;</span>
+    <span class="o">/</span> <span class="n">Enum</span><span class="p">(</span>
+        <span class="n">Int8ul</span><span class="p">,</span>
+        <span class="n">OK</span><span class="o">=</span><span class="mh">0xFF</span><span class="p">,</span>
+        <span class="n">ERR</span><span class="o">=</span><span class="mh">0xFE</span><span class="p">,</span>
+        <span class="n">EV</span><span class="o">=</span><span class="mh">0xFD</span><span class="p">,</span>
+        <span class="n">SERV</span><span class="o">=</span><span class="mh">0xFC</span><span class="p">,</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+
+<span class="n">DAQ</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="s2">&quot;odt&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;daq&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;data&quot;</span> <span class="o">/</span> <span class="n">GreedyBytes</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">ResourceType</span> <span class="o">=</span> <span class="n">BitStruct</span><span class="p">(</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span>
+    <span class="s2">&quot;dbg&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;pgm&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;stim&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;daq&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+    <span class="s2">&quot;calpag&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">RESOURCE_VALUES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;dbg&quot;</span><span class="p">:</span> <span class="mi">32</span><span class="p">,</span>
+    <span class="s2">&quot;pgm&quot;</span><span class="p">:</span> <span class="mi">16</span><span class="p">,</span>
+    <span class="s2">&quot;stim&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">,</span>
+    <span class="s2">&quot;daq&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+    <span class="s2">&quot;calpag&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">AddressGranularity</span> <span class="o">=</span> <span class="n">Enum</span><span class="p">(</span>
+    <span class="n">BitsInteger</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">BYTE</span><span class="o">=</span><span class="mb">0b00</span><span class="p">,</span> <span class="n">WORD</span><span class="o">=</span><span class="mb">0b01</span><span class="p">,</span> <span class="n">DWORD</span><span class="o">=</span><span class="mb">0b10</span><span class="p">,</span> <span class="n">RESERVED</span><span class="o">=</span><span class="mb">0b11</span>
+<span class="p">)</span>
+
+<span class="n">ByteOrder</span> <span class="o">=</span> <span class="n">Enum</span><span class="p">(</span><span class="n">BitsInteger</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">INTEL</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">MOTOROLA</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="c1"># byte-order dependent types</span>
+<span class="n">Int16u</span> <span class="o">=</span> <span class="n">IfThenElse</span><span class="p">(</span><span class="n">this</span><span class="o">.</span><span class="n">_</span><span class="o">.</span><span class="n">byteOrder</span> <span class="o">==</span> <span class="n">ByteOrder</span><span class="o">.</span><span class="n">INTEL</span><span class="p">,</span> <span class="n">Int16ul</span><span class="p">,</span> <span class="n">Int16ub</span><span class="p">)</span>
+<span class="n">Int32u</span> <span class="o">=</span> <span class="n">IfThenElse</span><span class="p">(</span><span class="n">this</span><span class="o">.</span><span class="n">_</span><span class="o">.</span><span class="n">byteOrder</span> <span class="o">==</span> <span class="n">ByteOrder</span><span class="o">.</span><span class="n">INTEL</span><span class="p">,</span> <span class="n">Int32ul</span><span class="p">,</span> <span class="n">Int32ub</span><span class="p">)</span>
+<span class="n">Int64u</span> <span class="o">=</span> <span class="n">IfThenElse</span><span class="p">(</span><span class="n">this</span><span class="o">.</span><span class="n">_</span><span class="o">.</span><span class="n">byteOrder</span> <span class="o">==</span> <span class="n">ByteOrder</span><span class="o">.</span><span class="n">INTEL</span><span class="p">,</span> <span class="n">Int64ul</span><span class="p">,</span> <span class="n">Int64ub</span><span class="p">)</span>
+
+<span class="n">CommModeBasic</span> <span class="o">=</span> <span class="n">BitStruct</span><span class="p">(</span>
+    <span class="s2">&quot;optional&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>  <span class="c1"># The OPTIONAL flag indicates whether additional</span>
+    <span class="c1"># information on supported types of Communication mode</span>
+    <span class="c1"># is available. The master can get that additional</span>
+    <span class="c1"># information with GET_COMM_MODE_INFO</span>
+    <span class="s2">&quot;slaveBlockMode&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span>
+    <span class="s2">&quot;addressGranularity&quot;</span> <span class="o">/</span> <span class="n">AddressGranularity</span><span class="p">,</span>
+    <span class="s2">&quot;byteOrder&quot;</span> <span class="o">/</span> <span class="n">ByteOrder</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">ConnectResponsePartial</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="s2">&quot;resource&quot;</span> <span class="o">/</span> <span class="n">ResourceType</span><span class="p">,</span> <span class="s2">&quot;commModeBasic&quot;</span> <span class="o">/</span> <span class="n">CommModeBasic</span>
+<span class="p">)</span>
+
+<span class="n">ConnectResponse</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="s2">&quot;resource&quot;</span> <span class="o">/</span> <span class="n">ResourceType</span><span class="p">,</span>
+    <span class="s2">&quot;commModeBasic&quot;</span> <span class="o">/</span> <span class="n">CommModeBasic</span><span class="p">,</span>
+    <span class="s2">&quot;maxCto&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;maxDto&quot;</span> <span class="o">/</span> <span class="n">Int16u</span><span class="p">,</span>
+    <span class="s2">&quot;protocolLayerVersion&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;transportLayerVersion&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">GetVersionResponse</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+    <span class="s2">&quot;protocolMajor&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;protocolMinor&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;transportMajor&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;transportMinor&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">SessionStatus</span> <span class="o">=</span> <span class="n">BitStruct</span><span class="p">(</span>
+    <span class="s2">&quot;resume&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;daqRunning&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span>
+    <span class="s2">&quot;clearDaqRequest&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;storeDaqRequest&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+    <span class="s2">&quot;storeCalRequest&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">GetStatusResponse</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="s2">&quot;sessionStatus&quot;</span> <span class="o">/</span> <span class="n">SessionStatus</span><span class="p">,</span>
+    <span class="s2">&quot;resourceProtectionStatus&quot;</span> <span class="o">/</span> <span class="n">ResourceType</span><span class="p">,</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+    <span class="s2">&quot;sessionConfiguration&quot;</span> <span class="o">/</span> <span class="n">Int16u</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">CommModeOptional</span> <span class="o">=</span> <span class="n">BitStruct</span><span class="p">(</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">6</span><span class="p">),</span>
+    <span class="s2">&quot;interleavedMode&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;masterBlockMode&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">GetCommModeInfoResponse</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+    <span class="s2">&quot;commModeOptional&quot;</span> <span class="o">/</span> <span class="n">CommModeOptional</span><span class="p">,</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+    <span class="s2">&quot;maxBs&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;minSt&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;queueSize&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;xcpDriverVersionNumber&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">GetIDResponse</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="s2">&quot;mode&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span>
+    <span class="s2">&quot;length&quot;</span> <span class="o">/</span> <span class="n">Int32u</span><span class="p">,</span>
+    <span class="s2">&quot;identification&quot;</span> <span class="o">/</span> <span class="n">If</span><span class="p">(</span><span class="n">this</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="n">Int8ul</span><span class="p">[</span><span class="n">this</span><span class="o">.</span><span class="n">length</span><span class="p">]),</span>
+<span class="p">)</span>
+
+<span class="n">GetSeedResponse</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="s2">&quot;length&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span> <span class="s2">&quot;seed&quot;</span> <span class="o">/</span> <span class="n">If</span><span class="p">(</span><span class="n">this</span><span class="o">.</span><span class="n">length</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">Int8ul</span><span class="p">[</span><span class="n">this</span><span class="o">.</span><span class="n">length</span><span class="p">])</span>
+<span class="p">)</span>
+
+<span class="n">SetRequestMode</span> <span class="o">=</span> <span class="n">BitStruct</span><span class="p">(</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span>
+    <span class="s2">&quot;clearDaqReq&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;storeDaqReq&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+    <span class="s2">&quot;storeCalReq&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">BuildChecksumResponse</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="s2">&quot;checksumType&quot;</span>
+    <span class="o">/</span> <span class="n">Enum</span><span class="p">(</span>
+        <span class="n">Int8ul</span><span class="p">,</span>
+        <span class="n">XCP_NONE</span><span class="o">=</span><span class="mh">0x00</span><span class="p">,</span>
+        <span class="n">XCP_ADD_11</span><span class="o">=</span><span class="mh">0x01</span><span class="p">,</span>
+        <span class="n">XCP_ADD_12</span><span class="o">=</span><span class="mh">0x02</span><span class="p">,</span>
+        <span class="n">XCP_ADD_14</span><span class="o">=</span><span class="mh">0x03</span><span class="p">,</span>
+        <span class="n">XCP_ADD_22</span><span class="o">=</span><span class="mh">0x04</span><span class="p">,</span>
+        <span class="n">XCP_ADD_24</span><span class="o">=</span><span class="mh">0x05</span><span class="p">,</span>
+        <span class="n">XCP_ADD_44</span><span class="o">=</span><span class="mh">0x06</span><span class="p">,</span>
+        <span class="n">XCP_CRC_16</span><span class="o">=</span><span class="mh">0x07</span><span class="p">,</span>
+        <span class="n">XCP_CRC_16_CITT</span><span class="o">=</span><span class="mh">0x08</span><span class="p">,</span>
+        <span class="n">XCP_CRC_32</span><span class="o">=</span><span class="mh">0x09</span><span class="p">,</span>
+        <span class="n">XCP_USER_DEFINED</span><span class="o">=</span><span class="mh">0xFF</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span>
+    <span class="s2">&quot;checksum&quot;</span> <span class="o">/</span> <span class="n">Int32u</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">SetCalPageMode</span> <span class="o">=</span> <span class="n">BitStruct</span><span class="p">(</span>
+    <span class="s2">&quot;all&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">5</span><span class="p">),</span>
+    <span class="s2">&quot;xcp&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;ecu&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">GetPagProcessorInfoResponse</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="s2">&quot;maxSegments&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;pagProperties&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">GetSegmentInfoMode0Response</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span>
+    <span class="s2">&quot;basicInfo&quot;</span> <span class="o">/</span> <span class="n">Int32u</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">GetSegmentInfoMode1Response</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="s2">&quot;maxPages&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;addressExtension&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;maxMapping&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;compressionMethod&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;encryptionMethod&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">GetSegmentInfoMode2Response</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span>
+    <span class="s2">&quot;mappingInfo&quot;</span> <span class="o">/</span> <span class="n">Int32u</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">PageProperties</span> <span class="o">=</span> <span class="n">BitStruct</span><span class="p">(</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span>
+    <span class="s2">&quot;xcpWriteAccessWithEcu&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;xcpWriteAccessWithoutEcu&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;xcpReadAccessWithEcu&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;xcpReadAccessWithoutEcu&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;ecuAccessWithXcp&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;ecuAccessWithoutXcp&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">DaqProperties</span> <span class="o">=</span> <span class="n">BitStruct</span><span class="p">(</span>
+    <span class="s2">&quot;overloadEvent&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;overloadMsb&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;pidOffSupported&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;timestampSupported&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;bitStimSupported&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;resumeSupported&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;prescalerSupported&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;daqConfigType&quot;</span> <span class="o">/</span> <span class="n">Enum</span><span class="p">(</span><span class="n">BitsInteger</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">STATIC</span><span class="o">=</span><span class="mb">0b0</span><span class="p">,</span> <span class="n">DYNAMIC</span><span class="o">=</span><span class="mb">0b1</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="n">GetDaqProcessorInfoResponse</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="s2">&quot;daqProperties&quot;</span> <span class="o">/</span> <span class="n">DaqProperties</span><span class="p">,</span>
+    <span class="s2">&quot;maxDaq&quot;</span> <span class="o">/</span> <span class="n">Int16u</span><span class="p">,</span>
+    <span class="s2">&quot;maxEventChannel&quot;</span> <span class="o">/</span> <span class="n">Int16u</span><span class="p">,</span>
+    <span class="s2">&quot;minDaq&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;daqKeyByte&quot;</span>
+    <span class="o">/</span> <span class="n">BitStruct</span><span class="p">(</span>
+        <span class="s2">&quot;Identification_Field&quot;</span>
+        <span class="o">/</span> <span class="n">Enum</span><span class="p">(</span>
+            <span class="n">BitsInteger</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span>
+            <span class="n">IDF_ABS_ODT_NUMBER</span><span class="o">=</span><span class="mb">0b00</span><span class="p">,</span>
+            <span class="n">IDF_REL_ODT_NUMBER_ABS_DAQ_LIST_NUMBER_BYTE</span><span class="o">=</span><span class="mb">0b01</span><span class="p">,</span>
+            <span class="n">IDF_REL_ODT_NUMBER_ABS_DAQ_LIST_NUMBER_WORD</span><span class="o">=</span><span class="mb">0b10</span><span class="p">,</span>
+            <span class="n">IDF_REL_ODT_NUMBER_ABS_DAQ_LIST_NUMBER_WORD_ALIGNED</span><span class="o">=</span><span class="mb">0b11</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="s2">&quot;Address_Extension&quot;</span>
+        <span class="o">/</span> <span class="n">Enum</span><span class="p">(</span>
+            <span class="n">BitsInteger</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span>
+            <span class="n">AE_DIFFERENT_WITHIN_ODT</span><span class="o">=</span><span class="mb">0b00</span><span class="p">,</span>
+            <span class="n">AE_SAME_FOR_ALL_ODT</span><span class="o">=</span><span class="mb">0b01</span><span class="p">,</span>
+            <span class="n">_NOT_ALLOWED</span><span class="o">=</span><span class="mb">0b10</span><span class="p">,</span>
+            <span class="n">AE_SAME_FOR_ALL_DAQ</span><span class="o">=</span><span class="mb">0b11</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="s2">&quot;Optimisation_Type&quot;</span>
+        <span class="o">/</span> <span class="n">Enum</span><span class="p">(</span>
+            <span class="n">BitsInteger</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span>
+            <span class="n">OM_DEFAULT</span><span class="o">=</span><span class="mb">0b0000</span><span class="p">,</span>
+            <span class="n">OM_ODT_TYPE_16</span><span class="o">=</span><span class="mb">0b0001</span><span class="p">,</span>
+            <span class="n">OM_ODT_TYPE_32</span><span class="o">=</span><span class="mb">0b0010</span><span class="p">,</span>
+            <span class="n">OM_ODT_TYPE_64</span><span class="o">=</span><span class="mb">0b0011</span><span class="p">,</span>
+            <span class="n">OM_ODT_TYPE_ALIGNMENT</span><span class="o">=</span><span class="mb">0b0100</span><span class="p">,</span>
+            <span class="n">OM_MAX_ENTRY_SIZE</span><span class="o">=</span><span class="mb">0b0101</span><span class="p">,</span>
+        <span class="p">),</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+
+<span class="n">DAQ_DIRECTION</span> <span class="o">=</span> <span class="n">Enum</span><span class="p">(</span><span class="n">BitsInteger</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">DAQ</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">STIM</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">PID_OFF</span> <span class="o">=</span> <span class="n">Enum</span><span class="p">(</span><span class="n">BitsInteger</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">DTO_WITH_ID_FIELD</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">DTO_WITHOUT_ID_FIELD</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">CurrentMode</span> <span class="o">=</span> <span class="n">BitStruct</span><span class="p">(</span>
+    <span class="s2">&quot;resume&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;running&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;pid_off&quot;</span> <span class="o">/</span> <span class="n">PID_OFF</span><span class="p">,</span>
+    <span class="s2">&quot;timestamp&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span>
+    <span class="s2">&quot;direction&quot;</span> <span class="o">/</span> <span class="n">DAQ_DIRECTION</span><span class="p">,</span>
+    <span class="s2">&quot;selected&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">GetDaqListModeResponse</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="s2">&quot;currentMode&quot;</span> <span class="o">/</span> <span class="n">CurrentMode</span><span class="p">,</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span>
+    <span class="s2">&quot;currentEventChannel&quot;</span> <span class="o">/</span> <span class="n">Int16u</span><span class="p">,</span>
+    <span class="s2">&quot;currentPrescaler&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;currentPriority&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">SetDaqListMode</span> <span class="o">=</span> <span class="n">BitStruct</span><span class="p">(</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span>
+    <span class="s2">&quot;pid_off&quot;</span> <span class="o">/</span> <span class="n">PID_OFF</span><span class="p">,</span>
+    <span class="s2">&quot;enable_timestamp&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span>
+    <span class="s2">&quot;direction&quot;</span> <span class="o">/</span> <span class="n">DAQ_DIRECTION</span><span class="p">,</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="n">DaqElement</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="s2">&quot;bitOffset&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;size&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;address&quot;</span> <span class="o">/</span> <span class="n">Int32u</span><span class="p">,</span>
+    <span class="s2">&quot;addressExt&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="n">GetDaqClockResponse</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span>
+    <span class="s2">&quot;timestamp&quot;</span> <span class="o">/</span> <span class="n">Int32u</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">DaqPackedMode</span> <span class="o">=</span> <span class="n">Enum</span><span class="p">(</span><span class="n">Int8ul</span><span class="p">,</span> <span class="n">NONE</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ELEMENT_GROUPED</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">EVENT_GROUPED</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="n">GetDaqPackedModeResponse</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+    <span class="s2">&quot;daqPackedMode&quot;</span> <span class="o">/</span> <span class="n">DaqPackedMode</span><span class="p">,</span>
+    <span class="s2">&quot;dpmTimestampMode&quot;</span>
+    <span class="o">/</span> <span class="n">If</span><span class="p">(</span>
+        <span class="p">(</span><span class="n">this</span><span class="o">.</span><span class="n">daqPackedMode</span> <span class="o">==</span> <span class="s2">&quot;ELEMENT_GROUPED&quot;</span><span class="p">)</span>
+        <span class="o">|</span> <span class="p">(</span><span class="n">this</span><span class="o">.</span><span class="n">daqPackedMode</span> <span class="o">==</span> <span class="s2">&quot;EVENT_GROUPED&quot;</span><span class="p">),</span>
+        <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="s2">&quot;dpmSampleCount&quot;</span>
+    <span class="o">/</span> <span class="n">If</span><span class="p">(</span>
+        <span class="p">(</span><span class="n">this</span><span class="o">.</span><span class="n">daqPackedMode</span> <span class="o">==</span> <span class="s2">&quot;ELEMENT_GROUPED&quot;</span><span class="p">)</span>
+        <span class="o">|</span> <span class="p">(</span><span class="n">this</span><span class="o">.</span><span class="n">daqPackedMode</span> <span class="o">==</span> <span class="s2">&quot;EVENT_GROUPED&quot;</span><span class="p">),</span>
+        <span class="n">Int16u</span><span class="p">,</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+
+<span class="n">ReadDaqResponse</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="s2">&quot;bitOffset&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;sizeofDaqElement&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;adressExtension&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;address&quot;</span> <span class="o">/</span> <span class="n">Int32u</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">DaqTimestampUnit</span> <span class="o">=</span> <span class="n">Enum</span><span class="p">(</span>
+    <span class="n">BitsInteger</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span>
+    <span class="n">DAQ_TIMESTAMP_UNIT_1NS</span><span class="o">=</span><span class="mb">0b0000</span><span class="p">,</span>
+    <span class="n">DAQ_TIMESTAMP_UNIT_10NS</span><span class="o">=</span><span class="mb">0b0001</span><span class="p">,</span>
+    <span class="n">DAQ_TIMESTAMP_UNIT_100NS</span><span class="o">=</span><span class="mb">0b0010</span><span class="p">,</span>
+    <span class="n">DAQ_TIMESTAMP_UNIT_1US</span><span class="o">=</span><span class="mb">0b0011</span><span class="p">,</span>
+    <span class="n">DAQ_TIMESTAMP_UNIT_10US</span><span class="o">=</span><span class="mb">0b0100</span><span class="p">,</span>
+    <span class="n">DAQ_TIMESTAMP_UNIT_100US</span><span class="o">=</span><span class="mb">0b0101</span><span class="p">,</span>
+    <span class="n">DAQ_TIMESTAMP_UNIT_1MS</span><span class="o">=</span><span class="mb">0b0110</span><span class="p">,</span>
+    <span class="n">DAQ_TIMESTAMP_UNIT_10MS</span><span class="o">=</span><span class="mb">0b0111</span><span class="p">,</span>
+    <span class="n">DAQ_TIMESTAMP_UNIT_100MS</span><span class="o">=</span><span class="mb">0b1000</span><span class="p">,</span>
+    <span class="n">DAQ_TIMESTAMP_UNIT_1S</span><span class="o">=</span><span class="mb">0b1001</span><span class="p">,</span>
+    <span class="n">DAQ_TIMESTAMP_UNIT_1PS</span><span class="o">=</span><span class="mb">0b1010</span><span class="p">,</span>
+    <span class="n">DAQ_TIMESTAMP_UNIT_10PS</span><span class="o">=</span><span class="mb">0b1011</span><span class="p">,</span>
+    <span class="n">DAQ_TIMESTAMP_UNIT_100PS</span><span class="o">=</span><span class="mb">0b1100</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">GetDaqResolutionInfoResponse</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="s2">&quot;granularityOdtEntrySizeDaq&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;maxOdtEntrySizeDaq&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;granularityOdtEntrySizeStim&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;maxOdtEntrySizeStim&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;timestampMode&quot;</span>
+    <span class="o">/</span> <span class="n">BitStruct</span><span class="p">(</span>  <span class="c1"># Int8ul,</span>
+        <span class="s2">&quot;unit&quot;</span> <span class="o">/</span> <span class="n">DaqTimestampUnit</span><span class="p">,</span>
+        <span class="s2">&quot;fixed&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+        <span class="s2">&quot;size&quot;</span>
+        <span class="o">/</span> <span class="n">Enum</span><span class="p">(</span>
+            <span class="n">BitsInteger</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span>
+            <span class="n">NO_TIME_STAMP</span><span class="o">=</span><span class="mb">0b000</span><span class="p">,</span>
+            <span class="n">S1</span><span class="o">=</span><span class="mb">0b001</span><span class="p">,</span>
+            <span class="n">S2</span><span class="o">=</span><span class="mb">0b010</span><span class="p">,</span>
+            <span class="n">NOT_ALLOWED</span><span class="o">=</span><span class="mb">0b011</span><span class="p">,</span>
+            <span class="n">S4</span><span class="o">=</span><span class="mb">0b100</span><span class="p">,</span>
+        <span class="p">),</span>
+    <span class="p">),</span>
+    <span class="s2">&quot;timestampTicks&quot;</span> <span class="o">/</span> <span class="n">Int16u</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">DaqListProperties</span> <span class="o">=</span> <span class="n">BitStruct</span><span class="p">(</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span>
+    <span class="s2">&quot;packed&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;stim&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;daq&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;eventFixed&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;predefined&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">GetDaqListInfoResponse</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="s2">&quot;daqListProperties&quot;</span> <span class="o">/</span> <span class="n">DaqListProperties</span><span class="p">,</span>
+    <span class="s2">&quot;maxOdt&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;maxOdtEntries&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;fixedEvent&quot;</span> <span class="o">/</span> <span class="n">Int16u</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">StartStopDaqListResponse</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span><span class="s2">&quot;firstPid&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">)</span>
+
+<span class="n">DaqEventProperties</span> <span class="o">=</span> <span class="n">BitStruct</span><span class="p">(</span>
+    <span class="s2">&quot;consistency&quot;</span>
+    <span class="o">/</span> <span class="n">Enum</span><span class="p">(</span>
+        <span class="n">BitsInteger</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span>
+        <span class="n">CONSISTENCY_ODT</span><span class="o">=</span><span class="mb">0b00</span><span class="p">,</span>
+        <span class="n">CONSISTENCY_DAQ</span><span class="o">=</span><span class="mb">0b01</span><span class="p">,</span>
+        <span class="n">CONSISTENCY_EVENTCHANNEL</span><span class="o">=</span><span class="mb">0b10</span><span class="p">,</span>
+        <span class="n">CONSISTENCY_NONE</span><span class="o">=</span><span class="mb">0b11</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+    <span class="s2">&quot;packed&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;stim&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;daq&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="n">GetEventChannelInfoResponse</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="s2">&quot;daqEventProperties&quot;</span> <span class="o">/</span> <span class="n">DaqEventProperties</span><span class="p">,</span>
+    <span class="s2">&quot;maxDaqList&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;eventChannelNameLength&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;eventChannelTimeCycle&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;eventChannelTimeUnit&quot;</span>
+    <span class="o">/</span> <span class="n">Enum</span><span class="p">(</span>
+        <span class="n">Int8ul</span><span class="p">,</span>
+        <span class="n">EVENT_CHANNEL_TIME_UNIT_1NS</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">EVENT_CHANNEL_TIME_UNIT_10NS</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">EVENT_CHANNEL_TIME_UNIT_100NS</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="n">EVENT_CHANNEL_TIME_UNIT_1US</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+        <span class="n">EVENT_CHANNEL_TIME_UNIT_10US</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+        <span class="n">EVENT_CHANNEL_TIME_UNIT_100US</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+        <span class="n">EVENT_CHANNEL_TIME_UNIT_1MS</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span>
+        <span class="n">EVENT_CHANNEL_TIME_UNIT_10MS</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>
+        <span class="n">EVENT_CHANNEL_TIME_UNIT_100MS</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+        <span class="n">EVENT_CHANNEL_TIME_UNIT_1S</span><span class="o">=</span><span class="mi">9</span><span class="p">,</span>
+        <span class="n">EVENT_CHANNEL_TIME_UNIT_1PS</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+        <span class="n">EVENT_CHANNEL_TIME_UNIT_10PS</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span>
+        <span class="n">EVENT_CHANNEL_TIME_UNIT_100PS</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="s2">&quot;eventChannelPriority&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">DtoCtrProperties</span> <span class="o">=</span> <span class="n">BitStruct</span><span class="p">(</span>
+    <span class="s2">&quot;evtCtrPresent&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;stimCtrCpyPresent&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;stimModePresent&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;daqModePresent&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;relatedEventPresent&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;stimModeFixed&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;daqModeFixed&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;relatedEventFixed&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">DtoCtrMode</span> <span class="o">=</span> <span class="n">BitStruct</span><span class="p">(</span><span class="n">Padding</span><span class="p">(</span><span class="mi">6</span><span class="p">),</span> <span class="s2">&quot;stimMode&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span> <span class="s2">&quot;daqMode&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">)</span>
+
+<span class="n">DtoCtrPropertiesResponse</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="s2">&quot;properties&quot;</span> <span class="o">/</span> <span class="n">DtoCtrProperties</span><span class="p">,</span> <span class="s2">&quot;relatedEventChannel&quot;</span> <span class="o">/</span> <span class="n">Int16u</span><span class="p">,</span> <span class="s2">&quot;mode&quot;</span> <span class="o">/</span> <span class="n">DtoCtrMode</span>
+<span class="p">)</span>
+
+<span class="n">CommModePgm</span> <span class="o">=</span> <span class="n">BitStruct</span><span class="p">(</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+    <span class="s2">&quot;slaveBlockMode&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span>
+    <span class="s2">&quot;interleavedMode&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;masterBlockMode&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">ProgramStartResponse</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+    <span class="s2">&quot;commModePgm&quot;</span> <span class="o">/</span> <span class="n">CommModePgm</span><span class="p">,</span>
+    <span class="s2">&quot;maxCtoPgm&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;maxBsPgm&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;minStPgm&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;queueSizePgm&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">PgmProperties</span> <span class="o">=</span> <span class="n">BitStruct</span><span class="p">(</span>
+    <span class="s2">&quot;nonSeqPgmRequired&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;nonSeqPgmSupported&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;encryptionRequired&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;encryptionSupported&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;compressionRequired&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;compressionSupported&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;functionalMode&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+    <span class="s2">&quot;absoluteMode&quot;</span> <span class="o">/</span> <span class="n">Flag</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">GetPgmProcessorInfoResponse</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="s2">&quot;pgmProperties&quot;</span> <span class="o">/</span> <span class="n">PgmProperties</span><span class="p">,</span> <span class="s2">&quot;maxSector&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span>
+<span class="p">)</span>
+
+<span class="n">GetSectorInfoResponseMode01</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="s2">&quot;clearSequenceNumber&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;programSequenceNumber&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;programmingMethod&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;sectorInfo&quot;</span> <span class="o">/</span> <span class="n">Int32u</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">GetSectorInfoResponseMode2</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span><span class="s2">&quot;sectorNameLength&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">)</span>
+
+<span class="n">TimeCorrelationPropertiesResponse</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="s2">&quot;slaveConfig&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;observableClocks&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;syncState&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;clockInfo&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+    <span class="s2">&quot;clusterId&quot;</span> <span class="o">/</span> <span class="n">Int16u</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">DaqPtr</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s2">&quot;DaqPtr&quot;</span><span class="p">,</span> <span class="s2">&quot;daqListNumber odtNumber odtEntryNumber&quot;</span><span class="p">)</span>
+
+<span class="n">DbgAttachResponse</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="s2">&quot;major&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;minor&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;timeout1&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;timeout7&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+    <span class="s2">&quot;maxCtoDbg&quot;</span> <span class="o">/</span> <span class="n">Int16u</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">DbgGetVendorInfoResponse</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="s2">&quot;length&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;vendorId&quot;</span> <span class="o">/</span> <span class="n">Int16u</span><span class="p">,</span>
+    <span class="s2">&quot;vendorInfo&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">[</span><span class="n">this</span><span class="o">.</span><span class="n">length</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="n">DbgGetModeInfoResponse</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+    <span class="s2">&quot;maxHwIoPins&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;dialect&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;feature&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;serviceLevel&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">DbgGetJtagIdResponse</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span>
+    <span class="s2">&quot;jtagId&quot;</span> <span class="o">/</span> <span class="n">Int32u</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">DbgGetHwioInfoPin</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="s2">&quot;index&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;mode&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;pinClass&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;state&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">DbgGetHwioInfoResponse</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="s2">&quot;num&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;pins&quot;</span> <span class="o">/</span> <span class="n">DbgGetHwioInfoPin</span><span class="p">[</span><span class="n">this</span><span class="o">.</span><span class="n">num</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="n">DbgHwioControlResponse</span> <span class="o">=</span> <span class="n">GreedyBytes</span>
+
+<span class="n">DbgSequenceMultipleResult</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="s2">&quot;status&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;repeat&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;tdo&quot;</span> <span class="o">/</span> <span class="n">Int32ub</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">DbgSequenceMultipleResponse</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+    <span class="s2">&quot;num&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;results&quot;</span> <span class="o">/</span> <span class="n">DbgSequenceMultipleResult</span><span class="p">[</span><span class="n">this</span><span class="o">.</span><span class="n">num</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="n">DbgLltResult</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="s2">&quot;length&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;data&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">[</span><span class="n">this</span><span class="o">.</span><span class="n">length</span> <span class="o">//</span> <span class="mi">8</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="n">DbgLltResponse</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="s2">&quot;num&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;results&quot;</span> <span class="o">/</span> <span class="n">DbgLltResult</span><span class="p">[</span><span class="n">this</span><span class="o">.</span><span class="n">num</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="n">DbgReadModifyWriteResponse</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="n">If</span><span class="p">(</span><span class="n">this</span><span class="o">.</span><span class="n">_</span><span class="o">.</span><span class="n">width</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> <span class="n">Padding</span><span class="p">(</span><span class="mi">1</span><span class="p">)),</span>
+    <span class="n">If</span><span class="p">(</span><span class="n">this</span><span class="o">.</span><span class="n">_</span><span class="o">.</span><span class="n">width</span> <span class="o">==</span> <span class="mi">4</span><span class="p">,</span> <span class="n">Padding</span><span class="p">(</span><span class="mi">3</span><span class="p">)),</span>
+    <span class="n">If</span><span class="p">(</span><span class="n">this</span><span class="o">.</span><span class="n">_</span><span class="o">.</span><span class="n">width</span> <span class="o">==</span> <span class="mi">8</span><span class="p">,</span> <span class="n">Padding</span><span class="p">(</span><span class="mi">7</span><span class="p">)),</span>
+    <span class="s2">&quot;value&quot;</span> <span class="o">/</span> <span class="n">Switch</span><span class="p">(</span><span class="n">this</span><span class="o">.</span><span class="n">_</span><span class="o">.</span><span class="n">width</span><span class="p">,</span> <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="n">Int8ul</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="n">Int16u</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="n">Int32u</span><span class="p">,</span> <span class="mi">8</span><span class="p">:</span> <span class="n">Int64u</span><span class="p">}),</span>
+<span class="p">)</span>
+
+<span class="n">DbgReadResponse</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="n">If</span><span class="p">(</span><span class="n">this</span><span class="o">.</span><span class="n">_</span><span class="o">.</span><span class="n">width</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> <span class="n">Padding</span><span class="p">(</span><span class="mi">1</span><span class="p">)),</span>
+    <span class="n">If</span><span class="p">(</span><span class="n">this</span><span class="o">.</span><span class="n">_</span><span class="o">.</span><span class="n">width</span> <span class="o">==</span> <span class="mi">4</span><span class="p">,</span> <span class="n">Padding</span><span class="p">(</span><span class="mi">3</span><span class="p">)),</span>
+    <span class="n">If</span><span class="p">(</span><span class="n">this</span><span class="o">.</span><span class="n">_</span><span class="o">.</span><span class="n">width</span> <span class="o">==</span> <span class="mi">8</span><span class="p">,</span> <span class="n">Padding</span><span class="p">(</span><span class="mi">7</span><span class="p">)),</span>
+    <span class="s2">&quot;data&quot;</span>
+    <span class="o">/</span> <span class="n">GreedyRange</span><span class="p">(</span><span class="n">Switch</span><span class="p">(</span><span class="n">this</span><span class="o">.</span><span class="n">_</span><span class="o">.</span><span class="n">width</span><span class="p">,</span> <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="n">Int8ul</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="n">Int16u</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="n">Int32u</span><span class="p">,</span> <span class="mi">8</span><span class="p">:</span> <span class="n">Int64u</span><span class="p">})),</span>
+<span class="p">)</span>
+
+<span class="n">DbgGetTriDescTblTrad</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="s2">&quot;trai&quot;</span> <span class="o">/</span> <span class="n">Int64ul</span><span class="p">,</span>
+    <span class="s2">&quot;trdt&quot;</span> <span class="o">/</span> <span class="n">Int16ul</span><span class="p">,</span>
+    <span class="s2">&quot;trat&quot;</span> <span class="o">/</span> <span class="n">Int16ul</span><span class="p">,</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="n">DbgGetTriDescTblTri</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="s2">&quot;tri&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="s2">&quot;trad_cnt&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span>
+    <span class="n">Padding</span><span class="p">(</span><span class="mi">6</span><span class="p">),</span>
+    <span class="s2">&quot;trads&quot;</span> <span class="o">/</span> <span class="n">DbgGetTriDescTblTrad</span><span class="p">[</span><span class="n">this</span><span class="o">.</span><span class="n">trad_cnt</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="n">DbgGetTriDescTbl</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="s2">&quot;tri_cnt&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span> <span class="n">Padding</span><span class="p">(</span><span class="mi">7</span><span class="p">),</span> <span class="s2">&quot;tris&quot;</span> <span class="o">/</span> <span class="n">DbgGetTriDescTblTri</span><span class="p">[</span><span class="n">this</span><span class="o">.</span><span class="n">tri_cnt</span><span class="p">]</span>
+<span class="p">)</span>
+
+<span class="n">DbgGetTriDescTblResponse</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span>
+    <span class="s2">&quot;mode&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">,</span> <span class="n">Padding</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="s2">&quot;length&quot;</span> <span class="o">/</span> <span class="n">Int32u</span><span class="p">,</span> <span class="s2">&quot;table&quot;</span> <span class="o">/</span> <span class="n">DbgGetTriDescTbl</span>
+<span class="p">)</span>
+
+<span class="n">DbgLlbtResponse</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span><span class="n">Padding</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="s2">&quot;length&quot;</span> <span class="o">/</span> <span class="n">Int16u</span><span class="p">,</span> <span class="s2">&quot;data&quot;</span> <span class="o">/</span> <span class="n">Int8ul</span><span class="p">[</span><span class="n">this</span><span class="o">.</span><span class="n">length</span><span class="p">])</span>
+
+<span class="n">DAQ_TIMESTAMP_UNIT_TO_EXP</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;DAQ_TIMESTAMP_UNIT_1PS&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">12</span><span class="p">,</span>
+    <span class="s2">&quot;DAQ_TIMESTAMP_UNIT_10PS&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">11</span><span class="p">,</span>
+    <span class="s2">&quot;DAQ_TIMESTAMP_UNIT_100PS&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">10</span><span class="p">,</span>
+    <span class="s2">&quot;DAQ_TIMESTAMP_UNIT_1NS&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">9</span><span class="p">,</span>
+    <span class="s2">&quot;DAQ_TIMESTAMP_UNIT_10NS&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">8</span><span class="p">,</span>
+    <span class="s2">&quot;DAQ_TIMESTAMP_UNIT_100NS&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">7</span><span class="p">,</span>
+    <span class="s2">&quot;DAQ_TIMESTAMP_UNIT_1US&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">6</span><span class="p">,</span>
+    <span class="s2">&quot;DAQ_TIMESTAMP_UNIT_10US&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">5</span><span class="p">,</span>
+    <span class="s2">&quot;DAQ_TIMESTAMP_UNIT_100US&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">4</span><span class="p">,</span>
+    <span class="s2">&quot;DAQ_TIMESTAMP_UNIT_1MS&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">3</span><span class="p">,</span>
+    <span class="s2">&quot;DAQ_TIMESTAMP_UNIT_10MS&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span>
+    <span class="s2">&quot;DAQ_TIMESTAMP_UNIT_100MS&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+    <span class="s2">&quot;DAQ_TIMESTAMP_UNIT_1S&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="XcpGetSeedMode"><a class="viewcode-back" href="../../../../api/gallia.services.xcp.html#gallia.services.xcp.types.XcpGetSeedMode">[docs]</a><span class="k">class</span> <span class="nc">XcpGetSeedMode</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">FIRST_PART</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">REMAINING</span> <span class="o">=</span> <span class="mi">1</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

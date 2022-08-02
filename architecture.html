@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Architecture &mdash; gallia  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Automation" href="automation.html" />
+    <link rel="prev" title="Setup" href="setup.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="setup.html">Setup</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Architecture</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#scanner-lifecycle">Scanner Lifecycle</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#argument-parsing">Argument Parsing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#plugin-interface">Plugin Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#oem-specific-implementations">OEM Specific Implementations</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="transports.html">Transports</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="penlog.7.html">penlog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/modules.html">Modules</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Architecture</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/architecture.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <!--
+SPDX-FileCopyrightText: AISEC Pentesting Team
+
+SPDX-License-Identifier: CC0-1.0
+-->
+<section id="architecture">
+<h1>Architecture<a class="headerlink" href="#architecture" title="Permalink to this heading"></a></h1>
+<p>This documentation describes the inner design concepts of gallia.</p>
+<p>The following diagram shows the internal modules of gallia and how they are connected:
+<img alt="tooling-architecture.png" src="_images/tooling-architecture.png" /></p>
+<section id="scanner-lifecycle">
+<h2>Scanner Lifecycle<a class="headerlink" href="#scanner-lifecycle" title="Permalink to this heading"></a></h2>
+<p>This section describes the livecycle of a scanner.
+Meaning, which methods are called in which order when executing a scanner.</p>
+<ol class="arabic simple">
+<li><p><a class="reference internal" href="api/gallia.html#gallia.cli.main" title="gallia.cli.main"><code class="xref py py-meth docutils literal notranslate"><span class="pre">gallia.cli.main()</span></code></a></p></li>
+<li><p><a class="reference internal" href="api/gallia.udscan.html#gallia.udscan.core.GalliaBase.run" title="gallia.udscan.core.GalliaBase.run"><code class="xref py py-meth docutils literal notranslate"><span class="pre">gallia.udscan.core.GalliaBase.run()</span></code></a></p></li>
+<li><p><code class="xref py py-meth docutils literal notranslate"><span class="pre">gallia.udscan.core.GalliaBase._run()</span></code></p></li>
+<li><p><a class="reference internal" href="api/gallia.udscan.html#gallia.udscan.core.Scanner.setup" title="gallia.udscan.core.Scanner.setup"><code class="xref py py-meth docutils literal notranslate"><span class="pre">gallia.udscan.core.Scanner.setup()</span></code></a></p></li>
+<li><p><code class="xref py py-meth docutils literal notranslate"><span class="pre">gallia.udscan.core.GalliaBase.main()</span></code></p></li>
+<li><p><a class="reference internal" href="api/gallia.udscan.html#gallia.udscan.core.Scanner.teardown" title="gallia.udscan.core.Scanner.teardown"><code class="xref py py-meth docutils literal notranslate"><span class="pre">gallia.udscan.core.Scanner.teardown()</span></code></a></p></li>
+</ol>
+</section>
+<section id="argument-parsing">
+<h2>Argument Parsing<a class="headerlink" href="#argument-parsing" title="Permalink to this heading"></a></h2>
+<p>In gallia, there is a central argument parser (<code class="xref py py-attr docutils literal notranslate"><span class="pre">gallia.udscan.core.GalliaBase.parser</span></code>),
+where all scanner are added as sub-commands.
+Scanner can add their specific options by implementing the <a class="reference internal" href="api/gallia.udscan.html#gallia.udscan.core.GalliaBase.add_parser" title="gallia.udscan.core.GalliaBase.add_parser"><code class="xref py py-meth docutils literal notranslate"><span class="pre">gallia.udscan.core.GalliaBase.add_parser()</span></code></a> method.
+With this approach, we can generate a usage, which lists all installed scanners.
+To see the scanner specific usage, the user can query the help of the specific sub-command.</p>
+</section>
+<section id="plugin-interface">
+<h2>Plugin Interface<a class="headerlink" href="#plugin-interface" title="Permalink to this heading"></a></h2>
+<p>There are different plugin interfaces to extend gallia.
+All of them use the python <code class="docutils literal notranslate"><span class="pre">entry</span> <span class="pre">point</span></code> concept:</p>
+<ol class="arabic simple">
+<li><p>Scanner API (<code class="docutils literal notranslate"><span class="pre">gallia_scanners</span></code>)</p></li>
+<li><p>ECU API (<code class="docutils literal notranslate"><span class="pre">gallia_ecus</span></code>)</p></li>
+<li><p>Transport protocols (<code class="docutils literal notranslate"><span class="pre">gallia_transports</span></code>)</p></li>
+</ol>
+</section>
+<section id="oem-specific-implementations">
+<h2>OEM Specific Implementations<a class="headerlink" href="#oem-specific-implementations" title="Permalink to this heading"></a></h2>
+<p>Gallia is designed with the concept of OEM/vendor specific extensions in mind.
+The generic <a class="reference internal" href="api/gallia.uds.html#gallia.uds.ecu.ECU" title="gallia.uds.ecu.ECU"><code class="xref py py-class docutils literal notranslate"><span class="pre">ECU</span></code></a> class covers the basic functionality, which can be found by (almost) all OEMs.
+OEM specific ECUs can extend or overwrite the generic <a class="reference internal" href="api/gallia.uds.html#gallia.uds.ecu.ECU" title="gallia.uds.ecu.ECU"><code class="xref py py-class docutils literal notranslate"><span class="pre">ECU</span></code></a> functionality.</p>
+<p>Typical OEM specific functionality includes:</p>
+<ul class="simple">
+<li><p>Reading properties like: software version, UUID, ECU name, …</p></li>
+<li><p>Flashing</p></li>
+<li><p>Security Access</p></li>
+<li><p>Changing to vendor specific sessions</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="setup.html" class="btn btn-neutral float-left" title="Setup" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="automation.html" class="btn btn-neutral float-right" title="Automation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

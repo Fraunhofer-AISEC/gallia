@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gallia.udscan.scanner.find_xcp &mdash; gallia  documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../index.html" class="icon icon-home"> gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../transports.html">Transports</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../penlog.7.html">penlog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/modules.html">Modules</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      <li>gallia.udscan.scanner.find_xcp</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gallia.udscan.scanner.find_xcp</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-FileCopyrightText: AISEC Pentesting Team</span>
+<span class="c1">#</span>
+<span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
+
+<span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">socket</span>
+<span class="kn">import</span> <span class="nn">struct</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">argparse</span> <span class="kn">import</span> <span class="n">ArgumentDefaultsHelpFormatter</span><span class="p">,</span> <span class="n">ArgumentParser</span><span class="p">,</span> <span class="n">Namespace</span>
+<span class="kn">from</span> <span class="nn">subprocess</span> <span class="kn">import</span> <span class="n">CalledProcessError</span><span class="p">,</span> <span class="n">run</span>
+
+<span class="kn">from</span> <span class="nn">gallia.penlog</span> <span class="kn">import</span> <span class="n">Logger</span>
+<span class="kn">from</span> <span class="nn">gallia.transports.base</span> <span class="kn">import</span> <span class="n">TargetURI</span>
+<span class="kn">from</span> <span class="nn">gallia.transports.can</span> <span class="kn">import</span> <span class="n">RawCANTransport</span>
+<span class="kn">from</span> <span class="nn">gallia.utils</span> <span class="kn">import</span> <span class="n">bytes_repr</span><span class="p">,</span> <span class="n">can_id_repr</span><span class="p">,</span> <span class="n">g_repr</span>
+
+
+<div class="viewcode-block" id="FindXCP"><a class="viewcode-back" href="../../../../api/gallia.udscan.scanner.html#gallia.udscan.scanner.find_xcp.FindXCP">[docs]</a><span class="k">class</span> <span class="nc">FindXCP</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Find XCP Slave&quot;&quot;&quot;</span>
+
+    <span class="c1"># TODO: This Scanner is not a UDS Scanner and needs a Task base class. See Issue #26</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__doc__</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">Logger</span><span class="p">(</span><span class="n">component</span><span class="o">=</span><span class="s2">&quot;scanner&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span> <span class="o">=</span> <span class="n">ArgumentParser</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="p">,</span> <span class="n">formatter_class</span><span class="o">=</span><span class="n">ArgumentDefaultsHelpFormatter</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">socket</span><span class="p">:</span> <span class="n">socket</span><span class="o">.</span><span class="n">socket</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_parser</span><span class="p">()</span>
+
+<div class="viewcode-block" id="FindXCP.add_parser"><a class="viewcode-back" href="../../../../api/gallia.udscan.scanner.html#gallia.udscan.scanner.find_xcp.FindXCP.add_parser">[docs]</a>    <span class="k">def</span> <span class="nf">add_parser</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">subparsers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_subparsers</span><span class="p">(</span>
+            <span class="n">dest</span><span class="o">=</span><span class="s2">&quot;mode&quot;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Transport mode&quot;</span>
+        <span class="p">)</span>
+
+        <span class="n">sp</span> <span class="o">=</span> <span class="n">subparsers</span><span class="o">.</span><span class="n">add_parser</span><span class="p">(</span><span class="s2">&quot;can&quot;</span><span class="p">)</span>
+        <span class="n">sp</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--xcp-can-iface&quot;</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;CAN interface used for XCP communication&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">sp</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--can-fd&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;use can FD&quot;</span>
+        <span class="p">)</span>
+        <span class="n">sp</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--sniff-time&quot;</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+            <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;SECONDS&quot;</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Time in seconds to sniff on bus for current traffic&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">sp</span> <span class="o">=</span> <span class="n">subparsers</span><span class="o">.</span><span class="n">add_parser</span><span class="p">(</span><span class="s2">&quot;tcp&quot;</span><span class="p">)</span>
+        <span class="n">sp</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--xcp-ip&quot;</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;XCP destination IP Address&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">sp</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--tcp-ports&quot;</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Comma separated list of TCP ports to test for XCP&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">sp</span> <span class="o">=</span> <span class="n">subparsers</span><span class="o">.</span><span class="n">add_parser</span><span class="p">(</span><span class="s2">&quot;udp&quot;</span><span class="p">)</span>
+        <span class="n">sp</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--xcp-ip&quot;</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;XCP destination IP Address&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">sp</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+            <span class="s2">&quot;--udp-ports&quot;</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+            <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Comma separated list of UDP ports to test for XCP&quot;</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="FindXCP.run"><a class="viewcode-back" href="../../../../api/gallia.udscan.scanner.html#gallia.udscan.scanner.find_xcp.FindXCP.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+        <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;PENLOG_OUTPUT&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;json&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">process</span> <span class="o">=</span> <span class="n">run</span><span class="p">(</span>
+                <span class="p">[</span><span class="s2">&quot;git&quot;</span><span class="p">,</span> <span class="s2">&quot;describe&quot;</span><span class="p">,</span> <span class="s2">&quot;--tags&quot;</span><span class="p">,</span> <span class="s2">&quot;--always&quot;</span><span class="p">,</span> <span class="s2">&quot;--dirty&quot;</span><span class="p">],</span>
+                <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="n">CalledProcessError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;could not get version: </span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">git_version</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_preamble</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;version: </span><span class="si">{</span><span class="n">git_version</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_preamble</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="n">args</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="FindXCP.pack_xcp_eth"><a class="viewcode-back" href="../../../../api/gallia.udscan.scanner.html#gallia.udscan.scanner.find_xcp.FindXCP.pack_xcp_eth">[docs]</a>    <span class="k">def</span> <span class="nf">pack_xcp_eth</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">ctr</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="n">length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">&quot;&lt;HH&quot;</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">ctr</span><span class="p">)</span> <span class="o">+</span> <span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;send: </span><span class="si">{</span><span class="n">data</span><span class="o">.</span><span class="n">hex</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">data</span></div>
+
+<div class="viewcode-block" id="FindXCP.unpack_xcp_eth"><a class="viewcode-back" href="../../../../api/gallia.udscan.scanner.html#gallia.udscan.scanner.find_xcp.FindXCP.unpack_xcp_eth">[docs]</a>    <span class="k">def</span> <span class="nf">unpack_xcp_eth</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">]:</span>
+        <span class="n">length</span><span class="p">,</span> <span class="n">ctr</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack_from</span><span class="p">(</span><span class="s2">&quot;&lt;HH&quot;</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;recv: </span><span class="si">{</span><span class="n">data</span><span class="o">.</span><span class="n">hex</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">length</span><span class="p">,</span> <span class="n">ctr</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="mi">4</span><span class="p">:]</span></div>
+
+<div class="viewcode-block" id="FindXCP.main"><a class="viewcode-back" href="../../../../api/gallia.udscan.scanner.html#gallia.udscan.scanner.find_xcp.FindXCP.main">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;can&quot;</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">test_can</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;tcp&quot;</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">test_tcp</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="n">args</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;udp&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">test_eth_broadcast</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">test_udp</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="FindXCP.test_tcp"><a class="viewcode-back" href="../../../../api/gallia.udscan.scanner.html#gallia.udscan.scanner.find_xcp.FindXCP.test_tcp">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">test_tcp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># TODO: rewrite as async</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">([</span><span class="mh">0xFF</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">])</span>
+        <span class="n">endpoints</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">port</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">tcp_ports</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">):</span>
+            <span class="n">port</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">port</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Testing TCP port: </span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">server</span> <span class="o">=</span> <span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">xcp_ip</span><span class="p">,</span> <span class="n">port</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">socket</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">socket</span><span class="o">.</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">socket</span><span class="o">.</span><span class="n">SOCK_STREAM</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">socket</span><span class="o">.</span><span class="n">settimeout</span><span class="p">(</span><span class="mf">0.2</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">socket</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">server</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Connect: </span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2"> on TCP port </span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">socket</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pack_xcp_eth</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+                <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">data_ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">unpack_xcp_eth</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">socket</span><span class="o">.</span><span class="n">recv</span><span class="p">(</span><span class="mi">1024</span><span class="p">))</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="n">bytes_repr</span><span class="p">(</span><span class="n">data_ret</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Receive data on TCP port </span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">ret</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data_ret</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">data_ret</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0xFF</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;XCP Slave on TCP port </span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s2">, data: </span><span class="si">{</span><span class="n">ret</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+                    <span class="n">endpoints</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">port</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;TCP port </span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s2"> is no XCP slave, data: </span><span class="si">{</span><span class="n">ret</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;send/recv: </span><span class="si">{</span><span class="n">g_repr</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2"> on TCP port </span><span class="si">{</span><span class="n">port</span><span class="si">:</span><span class="s2">d</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">xcp_disconnect</span><span class="p">(</span><span class="n">server</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">socket</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Finished; Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">endpoints</span><span class="p">)</span><span class="si">}</span><span class="s2"> XCP endpoints via TCP&quot;</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="FindXCP.xcp_disconnect"><a class="viewcode-back" href="../../../../api/gallia.udscan.scanner.html#gallia.udscan.scanner.find_xcp.FindXCP.xcp_disconnect">[docs]</a>    <span class="k">def</span> <span class="nf">xcp_disconnect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">socket</span><span class="o">.</span><span class="n">sendto</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pack_xcp_eth</span><span class="p">(</span><span class="nb">bytes</span><span class="p">([</span><span class="mh">0xFE</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">]),</span> <span class="mi">1</span><span class="p">),</span> <span class="n">server</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">socket</span><span class="o">.</span><span class="n">recv</span><span class="p">(</span><span class="mi">1024</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="FindXCP.test_udp"><a class="viewcode-back" href="../../../../api/gallia.udscan.scanner.html#gallia.udscan.scanner.find_xcp.FindXCP.test_udp">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">test_udp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># TODO: rewrite as async</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">([</span><span class="mh">0xFF</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">])</span>
+        <span class="n">endpoints</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">port</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">udp_ports</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">):</span>
+            <span class="n">port</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">port</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Testing UDP port: </span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">socket</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">socket</span><span class="o">.</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">socket</span><span class="o">.</span><span class="n">SOCK_DGRAM</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">socket</span><span class="o">.</span><span class="n">settimeout</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+            <span class="n">server</span> <span class="o">=</span> <span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">xcp_ip</span><span class="p">,</span> <span class="n">port</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">socket</span><span class="o">.</span><span class="n">sendto</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pack_xcp_eth</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">server</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">data_ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">unpack_xcp_eth</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">socket</span><span class="o">.</span><span class="n">recv</span><span class="p">(</span><span class="mi">1024</span><span class="p">))</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="n">bytes_repr</span><span class="p">(</span><span class="n">data_ret</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Receive data on TCP port </span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">ret</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data_ret</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">data_ret</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0xFF</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;XCP Slave on UDP port </span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s2">, data: </span><span class="si">{</span><span class="n">ret</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+                    <span class="n">endpoints</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">port</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;UDP port </span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s2"> is no XCP slave, data: </span><span class="si">{</span><span class="n">ret</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+
+            <span class="k">except</span> <span class="n">socket</span><span class="o">.</span><span class="n">timeout</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Timeout on UDP port </span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">xcp_disconnect</span><span class="p">(</span><span class="n">server</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">socket</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Finished; Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">endpoints</span><span class="p">)</span><span class="si">}</span><span class="s2"> XCP endpoints via UDP&quot;</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="FindXCP.test_can"><a class="viewcode-back" href="../../../../api/gallia.udscan.scanner.html#gallia.udscan.scanner.find_xcp.FindXCP.test_can">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">test_can</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="n">TargetURI</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">RawCANTransport</span><span class="o">.</span><span class="n">SCHEME</span><span class="si">}</span><span class="s2">://</span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">xcp_can_iface</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="o">+</span> <span class="p">(</span><span class="s2">&quot;?is_fd=true&quot;</span> <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">can_fd</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">transport</span> <span class="o">=</span> <span class="n">RawCANTransport</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">transport</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+        <span class="n">endpoints</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+
+        <span class="n">sniff_time</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">sniff_time</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Listening to idle bus communication for </span><span class="si">{</span><span class="n">sniff_time</span><span class="si">}</span><span class="s2">s...&quot;</span>
+        <span class="p">)</span>
+        <span class="n">addr_idle</span> <span class="o">=</span> <span class="k">await</span> <span class="n">transport</span><span class="o">.</span><span class="n">get_idle_traffic</span><span class="p">(</span><span class="n">sniff_time</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">addr_idle</span><span class="p">)</span><span class="si">}</span><span class="s2"> CAN Addresses on idle Bus&quot;</span><span class="p">)</span>
+        <span class="n">transport</span><span class="o">.</span><span class="n">set_filter</span><span class="p">(</span><span class="n">addr_idle</span><span class="p">,</span> <span class="n">inv_filter</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="c1"># flush receive queue</span>
+        <span class="k">await</span> <span class="n">transport</span><span class="o">.</span><span class="n">get_idle_traffic</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">can_id</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mh">0x800</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Testing CAN ID: </span><span class="si">{</span><span class="n">can_id_repr</span><span class="p">(</span><span class="n">can_id</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">pdu</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">([</span><span class="mh">0xFF</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">])</span>
+            <span class="k">await</span> <span class="n">transport</span><span class="o">.</span><span class="n">sendto</span><span class="p">(</span><span class="n">pdu</span><span class="p">,</span> <span class="n">can_id</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                    <span class="n">master</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">transport</span><span class="o">.</span><span class="n">recvfrom</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0xFF</span><span class="p">:</span>
+                        <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;Found XCP endpoint [master:slave]: CAN: </span><span class="si">{</span><span class="n">can_id_repr</span><span class="p">(</span><span class="n">master</span><span class="p">)</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">can_id_repr</span><span class="p">(</span><span class="n">can_id</span><span class="p">)</span><span class="si">}</span><span class="s2"> &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;data: </span><span class="si">{</span><span class="n">bytes_repr</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                        <span class="n">endpoints</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">can_id</span><span class="p">,</span> <span class="n">master</span><span class="p">))</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;Received non XCP answer for CAN-ID </span><span class="si">{</span><span class="n">can_id_repr</span><span class="p">(</span><span class="n">can_id</span><span class="p">)</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">can_id_repr</span><span class="p">(</span><span class="n">master</span><span class="p">)</span><span class="si">}</span><span class="s2">:&quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">bytes_repr</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="p">)</span>
+            <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">TimeoutError</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Finished; Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">endpoints</span><span class="p">)</span><span class="si">}</span><span class="s2"> XCP endpoints via CAN&quot;</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="FindXCP.test_eth_broadcast"><a class="viewcode-back" href="../../../../api/gallia.udscan.scanner.html#gallia.udscan.scanner.find_xcp.FindXCP.test_eth_broadcast">[docs]</a>    <span class="k">def</span> <span class="nf">test_eth_broadcast</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># TODO: rewrite as async</span>
+
+        <span class="n">multicast_group</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;239.255.0.0&quot;</span><span class="p">,</span> <span class="mi">5556</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Discover XCP via multicast group: </span><span class="si">{</span><span class="n">multicast_group</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">multicast_group</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">socket</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">socket</span><span class="o">.</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">socket</span><span class="o">.</span><span class="n">SOCK_DGRAM</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">socket</span><span class="o">.</span><span class="n">connect</span><span class="p">((</span><span class="n">args</span><span class="o">.</span><span class="n">xcp_ip</span><span class="p">,</span> <span class="mi">5555</span><span class="p">))</span>
+        <span class="n">addr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">socket</span><span class="o">.</span><span class="n">getsockname</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">socket</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;xcp interface ip for multicast group: </span><span class="si">{</span><span class="n">addr</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">socket</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">socket</span><span class="o">.</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">socket</span><span class="o">.</span><span class="n">SOCK_DGRAM</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">socket</span><span class="o">.</span><span class="n">setsockopt</span><span class="p">(</span>
+            <span class="n">socket</span><span class="o">.</span><span class="n">IPPROTO_IP</span><span class="p">,</span> <span class="n">socket</span><span class="o">.</span><span class="n">IP_MULTICAST_IF</span><span class="p">,</span> <span class="n">socket</span><span class="o">.</span><span class="n">inet_aton</span><span class="p">(</span><span class="n">addr</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">socket</span><span class="o">.</span><span class="n">setsockopt</span><span class="p">(</span><span class="n">socket</span><span class="o">.</span><span class="n">IPPROTO_IP</span><span class="p">,</span> <span class="n">socket</span><span class="o">.</span><span class="n">IP_MULTICAST_TTL</span><span class="p">,</span> <span class="mi">32</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">socket</span><span class="o">.</span><span class="n">settimeout</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="n">xcp_discover</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">([</span><span class="mh">0xFA</span><span class="p">,</span> <span class="mh">0x01</span><span class="p">])</span>
+        <span class="n">endpoints</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">socket</span><span class="o">.</span><span class="n">sendto</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pack_xcp_eth</span><span class="p">(</span><span class="n">xcp_discover</span><span class="p">),</span> <span class="n">multicast_group</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="n">data</span><span class="p">,</span> <span class="n">slave</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">socket</span><span class="o">.</span><span class="n">recvfrom</span><span class="p">(</span><span class="mi">16</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="p">:</span>
+                    <span class="k">break</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found XCP slave: </span><span class="si">{</span><span class="n">slave</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">bytes_repr</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">endpoints</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">slave</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">socket</span><span class="o">.</span><span class="n">timeout</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span><span class="s2">&quot;Timeout&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_summary</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Finished; Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">endpoints</span><span class="p">)</span><span class="si">}</span><span class="s2"> XCP endpoints via multicast group&quot;</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../../../../api/gallia.udscan.scanner.html#gallia.udscan.scanner.find_xcp.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">scanner</span> <span class="o">=</span> <span class="n">FindXCP</span><span class="p">()</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="n">scanner</span><span class="o">.</span><span class="n">run</span><span class="p">())</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

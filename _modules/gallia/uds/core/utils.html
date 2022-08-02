@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gallia.uds.core.utils &mdash; gallia  documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../index.html" class="icon icon-home"> gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../transports.html">Transports</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../penlog.7.html">penlog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/modules.html">Modules</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      <li>gallia.uds.core.utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gallia.uds.core.utils</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-FileCopyrightText: AISEC Pentesting Team</span>
+<span class="c1">#</span>
+<span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
+
+<span class="kn">from</span> <span class="nn">binascii</span> <span class="kn">import</span> <span class="n">hexlify</span>
+<span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">ceil</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">from</span> <span class="nn">gallia.uds.core.constants</span> <span class="kn">import</span> <span class="n">UDSIsoServices</span>
+
+
+<div class="viewcode-block" id="from_bytes"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.utils.from_bytes">[docs]</a><span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">return</span> <span class="nb">int</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s2">&quot;big&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="to_bytes"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.utils.to_bytes">[docs]</a><span class="k">def</span> <span class="nf">to_bytes</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">length</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">length</span><span class="p">,</span> <span class="s2">&quot;big&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="check_range"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.utils.check_range">[docs]</a><span class="k">def</span> <span class="nf">check_range</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">min_value</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">max_value</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">min_value</span> <span class="o">&lt;=</span> <span class="n">data</span> <span class="o">&lt;=</span> <span class="n">max_value</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;The </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> parameter must be between </span><span class="si">{</span><span class="n">int_repr</span><span class="p">(</span><span class="n">min_value</span><span class="p">)</span><span class="si">}</span><span class="s2"> and &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">int_repr</span><span class="p">(</span><span class="n">max_value</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="check_data_identifier"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.utils.check_data_identifier">[docs]</a><span class="k">def</span> <span class="nf">check_data_identifier</span><span class="p">(</span><span class="n">data_identifier</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">data_identifier</span> <span class="o">&lt;=</span> <span class="mh">0xFFFF</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Not a valid dataIdentifier: </span><span class="si">{</span><span class="n">int_repr</span><span class="p">(</span><span class="n">data_identifier</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="check_sub_function"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.utils.check_sub_function">[docs]</a><span class="k">def</span> <span class="nf">check_sub_function</span><span class="p">(</span><span class="n">sub_function</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">sub_function</span> <span class="o">&lt;=</span> <span class="mh">0x7F</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Not a valid subFunction: </span><span class="si">{</span><span class="n">int_repr</span><span class="p">(</span><span class="n">sub_function</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="check_length"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.utils.check_length">[docs]</a><span class="k">def</span> <span class="nf">check_length</span><span class="p">(</span>
+    <span class="n">pdu</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">minimal_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">maximal_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pdu</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The PDU is empty&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pdu</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">minimal_length</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The PDU is incomplete&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">maximal_length</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">pdu</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">maximal_length</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The PDU contains more data than expected&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="int_repr"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.utils.int_repr">[docs]</a><span class="k">def</span> <span class="nf">int_repr</span><span class="p">(</span><span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">n</span><span class="si">:</span><span class="s2">x</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;0</span><span class="si">{</span><span class="n">s</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="k">if</span> <span class="n">prefix</span><span class="p">:</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;0x</span><span class="si">{</span><span class="n">s</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="k">return</span> <span class="n">s</span></div>
+
+
+<div class="viewcode-block" id="any_repr"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.utils.any_repr">[docs]</a><span class="k">def</span> <span class="nf">any_repr</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">repr</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">int_repr</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">bytes</span><span class="p">,</span> <span class="nb">bytearray</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="n">bytes_repr</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;[</span><span class="si">{</span><span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">any_repr</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">x</span><span class="p">)</span><span class="si">}</span><span class="s1">]&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="bytes_repr"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.utils.bytes_repr">[docs]</a><span class="k">def</span> <span class="nf">bytes_repr</span><span class="p">(</span><span class="n">b</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">max_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">20</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">b</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;&#39;&#39;&quot;</span>
+
+    <span class="n">s</span> <span class="o">=</span> <span class="n">hexlify</span><span class="p">(</span><span class="n">b</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">max_length</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">max_length</span><span class="p">:</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">s</span><span class="p">[:</span> <span class="n">max_length</span> <span class="o">-</span> <span class="mi">3</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;...&quot;</span>
+
+    <span class="k">return</span> <span class="n">s</span></div>
+
+
+<div class="viewcode-block" id="service_repr"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.utils.service_repr">[docs]</a><span class="k">def</span> <span class="nf">service_repr</span><span class="p">(</span><span class="n">service_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">UDSIsoServices</span><span class="p">(</span><span class="n">service_id</span><span class="p">)</span><span class="o">.</span><span class="n">name</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Unknown service </span><span class="si">{</span><span class="n">int_repr</span><span class="p">(</span><span class="n">service_id</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="uds_memory_parameters"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.utils.uds_memory_parameters">[docs]</a><span class="k">def</span> <span class="nf">uds_memory_parameters</span><span class="p">(</span>
+    <span class="n">memory_address</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">memory_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">address_and_length_fmt</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Transfers the address and size into bytes and computes the corresponding</span>
+<span class="sd">    addressAndLengthFormatIdentifier (cf. ISO 14229-1) and returns all three.</span>
+<span class="sd">    The resulting parameters are used in several memory-related UDSClient services.</span>
+<span class="sd">    Optionally, a desired addressAndLengthFormatIdentifier can be passed, which</span>
+<span class="sd">    will then be used to turn the ints to the specified length as opposed to</span>
+<span class="sd">    the minimal byte length.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">      memory_address: The memory address.</span>
+<span class="sd">      memory_size: The memory size.</span>
+<span class="sd">      address_and_length_fmt: Optionally specifies the byte lengths of the</span>
+<span class="sd">          address and size. If given, the first returned value will be equal to</span>
+<span class="sd">          this one.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">      The UDSClient memory parameters as a tuple, comprised of</span>
+<span class="sd">       - the addressAndLengthFormatIdentifier</span>
+<span class="sd">         which specifies the byte lengths of the address and size.</span>
+<span class="sd">       - memory address (in bytes).</span>
+<span class="sd">       - memory size (in bytes).</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">      OverflowError: If any of the memory_address or memory_size parameters is</span>
+<span class="sd">          either negative or cannot be represented by at most 15 bytes or the</span>
+<span class="sd">          number of bytes as specified in address_and_length_fmt if given.</span>
+<span class="sd">      ValueError: If address_and_length_fmt is given and has a wrong format,</span>
+<span class="sd">          i.e. it is negative, exceeds 0xff or is zero in any of the two nibbles.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">memory_address</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">OverflowError</span><span class="p">(</span><span class="s2">&quot;The memory address must not be negative&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">memory_size</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">OverflowError</span><span class="p">(</span><span class="s2">&quot;The memory size must not be negative&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">address_and_length_fmt</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># If the format is given explicitly, format the parameters accordingly</span>
+        <span class="n">addr_len</span><span class="p">,</span> <span class="n">size_len</span> <span class="o">=</span> <span class="n">address_and_size_length</span><span class="p">(</span><span class="n">address_and_length_fmt</span><span class="p">)</span>
+        <span class="n">addr_bytes</span> <span class="o">=</span> <span class="n">memory_address</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">addr_len</span><span class="p">,</span> <span class="s2">&quot;big&quot;</span><span class="p">)</span>
+        <span class="n">size_bytes</span> <span class="o">=</span> <span class="n">memory_size</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">size_len</span><span class="p">,</span> <span class="s2">&quot;big&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Otherwise transfer the parameters to the UDSClient request format</span>
+
+        <span class="c1"># The byte length is always at least one, as also a zero must be encoded.</span>
+        <span class="n">addr_length</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">ceil</span><span class="p">(</span><span class="n">memory_address</span><span class="o">.</span><span class="n">bit_length</span><span class="p">()</span> <span class="o">/</span> <span class="mi">8</span><span class="p">)))</span>
+        <span class="n">size_length</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">ceil</span><span class="p">(</span><span class="n">memory_size</span><span class="o">.</span><span class="n">bit_length</span><span class="p">()</span> <span class="o">/</span> <span class="mi">8</span><span class="p">)))</span>
+
+        <span class="k">if</span> <span class="n">addr_length</span> <span class="o">&gt;</span> <span class="mh">0xF</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">OverflowError</span><span class="p">(</span>
+                <span class="s2">&quot;The memory address is too big to be encoded in the &quot;</span>
+                <span class="s2">&quot;addressAndLengthFormatIdentifier&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">size_length</span> <span class="o">&gt;</span> <span class="mh">0xF</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">OverflowError</span><span class="p">(</span>
+                <span class="s2">&quot;The memory size is too big to be encoded in the &quot;</span>
+                <span class="s2">&quot;addressAndLengthFormatIdentifier&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">addr_bytes</span> <span class="o">=</span> <span class="n">memory_address</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">addr_length</span><span class="p">,</span> <span class="s2">&quot;big&quot;</span><span class="p">)</span>
+        <span class="n">size_bytes</span> <span class="o">=</span> <span class="n">memory_size</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">size_length</span><span class="p">,</span> <span class="s2">&quot;big&quot;</span><span class="p">)</span>
+        <span class="n">address_and_length_fmt</span> <span class="o">=</span> <span class="p">(</span><span class="n">size_length</span> <span class="o">&lt;&lt;</span> <span class="mi">4</span><span class="p">)</span> <span class="o">|</span> <span class="n">addr_length</span>
+
+    <span class="k">return</span> <span class="n">address_and_length_fmt</span><span class="p">,</span> <span class="n">addr_bytes</span><span class="p">,</span> <span class="n">size_bytes</span></div>
+
+
+<div class="viewcode-block" id="address_and_size_length"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.utils.address_and_size_length">[docs]</a><span class="k">def</span> <span class="nf">address_and_size_length</span><span class="p">(</span><span class="n">address_and_length_fmt</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Computes the memory_address and memory_size parameter&#39;s byte length</span>
+<span class="sd">    based on the corresponding addressAndLengthFormatIdentifier (cf. ISO 14229-1)</span>
+<span class="sd">    which is used in several memory-related UDSClient services.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">      address_and_length_fmt: Specifies the byte lengths of the address and size.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">      The byte length of the address and size according to the given format as a</span>
+<span class="sd">      tuple, comprised of:</span>
+
+<span class="sd">       - The byte length of the memory address</span>
+<span class="sd">       - The byte length of the memory size</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If address_and_length_fmt has the wrong format,</span>
+<span class="sd">            i.e. it is negative, exceeds 0xff or is zero in any of the two nibbles.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="mh">0x00</span> <span class="o">&lt;=</span> <span class="n">address_and_length_fmt</span> <span class="o">&lt;=</span> <span class="mh">0xFF</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;The addressAndLengthFormatIdentifier must not be negative &quot;</span>
+            <span class="s2">&quot;nor exceed 0xff&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">address_and_length_fmt</span> <span class="o">&amp;</span> <span class="mh">0xF0</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;The addressAndLengthFormatIdentifier&#39;s first nibble must not be 0&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">address_and_length_fmt</span> <span class="o">&amp;</span> <span class="mh">0x0F</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;The addressAndLengthFormatIdentifier&#39;s second nibble must not be 0&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">addr_length</span> <span class="o">=</span> <span class="n">address_and_length_fmt</span> <span class="o">&amp;</span> <span class="mh">0x0F</span>
+    <span class="n">size_length</span> <span class="o">=</span> <span class="p">(</span><span class="n">address_and_length_fmt</span> <span class="o">&amp;</span> <span class="mh">0xF0</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="mi">4</span>
+
+    <span class="k">return</span> <span class="n">addr_length</span><span class="p">,</span> <span class="n">size_length</span></div>
+
+
+<div class="viewcode-block" id="sub_function_split"><a class="viewcode-back" href="../../../../api/gallia.uds.core.html#gallia.uds.core.utils.sub_function_split">[docs]</a><span class="k">def</span> <span class="nf">sub_function_split</span><span class="p">(</span><span class="n">sub_function</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns the subFunction without suppress bit and if the bit was set.</span>
+
+<span class="sd">    :return: The subFunction without suppress bit and if the bit was set.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">sub_function</span> <span class="o">%</span> <span class="mh">0x80</span><span class="p">,</span> <span class="n">sub_function</span> <span class="o">&gt;=</span> <span class="mh">0x80</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

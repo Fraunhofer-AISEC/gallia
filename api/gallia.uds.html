@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gallia.uds package &mdash; gallia  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="gallia.uds.core package" href="gallia.uds.core.html" />
+    <link rel="prev" title="gallia.transports package" href="gallia.transports.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../transports.html">Transports</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../penlog.7.html">penlog</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Modules</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="cursed_hr.html">cursed_hr package</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="gallia.html">gallia package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="gallia.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="gallia.db.html">gallia.db package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.services.html">gallia.services package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.transports.html">gallia.transports package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">gallia.uds package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gallia.udscan.html">gallia.udscan package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gallia.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gallia.html#module-gallia.cli">gallia.cli module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gallia.html#module-gallia.penlab">gallia.penlab module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gallia.html#module-gallia.penlog">gallia.penlog module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gallia.html#module-gallia.utils">gallia.utils module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gallia.html#module-gallia.virtual_ecu">gallia.virtual_ecu module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gallia.html#module-gallia">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="opennetzteil.html">opennetzteil package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="penlog.html">penlog package</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="modules.html">Modules</a> &raquo;</li>
+          <li><a href="gallia.html">gallia package</a> &raquo;</li>
+      <li>gallia.uds package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/gallia.uds.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="gallia-uds-package">
+<h1>gallia.uds package<a class="headerlink" href="#gallia-uds-package" title="Permalink to this heading"></a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="gallia.uds.core.html">gallia.uds.core package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="gallia.uds.core.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gallia.uds.core.html#module-gallia.uds.core.client">gallia.uds.core.client module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gallia.uds.core.html#module-gallia.uds.core.constants">gallia.uds.core.constants module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gallia.uds.core.html#module-gallia.uds.core.exception">gallia.uds.core.exception module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gallia.uds.core.html#module-gallia.uds.core.service">gallia.uds.core.service module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gallia.uds.core.html#module-gallia.uds.core.utils">gallia.uds.core.utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gallia.uds.core.html#module-gallia.uds.core">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-gallia.uds.ecu">
+<span id="gallia-uds-ecu-module"></span><h2>gallia.uds.ecu module<a class="headerlink" href="#module-gallia.uds.ecu" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.uds.ecu.ECU">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.uds.ecu.</span></span><span class="sig-name descname"><span class="pre">ECU</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transport</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.transports.html#gallia.transports.base.BaseTransport" title="gallia.transports.base.BaseTransport"><span class="pre">BaseTransport</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_retry</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">power_supply</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.html#gallia.penlab.PowerSupply" title="gallia.penlab.PowerSupply"><span class="pre">PowerSupply</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gallia/uds/ecu.html#ECU"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.ecu.ECU" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.client.UDSClient" title="gallia.uds.core.client.UDSClient"><code class="xref py py-class docutils literal notranslate"><span class="pre">UDSClient</span></code></a></p>
+<p>ECU is a high level interface wrapping a UDSClient class. It provides
+semantically correct higher level interfaces such as read_session()
+or ping(). Vendor specific implementations can be derived from this
+class. For the arguments of the constructor, please check uds.uds.UDS.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.ecu.ECU.check_and_set_session">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">check_and_set_session</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">expected_session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retries</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/gallia/uds/ecu.html#ECU.check_and_set_session"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.ecu.ECU.check_and_set_session" title="Permalink to this definition"></a></dt>
+<dd><p>check_and_set_session() reads the current session and (re)tries to set
+the session to the expected session if they do not match.</p>
+<p>Returns True if the current session matches the expected session,
+or if read_session is not supported by the ECU or in the current session.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.ecu.ECU.clear_dtc">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">clear_dtc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.client.UDSRequestConfig" title="gallia.uds.core.client.UDSRequestConfig"><span class="pre">UDSRequestConfig</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.NegativeResponse" title="gallia.uds.core.service.NegativeResponse"><span class="pre">NegativeResponse</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.ClearDiagnosticInformationResponse" title="gallia.uds.core.service.ClearDiagnosticInformationResponse"><span class="pre">ClearDiagnosticInformationResponse</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/gallia/uds/ecu.html#ECU.clear_dtc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.ecu.ECU.clear_dtc" title="Permalink to this definition"></a></dt>
+<dd><p>Clear all dtc records on the ecu.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.ecu.ECU.connect">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">connect</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/uds/ecu.html#ECU.connect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.ecu.ECU.connect" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.ecu.ECU.find_sessions">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">find_sessions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">search</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_retry</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">4</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/gallia/uds/ecu.html#ECU.find_sessions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.ecu.ECU.find_sessions" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.ecu.ECU.leave_session">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">leave_session</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.client.UDSRequestConfig" title="gallia.uds.core.client.UDSRequestConfig"><span class="pre">UDSRequestConfig</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/gallia/uds/ecu.html#ECU.leave_session"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.ecu.ECU.leave_session" title="Permalink to this definition"></a></dt>
+<dd><p>leave_session() is a hook which can be called explicitly by a
+scanner when a session is to be disabled. Use this hook if resetting
+the ECU is required, e.g. when disabling the programming session.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>uds</strong> – The UDSClient class where this hook is embedded. The caller typically
+calls this function with <cite>self</cite> as the first argument.</p></li>
+<li><p><strong>session</strong> – The desired session identifier.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>True on success, False on error.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.ecu.ECU.ping">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ping</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.client.UDSRequestConfig" title="gallia.uds.core.client.UDSRequestConfig"><span class="pre">UDSRequestConfig</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.NegativeResponse" title="gallia.uds.core.service.NegativeResponse"><span class="pre">NegativeResponse</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.TesterPresentResponse" title="gallia.uds.core.service.TesterPresentResponse"><span class="pre">TesterPresentResponse</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/gallia/uds/ecu.html#ECU.ping"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.ecu.ECU.ping" title="Permalink to this definition"></a></dt>
+<dd><p>Send an UDS TesterPresent message.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>UDS response.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.ecu.ECU.power_cycle">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">power_cycle</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sleep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/gallia/uds/ecu.html#ECU.power_cycle"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.ecu.ECU.power_cycle" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.ecu.ECU.properties">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">properties</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fresh</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.client.UDSRequestConfig" title="gallia.uds.core.client.UDSRequestConfig"><span class="pre">UDSRequestConfig</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../_modules/gallia/uds/ecu.html#ECU.properties"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.ecu.ECU.properties" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.ecu.ECU.read_dtc">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">read_dtc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.client.UDSRequestConfig" title="gallia.uds.core.client.UDSRequestConfig"><span class="pre">UDSRequestConfig</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.NegativeResponse" title="gallia.uds.core.service.NegativeResponse"><span class="pre">NegativeResponse</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.ReportDTCByStatusMaskResponse" title="gallia.uds.core.service.ReportDTCByStatusMaskResponse"><span class="pre">ReportDTCByStatusMaskResponse</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/gallia/uds/ecu.html#ECU.read_dtc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.ecu.ECU.read_dtc" title="Permalink to this definition"></a></dt>
+<dd><p>Read all dtc records from the ecu.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.ecu.ECU.read_session">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">read_session</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.client.UDSRequestConfig" title="gallia.uds.core.client.UDSRequestConfig"><span class="pre">UDSRequestConfig</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="../_modules/gallia/uds/ecu.html#ECU.read_session"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.ecu.ECU.read_session" title="Permalink to this definition"></a></dt>
+<dd><p>Read out current session.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The current session as int.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.ecu.ECU.read_vin">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">read_vin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.client.UDSRequestConfig" title="gallia.uds.core.client.UDSRequestConfig"><span class="pre">UDSRequestConfig</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.NegativeResponse" title="gallia.uds.core.service.NegativeResponse"><span class="pre">NegativeResponse</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.ReadDataByIdentifierResponse" title="gallia.uds.core.service.ReadDataByIdentifierResponse"><span class="pre">ReadDataByIdentifierResponse</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/gallia/uds/ecu.html#ECU.read_vin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.ecu.ECU.read_vin" title="Permalink to this definition"></a></dt>
+<dd><p>Read the VIN of the vehicle</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.ecu.ECU.refresh_state">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">refresh_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reset_state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/uds/ecu.html#ECU.refresh_state"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.ecu.ECU.refresh_state" title="Permalink to this definition"></a></dt>
+<dd><p>Refresh the attributes of the ECU states, if possible.
+By, default, old values are only overwritten in case the corresponding
+information can be requested from the ECU and could be retrieved from a
+positive response from the ECU.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>reset_state</strong> – If True, the ECU state is reset before updating it.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.ecu.ECU.set_session">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">set_session</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.client.UDSRequestConfig" title="gallia.uds.core.client.UDSRequestConfig"><span class="pre">UDSRequestConfig</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.NegativeResponse" title="gallia.uds.core.service.NegativeResponse"><span class="pre">NegativeResponse</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.DiagnosticSessionControlResponse" title="gallia.uds.core.service.DiagnosticSessionControlResponse"><span class="pre">DiagnosticSessionControlResponse</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/gallia/uds/ecu.html#ECU.set_session"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.ecu.ECU.set_session" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.ecu.ECU.set_session_post">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">set_session_post</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.client.UDSRequestConfig" title="gallia.uds.core.client.UDSRequestConfig"><span class="pre">UDSRequestConfig</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/gallia/uds/ecu.html#ECU.set_session_post"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.ecu.ECU.set_session_post" title="Permalink to this definition"></a></dt>
+<dd><p>set_session_post() is called after the diagnostic session control
+pdu was written on the wire. Implement this if there are special
+cleanup routines or sleeping until a certain moment is required.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>uds</strong> – The UDSClient class where this hook is embedded. The caller typically
+calls this function with <cite>self</cite> as the first argument.</p></li>
+<li><p><strong>session</strong> – The desired session identifier.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>True on success, False on error.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.ecu.ECU.set_session_pre">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">set_session_pre</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.client.UDSRequestConfig" title="gallia.uds.core.client.UDSRequestConfig"><span class="pre">UDSRequestConfig</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/gallia/uds/ecu.html#ECU.set_session_pre"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.ecu.ECU.set_session_pre" title="Permalink to this definition"></a></dt>
+<dd><p>set_session_pre() is called before the diagnostic session control
+pdu is written on the wire. Implement this if there are special
+preconditions for a particular session, such as disabling error
+logging.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>uds</strong> – The UDSClient class where this hook is embedded. The caller typically
+calls this function with <cite>self</cite> as the first argument.</p></li>
+<li><p><strong>session</strong> – The desired session identifier.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>True on success, False on error.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.ecu.ECU.transmit_data">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">transmit_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_block_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">4095</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.client.UDSRequestConfig" title="gallia.uds.core.client.UDSRequestConfig"><span class="pre">UDSRequestConfig</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/uds/ecu.html#ECU.transmit_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.ecu.ECU.transmit_data" title="Permalink to this definition"></a></dt>
+<dd><p>transmit_data splits the data to be sent in several blocks of size block_length,
+transfers all of them and concludes the transmission with RequestTransferExit</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.ecu.ECU.update_state">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">update_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSRequest" title="gallia.uds.core.service.UDSRequest"><span class="pre">UDSRequest</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">response</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSResponse" title="gallia.uds.core.service.UDSResponse"><span class="pre">UDSResponse</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/uds/ecu.html#ECU.update_state"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.ecu.ECU.update_state" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.ecu.ECU.wait_for_ecu">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">wait_for_ecu</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/gallia/uds/ecu.html#ECU.wait_for_ecu"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.ecu.ECU.wait_for_ecu" title="Permalink to this definition"></a></dt>
+<dd><p>wait for ecu to be alive again (eg. after reset)
+Wait at most timeout</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.uds.ecu.ECUState">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.uds.ecu.</span></span><span class="sig-name descname"><span class="pre">ECUState</span></span><a class="reference internal" href="../_modules/gallia/uds/ecu.html#ECUState"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.ecu.ECUState" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.ecu.ECUState.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/uds/ecu.html#ECUState.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.ecu.ECUState.reset" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gallia.uds.helpers">
+<span id="gallia-uds-helpers-module"></span><h2>gallia.uds.helpers module<a class="headerlink" href="#module-gallia.uds.helpers" title="Permalink to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="gallia.uds.helpers.as_exception">
+<span class="sig-prename descclassname"><span class="pre">gallia.uds.helpers.</span></span><span class="sig-name descname"><span class="pre">as_exception</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">response</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.NegativeResponse" title="gallia.uds.core.service.NegativeResponse"><span class="pre">NegativeResponse</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.exception.UnexpectedNegativeResponse" title="gallia.uds.core.exception.UnexpectedNegativeResponse"><span class="pre">UnexpectedNegativeResponse</span></a></span></span><a class="reference internal" href="../_modules/gallia/uds/helpers.html#as_exception"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.helpers.as_exception" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gallia.uds.helpers.parse_pdu">
+<span class="sig-prename descclassname"><span class="pre">gallia.uds.helpers.</span></span><span class="sig-name descname"><span class="pre">parse_pdu</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pdu</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSRequest" title="gallia.uds.core.service.UDSRequest"><span class="pre">UDSRequest</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSResponse" title="gallia.uds.core.service.UDSResponse"><span class="pre">UDSResponse</span></a></span></span><a class="reference internal" href="../_modules/gallia/uds/helpers.html#parse_pdu"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.helpers.parse_pdu" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gallia.uds.helpers.raise_for_error">
+<span class="sig-prename descclassname"><span class="pre">gallia.uds.helpers.</span></span><span class="sig-name descname"><span class="pre">raise_for_error</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">response</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSResponse" title="gallia.uds.core.service.UDSResponse"><span class="pre">UDSResponse</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/uds/helpers.html#raise_for_error"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.helpers.raise_for_error" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gallia.uds.helpers.raise_for_mismatch">
+<span class="sig-prename descclassname"><span class="pre">gallia.uds.helpers.</span></span><span class="sig-name descname"><span class="pre">raise_for_mismatch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSRequest" title="gallia.uds.core.service.UDSRequest"><span class="pre">UDSRequest</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">response</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSResponse" title="gallia.uds.core.service.UDSResponse"><span class="pre">UDSResponse</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/uds/helpers.html#raise_for_mismatch"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.helpers.raise_for_mismatch" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gallia.uds.helpers.suggests_identifier_not_supported">
+<span class="sig-prename descclassname"><span class="pre">gallia.uds.helpers.</span></span><span class="sig-name descname"><span class="pre">suggests_identifier_not_supported</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">response</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSResponse" title="gallia.uds.core.service.UDSResponse"><span class="pre">UDSResponse</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.constants.UDSErrorCodes" title="gallia.uds.core.constants.UDSErrorCodes"><span class="pre">UDSErrorCodes</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/gallia/uds/helpers.html#suggests_identifier_not_supported"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.helpers.suggests_identifier_not_supported" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gallia.uds.helpers.suggests_service_not_supported">
+<span class="sig-prename descclassname"><span class="pre">gallia.uds.helpers.</span></span><span class="sig-name descname"><span class="pre">suggests_service_not_supported</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">response</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSResponse" title="gallia.uds.core.service.UDSResponse"><span class="pre">UDSResponse</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.constants.UDSErrorCodes" title="gallia.uds.core.constants.UDSErrorCodes"><span class="pre">UDSErrorCodes</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/gallia/uds/helpers.html#suggests_service_not_supported"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.helpers.suggests_service_not_supported" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gallia.uds.helpers.suggests_sub_function_not_supported">
+<span class="sig-prename descclassname"><span class="pre">gallia.uds.helpers.</span></span><span class="sig-name descname"><span class="pre">suggests_sub_function_not_supported</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">response</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSResponse" title="gallia.uds.core.service.UDSResponse"><span class="pre">UDSResponse</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.constants.UDSErrorCodes" title="gallia.uds.core.constants.UDSErrorCodes"><span class="pre">UDSErrorCodes</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/gallia/uds/helpers.html#suggests_sub_function_not_supported"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.helpers.suggests_sub_function_not_supported" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="module-gallia.uds.nrv">
+<span id="gallia-uds-nrv-module"></span><h2>gallia.uds.nrv module<a class="headerlink" href="#module-gallia.uds.nrv" title="Permalink to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="gallia.uds.nrv.nrv2b_compress_blindly">
+<span class="sig-prename descclassname"><span class="pre">gallia.uds.nrv.</span></span><span class="sig-name descname"><span class="pre">nrv2b_compress_blindly</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">bytes</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bytearray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">buffer_limit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">268435456</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="reference internal" href="../_modules/gallia/uds/nrv.html#nrv2b_compress_blindly"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.nrv.nrv2b_compress_blindly" title="Permalink to this definition"></a></dt>
+<dd><p>Compress NRV data without the need to know the size of the output.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>in_data</strong> – The data to be compressed</p></li>
+<li><p><strong>level</strong> – The compression level, where 1 is the lowest and 10 is the highest compression.</p></li>
+<li><p><strong>buffer_limit</strong> – The maximum number of bytes which can be allocated for the output buffer.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The compressed data.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gallia.uds.nrv.nrv2b_decompress_8">
+<span class="sig-prename descclassname"><span class="pre">gallia.uds.nrv.</span></span><span class="sig-name descname"><span class="pre">nrv2b_decompress_8</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">bytes</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bytearray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="reference internal" href="../_modules/gallia/uds/nrv.html#nrv2b_decompress_8"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.nrv.nrv2b_decompress_8" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gallia.uds.nrv.nrv2b_decompress_8_blindly">
+<span class="sig-prename descclassname"><span class="pre">gallia.uds.nrv.</span></span><span class="sig-name descname"><span class="pre">nrv2b_decompress_8_blindly</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">bytes</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bytearray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">buffer_limit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">268435456</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="reference internal" href="../_modules/gallia/uds/nrv.html#nrv2b_decompress_8_blindly"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.nrv.nrv2b_decompress_8_blindly" title="Permalink to this definition"></a></dt>
+<dd><p>Decompress NRV data without the need to know the size of the output.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>in_data</strong> – The data to be decompressed</p></li>
+<li><p><strong>buffer_limit</strong> – The maximum number of bytes which can be allocated for the output buffer.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The decompressed data.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-gallia.uds.server">
+<span id="gallia-uds-server-module"></span><h2>gallia.uds.server module<a class="headerlink" href="#module-gallia.uds.server" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.uds.server.DBUDSServer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.uds.server.</span></span><span class="sig-name descname"><span class="pre">DBUDSServer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">db_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ecu</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">properties</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gallia/uds/server.html#DBUDSServer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.DBUDSServer" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gallia.uds.server.UDSServer" title="gallia.uds.server.UDSServer"><code class="xref py py-class docutils literal notranslate"><span class="pre">UDSServer</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.DBUDSServer.respond_after_default">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">respond_after_default</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSRequest" title="gallia.uds.core.service.UDSRequest"><span class="pre">UDSRequest</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSResponse" title="gallia.uds.core.service.UDSResponse"><span class="pre">UDSResponse</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#DBUDSServer.respond_after_default"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.DBUDSServer.respond_after_default" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.DBUDSServer.setup">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">setup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#DBUDSServer.setup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.DBUDSServer.setup" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="gallia.uds.server.DBUDSServer.supported_services">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supported_services</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.constants.UDSIsoServices" title="gallia.uds.core.constants.UDSIsoServices"><span class="pre">gallia.uds.core.constants.UDSIsoServices</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#gallia.uds.server.DBUDSServer.supported_services" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.DBUDSServer.teardown">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">teardown</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#DBUDSServer.teardown"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.DBUDSServer.teardown" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.uds.server.ISOTPUDSServerTransport">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.uds.server.</span></span><span class="sig-name descname"><span class="pre">ISOTPUDSServerTransport</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#gallia.uds.server.UDSServer" title="gallia.uds.server.UDSServer"><span class="pre">UDSServer</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.transports.html#gallia.transports.base.TargetURI" title="gallia.transports.base.TargetURI"><span class="pre">TargetURI</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gallia/uds/server.html#ISOTPUDSServerTransport"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.ISOTPUDSServerTransport" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gallia.uds.server.UDSServerTransport" title="gallia.uds.server.UDSServerTransport"><code class="xref py py-class docutils literal notranslate"><span class="pre">UDSServerTransport</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.ISOTPUDSServerTransport.run">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#ISOTPUDSServerTransport.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.ISOTPUDSServerTransport.run" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.uds.server.RNG">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.uds.server.</span></span><span class="sig-name descname"><span class="pre">RNG</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gallia/uds/server.html#RNG"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.RNG" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Random</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.RNG.add_seeds">
+<span class="sig-name descname"><span class="pre">add_seeds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#RNG.add_seeds"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.RNG.add_seeds" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.RNG.random_bool">
+<span class="sig-name descname"><span class="pre">random_bool</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">p_true</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#RNG.random_bool"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.RNG.random_bool" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.RNG.random_payload">
+<span class="sig-name descname"><span class="pre">random_payload</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">min_len</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_len</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#RNG.random_payload"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.RNG.random_payload" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.RNG.set_seeds">
+<span class="sig-name descname"><span class="pre">set_seeds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#RNG.set_seeds"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.RNG.set_seeds" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.uds.server.RNGEcuState">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.uds.server.</span></span><span class="sig-name descname"><span class="pre">RNGEcuState</span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#RNGEcuState"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.RNGEcuState" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gallia.uds.ecu.ECUState" title="gallia.uds.ecu.ECUState"><code class="xref py py-class docutils literal notranslate"><span class="pre">ECUState</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.RNGEcuState.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#RNGEcuState.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.RNGEcuState.reset" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.uds.server.RandomUDSServer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.uds.server.</span></span><span class="sig-name descname"><span class="pre">RandomUDSServer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gallia/uds/server.html#RandomUDSServer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.RandomUDSServer" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gallia.uds.server.UDSServer" title="gallia.uds.server.UDSServer"><code class="xref py py-class docutils literal notranslate"><span class="pre">UDSServer</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.RandomUDSServer.clear_diagnostic_information">
+<span class="sig-name descname"><span class="pre">clear_diagnostic_information</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.ClearDiagnosticInformationRequest" title="gallia.uds.core.service.ClearDiagnosticInformationRequest"><span class="pre">ClearDiagnosticInformationRequest</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSResponse" title="gallia.uds.core.service.UDSResponse"><span class="pre">UDSResponse</span></a></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#RandomUDSServer.clear_diagnostic_information"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.RandomUDSServer.clear_diagnostic_information" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.RandomUDSServer.ecu_reset">
+<span class="sig-name descname"><span class="pre">ecu_reset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.ECUResetRequest" title="gallia.uds.core.service.ECUResetRequest"><span class="pre">ECUResetRequest</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSResponse" title="gallia.uds.core.service.UDSResponse"><span class="pre">UDSResponse</span></a></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#RandomUDSServer.ecu_reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.RandomUDSServer.ecu_reset" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.RandomUDSServer.input_output_control_by_identifier">
+<span class="sig-name descname"><span class="pre">input_output_control_by_identifier</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.InputOutputControlByIdentifierRequest" title="gallia.uds.core.service.InputOutputControlByIdentifierRequest"><span class="pre">InputOutputControlByIdentifierRequest</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSResponse" title="gallia.uds.core.service.UDSResponse"><span class="pre">UDSResponse</span></a></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#RandomUDSServer.input_output_control_by_identifier"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.RandomUDSServer.input_output_control_by_identifier" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.RandomUDSServer.randomize">
+<span class="sig-name descname"><span class="pre">randomize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#RandomUDSServer.randomize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.RandomUDSServer.randomize" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.RandomUDSServer.read_data_by_identifier">
+<span class="sig-name descname"><span class="pre">read_data_by_identifier</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.ReadDataByIdentifierRequest" title="gallia.uds.core.service.ReadDataByIdentifierRequest"><span class="pre">ReadDataByIdentifierRequest</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSResponse" title="gallia.uds.core.service.UDSResponse"><span class="pre">UDSResponse</span></a></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#RandomUDSServer.read_data_by_identifier"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.RandomUDSServer.read_data_by_identifier" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.RandomUDSServer.read_dtc_information">
+<span class="sig-name descname"><span class="pre">read_dtc_information</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSRequest" title="gallia.uds.core.service.UDSRequest"><span class="pre">UDSRequest</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSResponse" title="gallia.uds.core.service.UDSResponse"><span class="pre">UDSResponse</span></a></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#RandomUDSServer.read_dtc_information"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.RandomUDSServer.read_dtc_information" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.RandomUDSServer.respond_after_default">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">respond_after_default</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSRequest" title="gallia.uds.core.service.UDSRequest"><span class="pre">UDSRequest</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSResponse" title="gallia.uds.core.service.UDSResponse"><span class="pre">UDSResponse</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#RandomUDSServer.respond_after_default"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.RandomUDSServer.respond_after_default" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.RandomUDSServer.routine_control">
+<span class="sig-name descname"><span class="pre">routine_control</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.RoutineControlRequest" title="gallia.uds.core.service.RoutineControlRequest"><span class="pre">RoutineControlRequest</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSResponse" title="gallia.uds.core.service.UDSResponse"><span class="pre">UDSResponse</span></a></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#RandomUDSServer.routine_control"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.RandomUDSServer.routine_control" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.RandomUDSServer.security_access">
+<span class="sig-name descname"><span class="pre">security_access</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">_SecurityAccessRequest</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSResponse" title="gallia.uds.core.service.UDSResponse"><span class="pre">UDSResponse</span></a></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#RandomUDSServer.security_access"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.RandomUDSServer.security_access" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.RandomUDSServer.setup">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">setup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#RandomUDSServer.setup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.RandomUDSServer.setup" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.RandomUDSServer.stateful_rng">
+<span class="sig-name descname"><span class="pre">stateful_rng</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#gallia.uds.server.RNG" title="gallia.uds.server.RNG"><span class="pre">RNG</span></a></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#RandomUDSServer.stateful_rng"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.RandomUDSServer.stateful_rng" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="gallia.uds.server.RandomUDSServer.supported_services">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supported_services</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.constants.UDSIsoServices" title="gallia.uds.core.constants.UDSIsoServices"><span class="pre">gallia.uds.core.constants.UDSIsoServices</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#gallia.uds.server.RandomUDSServer.supported_services" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.RandomUDSServer.update_state">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">update_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSRequest" title="gallia.uds.core.service.UDSRequest"><span class="pre">UDSRequest</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">response</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSResponse" title="gallia.uds.core.service.UDSResponse"><span class="pre">UDSResponse</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#RandomUDSServer.update_state"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.RandomUDSServer.update_state" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.RandomUDSServer.write_data_by_identifier">
+<span class="sig-name descname"><span class="pre">write_data_by_identifier</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.WriteDataByIdentifierRequest" title="gallia.uds.core.service.WriteDataByIdentifierRequest"><span class="pre">WriteDataByIdentifierRequest</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSResponse" title="gallia.uds.core.service.UDSResponse"><span class="pre">UDSResponse</span></a></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#RandomUDSServer.write_data_by_identifier"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.RandomUDSServer.write_data_by_identifier" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.uds.server.TCPUDSServerTransport">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.uds.server.</span></span><span class="sig-name descname"><span class="pre">TCPUDSServerTransport</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#gallia.uds.server.UDSServer" title="gallia.uds.server.UDSServer"><span class="pre">UDSServer</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.transports.html#gallia.transports.base.TargetURI" title="gallia.transports.base.TargetURI"><span class="pre">TargetURI</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gallia/uds/server.html#TCPUDSServerTransport"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.TCPUDSServerTransport" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#gallia.uds.server.UDSServerTransport" title="gallia.uds.server.UDSServerTransport"><code class="xref py py-class docutils literal notranslate"><span class="pre">UDSServerTransport</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.TCPUDSServerTransport.handle_client">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">handle_client</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reader</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">StreamReader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">writer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">StreamWriter</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#TCPUDSServerTransport.handle_client"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.TCPUDSServerTransport.handle_client" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.TCPUDSServerTransport.run">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#TCPUDSServerTransport.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.TCPUDSServerTransport.run" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.uds.server.UDSServer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.uds.server.</span></span><span class="sig-name descname"><span class="pre">UDSServer</span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#UDSServer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.UDSServer" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.UDSServer.default_response_if_incorrect_format">
+<span class="sig-name descname"><span class="pre">default_response_if_incorrect_format</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSRequest" title="gallia.uds.core.service.UDSRequest"><span class="pre">UDSRequest</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.NegativeResponse" title="gallia.uds.core.service.NegativeResponse"><span class="pre">NegativeResponse</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#UDSServer.default_response_if_incorrect_format"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.UDSServer.default_response_if_incorrect_format" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.UDSServer.default_response_if_missing_sub_function">
+<span class="sig-name descname"><span class="pre">default_response_if_missing_sub_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSRequest" title="gallia.uds.core.service.UDSRequest"><span class="pre">UDSRequest</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.NegativeResponse" title="gallia.uds.core.service.NegativeResponse"><span class="pre">NegativeResponse</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#UDSServer.default_response_if_missing_sub_function"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.UDSServer.default_response_if_missing_sub_function" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.UDSServer.default_response_if_none">
+<span class="sig-name descname"><span class="pre">default_response_if_none</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSRequest" title="gallia.uds.core.service.UDSRequest"><span class="pre">UDSRequest</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.NegativeResponse" title="gallia.uds.core.service.NegativeResponse"><span class="pre">NegativeResponse</span></a></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#UDSServer.default_response_if_none"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.UDSServer.default_response_if_none" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.UDSServer.default_response_if_service_not_supported">
+<span class="sig-name descname"><span class="pre">default_response_if_service_not_supported</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSRequest" title="gallia.uds.core.service.UDSRequest"><span class="pre">UDSRequest</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.NegativeResponse" title="gallia.uds.core.service.NegativeResponse"><span class="pre">NegativeResponse</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#UDSServer.default_response_if_service_not_supported"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.UDSServer.default_response_if_service_not_supported" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.UDSServer.default_response_if_session_change">
+<span class="sig-name descname"><span class="pre">default_response_if_session_change</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSRequest" title="gallia.uds.core.service.UDSRequest"><span class="pre">UDSRequest</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.NegativeResponse" title="gallia.uds.core.service.NegativeResponse"><span class="pre">NegativeResponse</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.DiagnosticSessionControlResponse" title="gallia.uds.core.service.DiagnosticSessionControlResponse"><span class="pre">DiagnosticSessionControlResponse</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#UDSServer.default_response_if_session_change"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.UDSServer.default_response_if_session_change" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.UDSServer.default_response_if_session_read">
+<span class="sig-name descname"><span class="pre">default_response_if_session_read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSRequest" title="gallia.uds.core.service.UDSRequest"><span class="pre">UDSRequest</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.ReadDataByIdentifierResponse" title="gallia.uds.core.service.ReadDataByIdentifierResponse"><span class="pre">ReadDataByIdentifierResponse</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#UDSServer.default_response_if_session_read"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.UDSServer.default_response_if_session_read" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.UDSServer.default_response_if_sub_function_not_supported">
+<span class="sig-name descname"><span class="pre">default_response_if_sub_function_not_supported</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSRequest" title="gallia.uds.core.service.UDSRequest"><span class="pre">UDSRequest</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.NegativeResponse" title="gallia.uds.core.service.NegativeResponse"><span class="pre">NegativeResponse</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#UDSServer.default_response_if_sub_function_not_supported"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.UDSServer.default_response_if_sub_function_not_supported" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.UDSServer.default_response_if_suppress">
+<span class="sig-name descname"><span class="pre">default_response_if_suppress</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSRequest" title="gallia.uds.core.service.UDSRequest"><span class="pre">UDSRequest</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">response</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSResponse" title="gallia.uds.core.service.UDSResponse"><span class="pre">UDSResponse</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSResponse" title="gallia.uds.core.service.UDSResponse"><span class="pre">UDSResponse</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#UDSServer.default_response_if_suppress"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.UDSServer.default_response_if_suppress" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.UDSServer.default_response_if_tester_present">
+<span class="sig-name descname"><span class="pre">default_response_if_tester_present</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSRequest" title="gallia.uds.core.service.UDSRequest"><span class="pre">UDSRequest</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.TesterPresentResponse" title="gallia.uds.core.service.TesterPresentResponse"><span class="pre">TesterPresentResponse</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#UDSServer.default_response_if_tester_present"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.UDSServer.default_response_if_tester_present" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.UDSServer.respond">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">respond</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSRequest" title="gallia.uds.core.service.UDSRequest"><span class="pre">UDSRequest</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSResponse" title="gallia.uds.core.service.UDSResponse"><span class="pre">UDSResponse</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#UDSServer.respond"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.UDSServer.respond" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.UDSServer.respond_after_default">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">respond_after_default</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSRequest" title="gallia.uds.core.service.UDSRequest"><span class="pre">UDSRequest</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSResponse" title="gallia.uds.core.service.UDSResponse"><span class="pre">UDSResponse</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#UDSServer.respond_after_default"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.UDSServer.respond_after_default" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.UDSServer.respond_without_state_change">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">respond_without_state_change</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSRequest" title="gallia.uds.core.service.UDSRequest"><span class="pre">UDSRequest</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSResponse" title="gallia.uds.core.service.UDSResponse"><span class="pre">UDSResponse</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#UDSServer.respond_without_state_change"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.UDSServer.respond_without_state_change" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.UDSServer.setup">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">setup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#UDSServer.setup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.UDSServer.setup" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="gallia.uds.server.UDSServer.supported_services">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supported_services</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.constants.UDSIsoServices" title="gallia.uds.core.constants.UDSIsoServices"><span class="pre">gallia.uds.core.constants.UDSIsoServices</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#gallia.uds.server.UDSServer.supported_services" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.UDSServer.teardown">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">teardown</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#UDSServer.teardown"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.UDSServer.teardown" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.UDSServer.update_state">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">update_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSRequest" title="gallia.uds.core.service.UDSRequest"><span class="pre">UDSRequest</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">response</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.uds.core.html#gallia.uds.core.service.UDSResponse" title="gallia.uds.core.service.UDSResponse"><span class="pre">UDSResponse</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#UDSServer.update_state"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.UDSServer.update_state" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gallia.uds.server.UDSServerTransport">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gallia.uds.server.</span></span><span class="sig-name descname"><span class="pre">UDSServerTransport</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#gallia.uds.server.UDSServer" title="gallia.uds.server.UDSServer"><span class="pre">UDSServer</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="gallia.transports.html#gallia.transports.base.TargetURI" title="gallia.transports.base.TargetURI"><span class="pre">TargetURI</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/gallia/uds/server.html#UDSServerTransport"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.UDSServerTransport" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.UDSServerTransport.handle_request">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">handle_request</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request_pdu</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#UDSServerTransport.handle_request"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.UDSServerTransport.handle_request" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gallia.uds.server.UDSServerTransport.run">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/gallia/uds/server.html#UDSServerTransport.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gallia.uds.server.UDSServerTransport.run" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gallia.uds">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-gallia.uds" title="Permalink to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="gallia.transports.html" class="btn btn-neutral float-left" title="gallia.transports package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="gallia.uds.core.html" class="btn btn-neutral float-right" title="gallia.uds.core package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
