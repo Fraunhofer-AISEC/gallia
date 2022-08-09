@@ -164,6 +164,11 @@ class IterateSessions(UDSScanner):
                                 "Attempting to reconnect…"
                             )
                             await self.ecu.reconnect()
+                            if not self.ecu.check_and_set_session(session):
+                                self.logger.log_error(
+                                    f"Could not change to session 0x{session:02x} after reconnect; exit"
+                                )
+                                sys.exit(1)
 
                     try:
                         resp = await self.ecu.set_session(0x01)
