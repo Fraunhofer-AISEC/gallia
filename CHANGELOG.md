@@ -17,6 +17,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * Add a payload fuzzer scanner (#154)
 
+## 1.0.3 (2022-06-30)
+
+### Fixed
+
+* Fix a crash when the DoIP gateway denies the UDS request (#196)
+* Fix the DoIP discovery scanner creating invalid URLs (source and targed where confused) (#196)
+* Readd the removed return value to `wait_for_ecu()` (#198)
+* vECU: Fix state change comparison and reset security access on session change (#190)
+
+## 1.0.2 (2022-06-30)
+
+### Added
+
+* Add a `--ecu-reset` flag enabling triggering a best effort ECUReset on scanner startup (#189)
+
+### Fixed
+
+* Fix wrong constants in enums, found by applying `@unique` treewide (#193)
+* Let `wait_for_ecu()`, and thus `--ping`, recognize `--timeout` (#174)
+
 ## 1.0.1 (2022-06-27)
 
 ### Changed
