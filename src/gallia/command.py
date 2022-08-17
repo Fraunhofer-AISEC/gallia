@@ -5,9 +5,9 @@
 import argparse
 import asyncio
 import json
+import os
 import signal
 import sys
-import time
 import traceback
 from abc import ABC, abstractmethod
 from argparse import ArgumentParser, Namespace
@@ -17,7 +17,6 @@ from datetime import datetime, timezone
 from enum import Enum, IntEnum, unique
 from importlib.metadata import EntryPoint, entry_points, version
 from pathlib import Path
-from secrets import token_urlsafe
 from tempfile import gettempdir
 from typing import Any, Optional, cast
 
@@ -88,6 +87,85 @@ def load_ecu(vendor: str) -> type[ECU]:
                 return entry_point.load()
 
     raise ValueError(f"no such OEM: '{vendor}'")
+
+
+class ArtifactsDirMixin:
+    COMMAND: str
+    CATEGORY: str
+    SUBCATEGORY: Optional[str]
+
+    def _dump_environment(self, path: Path) -> None:
+        environ = cast(dict[str, str], os.environ)
+        data = [f"{k}={v}" for k, v in environ.items()]
+        path.write_text("\n".join(data) + "\n")
+
+    def _add_latest_link(self, path: Path) -> None:
+        dirs = list(path.glob("run-*"))
+        dirs.sort(key=lambda x: x.name)
+
+        latest_dir = dirs[-1].relative_to(path)
+
+        symlink = path.joinpath("LATEST")
+        symlink.unlink(missing_ok=True)
+        symlink.symlink_to(latest_dir)
+
+    def prepare_artifactsdir(
+        self,
+        base_dir: Optional[Path] = None,
+        force_path: Optional[Path] = None,
+    ) -> Path:
+        if force_path is not None:
+            if force_path.is_dir():
+                return force_path
+
+            force_path.mkdir(parents=True)
+            return force_path
+
+        if base_dir is not None:
+            _command_dir = self.CATEGORY
+            if self.SUBCATEGORY is not None:
+                _command_dir += f"_{self.SUBCATEGORY}"
+            _command_dir += f"_{self.COMMAND}"
+            command_dir = base_dir.joinpath(_command_dir)
+
+            _run_dir = f"run-{datetime.now().strftime('%Y%m%d-%H%M%S.%f')}"
+            artifacts_dir = command_dir.joinpath(_run_dir).absolute()
+            artifacts_dir.mkdir(parents=True)
+
+            self._dump_environment(artifacts_dir.joinpath("ENV"))
+            self._add_latest_link(command_dir)
+
+            return artifacts_dir.absolute()
+
+        raise ValueError("base_dir or force_path must be different from None")
+
+    def add_artifactsdir_argument(
+        self,
+        parser: ArgumentParser,
+        config: dict[str, Any],
+        group: Optional[Any] = None,
+    ) -> None:
+        if group is None:
+            group = parser.add_argument_group("generic arguments")
+
+        _mutex_group = group.add_mutually_exclusive_group()
+        _mutex_group.add_argument(
+            "--artifacts-dir",
+            default=config.get("gallia.scanner.artifacts_dir"),
+            type=Path,
+            metavar="DIR",
+            help="Folder for artifacts",
+        )
+        _mutex_group.add_argument(
+            "--artifacts-base",
+            default=config.get(
+                "gallia.scanner.artifacts_base",
+                Path(gettempdir()).joinpath("gallia"),
+            ),
+            type=Path,
+            metavar="DIR",
+            help="Base directory for artifacts",
+        )
 
 
 class BaseCommand(ABC):
@@ -185,7 +263,7 @@ class AsyncScript(BaseCommand, ABC):
             return 128 + signal.SIGINT
 
 
-class Scanner(BaseCommand, ABC):
+class Scanner(BaseCommand, ArtifactsDirMixin, ABC):
     """Scanner is a base class for all scanning related commands.
     A scanner has the following properties:
 
@@ -239,27 +317,20 @@ class Scanner(BaseCommand, ABC):
     def add_class_parser(self) -> None:
         super().add_class_parser()
 
-        group = self.parser.add_argument_group("generic gallia arguments")
-
-        _mutex_group = group.add_mutually_exclusive_group()
-        _mutex_group.add_argument(
-            "--artifacts-dir",
-            default=self.config.get("gallia.scanner.artifacts_dir"),
-            type=Path,
-            help="Folder for artifacts",
-        )
-        _mutex_group.add_argument(
-            "--artifacts-base",
-            default=self.config.get("gallia.scanner.artifacts_base"),
-            type=Path,
-            help="Base directory for artifacts",
-        )
+        group = self.parser.add_argument_group("generic arguments")
+        self.add_artifactsdir_argument(self.parser, self.config, group)
 
         group.add_argument(
             "--db",
             default=self.get_config_value("gallia.scanner.db"),
             type=Path,
             help="Path to sqlite3 database",
+        )
+        group.add_argument(
+            "--dumpcap",
+            action=argparse.BooleanOptionalAction,
+            default=self.get_config_value("gallia.scanner.dumpcap", default=True),
+            help="Enable/Disable creating a pcap file",
         )
 
         group = self.parser.add_argument_group("transport mode related arguments")
@@ -290,27 +361,6 @@ class Scanner(BaseCommand, ABC):
                 "optional argument specifies the sleep time in secs"
             ),
         )
-        group.add_argument(
-            "--dumpcap",
-            action=argparse.BooleanOptionalAction,
-            default=self.get_config_value("gallia.scanner.dumpcap", default=True),
-            help="Enable/Disable creating a pcap file",
-        )
-
-    def prepare_artifactsdir(self, path: Optional[Path]) -> Path:
-        if path is None:
-            base = Path(gettempdir())
-            p = base.joinpath(
-                f'{self.id}_{time.strftime("%Y%m%d-%H%M%S")}_{token_urlsafe(6)}'
-            )
-            p.mkdir(parents=True)
-            return p
-
-        if path.is_dir():
-            return path
-
-        self.logger.log_error(f"Data directory {path} is not an existing directory.")
-        sys.exit(1)
 
     async def _run(self, args: Namespace) -> int:
         exit_code: int = ExitCodes.SUCCESS
@@ -376,7 +426,9 @@ class Scanner(BaseCommand, ABC):
                     )
 
     def run(self, args: Namespace) -> int:
-        self.artifacts_dir = self.prepare_artifactsdir(args.artifacts_dir)
+        self.artifacts_dir = self.prepare_artifactsdir(
+            args.artifacts_base, args.artifacts_dir
+        )
         self.logger.log_preamble(f"Storing artifacts at {self.artifacts_dir}")
 
         argv = deepcopy(sys.argv)
