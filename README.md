@@ -27,7 +27,7 @@ We do not take any responsibility for damage caused by the usage of this tool.
 See the [setup instructions](https://fraunhofer-aisec.github.io/gallia/setup.html).
 
 ```
-$ gallia simple-dtc --target "isotp://can0?src_addr=0x123&dst_addr=0x312&tx_padding=0xaa&rx_padding=0xaa" read
+$ gallia primitive uds dtc --target "isotp://can0?src_addr=0x123&dst_addr=0x312&tx_padding=0xaa&rx_padding=0xaa" read
 ```
 
 For specifying the `--target` argument see the [transports documentation](https://fraunhofer-aisec.github.io/gallia/transports.html).
