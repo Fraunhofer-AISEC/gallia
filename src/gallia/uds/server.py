@@ -7,7 +7,7 @@ import json
 import random
 import traceback
 from abc import ABC, abstractmethod
-from binascii import b2a_hex, unhexlify
+from binascii import hexlify, unhexlify
 from copy import copy
 from pathlib import Path
 from time import time
@@ -884,7 +884,7 @@ class TCPUDSServerTransport(UDSServerTransport):
                 response_times.append(response_time)
 
                 if uds_response_raw is not None:
-                    writer.write(b2a_hex(uds_response_raw) + b"\n")
+                    writer.write(hexlify(uds_response_raw) + b"\n")
                     await writer.drain()
             except Exception:
                 traceback.print_exc()
