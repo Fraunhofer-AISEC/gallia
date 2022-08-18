@@ -885,6 +885,7 @@ class TCPUDSServerTransport(UDSServerTransport):
 
                 if uds_response_raw is not None:
                     writer.write(b2a_hex(uds_response_raw) + b"\n")
+                    await writer.drain()
             except Exception:
                 traceback.print_exc()
 
