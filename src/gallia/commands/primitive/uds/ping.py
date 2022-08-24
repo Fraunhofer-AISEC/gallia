@@ -41,7 +41,7 @@ class PingPrimitive(UDSScanner):
     async def main(self, args: Namespace) -> None:
         resp = await self.ecu.set_session(args.session)
         if isinstance(resp, NegativeResponse):
-            self.logger.log_error(f"Could not change to requested session: {resp}")
+            self.logger.error(f"Could not change to requested session: {resp}")
             sys.exit(1)
 
         i = 1
@@ -50,7 +50,7 @@ class PingPrimitive(UDSScanner):
                 break
             ret = await self.ecu.ping()
             if isinstance(ret, NegativeResponse):
-                self.logger.log_warning(ret)
-            self.logger.log_summary("ECU is alive!")
+                self.logger.warning(ret)
+            self.logger.result("ECU is alive!")
             await asyncio.sleep(args.interval)
             i += 1

@@ -3,17 +3,16 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import ipaddress
+import logging
 import re
 from argparse import Action, ArgumentError, ArgumentParser, Namespace
 from enum import Enum
 from pathlib import Path
-from sys import stdout
 from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence, Union
 from urllib.parse import urlparse
 
 import aiofiles
 
-from gallia.penlog import Logger
 from gallia.uds.core.service import NegativeResponse
 from gallia.uds.core.utils import bytes_repr, int_repr
 
@@ -168,7 +167,6 @@ class ParseSkips(Action):
 
 
 async def catch_and_log_exception(
-    logger: Logger,
     func: Callable,
     *args: Any,
     **kwargs: Any,
@@ -183,31 +181,7 @@ async def catch_and_log_exception(
     try:
         return await func(*args, **kwargs)
     except Exception as e:
-        logger.log_error(f"func {func.__name__} failed: {repr(e)}")
-
-
-class ANSIEscapes:
-    if stdout.isatty():
-        BOLD = "\033[1m"
-        ITALIC = "\033[3m"
-        UNDERSCORE = "\033[4m"
-        BLINK = "\033[5m"
-        CROSSED = "\033[9m"
-
-        BLACK = "\033[90m"
-        RED = "\033[91m"
-        GREEN = "\033[92m"
-        YELLOW = "\033[93m"
-        BLUE = "\033[94m"
-        MAGENTA = "\033[95m"
-        CYAN = "\033[96m"
-        WHITE = "\033[97m"
-
-        RESET = "\033[0m"
-    else:
-        BOLD = ITALIC = UNDERSCORE = BLINK = CROSSED = ""
-        BLACK = RED = GREEN = YELLOW = BLUE = MAGENTA = CYAN = WHITE = ""
-        RESET = ""
+        logging.error(f"func {func.__name__} failed: {repr(e)}")
 
 
 async def write_target_list(

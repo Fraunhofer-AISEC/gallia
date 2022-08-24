@@ -97,26 +97,26 @@ class PDUFuzzer(UDSScanner):
 
         try:
             can_msgs: dict[int, bytes] = {}
-            self.logger.log_debug("Started observe messages task")
+            self.logger.debug("Started observe messages task")
             while True:
                 try:
                     can_id, msg = await transport.recvfrom(timeout=1)
                     if can_id in can_msgs:
                         if msg != can_msgs[can_id]:
-                            self.logger.log_summary(
+                            self.logger.result(
                                 f"Message for {can_id:03x} changed to {msg.hex()}"
                             )
                             can_msgs[can_id] = msg
                     else:
                         can_msgs[can_id] = msg
-                        self.logger.log_summary(
+                        self.logger.result(
                             f"Observed new message from {can_id:03x}: {msg.hex()}"
                         )
                 except asyncio.TimeoutError:
                     continue
 
         except asyncio.CancelledError:
-            self.logger.log_debug("Can message observer task cancelled")
+            self.logger.debug("Can message observer task cancelled")
 
     async def main(self, args: Namespace) -> None:
         if args.observe_can_ids:
@@ -124,7 +124,7 @@ class PDUFuzzer(UDSScanner):
                 self.observe_can_messages(args.observe_can_ids, args)
             )
 
-        self.logger.log_info(f"testing sessions {args.sessions}")
+        self.logger.info(f"testing sessions {args.sessions}")
 
         for did in args.dids:
             if args.serviceid == UDSIsoServices.RoutineControl:
@@ -132,15 +132,15 @@ class PDUFuzzer(UDSScanner):
             elif args.serviceid == UDSIsoServices.WriteDataByIdentifier:
                 pdu = bytes([args.serviceid, did >> 8, did & 0xFF])
             for session in args.sessions:
-                self.logger.log_notice(f"Switching to session 0x{session:02x}")
+                self.logger.notice(f"Switching to session 0x{session:02x}")
                 resp: UDSResponse = await self.ecu.set_session(session)
                 if isinstance(resp, NegativeResponse):
-                    self.logger.log_warning(
+                    self.logger.warning(
                         f"Switching to session 0x{session:02x} failed: {resp}"
                     )
                     continue
 
-                self.logger.log_summary(f"Starting scan in session: 0x{session:02x}")
+                self.logger.result(f"Starting scan in session: 0x{session:02x}")
                 positive_DIDs = 0
                 negative_responses: dict[UDSErrorCodes, int] = {}
                 timeout_DIDs = 0
@@ -157,46 +157,46 @@ class PDUFuzzer(UDSScanner):
 
                         if isinstance(resp, NegativeResponse):
                             if not suggests_identifier_not_supported(resp):
-                                self.logger.log_summary(f"0x{did:0x}: {resp}")
+                                self.logger.result(f"0x{did:0x}: {resp}")
 
                             else:
-                                self.logger.log_info(f"0x{did:0x}: {resp}")
+                                self.logger.info(f"0x{did:0x}: {resp}")
                             if resp.response_code in negative_responses:
                                 negative_responses[resp.response_code] += 1
                             else:
                                 negative_responses[resp.response_code] = 1
                         else:
-                            self.logger.log_summary(f"0x{did:0x}: {resp}")
+                            self.logger.result(f"0x{did:0x}: {resp}")
                             positive_DIDs += 1
 
                     except asyncio.TimeoutError:
-                        self.logger.log_warning(f"0x{did :0x}: Retries exceeded")
+                        self.logger.warning(f"0x{did :0x}: Retries exceeded")
                         timeout_DIDs += 1
                     except IllegalResponse as e:
-                        self.logger.log_warning(f"{repr(e)}")
+                        self.logger.warning(f"{repr(e)}")
                         illegal_resp += 1
                     # Temporary patch: Exception handler is deleted when it goes productive
                     except BrokenPipeError:
-                        self.logger.log_warning(
+                        self.logger.warning(
                             "isotp flow control frame missing. Reconnecting…"
                         )
                         flow_control_miss += 1
                         await self.ecu.reconnect()
 
-                self.logger.log_summary(f"Scan in session 0x{session:0x} is complete!")
+                self.logger.result(f"Scan in session 0x{session:0x} is complete!")
 
                 for k, v in negative_responses.items():
-                    self.logger.log_summary(f"{k.name}: {v}")
+                    self.logger.result(f"{k.name}: {v}")
 
-                self.logger.log_summary(f"Positive replies: {positive_DIDs}")
+                self.logger.result(f"Positive replies: {positive_DIDs}")
 
-                self.logger.log_summary(f"Timeouts: {timeout_DIDs}")
-                self.logger.log_summary(f"Illegal replies: {illegal_resp}")
-                self.logger.log_summary(
+                self.logger.result(f"Timeouts: {timeout_DIDs}")
+                self.logger.result(f"Illegal replies: {illegal_resp}")
+                self.logger.result(
                     f"Flow control frames missing: {flow_control_miss}"
                 )
 
-                self.logger.log_info(f"Leaving session 0x{session:02x} via hook")
+                self.logger.info(f"Leaving session 0x{session:02x} via hook")
                 await self.ecu.leave_session(session)
 
         if args.observe_can_ids:

@@ -91,12 +91,12 @@ class DTCPrimitive(UDSScanner):
 
         if isinstance(ecu_response, NegativeResponse):
             if ecu_response.response_code == UDSErrorCodes.responseTooLong:
-                self.logger.log_error(
+                self.logger.error(
                     f"There are too many codes for (sub)mask {mask}. Consider setting --mask "
                     f"with a parameter that excludes one or more of the corresponding bits."
                 )
                 if split:
-                    self.logger.log_warning(
+                    self.logger.warning(
                         "Trying to fetch the error codes iteratively."
                     )
 
@@ -104,12 +104,12 @@ class DTCPrimitive(UDSScanner):
                         sub_mask = mask & 2**i
 
                         if sub_mask > 0:
-                            self.logger.log_info(
+                            self.logger.info(
                                 f"Trying to fetch with mask {g_repr(sub_mask)}"
                             )
                             dtcs.update(await self.fetch_error_codes(sub_mask, False))
             else:
-                self.logger.log_critical(
+                self.logger.critical(
                     f"Could not fetch error codes: {ecu_response}; exiting…"
                 )
                 sys.exit(1)
@@ -135,25 +135,25 @@ class DTCPrimitive(UDSScanner):
 
             # if any kind of test failure
             if error_state & 0xAF:
-                self.logger.log_warning(raw_output)
+                self.logger.warning(raw_output)
                 failed_dtcs.append(table_output)
             # if not failed but also not completed yet (i.e. not yet in this cycle or since last clear)
             elif error_state & 0x50:
-                self.logger.log_summary(raw_output)
+                self.logger.result(raw_output)
                 uncompleted_dtcs.append(table_output)
 
         if args.show_legend:
-            self.logger.log_summary("")
+            self.logger.result("")
             self.show_bit_legend()
 
         if args.show_failed:
-            self.logger.log_summary("")
-            self.logger.log_summary("Failed codes:")
+            self.logger.result("")
+            self.logger.result("Failed codes:")
             self.show_summary(failed_dtcs)
 
         if args.show_uncompleted:
-            self.logger.log_summary("")
-            self.logger.log_summary("Uncompleted codes:")
+            self.logger.result("")
+            self.logger.result("Uncompleted codes:")
             self.show_summary(uncompleted_dtcs)
 
     def show_bit_legend(self) -> None:
@@ -171,7 +171,7 @@ class DTCPrimitive(UDSScanner):
         for line in (
             tabulate([[d] for d in bit_descriptions], headers=["bit descriptions"])
         ).splitlines():
-            self.logger.log_summary(line)
+            self.logger.result(line)
 
     def show_summary(self, dtcs: list[list[str]]) -> None:
         dtcs.sort()
@@ -190,7 +190,7 @@ class DTCPrimitive(UDSScanner):
         ]
 
         for line in tabulate(dtcs, headers=header, tablefmt="fancy_grid").splitlines():
-            self.logger.log_summary(line)
+            self.logger.result(line)
 
     async def clear(self, args: Namespace) -> None:
         group_of_dtc: int = args.group_of_dtc
@@ -199,16 +199,16 @@ class DTCPrimitive(UDSScanner):
         max_group_of_dtc = 0xFFFFFF
 
         if not min_group_of_dtc <= group_of_dtc <= max_group_of_dtc:
-            self.logger.log_error(
+            self.logger.error(
                 f"The parameter group_of_dtc must be in the range {g_repr(min_group_of_dtc)}-{g_repr(max_group_of_dtc)}"
             )
 
         resp = await self.ecu.clear_diagnostic_information(group_of_dtc)
 
         if isinstance(resp, NegativeResponse):
-            self.logger.log_error(resp)
+            self.logger.error(resp)
         else:
-            self.logger.log_summary("Success")
+            self.logger.result("Success")
 
     async def control(self, args: Namespace) -> None:
         if args.stop:
@@ -226,5 +226,5 @@ class DTCPrimitive(UDSScanner):
         elif args.cmd == "read":
             await self.read(args)
         else:
-            self.logger.log_critical("Unhandled command")
+            self.logger.critical("Unhandled command")
             sys.exit(1)

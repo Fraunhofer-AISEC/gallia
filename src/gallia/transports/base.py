@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Callable, Optional
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
-from gallia.penlog import Logger
+from gallia.log import get_logger
 from gallia.utils import join_host_port
 
 
@@ -104,7 +104,7 @@ class BaseTransport(ABC):
 
         self._args: dict[str, Any] = {}
         self.mutex = asyncio.Lock()
-        self.logger = Logger(self.SCHEME, flush=True)
+        self.logger = get_logger(self.SCHEME)
         self.target = target
         self.parse_args()
 
@@ -135,10 +135,10 @@ class BaseTransport(ABC):
         # Parse the arguments according to the spec.
         for k, v in self.target.qs.items():
             if k not in self.SPEC:
-                self.logger.log_warning(f"ignoring unknown argument: {k}:{v}")
+                self.logger.warning(f"ignoring unknown argument: {k}:{v}")
                 continue
 
-            self.logger.log_debug(f"got {k}:{v}")
+            self.logger.debug(f"got {k}:{v}")
             parse_func = self.SPEC[k][0]
             # We do not support arg lists.
             parsed_v = parse_func(v[0])

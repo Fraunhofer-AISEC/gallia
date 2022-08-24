@@ -17,7 +17,7 @@ class SimpleTestXCP(Scanner):
         await transport.connect(None)
         service = XCPService(transport)
 
-        await catch_and_log_exception(self.logger, service.connect)
-        await catch_and_log_exception(self.logger, service.get_status)
-        await catch_and_log_exception(self.logger, service.get_comm_mode_info)
-        await catch_and_log_exception(self.logger, service.disconnect)
+        await catch_and_log_exception(service.connect)
+        await catch_and_log_exception(service.get_status)
+        await catch_and_log_exception(service.get_comm_mode_info)
+        await catch_and_log_exception(service.disconnect)
