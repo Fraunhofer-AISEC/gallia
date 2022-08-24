@@ -6,6 +6,7 @@ import argparse
 import asyncio
 import json
 import os
+import logging
 import signal
 import sys
 import traceback
@@ -23,8 +24,8 @@ from typing import Any, Optional, cast
 import aiofiles
 
 from gallia.db.db_handler import DBHandler
+from gallia.log import get_logger, setup_logging
 from gallia.penlab import Dumpcap, PowerSupply, PowerSupplyURI
-from gallia.penlog import Logger
 from gallia.transports.base import BaseTransport, TargetURI
 from gallia.transports.can import ISOTPTransport, RawCANTransport
 from gallia.transports.doip import DoIPTransport
@@ -89,10 +90,96 @@ def load_ecu(vendor: str) -> type[ECU]:
     raise ValueError(f"no such OEM: '{vendor}'")
 
 
-class ArtifactsDirMixin:
+class BaseCommand(ABC):
+    """GalliaBase is a baseclass for all gallia commands.
+    In order to register cli arguments:
+
+    - `add_class_parser()` can be overwritten to create
+       e.g. scanner related arguments shared by all scanners
+    - `add_parser()` can be overwritten to create specific
+      arguments for a specific scanner.
+
+    The main entry_point is `run()`.
+    """
+
     COMMAND: str
     CATEGORY: str
     SUBCATEGORY: Optional[str]
+    SHORT_HELP: str
+    EPILOG: Optional[str] = None
+    ARTIFACTSDIR: bool = False
+
+    def __init__(self, parser: ArgumentParser, config: dict[str, Any]) -> None:
+        self.id = camel_to_snake(self.__class__.__name__)
+        self.logger = get_logger("gallia")
+        self.parser = parser
+        self.config = config
+        self.add_class_parser()
+        self.add_parser()
+
+    def get_config_value(
+        self,
+        key: str,
+        default: Optional[Any] = None,
+    ) -> Optional[Any]:
+        parts = key.split(".")
+        subdict: Optional[dict[str, Any]] = self.config
+        val: Optional[Any] = None
+
+        for part in parts:
+            if subdict is None:
+                return default
+
+            val = subdict.get(part)
+            subdict = val if isinstance(val, dict) else None
+
+        return val if val is not None else default
+
+    def get_log_level(self, args: Namespace) -> int:
+        level = logging.INFO
+        if args.verbose == 1:
+            level = logging.DEBUG
+        elif args.verbose >= 2:
+            level = logging.TRACE  # type: ignore
+        return level
+
+    def get_file_log_level(self, args: Namespace) -> int:
+        return logging.TRACE if args.verbose >= 2 else logging.DEBUG  # type: ignore
+
+    def add_class_parser(self) -> None:
+        group = self.parser.add_argument_group("generic arguments")
+        group.add_argument(
+            "-v",
+            "--verbose",
+            action="count",
+            default=self.get_config_value("gallia.verbosity", 0),
+            help="increase verbosity on the console",
+        )
+
+        if self.ARTIFACTSDIR is False:
+            return
+
+        _mutex_group = group.add_mutually_exclusive_group()
+        _mutex_group.add_argument(
+            "--artifacts-dir",
+            default=self.config.get("gallia.scanner.artifacts_dir"),
+            type=Path,
+            metavar="DIR",
+            help="Folder for artifacts",
+        )
+        _mutex_group.add_argument(
+            "--artifacts-base",
+            default=self.config.get(
+                "gallia.scanner.artifacts_base",
+                Path(gettempdir()).joinpath("gallia"),
+            ),
+            type=Path,
+            metavar="DIR",
+            help="Base directory for artifacts",
+        )
+
+    def add_parser(self) -> None:
+        ...
 
     def _dump_environment(self, path: Path) -> None:
         environ = cast(dict[str, str], os.environ)
@@ -139,85 +226,6 @@ class ArtifactsDirMixin:
 
         raise ValueError("base_dir or force_path must be different from None")
 
-    def add_artifactsdir_argument(
-        self,
-        parser: ArgumentParser,
-        config: dict[str, Any],
-        group: Optional[Any] = None,
-    ) -> None:
-        if group is None:
-            group = parser.add_argument_group("generic arguments")
-
-        _mutex_group = group.add_mutually_exclusive_group()
-        _mutex_group.add_argument(
-            "--artifacts-dir",
-            default=config.get("gallia.scanner.artifacts_dir"),
-            type=Path,
-            metavar="DIR",
-            help="Folder for artifacts",
-        )
-        _mutex_group.add_argument(
-            "--artifacts-base",
-            default=config.get(
-                "gallia.scanner.artifacts_base",
-                Path(gettempdir()).joinpath("gallia"),
-            ),
-            type=Path,
-            metavar="DIR",
-            help="Base directory for artifacts",
-        )
-
-
-class BaseCommand(ABC):
-    """GalliaBase is a baseclass for all gallia commands.
-    In order to register cli arguments:
-
-    - `add_class_parser()` can be overwritten to create
-       e.g. scanner related arguments shared by all scanners
-    - `add_parser()` can be overwritten to create specific
-      arguments for a specific scanner.
-
-    The main entry_point is `run()`.
-    """
-
-    COMMAND: str
-    CATEGORY: str
-    SUBCATEGORY: Optional[str]
-    SHORT_HELP: str
-    EPILOG: Optional[str] = None
-
-    def __init__(self, parser: ArgumentParser, config: dict[str, Any]) -> None:
-        self.id = camel_to_snake(self.__class__.__name__)
-        self.logger = Logger(component="gallia", flush=True)
-        self.parser = parser
-        self.config = config
-        self.add_class_parser()
-        self.add_parser()
-
-    def get_config_value(
-        self,
-        key: str,
-        default: Optional[Any] = None,
-    ) -> Optional[Any]:
-        parts = key.split(".")
-        subdict: Optional[dict[str, Any]] = self.config
-        val: Optional[Any] = None
-
-        for part in parts:
-            if subdict is None:
-                return default
-
-            val = subdict.get(part)
-            subdict = val if isinstance(val, dict) else None
-
-        return val if val is not None else default
-
-    def add_class_parser(self) -> None:
-        ...
-
-    def add_parser(self) -> None:
-        ...
-
     @abstractmethod
     def run(self, args: Namespace) -> int:
         ...
@@ -236,6 +244,8 @@ class Script(BaseCommand, ABC):
         ...
 
     def run(self, args: Namespace) -> int:
+        setup_logging(self.get_log_level(args))
+
         try:
             self.main(args)
             return 0
@@ -256,6 +266,8 @@ class AsyncScript(BaseCommand, ABC):
         ...
 
     def run(self, args: Namespace) -> int:
+        setup_logging(self.get_log_level(args))
+
         try:
             asyncio.run(self.main(args))
             return 0
@@ -263,7 +275,7 @@ class AsyncScript(BaseCommand, ABC):
             return 128 + signal.SIGINT
 
 
-class Scanner(BaseCommand, ArtifactsDirMixin, ABC):
+class Scanner(BaseCommand, ABC):
     """Scanner is a base class for all scanning related commands.
     A scanner has the following properties:
 
@@ -281,6 +293,7 @@ class Scanner(BaseCommand, ArtifactsDirMixin, ABC):
     """
 
     CATEGORY = "scan"
+    ARTIFACTSDIR = True
 
     def __init__(self, parser: ArgumentParser, config: dict[str, Any]) -> None:
         super().__init__(parser, config)
@@ -317,9 +330,7 @@ class Scanner(BaseCommand, ArtifactsDirMixin, ABC):
     def add_class_parser(self) -> None:
         super().add_class_parser()
 
-        group = self.parser.add_argument_group("generic arguments")
-        self.add_artifactsdir_argument(self.parser, self.config, group)
-
+        group = self.parser.add_argument_group("scanner related arguments")
         group.add_argument(
             "--db",
             default=self.get_config_value("gallia.scanner.db"),
@@ -381,9 +392,9 @@ class Scanner(BaseCommand, ArtifactsDirMixin, ABC):
                 await self.setup(args)
             except BrokenPipeError as e:
                 exit_code = ExitCodes.GENERIC_ERROR
-                self.logger.log_critical(g_repr(e))
+                self.logger.critical(g_repr(e))
             except Exception as e:
-                self.logger.log_critical(f"setup failed: {g_repr(e)}")
+                self.logger.exception(f"setup failed: {g_repr(e)}")
                 sys.exit(ExitCodes.SETUP_FAILED)
 
             try:
@@ -391,13 +402,13 @@ class Scanner(BaseCommand, ArtifactsDirMixin, ABC):
                     await self.main(args)
                 except Exception as e:
                     exit_code = ExitCodes.GENERIC_ERROR
-                    self.logger.log_critical(g_repr(e))
+                    self.logger.critical(g_repr(e))
                     traceback.print_exc()
             finally:
                 try:
                     await self.teardown(args)
                 except Exception as e:
-                    self.logger.log_critical(f"teardown failed: {g_repr(e)}")
+                    self.logger.critical(f"teardown failed: {g_repr(e)}")
                     sys.exit(ExitCodes.TEARDOWN_FAILED)
             return exit_code
         except KeyboardInterrupt:
@@ -414,33 +425,39 @@ class Scanner(BaseCommand, ArtifactsDirMixin, ABC):
                             datetime.now(timezone.utc).astimezone(), exit_code
                         )
                     except Exception as e:
-                        self.logger.log_warning(
+                        self.logger.warning(
                             f"Could not write the run meta to the database: {g_repr(e)}"
                         )
 
                 try:
                     await self.db_handler.disconnect()
                 except Exception as e:
-                    self.logger.log_error(
+                    self.logger.error(
                         f"Could not close the database connection properly: {g_repr(e)}"
                     )
 
     def run(self, args: Namespace) -> int:
         self.artifacts_dir = self.prepare_artifactsdir(
-            args.artifacts_base, args.artifacts_dir
+            args.artifacts_base,
+            args.artifacts_dir,
         )
-        self.logger.log_preamble(f"Storing artifacts at {self.artifacts_dir}")
+
+        setup_logging(
+            self.get_log_level(args),
+            self.get_file_log_level(args),
+            self.artifacts_dir.joinpath("log.json.zst"),
+        )
 
         argv = deepcopy(sys.argv)
         argv[0] = Path(sys.argv[0]).name
-        self.logger.log_preamble(
+        self.logger.info(
             f'Starting "{sys.argv[0]}" ({version("gallia")}) with [{" ".join(argv)}]'
         )
+        self.logger.info(f"Storing artifacts at {self.artifacts_dir}")
 
         try:
             return asyncio.run(self._run(args))
         except KeyboardInterrupt:
-            self.logger.log_critical("ctrl+c received. Terminating…")
             return 128 + signal.SIGINT
 
 
@@ -540,7 +557,7 @@ class UDSScanner(Scanner):
 
     async def _tester_present_worker(self, interval: int) -> None:
         assert self.transport
-        self.logger.log_debug("tester present worker started")
+        self.logger.debug("tester present worker started")
         while True:
             try:
                 async with self.transport.mutex:
@@ -561,10 +578,10 @@ class UDSScanner(Scanner):
                         pass
                 await asyncio.sleep(interval)
             except asyncio.CancelledError:
-                self.logger.log_debug("tester present worker terminated")
+                self.logger.debug("tester present worker terminated")
                 break
             except Exception as e:
-                self.logger.log_debug(f"tester present got {g_repr(e)}")
+                self.logger.debug(f"tester present got {g_repr(e)}")
                 # Wait until the stack recovers, but not for too long…
                 await asyncio.sleep(1)
 
@@ -603,19 +620,19 @@ class UDSScanner(Scanner):
                 await self.db_handler.insert_scan_run(str(args.target))
                 self._apply_implicit_logging_setting()
             except Exception as e:
-                self.logger.log_warning(
+                self.logger.warning(
                     f"Could not write the scan run to the database: {g_repr(e)}"
                 )
 
         if args.ecu_reset is not None:
             resp: UDSResponse = await self.ecu.ecu_reset(args.ecu_reset)
             if isinstance(resp, NegativeResponse):
-                self.logger.log_warning(f"ECUReset failed: {resp}")
-                self.logger.log_warning("Switching to default session")
+                self.logger.warning(f"ECUReset failed: {resp}")
+                self.logger.warning("Switching to default session")
                 raise_for_error(await self.ecu.set_session(0x01))
                 resp = await self.ecu.ecu_reset(args.ecu_reset)
                 if isinstance(resp, NegativeResponse):
-                    self.logger.log_warning(f"ECUReset in session 0x01 failed: {resp}")
+                    self.logger.warning(f"ECUReset in session 0x01 failed: {resp}")
 
         # Handles connecting to the target and waits
         # until it is ready.
@@ -645,7 +662,7 @@ class UDSScanner(Scanner):
                 )
                 self._apply_implicit_logging_setting()
             except Exception as e:
-                self.logger.log_warning(
+                self.logger.warning(
                     f"Could not write the properties_pre to the database: {g_repr(e)}"
                 )
 
@@ -661,7 +678,7 @@ class UDSScanner(Scanner):
                 prop_pre = json.loads(await file.read())
 
             if args.compare_properties and await self.ecu.properties(False) != prop_pre:
-                self.logger.log_warning("ecu properties differ, please investigate!")
+                self.logger.warning("ecu properties differ, please investigate!")
 
         if self.db_handler is not None:
             try:
@@ -669,7 +686,7 @@ class UDSScanner(Scanner):
                     await self.ecu.properties(False)
                 )
             except Exception as e:
-                self.logger.log_warning(
+                self.logger.warning(
                     f"Could not write the scan run to the database: {g_repr(e)}"
                 )
 
@@ -703,6 +720,6 @@ class DiscoveryScanner(Scanner):
             try:
                 await self.db_handler.insert_discovery_run(args.target.url.scheme)
             except Exception as e:
-                self.logger.log_warning(
+                self.logger.warning(
                     f"Could not write the discovery run to the database: {g_repr(e)}"
                 )
