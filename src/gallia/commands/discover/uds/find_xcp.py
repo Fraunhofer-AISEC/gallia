@@ -11,7 +11,7 @@ import sys
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser, Namespace
 from subprocess import CalledProcessError, run
 
-from gallia.penlog import Logger
+from gallia.log import get_logger
 from gallia.transports.base import TargetURI
 from gallia.transports.can import RawCANTransport
 from gallia.utils import bytes_repr, can_id_repr, g_repr
@@ -23,7 +23,7 @@ class FindXCP:
     # TODO: This Scanner is not a UDS Scanner and needs a Task base class. See Issue #26
     def __init__(self) -> None:
         self.description = self.__class__.__doc__
-        self.logger = Logger(component="scanner", flush=True)
+        self.logger = get_logger("scanner")
         self.parser = ArgumentParser(
             description=self.description, formatter_class=ArgumentDefaultsHelpFormatter
         )
@@ -97,23 +97,23 @@ class FindXCP:
                 check=True,
             )
         except CalledProcessError as e:
-            self.logger.log_warning(f"could not get version: {g_repr(e)}")
+            self.logger.warning(f"could not get version: {g_repr(e)}")
         else:
             git_version = process.stdout.decode().strip()
-            self.logger.log_preamble(f"version: {git_version}")
-        self.logger.log_preamble(json.dumps(sys.argv))
+            self.logger.info(f"version: {git_version}")
+        self.logger.info(json.dumps(sys.argv))
 
         return asyncio.run(self.main(args))
 
     def pack_xcp_eth(self, data: bytes, ctr: int = 0) -> bytes:
         length = len(data)
         data = struct.pack("<HH", length, ctr) + data
-        self.logger.log_info(f"send: {data.hex()}")
+        self.logger.info(f"send: {data.hex()}")
         return data
 
     def unpack_xcp_eth(self, data: bytes) -> tuple[int, int, bytes]:
         length, ctr = struct.unpack_from("<HH", data)
-        self.logger.log_info(f"recv: {data.hex()}")
+        self.logger.info(f"recv: {data.hex()}")
         return length, ctr, data[4:]
 
     async def main(self, args: Namespace) -> int:
@@ -136,38 +136,38 @@ class FindXCP:
         endpoints = list()
         for port in args.tcp_ports.split(","):
             port = int(port, 0)
-            self.logger.log_info(f"Testing TCP port: {port}")
+            self.logger.info(f"Testing TCP port: {port}")
             server = (args.xcp_ip, port)
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.settimeout(0.2)
             try:
                 self.socket.connect(server)
             except Exception as e:
-                self.logger.log_info(f"Connect: {g_repr(e)} on TCP port {port}")
+                self.logger.info(f"Connect: {g_repr(e)} on TCP port {port}")
                 continue
 
             try:
                 self.socket.send(self.pack_xcp_eth(data))
                 _, _, data_ret = self.unpack_xcp_eth(self.socket.recv(1024))
                 ret = bytes_repr(data_ret)
-                self.logger.log_info(f"Receive data on TCP port {port}: {ret}")
+                self.logger.info(f"Receive data on TCP port {port}: {ret}")
                 if len(data_ret) > 0 and data_ret[0] == 0xFF:
-                    self.logger.log_summary(
+                    self.logger.result(
                         f"XCP Slave on TCP port {port}, data: {ret}"
                     )
                     endpoints.append(port)
                 else:
-                    self.logger.log_info(
+                    self.logger.info(
                         f"TCP port {port} is no XCP slave, data: {ret}"
                     )
             except Exception as e:
-                self.logger.log_info(f"send/recv: {g_repr(e)} on TCP port {port:d}")
+                self.logger.info(f"send/recv: {g_repr(e)} on TCP port {port:d}")
                 continue
 
             self.xcp_disconnect(server)
             self.socket.close()
 
-        self.logger.log_summary(
+        self.logger.result(
             f"Finished; Found {len(endpoints)} XCP endpoints via TCP"
         )
 
@@ -185,7 +185,7 @@ class FindXCP:
         endpoints = list()
         for port in args.udp_ports.split(","):
             port = int(port, 0)
-            self.logger.log_info(f"Testing UDP port: {port}")
+            self.logger.info(f"Testing UDP port: {port}")
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self.socket.settimeout(0.5)
             server = (args.xcp_ip, port)
@@ -193,24 +193,24 @@ class FindXCP:
             try:
                 _, _, data_ret = self.unpack_xcp_eth(self.socket.recv(1024))
                 ret = bytes_repr(data_ret)
-                self.logger.log_info(f"Receive data on TCP port {port}: {ret}")
+                self.logger.info(f"Receive data on TCP port {port}: {ret}")
                 if len(data_ret) > 0 and data_ret[0] == 0xFF:
-                    self.logger.log_summary(
+                    self.logger.result(
                         f"XCP Slave on UDP port {port}, data: {ret}"
                     )
                     endpoints.append(port)
                 else:
-                    self.logger.log_info(
+                    self.logger.info(
                         f"UDP port {port} is no XCP slave, data: {ret}"
                     )
 
             except socket.timeout:
-                self.logger.log_info(f"Timeout on UDP port {port}")
+                self.logger.info(f"Timeout on UDP port {port}")
 
             self.xcp_disconnect(server)
             self.socket.close()
 
-        self.logger.log_summary(
+        self.logger.result(
             f"Finished; Found {len(endpoints)} XCP endpoints via UDP"
         )
 
@@ -224,17 +224,17 @@ class FindXCP:
         endpoints = list()
 
         sniff_time: int = args.sniff_time
-        self.logger.log_summary(
+        self.logger.result(
             f"Listening to idle bus communication for {sniff_time}s..."
         )
         addr_idle = await transport.get_idle_traffic(sniff_time)
-        self.logger.log_summary(f"Found {len(addr_idle)} CAN Addresses on idle Bus")
+        self.logger.result(f"Found {len(addr_idle)} CAN Addresses on idle Bus")
         transport.set_filter(addr_idle, inv_filter=True)
         # flush receive queue
         await transport.get_idle_traffic(2)
 
         for can_id in range(0x800):
-            self.logger.log_info(f"Testing CAN ID: {can_id_repr(can_id)}")
+            self.logger.info(f"Testing CAN ID: {can_id_repr(can_id)}")
             pdu = bytes([0xFF, 0x00])
             await transport.sendto(pdu, can_id, timeout=0.1)
 
@@ -246,17 +246,17 @@ class FindXCP:
                             f"Found XCP endpoint [master:slave]: CAN: {can_id_repr(master)}:{can_id_repr(can_id)} "
                             f"data: {bytes_repr(data)}"
                         )
-                        self.logger.log_summary(msg)
+                        self.logger.result(msg)
                         endpoints.append((can_id, master))
                     else:
-                        self.logger.log_info(
+                        self.logger.info(
                             f"Received non XCP answer for CAN-ID {can_id_repr(can_id)}: {can_id_repr(master)}:"
                             f"{bytes_repr(data)}"
                         )
             except asyncio.TimeoutError:
                 pass
 
-        self.logger.log_summary(
+        self.logger.result(
             f"Finished; Found {len(endpoints)} XCP endpoints via CAN"
         )
 
@@ -264,7 +264,7 @@ class FindXCP:
         # TODO: rewrite as async
 
         multicast_group = ("239.255.0.0", 5556)
-        self.logger.log_summary(
+        self.logger.result(
             f"Discover XCP via multicast group: {multicast_group[0]}:{multicast_group[1]}"
         )
 
@@ -272,7 +272,7 @@ class FindXCP:
         self.socket.connect((args.xcp_ip, 5555))
         addr = self.socket.getsockname()[0]
         self.socket.close()
-        self.logger.log_info(f"xcp interface ip for multicast group: {addr}")
+        self.logger.info(f"xcp interface ip for multicast group: {addr}")
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.setsockopt(
@@ -290,12 +290,12 @@ class FindXCP:
                 if not data:
                     break
 
-                self.logger.log_summary(f"Found XCP slave: {slave} {bytes_repr(data)}")
+                self.logger.result(f"Found XCP slave: {slave} {bytes_repr(data)}")
                 endpoints.append(slave)
         except socket.timeout:
-            self.logger.log_info("Timeout")
+            self.logger.info("Timeout")
 
-        self.logger.log_summary(
+        self.logger.result(
             f"Finished; Found {len(endpoints)} XCP endpoints via multicast group"
         )
 

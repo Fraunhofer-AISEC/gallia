@@ -167,7 +167,9 @@ class ISOTPTransport(BaseTransport, scheme="isotp", spec=isotp_spec):
         timeout: Optional[float] = None,
         tags: Optional[list[str]] = None,
     ) -> int:
-        self.logger.log_write(data.hex(), tags=tags)
+        t = tags + ["write"] if tags is not None else ["write"]
+        self.logger.trace(data.hex(), extra={"tags": t})
+
         loop = asyncio.get_running_loop()
         await asyncio.wait_for(loop.sock_sendall(self._sock, data), timeout)
         return len(data)
@@ -186,7 +188,7 @@ class ISOTPTransport(BaseTransport, scheme="isotp", spec=isotp_spec):
             if e.errno == errno.EILSEQ:
                 raise BrokenPipeError(f"invalid consecutive frame numbers: {e}") from e
             raise e
-        self.logger.log_read(data.hex(), tags=tags)
+        self.logger.trace(data.hex(), extra={"tags": tags})
         return data
 
     async def close(self) -> None:
@@ -365,10 +367,11 @@ class RawCANTransport(BaseTransport, scheme="can-raw", spec=spec_can_raw):
             is_fd=self.args["is_fd"],
             check=True,
         )
+        t = tags + ["write"] if tags is not None else ["write"]
         if self.args["is_extended"]:
-            self.logger.log_write(f"{dst:08x}#{data.hex()}", tags=tags)
+            self.logger.trace(f"{dst:08x}#{data.hex()}", extra={"tags": t})
         else:
-            self.logger.log_write(f"{dst:03x}#{data.hex()}", tags=tags)
+            self.logger.trace(f"{dst:03x}#{data.hex()}", extra={"tags": t})
 
         loop = asyncio.get_running_loop()
         await asyncio.wait_for(loop.sock_sendall(self._sock, msg.pack()), timeout)
@@ -383,14 +386,13 @@ class RawCANTransport(BaseTransport, scheme="can-raw", spec=spec_can_raw):
         )
         msg = CANMessage.unpack(can_frame)
 
+        t = tags + ["read"] if tags is not None else ["read"]
         if msg.is_extended_id:
-            self.logger.log_read(
-                f"{msg.arbitration_id:08x}#{msg.data.hex()}", tags=tags
+            self.logger.trace(
+                f"{msg.arbitration_id:08x}#{msg.data.hex()}", extra={"tags": t}
             )
         else:
-            self.logger.log_read(
-                f"{msg.arbitration_id:03x}#{msg.data.hex()}", tags=tags
-            )
+            self.logger.trace(f"{msg.arbitration_id:03x}#{msg.data.hex()}", extra={"tags": t})
         return msg.arbitration_id, msg.data
 
     async def close(self) -> None:
@@ -410,7 +412,7 @@ class RawCANTransport(BaseTransport, scheme="can-raw", spec=spec_can_raw):
             try:
                 addr, _ = await self.recvfrom(timeout=1)
                 if addr not in addr_idle:
-                    self.logger.log_info(f"Received a message from {addr:03x}")
+                    self.logger.info(f"Received a message from {addr:03x}")
                     addr_idle.append(addr)
             except asyncio.TimeoutError:
                 continue

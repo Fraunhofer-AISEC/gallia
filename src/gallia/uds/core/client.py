@@ -9,7 +9,7 @@ import struct
 from dataclasses import dataclass
 from typing import Optional, Sequence, Union, overload
 
-from gallia.penlog import Logger
+from gallia.log import get_logger
 from gallia.transports.base import BaseTransport
 from gallia.uds.core import service
 from gallia.uds.core.constants import UDSErrorCodes, UDSIsoServices
@@ -39,7 +39,7 @@ class UDSClient:
         self.max_retry = max_retry
         self.retry_wait = 0.2
         self.pending_timeout = 5
-        self.logger = Logger("uds", flush=True)
+        self.logger = get_logger("uds")
 
     async def reconnect(self, timeout: Optional[int] = None) -> None:
         """Calls the underlying transport to trigger a reconnect"""
@@ -69,13 +69,13 @@ class UDSClient:
 
             # Avoid pasting this very line in every error branch.
             if i > 0:
-                self.logger.log_debug(f"retrying {i} from {max_retry}…")
+                self.logger.debug(f"retrying {i} from {max_retry}…")
             try:
                 raw_resp = await self.transport.request_unsafe(
                     request.pdu, timeout, config.tags
                 )
             except asyncio.TimeoutError as e:
-                self.logger.log_debug(f"{request} failed with: {repr(e)}")
+                self.logger.debug(f"{request} failed with: {repr(e)}")
                 last_exception = MissingResponse(request, str(e))
                 await asyncio.sleep(wait_time)
                 continue
@@ -123,7 +123,7 @@ class UDSClient:
                 # and similar busy stuff is resolved.
                 return resp
 
-        self.logger.log_debug(f"{request} failed after retry loop")
+        self.logger.debug(f"{request} failed after retry loop")
         raise last_exception
 
     async def _tester_present(
@@ -1143,7 +1143,12 @@ class UDSClient:
         :param config: The request config parameters
         :return: The response.
         """
-        return await self._request(request, config)
+        self.logger.debug(request.pdu.hex(), extra={"tags": ["write", "uds"]})
+        self.logger.debug(str(request), extra={"tags": ["write", "dissected", "uds"]})
+        resp = await self._request(request, config)
+        self.logger.debug(resp.pdu.hex(), extra={"tags": ["read", "uds"]})
+        self.logger.debug(str(resp), extra={"tags": ["read", "dissected", "uds"]})
+        return resp
 
     async def _request(
         self, request: service.UDSRequest, config: Optional[UDSRequestConfig] = None
