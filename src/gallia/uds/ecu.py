@@ -291,9 +291,7 @@ class ECU(UDSClient):
         """transmit_data splits the data to be sent in several blocks of size block_length,
         transfers all of them and concludes the transmission with RequestTransferExit"""
         if block_length > max_block_length:
-            self.logger.warning(
-                f"Limiting block size to {g_repr(max_block_length)}"
-            )
+            self.logger.warning(f"Limiting block size to {g_repr(max_block_length)}")
             block_length = max_block_length
         # block_length includes the service identifier and block counter; payload must be smaller
         payload_size = block_length - 2
@@ -430,9 +428,7 @@ class ECU(UDSClient):
                         mode,
                     )
             except Exception as e:
-                self.logger.warning(
-                    f"Could not log messages to database: {g_repr(e)}"
-                )
+                self.logger.warning(f"Could not log messages to database: {g_repr(e)}")
 
             if response is not None:
                 await self.update_state(request, response)

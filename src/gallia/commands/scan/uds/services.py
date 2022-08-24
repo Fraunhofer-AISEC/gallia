@@ -89,9 +89,7 @@ class ServicesScanner(UDSScanner):
                 if s not in args.skip or args.skip[s] is not None
             )
             sessions = await self.ecu.find_sessions(sessions)
-            self.logger.result(
-                f"Found {len(sessions)} sessions: {g_repr(sessions)}"
-            )
+            self.logger.result(f"Found {len(sessions)} sessions: {g_repr(sessions)}")
         else:
             sessions = list(
                 s
@@ -116,9 +114,7 @@ class ServicesScanner(UDSScanner):
                 )
                 continue
             if isinstance(resp, NegativeResponse):
-                self.logger.warning(
-                    f"session change: {g_repr(session)} reason: {resp}"
-                )
+                self.logger.warning(f"session change: {g_repr(session)} reason: {resp}")
                 continue
 
             found[session] = {}
@@ -175,6 +171,4 @@ class ServicesScanner(UDSScanner):
                         f"  [{g_repr(sid)}] {UDSIsoServices(sid).name}: {data}"
                     )
                 except Exception:
-                    self.logger.result(
-                        f"  [{g_repr(sid)}] vendor specific sid: {data}"
-                    )
+                    self.logger.result(f"  [{g_repr(sid)}] vendor specific sid: {data}")

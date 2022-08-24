@@ -66,9 +66,7 @@ class ResetScanner(UDSScanner):
                 if s not in args.skip or args.skip[s] is not None
             )
             sessions = await self.ecu.find_sessions(sessions)
-            self.logger.result(
-                f"Found {len(sessions)} sessions: {g_repr(sessions)}"
-            )
+            self.logger.result(f"Found {len(sessions)} sessions: {g_repr(sessions)}")
         else:
             sessions = list(
                 s

@@ -392,7 +392,9 @@ class RawCANTransport(BaseTransport, scheme="can-raw", spec=spec_can_raw):
                 f"{msg.arbitration_id:08x}#{msg.data.hex()}", extra={"tags": t}
             )
         else:
-            self.logger.trace(f"{msg.arbitration_id:03x}#{msg.data.hex()}", extra={"tags": t})
+            self.logger.trace(
+                f"{msg.arbitration_id:03x}#{msg.data.hex()}", extra={"tags": t}
+            )
         return msg.arbitration_id, msg.data
 
     async def close(self) -> None:

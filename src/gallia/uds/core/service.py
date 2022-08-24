@@ -134,9 +134,7 @@ class UDSRequest(ABC):
                 logger.trace(" - Trying to infer subFunction")
                 # pylint: disable=protected-access
                 request_sub_function = request_service._sub_function_type(pdu)
-                logger.trace(
-                    f" - Inferred subFunction {request_sub_function.__name__}"
-                )
+                logger.trace(f" - Inferred subFunction {request_sub_function.__name__}")
                 assert (request_type := request_sub_function.Request) is not None
                 logger.trace(f" - Trying {request_type.__name__}")
                 return request_type.from_pdu(pdu)
@@ -252,9 +250,7 @@ class UDSResponse(ABC):
                 logger.trace(f" - Falling back to raw response because {str(e)}")
                 return RawPositiveResponse(pdu)
 
-            logger.trace(
-                f" - Inferred subFunction {response_sub_function.__name__}"
-            )
+            logger.trace(f" - Inferred subFunction {response_sub_function.__name__}")
             assert (response_type_ := response_sub_function.Response) is not None
             response_type = response_type_
         else:
