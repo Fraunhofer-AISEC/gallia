@@ -27,7 +27,7 @@ test: pytest
 
 .PHONY: pytest
 pytest:
-	python -m pytest -v tests/python -W error::UserWarning
+	python -m pytest -v tests/python
 
 .PHONY: clean
 clean:

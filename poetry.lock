@@ -191,7 +191,7 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "charset-normalizer"
-version = "2.1.0"
+version = "2.1.1"
 description = "The Real First Universal Charset Detector. Open, modern and actively maintained alternative to Chardet."
 category = "main"
 optional = false
@@ -455,6 +455,14 @@ description = "MessagePack serializer"
 category = "main"
 optional = false
 python-versions = "*"
+
+[[package]]
+name = "msgspec"
+version = "0.8.0"
+description = "A fast and friendly JSON/MessagePack library, with optional schema validation"
+category = "main"
+optional = false
+python-versions = ">=3.8"
 
 [[package]]
 name = "multidict"
@@ -1093,7 +1101,7 @@ python-versions = ">=3.7"
 
 [[package]]
 name = "urllib3"
-version = "1.26.11"
+version = "1.26.12"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
 category = "dev"
 optional = false
@@ -1101,7 +1109,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*, 
 
 [package.extras]
 brotli = ["brotlicffi (>=0.8.0)", "brotli (>=1.0.9)", "brotlipy (>=0.6.0)"]
-secure = ["pyOpenSSL (>=0.14)", "cryptography (>=1.3.4)", "idna (>=2.0.0)", "certifi", "ipaddress"]
+secure = ["pyOpenSSL (>=0.14)", "cryptography (>=1.3.4)", "idna (>=2.0.0)", "certifi", "urllib3-secure-extra", "ipaddress"]
 socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 
 [[package]]
@@ -1169,7 +1177,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9,<3.11"
-content-hash = "78c343b62e2eba41b0eb9bfc7b48bd4f5a475e93edbd570c491fdf4483883cdf"
+content-hash = "2b671d9d00f403f9eabf0cdb217bd6200993c714fbd645cb23460998cf66c112"
 
 [metadata.files]
 aiofiles = [
@@ -1393,8 +1401,8 @@ chardet = [
     {file = "chardet-5.0.0.tar.gz", hash = "sha256:0368df2bfd78b5fc20572bb4e9bb7fb53e2c094f60ae9993339e8671d0afb8aa"},
 ]
 charset-normalizer = [
-    {file = "charset-normalizer-2.1.0.tar.gz", hash = "sha256:575e708016ff3a5e3681541cb9d79312c416835686d054a23accb873b254f413"},
-    {file = "charset_normalizer-2.1.0-py3-none-any.whl", hash = "sha256:5189b6f22b01957427f35b6a08d9a0bc45b46d3788ef5a92e978433c7a35f8a5"},
+    {file = "charset-normalizer-2.1.1.tar.gz", hash = "sha256:5a3d016c7c547f69d6f81fb0db9449ce888b418b5b9952cc5e6e66843e9dd845"},
+    {file = "charset_normalizer-2.1.1-py3-none-any.whl", hash = "sha256:83e9a75d1911279afd89352c68b45348559d1fc0506b054b346651b5e7fee29f"},
 ]
 click = [
     {file = "click-8.1.3-py3-none-any.whl", hash = "sha256:bb4d8133cb15a609f44e8213d9b391b0809795062913b383c62be0ee95b1db48"},
@@ -1666,6 +1674,30 @@ msgpack = [
     {file = "msgpack-1.0.4-cp39-cp39-win32.whl", hash = "sha256:fb62ea4b62bfcb0b380d5680f9a4b3f9a2d166d9394e9bbd9666c0ee09a3645c"},
     {file = "msgpack-1.0.4-cp39-cp39-win_amd64.whl", hash = "sha256:4d5834a2a48965a349da1c5a79760d94a1a0172fbb5ab6b5b33cbf8447e109ce"},
     {file = "msgpack-1.0.4.tar.gz", hash = "sha256:f5d869c18f030202eb412f08b28d2afeea553d6613aee89e200d7aca7ef01f5f"},
+]
+msgspec = [
+    {file = "msgspec-0.8.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:a67524adc1093181ac795ef22434a47496b90a43e4d9dfa9af11740319883300"},
+    {file = "msgspec-0.8.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:2ff70aa6234088460c1d6796f348ac95b254790d76ba37d93e168c1fc985cd66"},
+    {file = "msgspec-0.8.0-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:ab4892c93acd0fcb0ab6ab08ec83e3bc05c7aed0d99e89fc4a2d4143a7ee3c8f"},
+    {file = "msgspec-0.8.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0ad94df3a1ba1e350d7d1c1ce845ab113376fbeec2ed56f0ccdba7f582fa6dd7"},
+    {file = "msgspec-0.8.0-cp310-cp310-musllinux_1_1_aarch64.whl", hash = "sha256:c34a47313de643355a6a704e62c208d7d670f3519c58454b4bd47a8a537a2d50"},
+    {file = "msgspec-0.8.0-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:fac3baabfc8194a9e329f3a39399052f3095de52a0c1016938976d8cabb61e59"},
+    {file = "msgspec-0.8.0-cp310-cp310-win_amd64.whl", hash = "sha256:9738bd185352ab1ec493fe37fc9b2fe8884493b76d4b50f7599d6c909a21f38a"},
+    {file = "msgspec-0.8.0-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:67fffdc4b102de0513e4dd2a8e23e43598a028bd15779f41b587a5254bcba2c3"},
+    {file = "msgspec-0.8.0-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:28592c238ab2d14962e7fc12b7202f536cf4927cf9ef2df7af1ecffea34f831d"},
+    {file = "msgspec-0.8.0-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a287b615f788fcca0eef260e5dff8339288bc8817048903e982dab31baa888b3"},
+    {file = "msgspec-0.8.0-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c268f9cc16cb014720543558a66957910587e6178a574cbb6c90ec04f3d0da62"},
+    {file = "msgspec-0.8.0-cp38-cp38-musllinux_1_1_aarch64.whl", hash = "sha256:79331aca3d3a84d58833bd4c6b58c962ee85e2e57dfb373fe2230c8ae244220b"},
+    {file = "msgspec-0.8.0-cp38-cp38-musllinux_1_1_x86_64.whl", hash = "sha256:15ac2cf866bb2dc48348a83cd559f0c6e4f444325a8f7710e79e194088ed5ecc"},
+    {file = "msgspec-0.8.0-cp38-cp38-win_amd64.whl", hash = "sha256:e9054c9868d2a6716be96c1908cd626b5bc5512aea55ee0d2cc261082f34e881"},
+    {file = "msgspec-0.8.0-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:3c9097308017b179c1436d6c8a983e2a541c79e1d7139eab8284ec13664fbd0a"},
+    {file = "msgspec-0.8.0-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:7df3d89615f0f213f9d269049a875120df9c66e75214f075d535662dd964c9aa"},
+    {file = "msgspec-0.8.0-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:d2f2676d7c40ec50e8fc63a0546d2f0f892fcb53f85b51c6e61d2d8985a1fe8e"},
+    {file = "msgspec-0.8.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0e1c66c533570e5461fbf3ff934665b2d1a2007f15dec42a9cb94fcd6920ca1f"},
+    {file = "msgspec-0.8.0-cp39-cp39-musllinux_1_1_aarch64.whl", hash = "sha256:c6b72e14acaa9ab534ad7fb9631d885b021ce751112ab562fa4a62a1fb2d0094"},
+    {file = "msgspec-0.8.0-cp39-cp39-musllinux_1_1_x86_64.whl", hash = "sha256:74fb15fa33452a4db7d1ce6bac6ad0b1768208c348f1ea158f981ae71af55ff1"},
+    {file = "msgspec-0.8.0-cp39-cp39-win_amd64.whl", hash = "sha256:ebbe88d1ae44c7e875e565d9ec36fb3ea5165337e2b38bd2b29c6e75203e2033"},
+    {file = "msgspec-0.8.0.tar.gz", hash = "sha256:51f138930e9b5818a9185ada75421373efc47cc3f42c60361d54d8ba405e6263"},
 ]
 multidict = [
     {file = "multidict-6.0.2-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:0b9e95a740109c6047602f4db4da9949e6c5945cefbad34a1299775ddc9a62e2"},
@@ -2038,8 +2070,8 @@ ujson = [
     {file = "ujson-5.4.0.tar.gz", hash = "sha256:6b953e09441e307504130755e5bd6b15850178d591f66292bba4608c4f7f9b00"},
 ]
 urllib3 = [
-    {file = "urllib3-1.26.11-py2.py3-none-any.whl", hash = "sha256:c33ccba33c819596124764c23a97d25f32b28433ba0dedeb77d873a38722c9bc"},
-    {file = "urllib3-1.26.11.tar.gz", hash = "sha256:ea6e8fb210b19d950fab93b60c9009226c63a28808bc8386e05301e25883ac0a"},
+    {file = "urllib3-1.26.12-py2.py3-none-any.whl", hash = "sha256:b930dd878d5a8afb066a637fbb35144fe7901e3b209d1cd4f524bd0e9deee997"},
+    {file = "urllib3-1.26.12.tar.gz", hash = "sha256:3fa96cf423e6987997fc326ae8df396db2a8b7c667747d47ddd8ecba91f4a74e"},
 ]
 windows-curses = [
     {file = "windows_curses-2.3.0-cp310-cp310-win32.whl", hash = "sha256:a3a63a0597729e10f923724c2cf972a23ea677b400d2387dee1d668cf7116177"},
