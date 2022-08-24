@@ -5,6 +5,7 @@
 # PYTHON_ARGCOMPLETE_OK
 
 import argparse
+import logging
 import os
 import subprocess
 import sys
@@ -40,6 +41,7 @@ from gallia.commands.scan.uds.sa_dump_seeds import SASeedsDumper
 from gallia.commands.scan.uds.services import ServicesScanner
 from gallia.commands.scan.uds.sessions import SessionsScanner
 from gallia.commands.script.vecu import VirtualECU
+from gallia.log import setup_logging
 
 # from gallia.commands.prims.uds.simple_test_xcp import SimpleTestXCP
 
@@ -375,6 +377,7 @@ def cmd_template(args: argparse.Namespace) -> None:
 # dumpcap = <bool>
 # artifacts_dir = <string>
 # artifacts_base = <string>
+# verbosity = <int>
 
 [gallia.protocol.uds]
 # dumpcap = <bool>
@@ -393,6 +396,9 @@ def cmd_template(args: argparse.Namespace) -> None:
 
 def main() -> None:
     load_cli_commands()
+
+    # Will be set to the correct verbosity later.
+    setup_logging(logging.DEBUG)
 
     global PARSERS  # pylint: disable=W0603
     PARSERS = load_parsers()
@@ -421,3 +427,7 @@ def main() -> None:
         parser.exit(1)
 
     sys.exit(args.run_func(args))
+
+
+if __name__ == "__main__":
+    main()
