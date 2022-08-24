@@ -30,9 +30,7 @@ class ECUResetPrimitive(UDSScanner):
     async def main(self, args: Namespace) -> None:
         resp: UDSResponse = await self.ecu.set_session(args.session)
         if isinstance(resp, NegativeResponse):
-            self.logger.error(
-                f"could not change to session: {g_repr(args.session)}"
-            )
+            self.logger.error(f"could not change to session: {g_repr(args.session)}")
             return
 
         try:

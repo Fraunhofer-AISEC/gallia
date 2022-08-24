@@ -192,9 +192,7 @@ class PDUFuzzer(UDSScanner):
 
                 self.logger.result(f"Timeouts: {timeout_DIDs}")
                 self.logger.result(f"Illegal replies: {illegal_resp}")
-                self.logger.result(
-                    f"Flow control frames missing: {flow_control_miss}"
-                )
+                self.logger.result(f"Flow control frames missing: {flow_control_miss}")
 
                 self.logger.info(f"Leaving session 0x{session:02x} via hook")
                 await self.ecu.leave_session(session)

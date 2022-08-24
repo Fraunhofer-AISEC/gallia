@@ -96,9 +96,7 @@ class DTCPrimitive(UDSScanner):
                     f"with a parameter that excludes one or more of the corresponding bits."
                 )
                 if split:
-                    self.logger.warning(
-                        "Trying to fetch the error codes iteratively."
-                    )
+                    self.logger.warning("Trying to fetch the error codes iteratively.")
 
                     for i in range(8):
                         sub_mask = mask & 2**i

@@ -132,9 +132,7 @@ class SessionsScanner(UDSScanner):
                 search_sessions.append(stack[-1])
 
                 if stack:
-                    self.logger.info(
-                        f"Starting from session: {g_repr(stack[-1])}"
-                    )
+                    self.logger.info(f"Starting from session: {g_repr(stack[-1])}")
 
                 for session in sessions:
                     if session in args.skip:

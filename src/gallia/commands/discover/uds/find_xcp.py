@@ -152,14 +152,10 @@ class FindXCP:
                 ret = bytes_repr(data_ret)
                 self.logger.info(f"Receive data on TCP port {port}: {ret}")
                 if len(data_ret) > 0 and data_ret[0] == 0xFF:
-                    self.logger.result(
-                        f"XCP Slave on TCP port {port}, data: {ret}"
-                    )
+                    self.logger.result(f"XCP Slave on TCP port {port}, data: {ret}")
                     endpoints.append(port)
                 else:
-                    self.logger.info(
-                        f"TCP port {port} is no XCP slave, data: {ret}"
-                    )
+                    self.logger.info(f"TCP port {port} is no XCP slave, data: {ret}")
             except Exception as e:
                 self.logger.info(f"send/recv: {g_repr(e)} on TCP port {port:d}")
                 continue
@@ -167,9 +163,7 @@ class FindXCP:
             self.xcp_disconnect(server)
             self.socket.close()
 
-        self.logger.result(
-            f"Finished; Found {len(endpoints)} XCP endpoints via TCP"
-        )
+        self.logger.result(f"Finished; Found {len(endpoints)} XCP endpoints via TCP")
 
     def xcp_disconnect(self, server: tuple[str, int]) -> None:
         try:
@@ -195,14 +189,10 @@ class FindXCP:
                 ret = bytes_repr(data_ret)
                 self.logger.info(f"Receive data on TCP port {port}: {ret}")
                 if len(data_ret) > 0 and data_ret[0] == 0xFF:
-                    self.logger.result(
-                        f"XCP Slave on UDP port {port}, data: {ret}"
-                    )
+                    self.logger.result(f"XCP Slave on UDP port {port}, data: {ret}")
                     endpoints.append(port)
                 else:
-                    self.logger.info(
-                        f"UDP port {port} is no XCP slave, data: {ret}"
-                    )
+                    self.logger.info(f"UDP port {port} is no XCP slave, data: {ret}")
 
             except socket.timeout:
                 self.logger.info(f"Timeout on UDP port {port}")
@@ -210,9 +200,7 @@ class FindXCP:
             self.xcp_disconnect(server)
             self.socket.close()
 
-        self.logger.result(
-            f"Finished; Found {len(endpoints)} XCP endpoints via UDP"
-        )
+        self.logger.result(f"Finished; Found {len(endpoints)} XCP endpoints via UDP")
 
     async def test_can(self, args: Namespace) -> None:
         target = TargetURI(
@@ -224,9 +212,7 @@ class FindXCP:
         endpoints = list()
 
         sniff_time: int = args.sniff_time
-        self.logger.result(
-            f"Listening to idle bus communication for {sniff_time}s..."
-        )
+        self.logger.result(f"Listening to idle bus communication for {sniff_time}s...")
         addr_idle = await transport.get_idle_traffic(sniff_time)
         self.logger.result(f"Found {len(addr_idle)} CAN Addresses on idle Bus")
         transport.set_filter(addr_idle, inv_filter=True)
@@ -256,9 +242,7 @@ class FindXCP:
             except asyncio.TimeoutError:
                 pass
 
-        self.logger.result(
-            f"Finished; Found {len(endpoints)} XCP endpoints via CAN"
-        )
+        self.logger.result(f"Finished; Found {len(endpoints)} XCP endpoints via CAN")
 
     def test_eth_broadcast(self, args: Namespace) -> None:
         # TODO: rewrite as async
