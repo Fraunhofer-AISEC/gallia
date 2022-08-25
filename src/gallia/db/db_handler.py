@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS discovery_result (
 CREATE TABLE IF NOT EXISTS scan_result (
   id integer primary key,
   run int not null references scan_run(id) on update cascade on delete cascade,
-  mode text not null check(log_mode in ('implicit', 'explicit', 'emphasized')),
+  log_mode text not null check(log_mode in ('implicit', 'explicit', 'emphasized')),
   state json check(state is null or json_valid(state)),
   request_pdu blob not null,
   request_time real not null,
@@ -285,7 +285,7 @@ class DBHandler:
         exception: Optional[Exception],
         send_time: datetime,
         receive_time: Optional[datetime],
-        mode: LogMode,
+        log_mode: LogMode,
         commit: bool = True,
     ) -> None:
         assert self.connection is not None, "Not connected to the database"
@@ -337,7 +337,7 @@ class DBHandler:
 
         query = (
             "INSERT INTO scan_result(run, state, request_pdu, request_time, request_timezone, request_data, "
-            "response_pdu, response_time, response_timezone, response_data, exception, mode) "
+            "response_pdu, response_time, response_timezone, response_data, exception, log_mode) "
             "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         )
 
@@ -358,7 +358,7 @@ class DBHandler:
             else None,
             json.dumps(response_attributes) if response is not None else None,
             repr(exception) if exception is not None else None,
-            mode.name,
+            log_mode.name,
         )
 
         async def execute() -> None:
