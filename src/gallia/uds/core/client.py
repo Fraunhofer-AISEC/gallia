@@ -74,6 +74,8 @@ class UDSClient:
                 raw_resp = await self.transport.request_unsafe(
                     request.pdu, timeout, config.tags
                 )
+                if raw_resp == b"":
+                    raise BrokenPipeError("connection to target lost")
             except asyncio.TimeoutError as e:
                 self.logger.debug(f"{request} failed with: {repr(e)}")
                 last_exception = MissingResponse(request, str(e))
@@ -102,6 +104,8 @@ class UDSClient:
             ):
                 try:
                     raw_resp = await self._read(timeout=waiting_time, tags=config.tags)
+                    if raw_resp == b"":
+                        raise BrokenPipeError("connection to target lost")
                 except asyncio.TimeoutError as e:
                     # Send a tester present to indicate that
                     # we are still there.
