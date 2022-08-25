@@ -126,6 +126,7 @@ def setup_logging(
     # this causes annoying and kind of useless stacktraces. Disable
     # these messages.
     logging.getLogger("asyncio").setLevel(logging.CRITICAL)
+    logging.getLogger("aiosqlite").setLevel(logging.CRITICAL)
 
     stderr_handler = logging.StreamHandler(sys.stderr)
     stderr_handler.setLevel(level)
