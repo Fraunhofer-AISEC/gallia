@@ -12,18 +12,18 @@ import sys
 import traceback
 from abc import ABC, abstractmethod
 from argparse import ArgumentParser, Namespace
-from copy import deepcopy
 from datetime import datetime, timezone
 from enum import Enum, IntEnum, unique
-from importlib.metadata import EntryPoint, entry_points, version
+from importlib.metadata import EntryPoint, entry_points
 from pathlib import Path
 from tempfile import gettempdir
 from typing import Any, Optional, cast
 
 import aiofiles
+import msgspec
 
 from gallia.db.db_handler import DBHandler
-from gallia.log import get_logger, setup_logging
+from gallia.log import get_logger, setup_logging, tz
 from gallia.penlab import Dumpcap, PowerSupply, PowerSupplyURI
 from gallia.transports.base import BaseTransport, TargetURI
 from gallia.transports.can import ISOTPTransport, RawCANTransport
@@ -39,14 +39,28 @@ from gallia.utils import camel_to_snake, g_repr
 class ExitCodes(IntEnum):
     SUCCESS = 0
     GENERIC_ERROR = 1
-    SETUP_FAILED = 10
-    TEARDOWN_FAILED = 11
+    UNHANDLED_EXCEPTION = 2
 
 
 @unique
 class FileNames(Enum):
     PROPERTIES_PRE = "PROPERTIES_PRE.json"
     PROPERTIES_POST = "PROPERTIES_POST.json"
+    META = "META.json"
+
+
+class CommandMeta(msgspec.Struct):
+    category: str
+    subcategory: Optional[str]
+    command: str
+
+
+class RunMeta(msgspec.Struct):
+    command: list[str]
+    command_meta: CommandMeta
+    start_time: str
+    end_time: str
+    exit_code: int
 
 
 def load_transport(target: TargetURI) -> BaseTransport:
@@ -107,14 +121,31 @@ class BaseCommand(ABC):
     SHORT_HELP: str
     EPILOG: Optional[str] = None
     ARTIFACTSDIR: bool = False
+    CATCHED_EXCEPTIONS: list[type[Exception]] = []
 
     def __init__(self, parser: ArgumentParser, config: dict[str, Any]) -> None:
         self.id = camel_to_snake(self.__class__.__name__)
         self.logger = get_logger("gallia")
         self.parser = parser
         self.config = config
+        self.artifacts_dir = Path(".")
+        self.run_meta = RunMeta(
+            command=sys.argv,
+            command_meta=CommandMeta(
+                command=self.COMMAND,
+                category=self.CATEGORY,
+                subcategory=self.SUBCATEGORY,
+            ),
+            start_time=datetime.now(tz).isoformat(),
+            exit_code=0,
+            end_time=0,
+        )
         self.add_class_parser()
         self.add_parser()
+
+    @abstractmethod
+    def run(self, args: Namespace) -> int:
+        ...
 
     def get_config_value(
         self,
@@ -225,9 +256,47 @@ class BaseCommand(ABC):
 
         raise ValueError("base_dir or force_path must be different from None")
 
-    @abstractmethod
-    def run(self, args: Namespace) -> int:
-        ...
+    def entry_point(self, args: Namespace) -> int:
+        if self.ARTIFACTSDIR:
+            self.artifacts_dir = self.prepare_artifactsdir(
+                args.artifacts_base,
+                args.artifacts_dir,
+            )
+            setup_logging(
+                self.get_log_level(args),
+                self.get_file_log_level(args),
+                self.artifacts_dir.joinpath("log.json.zst"),
+            )
+        else:
+            setup_logging(self.get_log_level(args))
+
+        exit_code = 0
+        try:
+            exit_code = self.run(args)
+        except KeyboardInterrupt:
+            exit_code = 128 + signal.SIGINT
+        # Ensure that META.json gets written in the case a
+        # command calls sys.exit().
+        except SystemExit as e:
+            exit_code = e.code
+        except Exception as e:
+            for t in self.CATCHED_EXCEPTIONS:
+                if isinstance(e, t):
+                    exit_code = ExitCodes.GENERIC_ERROR
+                    self.logger.critical(g_repr(e))
+                    break
+            else:
+                exit_code = ExitCodes.UNHANDLED_EXCEPTION
+                traceback.print_exc()
+        finally:
+            if self.ARTIFACTSDIR:
+                self.run_meta.exit_code = exit_code
+                self.run_meta.end_time = datetime.now(tz).isoformat()
+                data = msgspec.json.encode(self.run_meta)
+                self.artifacts_dir.joinpath(FileNames.META.value).write_bytes(data)
+                self.logger.info(f"Stored artifacts at {self.artifacts_dir}")
+
+        return exit_code
 
 
 class Script(BaseCommand, ABC):
@@ -243,13 +312,8 @@ class Script(BaseCommand, ABC):
         ...
 
     def run(self, args: Namespace) -> int:
-        setup_logging(self.get_log_level(args))
-
-        try:
-            self.main(args)
-            return 0
-        except KeyboardInterrupt:
-            return 128 + signal.SIGINT
+        self.main(args)
+        return ExitCodes.SUCCESS
 
 
 class AsyncScript(BaseCommand, ABC):
@@ -265,13 +329,8 @@ class AsyncScript(BaseCommand, ABC):
         ...
 
     def run(self, args: Namespace) -> int:
-        setup_logging(self.get_log_level(args))
-
-        try:
-            asyncio.run(self.main(args))
-            return 0
-        except KeyboardInterrupt:
-            return 128 + signal.SIGINT
+        asyncio.run(self.main(args))
+        return ExitCodes.SUCCESS
 
 
 class Scanner(BaseCommand, ABC):
@@ -293,10 +352,10 @@ class Scanner(BaseCommand, ABC):
 
     CATEGORY = "scan"
     ARTIFACTSDIR = True
+    CATCHED_EXCEPTIONS: list[type[Exception]] = [BrokenPipeError, ConnectionRefusedError]
 
     def __init__(self, parser: ArgumentParser, config: dict[str, Any]) -> None:
         super().__init__(parser, config)
-        self.artifacts_dir: Path
         self.db_handler: Optional[DBHandler] = None
         self.power_supply: Optional[PowerSupply] = None
         self.dumpcap: Optional[Dumpcap] = None
@@ -304,6 +363,38 @@ class Scanner(BaseCommand, ABC):
     @abstractmethod
     async def main(self, args: Namespace) -> None:
         ...
+
+    async def _db_insert_run_meta(self, args: Namespace) -> None:
+        if args.db is not None:
+            self.db_handler = DBHandler(args.db)
+            await self.db_handler.connect()
+
+            await self.db_handler.insert_run_meta(
+                script=sys.argv[0].split()[-1],
+                arguments=sys.argv[1:],
+                start_time=datetime.now(timezone.utc).astimezone(),
+                path=self.artifacts_dir,
+            )
+
+    async def _db_finish_run_meta(self, args: Namespace, exit_code: int) -> None:
+        if self.db_handler is not None and self.db_handler.connection is not None:
+            if self.db_handler.meta is not None:
+                try:
+                    await self.db_handler.complete_run_meta(
+                        datetime.now(timezone.utc).astimezone(),
+                        exit_code,
+                    )
+                except Exception as e:
+                    self.logger.warning(
+                        f"Could not write the run meta to the database: {g_repr(e)}"
+                    )
+
+            try:
+                await self.db_handler.disconnect()
+            except Exception as e:
+                self.logger.error(
+                    f"Could not close the database connection properly: {g_repr(e)}"
+                )
 
     async def setup(self, args: Namespace) -> None:
         if args.target is None:
@@ -372,92 +463,22 @@ class Scanner(BaseCommand, ABC):
             ),
         )
 
-    async def _run(self, args: Namespace) -> int:
-        exit_code: int = ExitCodes.SUCCESS
-
+    async def _run(self, args: Namespace) -> None:
+        await self.setup(args)
         try:
-            if args.db is not None:
-                self.db_handler = DBHandler(args.db)
-                await self.db_handler.connect()
-
-                await self.db_handler.insert_run_meta(
-                    script=sys.argv[0].split()[-1],
-                    arguments=sys.argv[1:],
-                    start_time=datetime.now(timezone.utc).astimezone(),
-                    path=self.artifacts_dir,
-                )
-
-            try:
-                await self.setup(args)
-            except BrokenPipeError as e:
-                exit_code = ExitCodes.GENERIC_ERROR
-                self.logger.critical(g_repr(e))
-            except Exception as e:
-                self.logger.exception(f"setup failed: {g_repr(e)}")
-                sys.exit(ExitCodes.SETUP_FAILED)
-
-            try:
-                try:
-                    await self.main(args)
-                except Exception as e:
-                    exit_code = ExitCodes.GENERIC_ERROR
-                    self.logger.critical(g_repr(e))
-                    traceback.print_exc()
-            finally:
-                try:
-                    await self.teardown(args)
-                except Exception as e:
-                    self.logger.critical(f"teardown failed: {g_repr(e)}")
-                    sys.exit(ExitCodes.TEARDOWN_FAILED)
-            return exit_code
-        except KeyboardInterrupt:
-            exit_code = 128 + signal.SIGINT
-            raise
-        except SystemExit as se:
-            exit_code = se.code
-            raise
+            await self.main(args)
         finally:
-            if self.db_handler is not None and self.db_handler.connection is not None:
-                if self.db_handler.meta is not None:
-                    try:
-                        await self.db_handler.complete_run_meta(
-                            datetime.now(timezone.utc).astimezone(), exit_code
-                        )
-                    except Exception as e:
-                        self.logger.warning(
-                            f"Could not write the run meta to the database: {g_repr(e)}"
-                        )
-
-                try:
-                    await self.db_handler.disconnect()
-                except Exception as e:
-                    self.logger.error(
-                        f"Could not close the database connection properly: {g_repr(e)}"
-                    )
+            await self.teardown(args)
 
     def run(self, args: Namespace) -> int:
-        self.artifacts_dir = self.prepare_artifactsdir(
-            args.artifacts_base,
-            args.artifacts_dir,
-        )
+        asyncio.run(self._run(args))
+        return ExitCodes.SUCCESS
 
-        setup_logging(
-            self.get_log_level(args),
-            self.get_file_log_level(args),
-            self.artifacts_dir.joinpath("log.json.zst"),
-        )
-
-        argv = deepcopy(sys.argv)
-        argv[0] = Path(sys.argv[0]).name
-        self.logger.info(
-            f'Starting "{sys.argv[0]}" ({version("gallia")}) with [{" ".join(argv)}]'
-        )
-        self.logger.info(f"Storing artifacts at {self.artifacts_dir}")
-
-        try:
-            return asyncio.run(self._run(args))
-        except KeyboardInterrupt:
-            return 128 + signal.SIGINT
+    def entry_point(self, args: Namespace) -> int:
+        asyncio.run(self._db_insert_run_meta(args))
+        exit_code = super().entry_point(args)
+        asyncio.run(self._db_finish_run_meta(args, exit_code))
+        return exit_code
 
 
 class UDSScanner(Scanner):
@@ -585,7 +606,9 @@ class UDSScanner(Scanner):
 
         if self.db_handler is not None:
             try:
-                await self.db_handler.insert_scan_run(str(args.target))
+                # No idea, but str(args.target) fails with a strange traceback.
+                # Lets use the attribute directly…
+                await self.db_handler.insert_scan_run(args.target.raw)
                 self._apply_implicit_logging_setting()
             except Exception as e:
                 self.logger.warning(
