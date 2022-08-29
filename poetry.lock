@@ -660,7 +660,7 @@ test = ["coverage", "pytest", "pytest-cov", "tox"]
 
 [[package]]
 name = "pylsp-rope"
-version = "0.1.9"
+version = "0.1.10"
 description = "Extended refactoring capabilities for Python LSP Server using Rope."
 category = "dev"
 optional = false
@@ -1177,7 +1177,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9,<3.11"
-content-hash = "9afccc0861b1c3d1307dbc74e3d5794054b402621851d4bbe548c9b3eb9042e8"
+content-hash = "802cc82336bff22533de42cd9fc7bcf468b28ba3933c7bf55d86dd94cf30a195"
 
 [metadata.files]
 aiofiles = [
@@ -1842,8 +1842,8 @@ pylsp-mypy = [
     {file = "pylsp_mypy-0.6.2-py3-none-any.whl", hash = "sha256:473bf16027c3a69d8052c184ba72f049ce137b10eeefea0b1414c9e589ec79a9"},
 ]
 pylsp-rope = [
-    {file = "pylsp-rope-0.1.9.tar.gz", hash = "sha256:67ae55aeea2d60e2d77c5713445fa780e78b7ce543d76e88cfc5a958168b4664"},
-    {file = "pylsp_rope-0.1.9-py3-none-any.whl", hash = "sha256:3ace980a1f8abc1d68f5d06f01d37cce2055fd62795fa4ef257fc03bb96651cc"},
+    {file = "pylsp-rope-0.1.10.tar.gz", hash = "sha256:9e6104f15f922f633a4ba06ba0280f08a5e18973028f9bbdcae57b715d81cdd7"},
+    {file = "pylsp_rope-0.1.10-py3-none-any.whl", hash = "sha256:d5e9094415ff848b2034d4b64b4fdc5ec172ddf4e2a5d85c77bfa2da6f6ec61f"},
 ]
 pyparsing = [
     {file = "pyparsing-3.0.9-py3-none-any.whl", hash = "sha256:5026bae9a10eeaefb61dab2f09052b9f4307d44aee4eda64b309723d8d206bbc"},
