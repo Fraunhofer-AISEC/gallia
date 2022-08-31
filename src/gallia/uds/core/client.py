@@ -59,6 +59,7 @@ class UDSClient:
         that it does not hold the mutex in the underlying transport.
         """
         config = config if config is not None else UDSRequestConfig()
+        tags: list[str] = [] if config.tags is None else config.tags
 
         last_exception: Exception = MissingResponse(request)
         max_retry = config.max_retry if config.max_retry else self.max_retry
@@ -71,6 +72,7 @@ class UDSClient:
             if i > 0:
                 self.logger.debug(f"retrying {i} from {max_retry}…")
             try:
+                self.logger.debug(request.pdu.hex(), extra={"tags": ["write", "uds"] + tags})
                 raw_resp = await self.transport.request_unsafe(
                     request.pdu, timeout, config.tags
                 )
@@ -82,6 +84,7 @@ class UDSClient:
                 await asyncio.sleep(wait_time)
                 continue
 
+            self.logger.debug(raw_resp.hex(), extra={"tags": ["read", "uds"] + tags})
             resp = parse_pdu(raw_resp, request)
 
             if isinstance(resp, service.NegativeResponse):
@@ -106,6 +109,7 @@ class UDSClient:
                     raw_resp = await self._read(timeout=waiting_time, tags=config.tags)
                     if raw_resp == b"":
                         raise BrokenPipeError("connection to target lost")
+                    self.logger.debug(raw_resp.hex(), extra={"tags": ["read", "uds"] + tags})
                 except asyncio.TimeoutError as e:
                     # Send a tester present to indicate that
                     # we are still there.
@@ -1147,12 +1151,7 @@ class UDSClient:
         :param config: The request config parameters
         :return: The response.
         """
-        self.logger.debug(request.pdu.hex(), extra={"tags": ["write", "uds"]})
-        self.logger.debug(str(request), extra={"tags": ["write", "dissected", "uds"]})
-        resp = await self._request(request, config)
-        self.logger.debug(resp.pdu.hex(), extra={"tags": ["read", "uds"]})
-        self.logger.debug(str(resp), extra={"tags": ["read", "dissected", "uds"]})
-        return resp
+        return await self._request(request, config)
 
     async def _request(
         self, request: service.UDSRequest, config: Optional[UDSRequestConfig] = None
