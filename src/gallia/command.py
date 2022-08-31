@@ -122,7 +122,7 @@ class BaseCommand(ABC):
     EPILOG: Optional[str] = None
 
     LOGGER_NAME = "gallia"
-    ARTIFACTSDIR: bool = False
+    HAS_ARTIFACTS_DIR: bool = False
     CATCHED_EXCEPTIONS: list[type[Exception]] = []
 
     def __init__(self, parser: ArgumentParser, config: dict[str, Any]) -> None:
@@ -188,7 +188,7 @@ class BaseCommand(ABC):
             help="increase verbosity on the console",
         )
 
-        if self.ARTIFACTSDIR is False:
+        if self.HAS_ARTIFACTS_DIR is False:
             return
 
         _mutex_group = group.add_mutually_exclusive_group()
@@ -259,7 +259,7 @@ class BaseCommand(ABC):
         raise ValueError("base_dir or force_path must be different from None")
 
     def entry_point(self, args: Namespace) -> int:
-        if self.ARTIFACTSDIR:
+        if self.HAS_ARTIFACTS_DIR:
             self.artifacts_dir = self.prepare_artifactsdir(
                 args.artifacts_base,
                 args.artifacts_dir,
@@ -291,7 +291,7 @@ class BaseCommand(ABC):
                 exit_code = ExitCodes.UNHANDLED_EXCEPTION
                 traceback.print_exc()
         finally:
-            if self.ARTIFACTSDIR:
+            if self.HAS_ARTIFACTS_DIR:
                 self.run_meta.exit_code = exit_code
                 self.run_meta.end_time = datetime.now(tz).isoformat()
                 data = msgspec.json.encode(self.run_meta)
