@@ -297,7 +297,9 @@ class BaseCommand(ABC):
                 self.run_meta.exit_code = exit_code
                 self.run_meta.end_time = datetime.now(tz).isoformat()
                 data = msgspec.json.encode(self.run_meta)
-                self.artifacts_dir.joinpath(FileNames.META.value).write_bytes(data + b"\n")
+                self.artifacts_dir.joinpath(FileNames.META.value).write_bytes(
+                    data + b"\n"
+                )
                 self.logger.info(f"Stored artifacts at {self.artifacts_dir}")
 
         return exit_code
@@ -309,14 +311,25 @@ class Script(BaseCommand, ABC):
     .main() method."""
 
     CATEGORY = "script"
-    SUBCATEGORY = None
+    SUBCATEGORY: Optional[str] = None
+
+    def setup(self, args: Namespace) -> None:
+        ...
 
     @abstractmethod
     def main(self, args: Namespace) -> None:
         ...
 
+    def teardown(self, args: Namespace) -> None:
+        ...
+
     def run(self, args: Namespace) -> int:
-        self.main(args)
+        self.setup(args)
+        try:
+            self.main(args)
+        finally:
+            self.teardown(args)
+
         return ExitCodes.SUCCESS
 
 
@@ -326,18 +339,31 @@ class AsyncScript(BaseCommand, ABC):
     the .main() method."""
 
     CATEGORY = "script"
-    SUBCATEGORY = None
+    SUBCATEGORY: Optional[str] = None
+
+    async def setup(self, args: Namespace) -> None:
+        ...
 
     @abstractmethod
     async def main(self, args: Namespace) -> None:
         ...
 
+    async def teardown(self, args: Namespace) -> None:
+        ...
+
+    async def _run(self, args: Namespace) -> None:
+        await self.setup(args)
+        try:
+            await self.main(args)
+        finally:
+            await self.teardown(args)
+
     def run(self, args: Namespace) -> int:
-        asyncio.run(self.main(args))
+        asyncio.run(self._run(args))
         return ExitCodes.SUCCESS
 
 
-class Scanner(BaseCommand, ABC):
+class Scanner(AsyncScript, ABC):
     """Scanner is a base class for all scanning related commands.
     A scanner has the following properties:
 
@@ -355,7 +381,7 @@ class Scanner(BaseCommand, ABC):
     """
 
     CATEGORY = "scan"
-    ARTIFACTSDIR = True
+    HAS_ARTIFACTS_DIR = True
     CATCHED_EXCEPTIONS: list[type[Exception]] = [
         BrokenPipeError,
         ConnectionRefusedError,
@@ -469,17 +495,6 @@ class Scanner(BaseCommand, ABC):
                 "optional argument specifies the sleep time in secs"
             ),
         )
-
-    async def _run(self, args: Namespace) -> None:
-        await self.setup(args)
-        try:
-            await self.main(args)
-        finally:
-            await self.teardown(args)
-
-    def run(self, args: Namespace) -> int:
-        asyncio.run(self._run(args))
-        return ExitCodes.SUCCESS
 
     def entry_point(self, args: Namespace) -> int:
         asyncio.run(self._db_insert_run_meta(args))
