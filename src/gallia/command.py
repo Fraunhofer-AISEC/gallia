@@ -47,6 +47,7 @@ class FileNames(Enum):
     PROPERTIES_PRE = "PROPERTIES_PRE.json"
     PROPERTIES_POST = "PROPERTIES_POST.json"
     META = "META.json"
+    ENV = "ENV"
 
 
 class CommandMeta(msgspec.Struct):
@@ -103,6 +104,9 @@ def load_ecu(vendor: str) -> type[ECU]:
     raise ValueError(f"no such OEM: '{vendor}'")
 
 
+ConfigType = dict[str, Any]
+
+
 class BaseCommand(ABC):
     """GalliaBase is a baseclass for all gallia commands.
     In order to register cli arguments:
@@ -125,7 +129,7 @@ class BaseCommand(ABC):
     HAS_ARTIFACTS_DIR: bool = False
     CATCHED_EXCEPTIONS: list[type[Exception]] = []
 
-    def __init__(self, parser: ArgumentParser, config: dict[str, Any]) -> None:
+    def __init__(self, parser: ArgumentParser, config: ConfigType) -> None:
         self.id = camel_to_snake(self.__class__.__name__)
         self.logger = get_logger(self.LOGGER_NAME)
         self.parser = parser
@@ -251,7 +255,7 @@ class BaseCommand(ABC):
             artifacts_dir = command_dir.joinpath(_run_dir).absolute()
             artifacts_dir.mkdir(parents=True)
 
-            self._dump_environment(artifacts_dir.joinpath("ENV"))
+            self._dump_environment(artifacts_dir.joinpath(FileNames.ENV.value))
             self._add_latest_link(command_dir)
 
             return artifacts_dir.absolute()
