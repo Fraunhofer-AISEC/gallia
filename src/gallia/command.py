@@ -356,7 +356,10 @@ class Scanner(BaseCommand, ABC):
 
     CATEGORY = "scan"
     ARTIFACTSDIR = True
-    CATCHED_EXCEPTIONS: list[type[Exception]] = [BrokenPipeError, ConnectionRefusedError]
+    CATCHED_EXCEPTIONS: list[type[Exception]] = [
+        BrokenPipeError,
+        ConnectionRefusedError,
+    ]
 
     def __init__(self, parser: ArgumentParser, config: dict[str, Any]) -> None:
         super().__init__(parser, config)
