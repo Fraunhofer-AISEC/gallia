@@ -77,7 +77,10 @@ python-versions = ">=3.7.2"
 
 [package.dependencies]
 lazy-object-proxy = ">=1.4.0"
-wrapt = {version = ">=1.11,<2", markers = "python_version < \"3.11\""}
+wrapt = [
+    {version = ">=1.11,<2", markers = "python_version < \"3.11\""},
+    {version = ">=1.14,<2", markers = "python_version >= \"3.11\""},
+]
 
 [[package]]
 name = "async-timeout"
@@ -1217,8 +1220,8 @@ cffi = ["cffi (>=1.11)"]
 
 [metadata]
 lock-version = "1.1"
-python-versions = ">=3.10,<3.11"
-content-hash = "28747bd8e2a9d17972ed37014fc033a87e3a7efa0dd7680e59c0eecdb1e698a5"
+python-versions = ">=3.10,<3.12"
+content-hash = "70cf1b15845aceb31dcc9411ff8b9c86adc1a937887bb0616ddf0720e6353e82"
 
 [metadata.files]
 aiofiles = [
