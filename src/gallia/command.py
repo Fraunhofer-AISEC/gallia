@@ -120,12 +120,14 @@ class BaseCommand(ABC):
     SUBCATEGORY: Optional[str]
     SHORT_HELP: str
     EPILOG: Optional[str] = None
+
+    LOGGER_NAME = "gallia"
     ARTIFACTSDIR: bool = False
     CATCHED_EXCEPTIONS: list[type[Exception]] = []
 
     def __init__(self, parser: ArgumentParser, config: dict[str, Any]) -> None:
         self.id = camel_to_snake(self.__class__.__name__)
-        self.logger = get_logger("gallia")
+        self.logger = get_logger(self.LOGGER_NAME)
         self.parser = parser
         self.config = config
         self.artifacts_dir = Path(".")
