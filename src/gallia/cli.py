@@ -246,8 +246,8 @@ def build_cli(parsers: dict[str, Any], config: dict[str, Any]) -> None:
             help=cls.SHORT_HELP,
             epilog=cls.EPILOG,
         )
-        scanner = cls(subparser, config)
-        subparser.set_defaults(run_func=scanner.entry_point)
+        cmd = cls(subparser, config)
+        subparser.set_defaults(run_func=cmd.entry_point)
 
 
 def cmd_show_config(
