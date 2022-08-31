@@ -5,14 +5,13 @@
 import argparse
 import asyncio
 import json
-import os
 import logging
+import os
 import signal
 import sys
 import traceback
 from abc import ABC, abstractmethod
 from argparse import ArgumentParser, Namespace
-from asyncio import Task
 from copy import deepcopy
 from datetime import datetime, timezone
 from enum import Enum, IntEnum, unique
@@ -476,7 +475,6 @@ class UDSScanner(Scanner):
         super().__init__(parser, config)
         self.ecu: ECU
         self.transport: BaseTransport
-        self.tester_present_task: Optional[Task] = None
         self._implicit_logging = True
 
     def add_class_parser(self) -> None:
@@ -555,36 +553,6 @@ class UDSScanner(Scanner):
             help="Compare properties before and after the scan",
         )
 
-    async def _tester_present_worker(self, interval: int) -> None:
-        assert self.transport
-        self.logger.debug("tester present worker started")
-        while True:
-            try:
-                async with self.transport.mutex:
-                    await self.transport.write(bytes([0x3E, 0x80]), tags=["IGNORE"])
-
-                    # Hold the mutex for 10 ms to synchronize this background
-                    # worker with the main sender task.
-                    await asyncio.sleep(0.01)
-
-                    # The BCP might send us an error. Everything
-                    # will break if we do not read it back. Since
-                    # this read() call is only intended to flush
-                    # errors caused by the previous write(), it is
-                    # sane to ignore the error here.
-                    try:
-                        await self.transport.read(timeout=0.01)
-                    except asyncio.TimeoutError:
-                        pass
-                await asyncio.sleep(interval)
-            except asyncio.CancelledError:
-                self.logger.debug("tester present worker terminated")
-                break
-            except Exception as e:
-                self.logger.debug(f"tester present got {g_repr(e)}")
-                # Wait until the stack recovers, but not for too long…
-                await asyncio.sleep(1)
-
     @property
     def implicit_logging(self) -> bool:
         return self._implicit_logging
@@ -641,13 +609,7 @@ class UDSScanner(Scanner):
         await self.ecu.connect()
 
         if args.tester_present:
-            coroutine = self._tester_present_worker(args.tester_present_interval)
-            self.tester_present_task = asyncio.create_task(coroutine)
-
-            # enforce context switch
-            # this ensures, that the task is executed at least once
-            # if the task is not executed, task.cancel will fail with CancelledError
-            await asyncio.sleep(0)
+            await self.ecu.start_cyclic_tester_present(args.tester_present_interval)
 
         if args.properties is True:
             path = self.artifacts_dir.joinpath(FileNames.PROPERTIES_PRE.value)
@@ -690,9 +652,8 @@ class UDSScanner(Scanner):
                     f"Could not write the scan run to the database: {g_repr(e)}"
                 )
 
-        if self.tester_present_task:
-            self.tester_present_task.cancel()
-            await self.tester_present_task
+        if args.tester_present:
+            await self.ecu.stop_cyclic_tester_present()
 
         await self.transport.close()
 

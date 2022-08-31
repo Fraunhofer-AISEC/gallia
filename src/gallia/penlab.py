@@ -18,7 +18,7 @@ from socket import SocketKind  # pylint: disable=no-name-in-module
 from typing import Callable, Optional, Union
 from urllib.parse import urlparse
 
-from gallia.log import get_logger, Logger
+from gallia.log import Logger, get_logger
 from gallia.transports.base import TargetURI
 from gallia.transports.can import ISOTPTransport, RawCANTransport
 from gallia.utils import g_repr, split_host_port
