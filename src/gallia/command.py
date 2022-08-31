@@ -22,6 +22,7 @@ from typing import Any, Optional, cast
 import aiofiles
 import msgspec
 
+from gallia.config import ConfigType
 from gallia.db.db_handler import DBHandler
 from gallia.log import get_logger, setup_logging, tz
 from gallia.penlab import Dumpcap, PowerSupply, PowerSupplyURI
@@ -102,9 +103,6 @@ def load_ecu(vendor: str) -> type[ECU]:
                 return entry_point.load()
 
     raise ValueError(f"no such OEM: '{vendor}'")
-
-
-ConfigType = dict[str, Any]
 
 
 class BaseCommand(ABC):
