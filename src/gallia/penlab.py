@@ -153,7 +153,10 @@ class Dumpcap:
 
     async def stop(self) -> None:
         await asyncio.sleep(self.cleanup)
-        self.proc.terminate()
+        try:
+            self.proc.terminate()
+        except ProcessLookupError:
+            self.logger.warning("dumpcap terminated before gallia")
         await self.proc.wait()
         await self.compressor
 
