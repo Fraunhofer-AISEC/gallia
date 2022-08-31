@@ -15,7 +15,6 @@ from typing import Any, Optional
 
 import argcomplete
 
-from gallia.config import load_config_file
 from gallia.command import BaseCommand
 from gallia.commands.discover.uds.doip import DoIPDiscoverer
 from gallia.commands.discover.uds.isotp import IsotpDiscoverer
@@ -39,6 +38,7 @@ from gallia.commands.scan.uds.sa_dump_seeds import SASeedsDumper
 from gallia.commands.scan.uds.services import ServicesScanner
 from gallia.commands.scan.uds.sessions import SessionsScanner
 from gallia.commands.script.vecu import VirtualECU
+from gallia.config import load_config_file
 from gallia.log import setup_logging
 
 # from gallia.commands.prims.uds.simple_test_xcp import SimpleTestXCP

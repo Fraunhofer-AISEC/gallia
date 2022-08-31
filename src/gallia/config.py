@@ -10,7 +10,6 @@ from typing import Any, Optional
 import tomlkit
 from xdg import xdg_config_dirs
 
-
 ConfigType = dict[str, Any]
 
 
