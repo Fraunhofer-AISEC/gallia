@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: CC0-1.0
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
+requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
