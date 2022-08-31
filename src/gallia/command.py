@@ -297,7 +297,7 @@ class BaseCommand(ABC):
                 self.run_meta.exit_code = exit_code
                 self.run_meta.end_time = datetime.now(tz).isoformat()
                 data = msgspec.json.encode(self.run_meta)
-                self.artifacts_dir.joinpath(FileNames.META.value).write_bytes(data)
+                self.artifacts_dir.joinpath(FileNames.META.value).write_bytes(data + b"\n")
                 self.logger.info(f"Stored artifacts at {self.artifacts_dir}")
 
         return exit_code
