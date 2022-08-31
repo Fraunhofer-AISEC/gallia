@@ -27,12 +27,7 @@ from gallia.uds.core.constants import (
     UDSErrorCodes,
     UDSIsoServices,
 )
-from gallia.uds.core.utils import (
-    bytes_repr,
-    int_repr,
-    service_repr,
-    to_bytes,
-)
+from gallia.uds.core.utils import bytes_repr, int_repr, service_repr, to_bytes
 from gallia.uds.ecu import ECUState
 
 

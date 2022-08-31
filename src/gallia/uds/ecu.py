@@ -5,18 +5,22 @@
 from __future__ import annotations
 
 import asyncio
+from asyncio import Task
 from datetime import datetime, timezone
 from typing import Optional, Union
 
 from gallia.db.db_handler import DBHandler, LogMode
-from gallia.penlab import PowerSupply
 from gallia.log import get_logger
+from gallia.penlab import PowerSupply
 from gallia.transports.base import BaseTransport
 from gallia.uds.core import service
 from gallia.uds.core.client import UDSClient, UDSRequestConfig
-from gallia.uds.core.exception import UDSException
 from gallia.uds.core.constants import DataIdentifier
-from gallia.uds.core.exception import ResponseException, UnexpectedNegativeResponse
+from gallia.uds.core.exception import (
+    ResponseException,
+    UDSException,
+    UnexpectedNegativeResponse,
+)
 from gallia.uds.core.utils import from_bytes
 from gallia.uds.helpers import (
     as_exception,
@@ -56,6 +60,7 @@ class ECU(UDSClient):
 
         super().__init__(transport, timeout, max_retry)
         self.logger = get_logger("ecu")
+        self.tester_present_task: Optional[Task] = None
         self.power_supply = power_supply
         self.state = ECUState()
         self.db_handler: Optional[DBHandler] = None
@@ -337,6 +342,55 @@ class ECU(UDSClient):
         except asyncio.TimeoutError:
             self.logger.critical("Timeout while waiting for ECU!")
             return False
+
+    async def _tester_present_worker(self, interval: float) -> None:
+        assert self.transport
+        self.logger.debug("tester present worker started")
+        while True:
+            try:
+                async with self.transport.mutex:
+                    await self.transport.write(bytes([0x3E, 0x80]), tags=["IGNORE"])
+
+                    # Hold the mutex for 10 ms to synchronize this background
+                    # worker with the main sender task.
+                    await asyncio.sleep(0.01)
+
+                    # The BCP might send us an error. Everything
+                    # will break if we do not read it back. Since
+                    # this read() call is only intended to flush
+                    # errors caused by the previous write(), it is
+                    # sane to ignore the error here.
+                    try:
+                        await self.transport.read(timeout=0.01)
+                    except asyncio.TimeoutError:
+                        pass
+                await asyncio.sleep(interval)
+            except asyncio.CancelledError:
+                self.logger.debug("tester present worker terminated")
+                break
+            except Exception as e:
+                self.logger.debug(f"tester present got {g_repr(e)}")
+                # Wait until the stack recovers, but not for too long…
+                await asyncio.sleep(1)
+
+    async def start_cyclic_tester_present(self, interval: float) -> None:
+        coroutine = self._tester_present_worker(interval)
+        self.tester_present_task = asyncio.create_task(coroutine)
+
+        # enforce context switch
+        # this ensures, that the task is executed at least once
+        # if the task is not executed, task.cancel will fail with CancelledError
+        await asyncio.sleep(0)
+
+    async def stop_cyclic_tester_present(self) -> None:
+        if self.tester_present_task is None:
+            self.logger.warning(
+                "BUG: stop_cyclic_tester_present() called but no task running"
+            )
+            return
+
+        self.tester_present_task.cancel()
+        await self.tester_present_task
 
     async def update_state(
         self, request: service.UDSRequest, response: service.UDSResponse
