@@ -24,8 +24,9 @@ import msgspec
 
 from gallia.config import ConfigType
 from gallia.db.db_handler import DBHandler
+from gallia.dumpcap import Dumpcap
 from gallia.log import get_logger, setup_logging, tz
-from gallia.penlab import Dumpcap, PowerSupply, PowerSupplyURI
+from gallia.powersupply import PowerSupply, PowerSupplyURI
 from gallia.transports.base import BaseTransport, TargetURI
 from gallia.transports.can import ISOTPTransport, RawCANTransport
 from gallia.transports.doip import DoIPTransport

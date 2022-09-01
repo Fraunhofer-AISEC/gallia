@@ -11,7 +11,7 @@ from typing import Optional, Union
 
 from gallia.db.db_handler import DBHandler, LogMode
 from gallia.log import get_logger
-from gallia.penlab import PowerSupply
+from gallia.powersupply import PowerSupply
 from gallia.transports.base import BaseTransport
 from gallia.uds.core import service
 from gallia.uds.core.client import UDSClient, UDSRequestConfig
