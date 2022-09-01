@@ -45,7 +45,7 @@ def git_pull() -> None:
     run_wrapper(["git", "pull"], check=True)
 
 
-def check_project(mode: BumpMode) -> None:
+def check_project(rule: BumpMode | str) -> None:
     p = run(
         ["git", "rev-parse", "--abbrev-ref", "HEAD"],
         check=True,
@@ -53,17 +53,18 @@ def check_project(mode: BumpMode) -> None:
     )
     current_branch = p.stdout.decode().strip()
 
-    if mode == BumpMode.PATCH or mode == BumpMode.PREPATCH:
-        if not current_branch.endswith("-maint"):
-            die("minor or patch releases must be cut from maintenance branch!")
-    elif (
-        mode == BumpMode.MAJOR
-        or mode == BumpMode.PREMAJOR
-        or mode == BumpMode.MINOR
-        or mode == BumpMode.PREMINOR
-    ):
-        if current_branch != "master":
-            die("major releases must be cut from master branch!")
+    if isinstance(rule, BumpMode):
+        if rule == BumpMode.PATCH or rule == BumpMode.PREPATCH:
+            if not current_branch.endswith("-maint"):
+                die("minor or patch releases must be cut from maintenance branch!")
+        elif (
+            rule == BumpMode.MAJOR
+            or rule == BumpMode.PREMAJOR
+            or rule == BumpMode.MINOR
+            or rule == BumpMode.PREMINOR
+        ):
+            if current_branch != "master":
+                die("major releases must be cut from master branch!")
 
     p = run(
         ["git", "diff", "--no-ext-diff", "--quiet", "--exit-code"],
@@ -78,10 +79,13 @@ def get_current_version() -> str:
     return version_str.split(" ", 2)[1]
 
 
-def bump_version(mode: BumpMode) -> None:
-    if DRY_RUN:
-        return print(f"would bump: {mode}")
-    run(["poetry", "version", mode.value])
+def bump_version(rule: BumpMode | str) -> None:
+    if isinstance(rule, BumpMode):
+        run(["poetry", "version", rule.value])
+    elif isinstance(rule, str):
+        run(["poetry", "version", rule])
+    else:
+        raise ValueError("BUG: wrong type")
 
 
 def commit_bump(version: str) -> None:
@@ -95,13 +99,17 @@ def commit_bump(version: str) -> None:
     )
 
 
-def github_release(version: str, mode: BumpMode, notes: ReleaseNotes) -> None:
+def github_release(version: str, rule: BumpMode | str, notes: ReleaseNotes) -> None:
     run_wrapper(["git", "push", "--follow-tags"], check=True)
 
     cmd = ["gh", "release", "create"]
-    if notes == ReleaseNotes.GENERATE:
-        cmd += ["--generate-notes"]
-    if mode.value.startswith("pre"):
+    if isinstance(rule, BumpMode):
+        if notes == ReleaseNotes.GENERATE:
+            cmd += ["--generate-notes"]
+        if rule.value.startswith("pre"):
+            cmd += ["--prerelease"]
+    # Force experiments to be --prerelease.
+    elif isinstance(rule, str):
         cmd += ["--prerelease"]
     cmd += [f"v{version}"]
 
@@ -122,8 +130,14 @@ def parse_args() -> Namespace:
         action="store_true",
         help="auto generate release notes",
     )
-    parser.add_argument(
-        "RULE",
+
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(
+        "--version",
+        help="set version manually",
+    )
+    group.add_argument(
+        "--rule",
         choices=list(map(lambda x: x.value, list(BumpMode))),
         help="bumprule for the next version",
     )
@@ -137,7 +151,7 @@ def main() -> None:
         global DRY_RUN
         DRY_RUN = True
 
-    rule = BumpMode(args.RULE)
+    rule = BumpMode(args.rule) if args.rule else args.version
     notes = ReleaseNotes.GENERATE if args.generate_notes else ReleaseNotes.INTERACTIVE
 
     check_project(rule)
