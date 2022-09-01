@@ -8,7 +8,7 @@ import sys
 from argparse import Namespace
 
 from gallia.command import UDSScanner
-from gallia.uds.core.service import NegativeResponse, RoutineControlResponse
+from gallia.services.uds.core.service import NegativeResponse, RoutineControlResponse
 from gallia.utils import auto_int, g_repr
 
 

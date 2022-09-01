@@ -12,21 +12,21 @@ from typing import Any
 from gallia.db.db_handler import DBHandler, LogMode
 from gallia.log import get_logger
 from gallia.powersupply import PowerSupply
-from gallia.transports.base import BaseTransport
-from gallia.uds.core import service
-from gallia.uds.core.client import UDSClient, UDSRequestConfig
-from gallia.uds.core.constants import DataIdentifier
-from gallia.uds.core.exception import (
+from gallia.services.uds.core import service
+from gallia.services.uds.core.client import UDSClient, UDSRequestConfig
+from gallia.services.uds.core.constants import DataIdentifier
+from gallia.services.uds.core.exception import (
     ResponseException,
     UDSException,
     UnexpectedNegativeResponse,
 )
-from gallia.uds.core.utils import from_bytes
-from gallia.uds.helpers import (
+from gallia.services.uds.core.utils import from_bytes
+from gallia.services.uds.helpers import (
     as_exception,
     raise_for_error,
     suggests_identifier_not_supported,
 )
+from gallia.transports.base import BaseTransport
 from gallia.utils import g_repr
 
 

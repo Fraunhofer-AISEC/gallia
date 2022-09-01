@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from gallia.uds.core import service
-from gallia.uds.core.constants import UDSErrorCodes, UDSIsoServices
-from gallia.uds.core.exception import (
+from gallia.services.uds.core import service
+from gallia.services.uds.core.constants import UDSErrorCodes, UDSIsoServices
+from gallia.services.uds.core.exception import (
     MalformedResponse,
     RequestResponseMismatch,
     UnexpectedNegativeResponse,

@@ -6,7 +6,7 @@ from binascii import hexlify
 from math import ceil
 from typing import Any
 
-from gallia.uds.core.constants import UDSIsoServices
+from gallia.services.uds.core.constants import UDSIsoServices
 
 
 def from_bytes(x: bytes) -> int:

@@ -8,7 +8,7 @@ from argparse import Namespace
 from pathlib import Path
 
 from gallia.command import UDSScanner
-from gallia.uds.core.service import NegativeResponse
+from gallia.services.uds.core.service import NegativeResponse
 from gallia.utils import auto_int, g_repr
 
 

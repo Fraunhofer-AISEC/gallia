@@ -8,10 +8,10 @@ from argparse import Namespace
 from binascii import unhexlify
 
 from gallia.command import UDSScanner
-from gallia.uds.core.client import UDSRequestConfig
-from gallia.uds.core.constants import UDSErrorCodes
-from gallia.uds.core.service import NegativeResponse
-from gallia.uds.core.utils import uds_memory_parameters
+from gallia.services.uds.core.client import UDSRequestConfig
+from gallia.services.uds.core.constants import UDSErrorCodes
+from gallia.services.uds.core.service import NegativeResponse
+from gallia.services.uds.core.utils import uds_memory_parameters
 from gallia.utils import auto_int, g_repr
 
 

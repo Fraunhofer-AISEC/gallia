@@ -62,9 +62,11 @@ def test_config_discovery_env(tmp_path: Path) -> None:
 
 def test_get_value(tmp_path: Path) -> None:
     config_file = tmp_path.joinpath("gallia.toml")
-    config_file.write_text("""[gallia.foobar]
+    config_file.write_text(
+        """[gallia.foobar]
 baz = "fiz"
-""")
+"""
+    )
     os.chdir(tmp_path)
 
     config, _ = load_config_file()

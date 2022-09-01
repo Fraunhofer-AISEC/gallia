@@ -8,8 +8,8 @@ import asyncio
 from abc import ABC
 from typing import Any
 
-from gallia.uds.core.constants import UDSErrorCodes
-from gallia.uds.core.service import NegativeResponse, UDSRequest, UDSResponse
+from gallia.services.uds.core.constants import UDSErrorCodes
+from gallia.services.uds.core.service import NegativeResponse, UDSRequest, UDSResponse
 
 # ****************
 # * Base classes *

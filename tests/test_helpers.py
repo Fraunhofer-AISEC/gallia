@@ -3,7 +3,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import pytest
-from gallia.uds.core.utils import uds_memory_parameters, address_and_size_length
+
+from gallia.services.uds.core.utils import (
+    address_and_size_length,
+    uds_memory_parameters,
+)
 from gallia.utils import split_host_port
 
 

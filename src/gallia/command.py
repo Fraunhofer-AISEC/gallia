@@ -27,12 +27,12 @@ from gallia.db.db_handler import DBHandler
 from gallia.dumpcap import Dumpcap
 from gallia.log import get_logger, setup_logging, tz
 from gallia.powersupply import PowerSupply, PowerSupplyURI
+from gallia.services.uds.core.exception import UDSException
+from gallia.services.uds.core.service import NegativeResponse, UDSResponse
+from gallia.services.uds.ecu import ECU
+from gallia.services.uds.helpers import raise_for_error
 from gallia.transports import load_transport
 from gallia.transports.base import BaseTransport, TargetURI
-from gallia.uds.core.exception import UDSException
-from gallia.uds.core.service import NegativeResponse, UDSResponse
-from gallia.uds.ecu import ECU
-from gallia.uds.helpers import raise_for_error
 from gallia.utils import camel_to_snake, g_repr
 
 

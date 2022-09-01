@@ -7,10 +7,10 @@ from argparse import Namespace
 from binascii import unhexlify
 
 from gallia.command import DiscoveryScanner
+from gallia.services.uds.core.client import UDSClient
+from gallia.services.uds.core.service import NegativeResponse, UDSRequest
 from gallia.transports.base import TargetURI
 from gallia.transports.can import ISOTPTransport, RawCANTransport
-from gallia.uds.core.client import UDSClient
-from gallia.uds.core.service import NegativeResponse, UDSRequest
 from gallia.utils import auto_int, can_id_repr, g_repr, write_target_list
 
 

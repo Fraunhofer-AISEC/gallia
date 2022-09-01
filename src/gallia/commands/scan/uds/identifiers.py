@@ -9,12 +9,12 @@ from argparse import Namespace
 from itertools import product
 
 from gallia.command import UDSScanner
-from gallia.uds.core.client import UDSRequestConfig
-from gallia.uds.core.constants import RCSubFuncs, UDSErrorCodes, UDSIsoServices
-from gallia.uds.core.exception import IllegalResponse
-from gallia.uds.core.service import NegativeResponse, UDSResponse
-from gallia.uds.core.utils import service_repr
-from gallia.uds.helpers import suggests_service_not_supported
+from gallia.services.uds.core.client import UDSRequestConfig
+from gallia.services.uds.core.constants import RCSubFuncs, UDSErrorCodes, UDSIsoServices
+from gallia.services.uds.core.exception import IllegalResponse
+from gallia.services.uds.core.service import NegativeResponse, UDSResponse
+from gallia.services.uds.core.utils import service_repr
+from gallia.services.uds.helpers import suggests_service_not_supported
 from gallia.utils import ParseSkips, auto_int, g_repr
 
 
