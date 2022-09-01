@@ -72,7 +72,9 @@ class UDSClient:
             if i > 0:
                 self.logger.debug(f"retrying {i} from {max_retry}…")
             try:
-                self.logger.debug(request.pdu.hex(), extra={"tags": ["write", "uds"] + tags})
+                self.logger.debug(
+                    request.pdu.hex(), extra={"tags": ["write", "uds"] + tags}
+                )
                 raw_resp = await self.transport.request_unsafe(
                     request.pdu, timeout, config.tags
                 )
@@ -109,7 +111,9 @@ class UDSClient:
                     raw_resp = await self._read(timeout=waiting_time, tags=config.tags)
                     if raw_resp == b"":
                         raise BrokenPipeError("connection to target lost")
-                    self.logger.debug(raw_resp.hex(), extra={"tags": ["read", "uds"] + tags})
+                    self.logger.debug(
+                        raw_resp.hex(), extra={"tags": ["read", "uds"] + tags}
+                    )
                 except asyncio.TimeoutError as e:
                     # Send a tester present to indicate that
                     # we are still there.
