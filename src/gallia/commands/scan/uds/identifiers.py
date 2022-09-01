@@ -27,7 +27,7 @@ class ScanIdentifiers(UDSScanner):
     COMMAND = "identifiers"
     SHORT_HELP = "identifier scan of a UDS service"
 
-    def add_parser(self) -> None:
+    def configure_parser(self) -> None:
         self.parser.add_argument(
             "--sessions",
             type=auto_int,

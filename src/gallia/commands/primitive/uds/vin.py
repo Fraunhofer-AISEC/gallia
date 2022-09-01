@@ -15,7 +15,7 @@ class VINPrimitive(UDSScanner):
     COMMAND = "vin"
     SHORT_HELP = "request VIN"
 
-    def add_parser(self) -> None:
+    def configure_parser(self) -> None:
         self.parser.set_defaults(properties=False)
 
     async def main(self, args: Namespace) -> None:

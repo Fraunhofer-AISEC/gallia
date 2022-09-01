@@ -26,7 +26,7 @@ class ServicesScanner(UDSScanner):
         "https://fraunhofer-aisec.github.io/gallia/uds/scan_modes.html#service-scan"
     )
 
-    def add_parser(self) -> None:
+    def configure_parser(self) -> None:
         self.parser.add_argument(
             "--sessions",
             nargs="*",

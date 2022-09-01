@@ -109,9 +109,9 @@ class BaseCommand(ABC):
     """GalliaBase is a baseclass for all gallia commands.
     In order to register cli arguments:
 
-    - `add_class_parser()` can be overwritten to create
+    - `configure_class_parser()` can be overwritten to create
        e.g. scanner related arguments shared by all scanners
-    - `add_parser()` can be overwritten to create specific
+    - `configure_parser()` can be overwritten to create specific
       arguments for a specific scanner.
 
     The main entry_point is `run()`.
@@ -144,8 +144,8 @@ class BaseCommand(ABC):
             exit_code=0,
             end_time=0,
         )
-        self.add_class_parser()
-        self.add_parser()
+        self.configure_class_parser()
+        self.configure_parser()
 
     @abstractmethod
     def run(self, args: Namespace) -> int:
@@ -180,7 +180,7 @@ class BaseCommand(ABC):
     def get_file_log_level(self, args: Namespace) -> int:
         return logging.TRACE if args.verbose >= 2 else logging.DEBUG  # type: ignore
 
-    def add_class_parser(self) -> None:
+    def configure_class_parser(self) -> None:
         group = self.parser.add_argument_group("generic arguments")
         group.add_argument(
             "-v",
@@ -212,7 +212,7 @@ class BaseCommand(ABC):
             help="Base directory for artifacts",
         )
 
-    def add_parser(self) -> None:
+    def configure_parser(self) -> None:
         ...
 
     def _dump_environment(self, path: Path) -> None:
@@ -450,8 +450,8 @@ class Scanner(AsyncScript, ABC):
         if self.dumpcap:
             await self.dumpcap.stop()
 
-    def add_class_parser(self) -> None:
-        super().add_class_parser()
+    def configure_class_parser(self) -> None:
+        super().configure_class_parser()
 
         group = self.parser.add_argument_group("scanner related arguments")
         group.add_argument(
@@ -520,8 +520,8 @@ class UDSScanner(Scanner):
         self.transport: BaseTransport
         self._implicit_logging = True
 
-    def add_class_parser(self) -> None:
-        super().add_class_parser()
+    def configure_class_parser(self) -> None:
+        super().configure_class_parser()
 
         group = self.parser.add_argument_group("UDS scanner related arguments")
 
@@ -709,8 +709,8 @@ class UDSScanner(Scanner):
 class DiscoveryScanner(Scanner):
     CATEGORY = "discover"
 
-    def add_class_parser(self) -> None:
-        super().add_class_parser()
+    def configure_class_parser(self) -> None:
+        super().configure_class_parser()
 
         self.parser.add_argument(
             "--timeout",

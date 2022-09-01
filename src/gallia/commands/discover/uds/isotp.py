@@ -26,7 +26,7 @@ class IsotpDiscoverer(DiscoveryScanner):
     COMMAND = "isotp"
     SHORT_HELP = "ISO-TP enumeration scanner"
 
-    def add_parser(self) -> None:
+    def configure_parser(self) -> None:
         self.parser.add_argument(
             "--start",
             metavar="INT",

@@ -18,7 +18,7 @@ class PingPrimitive(UDSScanner):
     COMMAND = "ping"
     SHORT_HELP = "ping ECU via TesterPresent"
 
-    def add_parser(self) -> None:
+    def configure_parser(self) -> None:
         self.parser.set_defaults(properties=False)
 
         self.parser.add_argument(
