@@ -35,7 +35,8 @@ def get_config_dirs() -> list[Path]:
     return [cwd] + dirs
 
 
-def search_config() -> Optional[Path]:
+def search_config(filename: Optional[Path] = None) -> Optional[Path]:
+    name = filename if filename is not None else Path("gallia.toml")
     if (s := os.getenv("GALLIA_CONFIG")) is not None:
         if (path := Path(s)).exists():
             return path
@@ -43,14 +44,16 @@ def search_config() -> Optional[Path]:
             raise FileNotFoundError(s)
 
     for dir_ in get_config_dirs():
-        if (path := dir_.joinpath("gallia.toml")).exists():
+        if (path := dir_.joinpath(name)).exists():
             return path
 
     return None
 
 
-def load_config_file() -> tuple[ConfigType, Optional[Path]]:
-    if (path := search_config()) is not None:
+def load_config_file(
+    filename: Optional[Path] = None,
+) -> tuple[ConfigType, Optional[Path]]:
+    if (path := search_config(filename)) is not None:
         raw_toml = path.read_text()
         return tomlkit.loads(raw_toml), path
     return {}, None
