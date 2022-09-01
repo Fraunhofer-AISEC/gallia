@@ -25,7 +25,7 @@ class MemoryFunctionsScanner(UDSScanner):
     SHORT_HELP = "scan services with direct memory access"
     COMMAND = "memory"
 
-    def add_parser(self) -> None:
+    def configure_parser(self) -> None:
         self.parser.add_argument(
             "--session",
             type=auto_int,

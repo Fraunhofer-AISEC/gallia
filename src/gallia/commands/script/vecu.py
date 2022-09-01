@@ -34,7 +34,7 @@ class VirtualECU(AsyncScript):
     SHORT_HELP = "spawn a virtual UDS ECU"
     EPILOG = "https://fraunhofer-aisec.github.io/gallia/uds/virtual_ecu.html"
 
-    def add_parser(self) -> None:
+    def configure_parser(self) -> None:
         self.parser.add_argument(
             "target",
             type=TargetURI,

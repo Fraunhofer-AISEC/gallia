@@ -17,7 +17,7 @@ class ReadByIdentifierPrimitive(UDSScanner):
     COMMAND = "rdbid"
     SHORT_HELP = "ReadDataByIdentifier"
 
-    def add_parser(self) -> None:
+    def configure_parser(self) -> None:
         self.parser.set_defaults(properties=False)
 
         self.parser.add_argument(

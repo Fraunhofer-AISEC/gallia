@@ -25,7 +25,7 @@ class PDUFuzzer(UDSScanner):
     COMMAND = "pdu"
     SHORT_HELP = "fuzz the UDS pdu of selected services"
 
-    def add_parser(self) -> None:
+    def configure_parser(self) -> None:
         self.parser.add_argument(
             "--sessions",
             type=auto_int,

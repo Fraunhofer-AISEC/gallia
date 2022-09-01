@@ -21,7 +21,7 @@ class DTCPrimitive(UDSScanner):
     COMMAND = "dtc"
     SHORT_HELP = "DiagnosticTroubleCodes"
 
-    def add_parser(self) -> None:
+    def configure_parser(self) -> None:
         self.parser.set_defaults(properties=False)
 
         self.parser.add_argument(

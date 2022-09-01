@@ -31,7 +31,7 @@ class DoIPDiscoverer(DiscoveryScanner):
     COMMAND = "doip"
     SHORT_HELP = "DoIP enumeration scanner"
 
-    def add_parser(self) -> None:
+    def configure_parser(self) -> None:
         self.parser.add_argument(
             "--reversed",
             action="store_true",

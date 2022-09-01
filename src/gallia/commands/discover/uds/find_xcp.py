@@ -28,9 +28,9 @@ class FindXCP:
             description=self.description, formatter_class=ArgumentDefaultsHelpFormatter
         )
         self.socket: socket.socket
-        self.add_parser()
+        self.configure_parser()
 
-    def add_parser(self) -> None:
+    def configure_parser(self) -> None:
         subparsers = self.parser.add_subparsers(
             dest="mode", required=True, help="Transport mode"
         )

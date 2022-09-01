@@ -30,7 +30,7 @@ class SASeedsDumper(UDSScanner):
 
         self.implicit_logging = False
 
-    def add_parser(self) -> None:
+    def configure_parser(self) -> None:
         self.parser.add_argument(
             "--session",
             metavar="INT",

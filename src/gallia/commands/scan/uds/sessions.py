@@ -24,7 +24,7 @@ class SessionsScanner(UDSScanner):
     COMMAND = "sessions"
     SHORT_HELP = "session scan on a ECU"
 
-    def add_parser(self) -> None:
+    def configure_parser(self) -> None:
         self.parser.add_argument(
             "--depth", type=auto_int, default=None, help="Specify max scanning depth."
         )

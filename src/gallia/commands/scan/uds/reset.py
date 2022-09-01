@@ -22,7 +22,7 @@ class ResetScanner(UDSScanner):
     SHORT_HELP = "identifier scan in ECUReset"
     COMMAND = "reset"
 
-    def add_parser(self) -> None:
+    def configure_parser(self) -> None:
         self.parser.add_argument(
             "--sessions",
             type=auto_int,
