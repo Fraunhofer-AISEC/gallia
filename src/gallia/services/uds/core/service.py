@@ -13,8 +13,8 @@ from collections.abc import Sequence
 from struct import pack
 from typing import Any, TypeVar
 
-from gallia.uds import logger
-from gallia.uds.core.constants import (
+from gallia.services.uds import logger
+from gallia.services.uds.core.constants import (
     DTCFormatIdentifier,
     InputOutputControlParameter,
     RCSubFuncs,
@@ -23,7 +23,7 @@ from gallia.uds.core.constants import (
     UDSIsoServices,
     UDSIsoServicesEchoLength,
 )
-from gallia.uds.core.utils import (
+from gallia.services.uds.core.utils import (
     address_and_size_length,
     any_repr,
     bytes_repr,

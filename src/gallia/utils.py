@@ -16,8 +16,8 @@ from urllib.parse import urlparse
 
 import aiofiles
 
-from gallia.uds.core.service import NegativeResponse
-from gallia.uds.core.utils import bytes_repr, int_repr
+from gallia.services.uds.core.service import NegativeResponse
+from gallia.services.uds.core.utils import bytes_repr, int_repr
 
 if TYPE_CHECKING:
     from gallia.db.db_handler import DBHandler

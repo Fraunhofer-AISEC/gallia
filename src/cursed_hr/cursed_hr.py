@@ -27,7 +27,7 @@ from typing import Any, BinaryIO
 
 import zstandard as zstd
 
-from gallia.uds.core.service import NegativeResponse, UDSRequest, UDSResponse
+from gallia.services.uds.core.service import NegativeResponse, UDSRequest, UDSResponse
 from penlog import MessagePrio, RecordType
 
 

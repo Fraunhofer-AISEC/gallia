@@ -12,8 +12,8 @@ from typing import Any
 import aiosqlite
 
 from gallia.log import get_logger
-from gallia.uds.core import service
-from gallia.uds.core.utils import bytes_repr as bytes_repr_
+from gallia.services.uds.core import service
+from gallia.services.uds.core.utils import bytes_repr as bytes_repr_
 from gallia.utils import g_repr
 
 

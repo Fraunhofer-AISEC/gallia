@@ -12,9 +12,9 @@ from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser, Namespace
 from subprocess import CalledProcessError, run
 
 from gallia.log import get_logger
+from gallia.services.uds.core.utils import bytes_repr
 from gallia.transports.base import TargetURI
 from gallia.transports.can import RawCANTransport
-from gallia.uds.core.utils import bytes_repr
 from gallia.utils import can_id_repr, g_repr
 
 

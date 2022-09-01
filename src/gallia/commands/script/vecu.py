@@ -11,11 +11,8 @@ from argparse import Namespace
 from pathlib import Path
 
 from gallia.command import AsyncScript
-from gallia.transports.base import TargetURI
-from gallia.transports.can import ISOTPTransport
-from gallia.transports.tcp import TCPLinesTransport
-from gallia.uds.core.constants import UDSIsoServices
-from gallia.uds.server import (
+from gallia.services.uds.core.constants import UDSIsoServices
+from gallia.services.uds.server import (
     DBUDSServer,
     ISOTPUDSServerTransport,
     RandomUDSServer,
@@ -23,6 +20,9 @@ from gallia.uds.server import (
     UDSServer,
     UDSServerTransport,
 )
+from gallia.transports.base import TargetURI
+from gallia.transports.can import ISOTPTransport
+from gallia.transports.tcp import TCPLinesTransport
 
 dynamic_attr_prefix = "dynamic_attr_"
 

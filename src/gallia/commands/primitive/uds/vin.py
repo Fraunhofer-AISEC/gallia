@@ -5,7 +5,7 @@
 from argparse import Namespace
 
 from gallia.command import UDSScanner
-from gallia.uds.core.service import NegativeResponse
+from gallia.services.uds.core.service import NegativeResponse
 
 
 class VINPrimitive(UDSScanner):

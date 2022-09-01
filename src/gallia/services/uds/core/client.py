@@ -11,11 +11,11 @@ from dataclasses import dataclass
 from typing import overload
 
 from gallia.log import get_logger
+from gallia.services.uds.core import service
+from gallia.services.uds.core.constants import UDSErrorCodes, UDSIsoServices
+from gallia.services.uds.core.exception import MissingResponse
+from gallia.services.uds.helpers import parse_pdu
 from gallia.transports.base import BaseTransport
-from gallia.uds.core import service
-from gallia.uds.core.constants import UDSErrorCodes, UDSIsoServices
-from gallia.uds.core.exception import MissingResponse
-from gallia.uds.helpers import parse_pdu
 
 
 @dataclass

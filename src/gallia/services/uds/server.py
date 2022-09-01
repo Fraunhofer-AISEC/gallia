@@ -16,10 +16,8 @@ from typing import Any
 import aiosqlite
 
 from gallia.log import get_logger
-from gallia.transports.base import TargetURI
-from gallia.transports.can import ISOTPTransport
-from gallia.uds.core import service
-from gallia.uds.core.constants import (
+from gallia.services.uds.core import service
+from gallia.services.uds.core.constants import (
     DataIdentifier,
     ERSubFuncs,
     RCSubFuncs,
@@ -27,8 +25,10 @@ from gallia.uds.core.constants import (
     UDSErrorCodes,
     UDSIsoServices,
 )
-from gallia.uds.core.utils import bytes_repr, int_repr, service_repr, to_bytes
-from gallia.uds.ecu import ECUState
+from gallia.services.uds.core.utils import bytes_repr, int_repr, service_repr, to_bytes
+from gallia.services.uds.ecu import ECUState
+from gallia.transports.base import TargetURI
+from gallia.transports.can import ISOTPTransport
 
 
 class UDSServer(ABC):

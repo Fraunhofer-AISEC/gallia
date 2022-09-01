@@ -14,8 +14,8 @@ import aiofiles
 
 from gallia.command import UDSScanner
 from gallia.config import Config
-from gallia.uds.core.client import UDSRequestConfig
-from gallia.uds.core.service import NegativeResponse
+from gallia.services.uds.core.client import UDSRequestConfig
+from gallia.services.uds.core.service import NegativeResponse
 from gallia.utils import auto_int, g_repr
 
 

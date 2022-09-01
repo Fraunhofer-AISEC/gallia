@@ -7,16 +7,16 @@ import sys
 from argparse import Namespace
 
 from gallia.command import UDSScanner
-from gallia.uds.core.client import UDSRequestConfig
-from gallia.uds.core.exception import UDSException
-from gallia.uds.core.service import (
+from gallia.services.uds.core.client import UDSRequestConfig
+from gallia.services.uds.core.exception import UDSException
+from gallia.services.uds.core.service import (
     NegativeResponse,
     RawRequest,
     RawResponse,
     UDSRequest,
     UDSResponse,
 )
-from gallia.uds.helpers import raise_for_error
+from gallia.services.uds.helpers import raise_for_error
 from gallia.utils import auto_int, g_repr
 
 

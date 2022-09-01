@@ -6,6 +6,11 @@ import asyncio
 from argparse import Namespace
 
 from gallia.command import DiscoveryScanner
+from gallia.services.uds.core.service import (
+    DiagnosticSessionControlRequest,
+    DiagnosticSessionControlResponse,
+)
+from gallia.services.uds.helpers import raise_for_mismatch
 from gallia.transports.base import TargetURI
 from gallia.transports.doip import (
     DiagnosticMessage,
@@ -16,11 +21,6 @@ from gallia.transports.doip import (
     RoutingActivationRequest,
     RoutingActivationRequestTypes,
 )
-from gallia.uds.core.service import (
-    DiagnosticSessionControlRequest,
-    DiagnosticSessionControlResponse,
-)
-from gallia.uds.helpers import raise_for_mismatch
 from gallia.utils import auto_int, write_target_list
 
 
