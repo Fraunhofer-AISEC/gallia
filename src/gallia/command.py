@@ -66,7 +66,7 @@ class RunMeta(msgspec.Struct):
     exit_code: int
 
 
-def load_transport(target: TargetURI) -> BaseTransport:
+def load_transport(target: TargetURI) -> type[BaseTransport]:
     transports: list[type[BaseTransport]] = [
         ISOTPTransport,
         RawCANTransport,
@@ -87,8 +87,7 @@ def load_transport(target: TargetURI) -> BaseTransport:
 
     for transport in transports:
         if target.scheme == transport.SCHEME:
-            t = transport(target)
-            return t
+            return transport
 
     raise ValueError(f"no transport for {target}")
 
@@ -622,8 +621,8 @@ class UDSScanner(Scanner):
     async def setup(self, args: Namespace) -> None:
         await super().setup(args)
 
-        self.transport = load_transport(args.target)
-        await self.transport.connect(None)
+        transport_type = load_transport(args.target)
+        self.transport = await transport_type.connect(args.target)
 
         self.ecu = load_ecu(args.oem)(
             self.transport,
@@ -657,6 +656,7 @@ class UDSScanner(Scanner):
         # until it is ready.
         if args.ping:
             await self.ecu.wait_for_ecu()
+
         await self.ecu.connect()
 
         if args.tester_present:

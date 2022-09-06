@@ -13,8 +13,8 @@ class SimpleTestXCP(Scanner):
     """Test XCP Slave"""
 
     async def main(self, args: Namespace) -> None:
-        transport = load_transport(args.target)
-        await transport.connect(None)
+        transport_type = load_transport(args.target)
+        transport = await transport_type.connect(args.target)
         service = XCPService(transport)
 
         await catch_and_log_exception(service.connect)

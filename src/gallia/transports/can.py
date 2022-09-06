@@ -9,110 +9,107 @@ import errno
 import socket as s
 import struct
 import time
-from typing import Optional, TypedDict, cast
+from typing import Optional, cast
 
 from can import Message  # type: ignore
+from pydantic import BaseModel, validator
 
-from gallia.transports.base import BaseTransport, TargetURI, _bool_spec, _int_spec
+from gallia.utils import auto_int
+from gallia.transports.base import BaseTransport, TargetURI
 
 CANFD_MTU = 72
 CAN_MTU = 16
 
+# Socket Constants not available in the socket module,
+# see linux/can/isotp.h
+# TODO: Can be removed in the future…
+# https://github.com/python/cpython/pull/23794
+SOL_CAN_ISOTP = s.SOL_CAN_BASE + s.CAN_ISOTP
 
-_ISOTP_SPEC_TYPE = TypedDict(
-    "_ISOTP_SPEC_TYPE",
-    {
-        "src_addr": int,
-        "dst_addr": int,
-        "is_extended": bool,
-        "is_fd": bool,
-        "frame_txtime": int,
-        "ext_address": Optional[int],
-        "rx_ext_address": Optional[int],
-        "tx_padding": Optional[int],
-        "rx_padding": Optional[int],
-        "tx_dl": Optional[int],
-    },
-)
+# Valuetypes for SOL_CAN_ISOTP
+CAN_ISOTP_OPTS = 1
+CAN_ISOTP_RECV_FC = 2
+CAN_ISOTP_TX_STMIN = 3
+CAN_ISOTP_RX_STMIN = 4
+CAN_ISOTP_LL_OPTS = 5
 
-isotp_spec = {
-    "src_addr": (_int_spec(0), True),
-    "dst_addr": (_int_spec(0), True),
-    "is_extended": (_bool_spec(False), False),
-    "is_fd": (_bool_spec(False), False),
-    "frame_txtime": (_int_spec(10), False),
-    "ext_address": (_int_spec(None), False),
-    "rx_ext_address": (_int_spec(None), False),
-    "tx_padding": (_int_spec(None), False),
-    "rx_padding": (_int_spec(None), False),
-    "tx_dl": (_int_spec(None), False),
-}
+# Flags for setsockopt CAN_ISOTP_OPTS
+CAN_ISOTP_LISTEN_MODE = 0x001
+CAN_ISOTP_EXTEND_ADDR = 0x002
+CAN_ISOTP_TX_PADDING = 0x004
+CAN_ISOTP_RX_PADDING = 0x008
+CAN_ISOTP_CHK_PAD_LEN = 0x010
+CAN_ISOTP_CHK_PAD_DATA = 0x020
+CAN_ISOTP_HALF_DUPLEX = 0x040
+CAN_ISOTP_FORCE_TXSTMIN = 0x080
+CAN_ISOTP_FORCE_RXSTMIN = 0x100
+CAN_ISOTP_RX_EXT_ADDR = 0x200
 
 
-class ISOTPTransport(BaseTransport, scheme="isotp", spec=isotp_spec):
-    # Socket Constants not available in the socket module,
-    # see linux/can/isotp.h
-    # TODO: Can be removed in the future…
-    # https://github.com/python/cpython/pull/23794
-    SOL_CAN_ISOTP = s.SOL_CAN_BASE + s.CAN_ISOTP
+class ISOTPConfig(BaseModel):
+    src_addr: int
+    dst_addr: int
+    is_extended: bool = False
+    is_fd: bool = False
+    frame_txtime: int = 10
+    ext_address: Optional[int] = None
+    rx_ext_address: Optional[int] = None
+    tx_padding: Optional[int] = None
+    rx_padding: Optional[int] = None
+    tx_dl: int = 64
 
-    # Valuetypes for SOL_CAN_ISOTP
-    CAN_ISOTP_OPTS = 1
-    CAN_ISOTP_RECV_FC = 2
-    CAN_ISOTP_TX_STMIN = 3
-    CAN_ISOTP_RX_STMIN = 4
-    CAN_ISOTP_LL_OPTS = 5
+    _auto_int = validator('src_addr', "dst_addr", pre=True, allow_reuse=True)(auto_int)
 
-    # Flags for setsockopt CAN_ISOTP_OPTS
-    CAN_ISOTP_LISTEN_MODE = 0x001
-    CAN_ISOTP_EXTEND_ADDR = 0x002
-    CAN_ISOTP_TX_PADDING = 0x004
-    CAN_ISOTP_RX_PADDING = 0x008
-    CAN_ISOTP_CHK_PAD_LEN = 0x010
-    CAN_ISOTP_CHK_PAD_DATA = 0x020
-    CAN_ISOTP_HALF_DUPLEX = 0x040
-    CAN_ISOTP_FORCE_TXSTMIN = 0x080
-    CAN_ISOTP_FORCE_RXSTMIN = 0x100
-    CAN_ISOTP_RX_EXT_ADDR = 0x200
 
-    def __init__(self, target: TargetURI) -> None:
+class ISOTPTransport(BaseTransport, scheme="isotp"):
+    def __init__(self, target: TargetURI, config: ISOTPConfig, sock: s.socket) -> None:
         super().__init__(target)
-        self.args = cast(_ISOTP_SPEC_TYPE, self._args)
+        self._sock = sock
+        self.config = config
 
-        assert target.hostname is not None, "empty interface"
-        self.interface = target.hostname
-        self._sock: s.socket
+    @classmethod
+    async def connect(
+        cls,
+        target: TargetURI,
+        timeout: Optional[float] = None,
+    ) -> ISOTPTransport:
+        if target.hostname is not None:
+            raise ValueError("empty interface")
 
-    async def connect(self, timeout: Optional[float] = None) -> None:
-        self._sock = s.socket(s.PF_CAN, s.SOCK_DGRAM, s.CAN_ISOTP)
-        self._sock.setblocking(False)
+        config = ISOTPConfig(**target.qs)
+        sock = s.socket(s.PF_CAN, s.SOCK_DGRAM, s.CAN_ISOTP)
+        sock.setblocking(False)
 
-        src_addr = self._set_flags(self.args["src_addr"], self.args["is_extended"])
-        dst_addr = self._set_flags(self.args["dst_addr"], self.args["is_extended"])
+        src_addr = cls._calc_flags(config.src_addr, config.is_extended)
+        dst_addr = cls._calc_flags(config.dst_addr, config.is_extended)
 
-        self._setsockopts(
-            frame_txtime=self.args["frame_txtime"],
-            ext_address=self.args["ext_address"],
-            rx_ext_address=self.args["rx_ext_address"],
-            tx_padding=self.args["tx_padding"],
-            rx_padding=self.args["rx_padding"],
+        cls._setsockopts(
+            sock,
+            frame_txtime=config.frame_txtime,
+            ext_address=config.ext_address,
+            rx_ext_address=config.rx_ext_address,
+            tx_padding=config.tx_padding,
+            rx_padding=config.rx_padding,
         )
         # If CAN-FD is used, jumbo frames are possible.
         # This fails for non-fd configurations.
-        if self.args["is_fd"]:
-            tx_dl = 64 if self.args["tx_dl"] is None else self.args["tx_dl"]
-            self._setsockllopts(canfd=self.args["is_fd"], tx_dl=tx_dl)
-        self._sock.bind((self.interface, dst_addr, src_addr))
+        if config.is_fd:
+            cls._setsockllopts(sock, canfd=config.is_fd, tx_dl=config.tx_dl)
+
+        sock.bind((target.hostname, dst_addr, src_addr))
+
+        return cls(target, config, sock)
 
     @staticmethod
-    def _set_flags(can_id: int, extended: bool = False) -> int:
+    def _calc_flags(can_id: int, extended: bool = False) -> int:
         if extended:
             can_id = can_id & s.CAN_EFF_MASK
             return can_id | s.CAN_EFF_FLAG
         return can_id & s.CAN_SFF_MASK
 
+    @staticmethod
     def _setsockopts(
-        self,
+        sock: s.socket,
         frame_txtime: int,
         tx_padding: Optional[int] = None,
         rx_padding: Optional[int] = None,
@@ -121,22 +118,22 @@ class ISOTPTransport(BaseTransport, scheme="isotp", spec=isotp_spec):
         flags: int = 0,
     ) -> None:
         if ext_address is not None:
-            flags |= self.CAN_ISOTP_EXTEND_ADDR
+            flags |= CAN_ISOTP_EXTEND_ADDR
         else:
             ext_address = 0
 
         if rx_ext_address is not None:
-            flags |= self.CAN_ISOTP_RX_EXT_ADDR
+            flags |= CAN_ISOTP_RX_EXT_ADDR
         else:
             rx_ext_address = 0
 
         if tx_padding is not None:
-            flags |= self.CAN_ISOTP_TX_PADDING
+            flags |= CAN_ISOTP_TX_PADDING
         else:
             tx_padding = 0
 
         if rx_padding is not None:
-            flags |= self.CAN_ISOTP_RX_PADDING
+            flags |= CAN_ISOTP_RX_PADDING
         else:
             rx_padding = 0
 
@@ -149,17 +146,24 @@ class ISOTPTransport(BaseTransport, scheme="isotp", spec=isotp_spec):
             rx_padding,
             rx_ext_address,
         )
-        self._sock.setsockopt(self.SOL_CAN_ISOTP, self.CAN_ISOTP_OPTS, data)
+        sock.setsockopt(SOL_CAN_ISOTP, CAN_ISOTP_OPTS, data)
 
-    def _setsockfcopts(self, bs: int = 0, stmin: int = 0, wftmax: int = 0) -> None:
+    @staticmethod
+    def _setsockfcopts(
+        sock: s.socket,
+        bs: int = 0,
+        stmin: int = 0,
+        wftmax: int = 0,
+    ) -> None:
         data = struct.pack("@BBB", bs, stmin, wftmax)
-        self._sock.setsockopt(self.SOL_CAN_ISOTP, self.CAN_ISOTP_RECV_FC, data)
+        sock.setsockopt(SOL_CAN_ISOTP, CAN_ISOTP_RECV_FC, data)
 
-    def _setsockllopts(self, canfd: bool, tx_dl: int) -> None:
+    @staticmethod
+    def _setsockllopts(sock: s.socket, canfd: bool, tx_dl: int) -> None:
         canmtu = 72 if canfd else 16
         # The flags are set to 0, since the author marks this as obsolete.
         data = struct.pack("@BBB", canmtu, tx_dl, 0)
-        self._sock.setsockopt(self.SOL_CAN_ISOTP, self.CAN_ISOTP_LL_OPTS, data)
+        sock.setsockopt(SOL_CAN_ISOTP, CAN_ISOTP_LL_OPTS, data)
 
     async def write(
         self,
@@ -192,9 +196,6 @@ class ISOTPTransport(BaseTransport, scheme="isotp", spec=isotp_spec):
         return data
 
     async def close(self) -> None:
-        pass
-
-    async def reconnect(self, timeout: Optional[float] = None) -> None:
         pass
 
 
@@ -268,55 +269,41 @@ class CANMessage(Message):  # type: ignore
         )
 
 
-_CAN_RAW_SPEC_TYPE = TypedDict(
-    "_CAN_RAW_SPEC_TYPE",
-    {
-        "src_addr": Optional[int],
-        "dst_addr": Optional[int],
-        "is_extended": bool,
-        "is_fd": bool,
-        "bind": bool,
-    },
-)
-
-spec_can_raw = {
-    "src_addr": (_int_spec(None), False),
-    "dst_addr": (_int_spec(None), False),
-    "is_extended": (_bool_spec(False), False),
-    "is_fd": (_bool_spec(False), False),
-    "bind": (_bool_spec(False), False),
-}
+class RawCANConfig(BaseModel):
+    is_extended: bool
+    is_fd: bool
 
 
-class RawCANTransport(BaseTransport, scheme="can-raw", spec=spec_can_raw):
+class RawCANTransport(BaseTransport, scheme="can-raw"):
     # Flags for setsockopt CAN_RAW_FILTER
     CAN_INV_FILTER = 0x20000000
 
-    def __init__(self, target: TargetURI) -> None:
+    def __init__(self, target: TargetURI, config: RawCANConfig, sock: s.socket) -> None:
         super().__init__(target)
-        self.args = cast(_CAN_RAW_SPEC_TYPE, self._args)
-        self.connected = False
 
-        assert target.hostname is not None, "empty interface"
-        self.interface = target.hostname
-        self._sock: s.socket
-        self.src_addr: int
-        self.dst_addr: int
+        self._sock = sock
+        self.config = config
 
-    async def connect(self, timeout: Optional[float] = None) -> None:
-        self._sock = s.socket(s.PF_CAN, s.SOCK_RAW, s.CAN_RAW)
-        self._sock.bind((self.interface,))
-        if self.args["is_fd"] is True:
-            self._sock.setsockopt(s.SOL_CAN_RAW, s.CAN_RAW_FD_FRAMES, 1)
-        self._sock.setblocking(False)
+    @classmethod
+    async def connect(cls, target: TargetURI, timeout: Optional[float] = None) -> RawCANTransport:
+        if target.hostname is not None:
+            raise ValueError("empty interface")
 
-        if self.args["bind"]:
-            self.bind()
+        sock = s.socket(s.PF_CAN, s.SOCK_RAW, s.CAN_RAW)
+        sock.bind((target.hostname,))
+        config = RawCANConfig(**target.qs)
+
+        if config.is_fd is True:
+            sock.setsockopt(s.SOL_CAN_RAW, s.CAN_RAW_FD_FRAMES, 1)
+
+        sock.setblocking(False)
+
+        return cls(target, config, sock)
 
     def set_filter(self, can_ids: list[int], inv_filter: bool = False) -> None:
         if not can_ids:
             return
-        filter_mask = s.CAN_EFF_MASK if self.args["is_extended"] else s.CAN_SFF_MASK
+        filter_mask = s.CAN_EFF_MASK if self.config.is_extended else s.CAN_SFF_MASK
         data = b""
         for can_id in can_ids:
             if inv_filter:
@@ -326,22 +313,10 @@ class RawCANTransport(BaseTransport, scheme="can-raw", spec=spec_can_raw):
         if inv_filter:
             self._sock.setsockopt(s.SOL_CAN_RAW, s.CAN_RAW_JOIN_FILTERS, 1)
 
-    def bind(self) -> None:
-        if self.args["src_addr"] is None or self.args["dst_addr"] is None:
-            raise RuntimeError("no src_addr/dst_addr set")
-
-        self.set_filter([self.args["src_addr"]])
-        self.src_addr = self.args["src_addr"]
-        self.dst_addr = self.args["dst_addr"]
-        self.connected = True
-
     async def read(
-        self, timeout: Optional[float] = None, tags: Optional[list[str]] = None
+        self, timeout: Optional[float] = None, tags: Optional[list[str]] = None,
     ) -> bytes:
-        if not self.connected or not self.src_addr:
-            raise RuntimeError("transport is not connected; set bind=true")
-        _, data = await self.recvfrom(timeout, tags)
-        return data
+        raise RuntimeError("RawCANTransport is a special snowflake")
 
     async def write(
         self,
@@ -349,9 +324,7 @@ class RawCANTransport(BaseTransport, scheme="can-raw", spec=spec_can_raw):
         timeout: Optional[float] = None,
         tags: Optional[list[str]] = None,
     ) -> int:
-        if not self.connected or not self.dst_addr:
-            raise RuntimeError("transport is not connected; set bind=true")
-        return await self.sendto(data, self.dst_addr, timeout=timeout, tags=tags)
+        raise RuntimeError("RawCANTransport is a special snowflake")
 
     async def sendto(
         self,
@@ -363,12 +336,12 @@ class RawCANTransport(BaseTransport, scheme="can-raw", spec=spec_can_raw):
         msg = CANMessage(
             arbitration_id=dst,
             data=data,
-            is_extended_id=self.args["is_extended"],
-            is_fd=self.args["is_fd"],
+            is_extended_id=self.config.is_extended,
+            is_fd=self.config.is_fd,
             check=True,
         )
         t = tags + ["write"] if tags is not None else ["write"]
-        if self.args["is_extended"]:
+        if self.config.is_extended:
             self.logger.trace(f"{dst:08x}#{data.hex()}", extra={"tags": t})
         else:
             self.logger.trace(f"{dst:03x}#{data.hex()}", extra={"tags": t})
@@ -398,9 +371,6 @@ class RawCANTransport(BaseTransport, scheme="can-raw", spec=spec_can_raw):
         return msg.arbitration_id, msg.data
 
     async def close(self) -> None:
-        pass
-
-    async def reconnect(self, timeout: Optional[float] = None) -> None:
         pass
 
     async def get_idle_traffic(self, sniff_time: float) -> list[int]:

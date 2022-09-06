@@ -20,7 +20,7 @@ from urllib.parse import urlparse
 from gallia.log import Logger, get_logger
 from gallia.transports.base import TargetURI
 from gallia.transports.can import ISOTPTransport, RawCANTransport
-from gallia.utils import g_repr, split_host_port
+from gallia.utils import g_repr, split_host_port, auto_int
 
 
 class Dumpcap:
@@ -46,22 +46,20 @@ class Dumpcap:
     async def start(
         cls,
         target: TargetURI,
-        artifacts_dir: Optional[Path] = None,
+        artifacts_dir: Path,
     ) -> Dumpcap:
         logger = get_logger("dumpcap")
-
-        if (
-            artifacts_dir is None
-            and (path := os.environ.get("PENRUN_ARTIFACTS")) is not None
-        ):
-            artifacts_dir = Path(path)
-        else:
-            raise ValueError("no artifacts dir set")
 
         ts = int(datetime.now().timestamp())
         if target.scheme in [ISOTPTransport.SCHEME, RawCANTransport.SCHEME]:
             outfile = artifacts_dir.joinpath(f"candump-{ts}.pcap.gz")
-            cmd = cls._can_cmd(target.netloc, target.src_addr, target.dst_addr)
+            src_addr = auto_int(target.qs["src_addr"][0]) if "src_addr" in target.qs else None
+            dst_addr = auto_int(target.qs["dst_addr"][0]) if "dst_addr" in target.qs else None
+            cmd = cls._can_cmd(
+                target.netloc,
+                src_addr,
+                dst_addr,
+            )
         else:
             outfile = artifacts_dir.joinpath(f"eth-{ts}.pcap.gz")
             cmd = await cls._eth_cmd(target.netloc)
