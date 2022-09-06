@@ -78,7 +78,7 @@ PARSERS: dict[str, Any] = {}
 def load_cli_commands() -> None:
     eps = entry_points()
     if (s := "gallia_cli_commands") in eps:
-        for entry in eps[s]:
+        for entry in eps.select(group=s):
             cmd_list: list[type[BaseCommand]] = entry.load()
             for cmd in cmd_list:
                 registry.append(cmd)
@@ -87,7 +87,7 @@ def load_cli_commands() -> None:
 def load_cli_init() -> None:
     eps = entry_points()
     if (s := "gallia_cli_init") in eps:
-        for entry in eps[s]:
+        for entry in eps.select(group=s):
             entry.load()()
 
 

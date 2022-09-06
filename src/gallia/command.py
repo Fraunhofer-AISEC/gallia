@@ -81,8 +81,8 @@ def load_transport(target: TargetURI) -> type[BaseTransport]:
         return cast(type[BaseTransport], t)
 
     eps = entry_points()
-    if "gallia_transports" in eps:
-        transports_eps = map(func, eps["gallia_transports"])
+    if (s := "gallia_transports") in eps:
+        transports_eps = map(func, eps.select(group=s))
         transports += transports_eps
 
     for transport in transports:
@@ -97,8 +97,8 @@ def load_ecu(vendor: str) -> type[ECU]:
         return ECU
 
     eps = entry_points()
-    if "gallia_uds_ecus" in eps:
-        for entry_point in eps["gallia_uds_ecus"]:
+    if (s := "gallia_uds_ecus") in eps:
+        for entry_point in eps.select(group=s):
             if vendor == entry_point.name:
                 cls = entry_point.load()
                 if not issubclass(cls, ECU):
