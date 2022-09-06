@@ -43,16 +43,16 @@ jobs:
         poetry install
     - name: Run flake8
       run: |
-        poetry run flake8 src
+        poetry run flake8 src tests
     - name: Run mypy
       run: |
-        poetry run mypy src
+        poetry run mypy src tests
     - name: Run pylint
       run: |
-        poetry run pylint src
+        poetry run pylint src tests
     - name: Run black
       run: |
-        poetry run black --check --verbose src
+        poetry run black --check --verbose src tests
     - name: Run reuse lint
       run: |
         poetry run reuse lint
