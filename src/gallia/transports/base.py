@@ -75,7 +75,7 @@ def _bool_spec(default: Optional[bool]) -> Callable[..., Optional[bool]]:
         s_low = args[0].lower()
         if s_low == "true":
             return True
-        elif s_low == "false":
+        if s_low == "false":
             return False
         raise ValueError(f"invalid bool value: {args[0]}")
 

@@ -140,8 +140,7 @@ class UDSServer(ABC):
                     if session == self.state.session:
                         supported_in_active_session = True
                         break
-                    else:
-                        supported_in_other_session = True
+                    supported_in_other_session = True
 
             if not supported_in_active_session:
                 if supported_in_other_session:
@@ -527,21 +526,21 @@ class RandomUDSServer(UDSServer):
         # Furthermore, it is assumed that the request is a valid request for that particular service and sub-function
         if isinstance(request, service.ECUResetRequest):
             return self.ecu_reset(request)
-        elif isinstance(
+        if isinstance(
             request, service._SecurityAccessRequest  # pylint: disable=protected-access
         ):
             return self.security_access(request)
-        elif isinstance(request, service.RoutineControlRequest):
+        if isinstance(request, service.RoutineControlRequest):
             return self.routine_control(request)
-        elif isinstance(request, service.ReadDataByIdentifierRequest):
+        if isinstance(request, service.ReadDataByIdentifierRequest):
             return self.read_data_by_identifier(request)
-        elif isinstance(request, service.WriteDataByIdentifierRequest):
+        if isinstance(request, service.WriteDataByIdentifierRequest):
             return self.write_data_by_identifier(request)
-        elif isinstance(request, service.InputOutputControlByIdentifierRequest):
+        if isinstance(request, service.InputOutputControlByIdentifierRequest):
             return self.input_output_control_by_identifier(request)
-        elif isinstance(request, service.ClearDiagnosticInformationRequest):
+        if isinstance(request, service.ClearDiagnosticInformationRequest):
             return self.clear_diagnostic_information(request)
-        elif request.service_id == UDSIsoServices.ReadDTCInformation:
+        if request.service_id == UDSIsoServices.ReadDTCInformation:
             return self.read_dtc_information(request)
 
         return None
@@ -815,9 +814,9 @@ class DBUDSServer(UDSServer):
             if response_pdu is not None:
                 response = service.UDSResponse.parse_dynamic(unhexlify(response_pdu))
                 return response
-            else:
-                self.logger.info("Reset ECU due to missing response")
-                self.state.reset()
+
+            self.logger.info("Reset ECU due to missing response")
+            self.state.reset()
 
         return None
 
@@ -848,9 +847,9 @@ class UDSServerTransport:
         if response is not None:
             self.logger.debug(f"  <--- {response} after {(end - start) * 1000:.2f} ms")
             return response.pdu, end - start
-        else:
-            self.logger.debug(f"  x--- NO RESPONSE after {(end - start) * 1000:.2f} ms")
-            return None, end - start
+
+        self.logger.debug(f"  x--- NO RESPONSE after {(end - start) * 1000:.2f} ms")
+        return None, end - start
 
 
 class TCPUDSServerTransport(UDSServerTransport):

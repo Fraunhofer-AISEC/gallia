@@ -130,7 +130,7 @@ class UDSRequest(ABC):
             if (request_type := request_service.Request) is not None:
                 logger.trace(f" - Trying {request_type.__name__}")
                 return request_type.from_pdu(pdu)
-            elif issubclass(request_service, SpecializedSubFunctionService):
+            if issubclass(request_service, SpecializedSubFunctionService):
                 logger.trace(" - Trying to infer subFunction")
                 # pylint: disable=protected-access
                 request_sub_function = request_service._sub_function_type(pdu)
@@ -138,8 +138,8 @@ class UDSRequest(ABC):
                 assert (request_type := request_sub_function.Request) is not None
                 logger.trace(f" - Trying {request_type.__name__}")
                 return request_type.from_pdu(pdu)
-            else:
-                raise ValueError("Request cannot be parsed")
+
+            raise ValueError("Request cannot be parsed")
         except Exception as e:
             logger.trace(
                 f" - Falling back to RawRequest because of the following problem: {repr(e)}"
@@ -386,9 +386,9 @@ class PositiveResponse(
         if response_pdu[0] == 0x7F:
             negative_response = NegativeResponse.from_pdu(response_pdu)
             return negative_response
-        else:
-            response = cls.from_pdu(response_pdu)
-            return response
+
+        response = cls.from_pdu(response_pdu)
+        return response
 
 
 class UDSService(ABC):
@@ -748,10 +748,10 @@ class ECUResetResponse(
     def pdu(self) -> bytes:
         if self.power_down_time is None:
             return pack("!BB", self.RESPONSE_SERVICE_ID, self.reset_type)
-        else:
-            return pack(
-                "!BBB", self.RESPONSE_SERVICE_ID, self.reset_type, self.power_down_time
-            )
+
+        return pack(
+            "!BBB", self.RESPONSE_SERVICE_ID, self.reset_type, self.power_down_time
+        )
 
     @classmethod
     def _from_pdu(cls, pdu: bytes) -> ECUResetResponse:
@@ -1343,8 +1343,8 @@ class ReadDataByIdentifierResponse(
                     request.data_identifiers, self.data_identifiers
                 )
             )
-        else:
-            return request.data_identifiers[0] == self.data_identifiers[0]
+
+        return request.data_identifiers[0] == self.data_identifiers[0]
 
     @property
     def _minimal_length(self) -> int:
