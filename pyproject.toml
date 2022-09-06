@@ -90,7 +90,7 @@ disable = [
     "c-extension-no-member",
     "fixme",
     "invalid-name",
-    "line-too-long",
+    "line-too-long",  # handled by black
     "logging-fstring-interpolation",  # https://github.com/Fraunhofer-AISEC/gallia/issues/234
     "logging-not-lazy",  # https://github.com/Fraunhofer-AISEC/gallia/issues/234
     "missing-class-docstring",
@@ -98,7 +98,7 @@ disable = [
     "missing-function-docstring",
     "missing-module-docstring",
     "no-member",  # mypy handles this better
-    "no-name-in-module",
+    "no-name-in-module",  # mypy handles this better
     "too-few-public-methods",
     "too-many-arguments",
     "too-many-branches",
