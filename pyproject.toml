@@ -116,6 +116,4 @@ disable = [
     "too-many-statements",
     "unexpected-special-method-signature",
     "unused-argument",
-    "use-dict-literal",
-    "use-list-literal",
 ]
