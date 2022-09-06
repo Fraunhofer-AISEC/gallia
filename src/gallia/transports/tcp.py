@@ -25,6 +25,8 @@ class TCPTransport(BaseTransport, scheme="tcp"):
     async def connect(
         cls, target: TargetURI, timeout: float | None = None
     ) -> TCPTransport:
+        cls.check_scheme(target)
+
         reader, writer = await asyncio.wait_for(
             asyncio.open_connection(target.hostname, target.port), timeout
         )
@@ -57,22 +59,6 @@ class TCPTransport(BaseTransport, scheme="tcp"):
         t = tags + ["read"] if tags is not None else ["read"]
         self.logger.trace(data.hex(), extra={"tags": t})
         return data
-
-    async def sendto(
-        self,
-        data: bytes,
-        dst: int,
-        timeout: float | None = None,
-        tags: list[str] | None = None,
-    ) -> int:
-        raise RuntimeError("sendto() is not implemented")
-
-    async def recvfrom(
-        self,
-        timeout: float | None = None,
-        tags: list[str] | None = None,
-    ) -> tuple[int, bytes]:
-        raise RuntimeError("recvfrom() is not implemented")
 
 
 class TCPLineSepTransport(TCPTransport, scheme="tcp-lines"):

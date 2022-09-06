@@ -73,6 +73,8 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
         target: TargetURI,
         timeout: float | None = None,
     ) -> ISOTPTransport:
+        cls.check_scheme(target)
+
         if target.hostname is not None:
             raise ValueError("empty interface")
 
@@ -288,6 +290,8 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
     async def connect(
         cls, target: TargetURI, timeout: float | None = None
     ) -> RawCANTransport:
+        cls.check_scheme(target)
+
         if target.hostname is not None:
             raise ValueError("empty interface")
 

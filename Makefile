@@ -27,7 +27,7 @@ test: pytest
 
 .PHONY: pytest
 pytest:
-	python -m pytest -v tests/python
+	python -m pytest -v --cov=$(PWD) --cov-report html tests/python
 
 .PHONY: clean
 clean:

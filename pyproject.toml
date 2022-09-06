@@ -58,6 +58,7 @@ myst-parser = "^0.18.0"
 sphinx-rtd-theme = "^1.0.0"
 reuse = "^1.0.0"
 construct-typing = "^0.5.2"
+pytest-cov = "^3.0.0"
 
 [tool.poetry.scripts]
 "gallia" = "gallia.cli:main"

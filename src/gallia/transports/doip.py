@@ -544,6 +544,8 @@ class DoIPTransport(BaseTransport, scheme="doip"):
     async def connect(
         cls, target: TargetURI, timeout: float | None = None
     ) -> DoIPTransport:
+        cls.check_scheme(target)
+
         if target.hostname is None:
             raise ValueError("no hostname specified")
 
