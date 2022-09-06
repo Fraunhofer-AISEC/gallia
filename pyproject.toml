@@ -97,7 +97,6 @@ disable = [
     "missing-class-docstring",
     "missing-function-docstring",
     "missing-module-docstring",
-    "multiple-statements",
     "no-member",  # mypy handles this better
     "no-name-in-module",
     "simplifiable-if-expression",
