@@ -14,7 +14,7 @@ from ctypes import (
     create_string_buffer,
 )
 from ctypes.util import find_library
-from typing import Callable, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable, Union
 
 if TYPE_CHECKING:
     from ctypes import _CArgObject
