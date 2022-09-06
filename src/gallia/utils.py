@@ -94,18 +94,17 @@ def g_repr(x: Any) -> str:
         return repr(x)
     if isinstance(x, int):
         return int_repr(x)
-    elif isinstance(x, str):
+    if isinstance(x, str):
         return x
-    elif isinstance(x, (bytes, bytearray)):
+    if isinstance(x, (bytes, bytearray)):
         return bytes_repr(x)
-    elif isinstance(x, list):
+    if isinstance(x, list):
         return f'[{", ".join(g_repr(y) for y in x)}]'
-    elif isinstance(x, dict):
+    if isinstance(x, dict):
         return f'{{{", ".join(f"{g_repr(k)}: {g_repr(v)}" for k, v in x.items())}}}'
-    elif isinstance(x, NegativeResponse):
+    if isinstance(x, NegativeResponse):
         return str(x)
-    else:
-        return repr(x)
+    return repr(x)
 
 
 def _unravel(listing: str) -> list[int]:

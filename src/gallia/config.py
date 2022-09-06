@@ -40,8 +40,7 @@ def search_config(filename: Optional[Path] = None) -> Optional[Path]:
     if (s := os.getenv("GALLIA_CONFIG")) is not None:
         if (path := Path(s)).exists():
             return path
-        else:
-            raise FileNotFoundError(s)
+        raise FileNotFoundError(s)
 
     for dir_ in get_config_dirs():
         if (path := dir_.joinpath(name)).exists():

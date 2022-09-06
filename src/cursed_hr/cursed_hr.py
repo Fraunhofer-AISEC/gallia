@@ -1084,7 +1084,8 @@ class CursedHR:
                     if key == chr(curses.ascii.ESC):
                         start_entry = None
                         break
-                    elif key == "m":
+
+                    if key == "m":
                         prio = MessagePrio.EMERGENCY
                     elif key == "a":
                         prio = MessagePrio.ALERT

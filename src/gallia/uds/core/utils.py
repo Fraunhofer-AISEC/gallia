@@ -65,12 +65,12 @@ def any_repr(x: Any) -> str:
         return repr(x)
     if isinstance(x, int):
         return int_repr(x)
-    elif isinstance(x, (bytes, bytearray)):
+    if isinstance(x, (bytes, bytearray)):
         return bytes_repr(x)
-    elif isinstance(x, list):
+    if isinstance(x, list):
         return f'[{", ".join(any_repr(y) for y in x)}]'
-    else:
-        return str(x)
+
+    return str(x)
 
 
 def bytes_repr(b: bytes, prefix: bool = False, max_length: Optional[int] = 20) -> str:
