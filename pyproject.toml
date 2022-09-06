@@ -99,7 +99,6 @@ disable = [
     "missing-module-docstring",
     "no-member",  # mypy handles this better
     "no-name-in-module",
-    "simplifiable-if-expression",
     "too-few-public-methods",
     "too-many-arguments",
     "too-many-branches",

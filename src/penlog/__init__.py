@@ -223,7 +223,7 @@ class Logger:
             else:
                 self.output_type = OutputType(type_raw)
 
-        show_colors = True if show_colors and self.file.isatty() else False
+        show_colors = bool(show_colors and self.file.isatty())
         self.hr_formatter = HRFormatter(
             show_colors=show_colors,
             show_ids=False,
