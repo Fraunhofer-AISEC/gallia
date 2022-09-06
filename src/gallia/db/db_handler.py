@@ -7,7 +7,7 @@ import json
 from datetime import datetime
 from enum import Enum, unique
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import aiosqlite
 
@@ -129,10 +129,10 @@ class DBHandler:
     def __init__(self, database: Path):
         self.tasks: list[asyncio.Task[None]] = []
         self.path = database
-        self.connection: Optional[aiosqlite.Connection] = None
-        self.scan_run: Optional[int] = None
-        self.discovery_run: Optional[int] = None
-        self.meta: Optional[int] = None
+        self.connection: aiosqlite.Connection | None = None
+        self.scan_run: int | None = None
+        self.discovery_run: int | None = None
+        self.meta: int | None = None
         self.logger = get_logger("db")
 
     async def connect(self) -> None:
@@ -283,10 +283,10 @@ class DBHandler:
         self,
         state: dict[str, Any],
         request: service.UDSRequest,
-        response: Optional[service.UDSResponse],
-        exception: Optional[Exception],
+        response: service.UDSResponse | None,
+        exception: Exception | None,
         send_time: datetime,
-        receive_time: Optional[datetime],
+        receive_time: datetime | None,
         log_mode: LogMode,
         commit: bool = True,
     ) -> None:

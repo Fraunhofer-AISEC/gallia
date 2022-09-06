@@ -7,7 +7,7 @@ from __future__ import annotations
 import asyncio
 from asyncio import Task
 from datetime import datetime, timezone
-from typing import Any, Optional, Union
+from typing import Any
 
 from gallia.db.db_handler import DBHandler, LogMode
 from gallia.log import get_logger
@@ -33,7 +33,7 @@ from gallia.utils import g_repr
 class ECUState:
     def __init__(self) -> None:
         self.session = 1
-        self.security_access_level: Optional[int] = None
+        self.security_access_level: int | None = None
 
     def reset(self) -> None:
         self.session = 1
@@ -55,27 +55,27 @@ class ECU(UDSClient):
         transport: BaseTransport,
         timeout: float,
         max_retry: int = 1,
-        power_supply: Optional[PowerSupply] = None,
+        power_supply: PowerSupply | None = None,
     ) -> None:
 
         super().__init__(transport, timeout, max_retry)
         self.logger = get_logger("ecu")
-        self.tester_present_task: Optional[Task[None]] = None
+        self.tester_present_task: Task[None] | None = None
         self.power_supply = power_supply
         self.state = ECUState()
-        self.db_handler: Optional[DBHandler] = None
+        self.db_handler: DBHandler | None = None
 
     async def connect(self) -> None:
         ...
 
     async def properties(
-        self, fresh: bool = False, config: Optional[UDSRequestConfig] = None
+        self, fresh: bool = False, config: UDSRequestConfig | None = None
     ) -> dict[str, Any]:
         return {}
 
     async def ping(
-        self, config: Optional[UDSRequestConfig] = None
-    ) -> Union[service.NegativeResponse, service.TesterPresentResponse]:
+        self, config: UDSRequestConfig | None = None
+    ) -> service.NegativeResponse | service.TesterPresentResponse:
         """Send an UDS TesterPresent message.
 
         Returns:
@@ -83,7 +83,7 @@ class ECU(UDSClient):
         """
         return await self.tester_present(suppress_response=False, config=config)
 
-    async def read_session(self, config: Optional[UDSRequestConfig] = None) -> int:
+    async def read_session(self, config: UDSRequestConfig | None = None) -> int:
         """Read out current session.
 
         Returns:
@@ -97,7 +97,7 @@ class ECU(UDSClient):
         return from_bytes(resp.data_record)
 
     async def set_session_pre(
-        self, level: int, config: Optional[UDSRequestConfig] = None
+        self, level: int, config: UDSRequestConfig | None = None
     ) -> bool:
         """set_session_pre() is called before the diagnostic session control
         pdu is written on the wire. Implement this if there are special
@@ -113,7 +113,7 @@ class ECU(UDSClient):
         """
 
     async def set_session_post(
-        self, level: int, config: Optional[UDSRequestConfig] = None
+        self, level: int, config: UDSRequestConfig | None = None
     ) -> bool:
         """set_session_post() is called after the diagnostic session control
         pdu was written on the wire. Implement this if there are special
@@ -215,7 +215,7 @@ class ECU(UDSClient):
         return True
 
     async def leave_session(
-        self, level: int, config: Optional[UDSRequestConfig] = None
+        self, level: int, config: UDSRequestConfig | None = None
     ) -> bool:
         """leave_session() is a hook which can be called explicitly by a
         scanner when a session is to be disabled. Use this hook if resetting
@@ -255,8 +255,8 @@ class ECU(UDSClient):
         return sessions
 
     async def set_session(
-        self, level: int, config: Optional[UDSRequestConfig] = None
-    ) -> Union[service.NegativeResponse, service.DiagnosticSessionControlResponse]:
+        self, level: int, config: UDSRequestConfig | None = None
+    ) -> service.NegativeResponse | service.DiagnosticSessionControlResponse:
         config = config if config is not None else UDSRequestConfig()
 
         if not config.skip_hooks:
@@ -270,22 +270,22 @@ class ECU(UDSClient):
         return resp
 
     async def read_dtc(
-        self, config: Optional[UDSRequestConfig] = None
-    ) -> Union[service.NegativeResponse, service.ReportDTCByStatusMaskResponse]:
+        self, config: UDSRequestConfig | None = None
+    ) -> service.NegativeResponse | service.ReportDTCByStatusMaskResponse:
         """Read all dtc records from the ecu."""
         return await self.read_dtc_information_report_dtc_by_status_mask(
             0xFF, config=config
         )
 
     async def clear_dtc(
-        self, config: Optional[UDSRequestConfig] = None
-    ) -> Union[service.NegativeResponse, service.ClearDiagnosticInformationResponse]:
+        self, config: UDSRequestConfig | None = None
+    ) -> service.NegativeResponse | service.ClearDiagnosticInformationResponse:
         """Clear all dtc records on the ecu."""
         return await self.clear_diagnostic_information(0xFFFFFF, config=config)
 
     async def read_vin(
-        self, config: Optional[UDSRequestConfig] = None
-    ) -> Union[service.NegativeResponse, service.ReadDataByIdentifierResponse]:
+        self, config: UDSRequestConfig | None = None
+    ) -> service.NegativeResponse | service.ReadDataByIdentifierResponse:
         """Read the VIN of the vehicle"""
         return await self.read_data_by_identifier(0xF190, config=config)
 
@@ -294,7 +294,7 @@ class ECU(UDSClient):
         data: bytes,
         block_length: int,
         max_block_length: int = 0xFFF,
-        config: Optional[UDSRequestConfig] = None,
+        config: UDSRequestConfig | None = None,
     ) -> None:
         """transmit_data splits the data to be sent in several blocks of size block_length,
         transfers all of them and concludes the transmission with RequestTransferExit"""
@@ -334,7 +334,7 @@ class ECU(UDSClient):
 
     async def wait_for_ecu(
         self,
-        timeout: Optional[float] = None,
+        timeout: float | None = None,
     ) -> bool:
         """wait for ecu to be alive again (eg. after reset)
         Wait at most timeout"""
@@ -437,7 +437,7 @@ class ECU(UDSClient):
         await self.read_session()
 
     async def _request(
-        self, request: service.UDSRequest, config: Optional[UDSRequestConfig] = None
+        self, request: service.UDSRequest, config: UDSRequestConfig | None = None
     ) -> service.UDSResponse:
         """Sends a raw UDS request and returns the response.
         Network errors are handled via exponential backoff.
@@ -448,7 +448,7 @@ class ECU(UDSClient):
         :return: The response.
         """
         response = None
-        exception: Optional[Exception] = None
+        exception: Exception | None = None
         send_time = datetime.now(timezone.utc).astimezone()
         receive_time = None
 

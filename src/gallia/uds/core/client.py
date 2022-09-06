@@ -6,8 +6,9 @@ from __future__ import annotations
 
 import asyncio
 import struct
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Optional, Sequence, Union, overload
+from typing import overload
 
 from gallia.log import get_logger
 from gallia.transports.base import BaseTransport
@@ -19,12 +20,12 @@ from gallia.uds.helpers import parse_pdu
 
 @dataclass
 class UDSRequestConfig:
-    timeout: Optional[float] = None  # specify a timeout for this request
-    max_retry: Optional[
+    timeout: float | None = None  # specify a timeout for this request
+    max_retry: None | (
         int
-    ] = None  # maximum number of attempts in case of network errors
+    ) = None  # maximum number of attempts in case of network errors
     skip_hooks: bool = False  # skip hooks
-    tags: Optional[list[str]] = None  # tags to be applied to the logged output
+    tags: list[str] | None = None  # tags to be applied to the logged output
 
 
 class UDSClient:
@@ -41,19 +42,19 @@ class UDSClient:
         self.pending_timeout = 5
         self.logger = get_logger("uds")
 
-    async def reconnect(self, timeout: Optional[int] = None) -> None:
+    async def reconnect(self, timeout: int | None = None) -> None:
         """Calls the underlying transport to trigger a reconnect"""
         self.transport = await self.transport.reconnect(timeout)
 
     async def _read(
-        self, timeout: Optional[float] = None, tags: Optional[list[str]] = None
+        self, timeout: float | None = None, tags: list[str] | None = None
     ) -> bytes:
         if timeout is None and self.timeout:
             timeout = self.timeout
         return await self.transport.read(timeout, tags)
 
     async def request_unsafe(
-        self, request: service.UDSRequest, config: Optional[UDSRequestConfig] = None
+        self, request: service.UDSRequest, config: UDSRequestConfig | None = None
     ) -> service.UDSResponse:
         """This method is the same as request() with the difference
         that it does not hold the mutex in the underlying transport.
@@ -139,8 +140,8 @@ class UDSClient:
         raise last_exception
 
     async def _tester_present(
-        self, supress_resp: bool = False, config: Optional[UDSRequestConfig] = None
-    ) -> Optional[service.UDSResponse]:
+        self, supress_resp: bool = False, config: UDSRequestConfig | None = None
+    ) -> service.UDSResponse | None:
         config = config if config is not None else UDSRequestConfig()
         timeout = config.timeout if config.timeout else self.timeout
         if supress_resp:
@@ -150,8 +151,8 @@ class UDSClient:
         return await self.tester_present(False, config)
 
     async def send_raw(
-        self, pdu: bytes, config: Optional[UDSRequestConfig] = None
-    ) -> Union[service.NegativeResponse, service.PositiveResponse]:
+        self, pdu: bytes, config: UDSRequestConfig | None = None
+    ) -> service.NegativeResponse | service.PositiveResponse:
         """Raw request, which does not need to be compliant with the standard.
         It can be used to send arbitrary data packets.
 
@@ -165,8 +166,8 @@ class UDSClient:
         self,
         diagnostic_session_type: int,
         suppress_response: bool = False,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.DiagnosticSessionControlResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.DiagnosticSessionControlResponse:
         """Sets the diagnostic session which is specified by a specific diagnosticSessionType
         sub-function.
         This is an implementation of the UDS request for service DiagnosticSessionControl (0x10).
@@ -188,8 +189,8 @@ class UDSClient:
         self,
         reset_type: int,
         suppress_response: bool = False,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.ECUResetResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.ECUResetResponse:
         """Resets the ECU using the specified reset type sub-function.
         This is an implementation of the UDS request for service ECUReset (0x11).
 
@@ -208,8 +209,8 @@ class UDSClient:
         security_access_type: int,
         security_access_data_record: bytes = b"",
         suppress_response: bool = False,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.SecurityAccessResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.SecurityAccessResponse:
         """Requests a seed for a security access level.
         This is an implementation of the UDS request for the requestSeed sub-function group
         of the service SecurityAccess (0x27).
@@ -233,8 +234,8 @@ class UDSClient:
         security_access_type: int,
         security_key: bytes,
         suppress_response: bool = False,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.SecurityAccessResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.SecurityAccessResponse:
         """Sends the key for a security access level.
         This is an implementation of the UDS request for the sendKey sub-function group
         of the service SecurityAccess (0x27).
@@ -258,8 +259,8 @@ class UDSClient:
         control_type: int,
         communication_type: int,
         suppress_response: bool = False,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.CommunicationControlResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.CommunicationControlResponse:
         """Controls communication of the ECU.
         This is an implementation of the UDS request for service CommunicationControl (0x28).
 
@@ -278,8 +279,8 @@ class UDSClient:
         )
 
     async def tester_present(
-        self, suppress_response: bool = False, config: Optional[UDSRequestConfig] = None
-    ) -> Union[service.NegativeResponse, service.TesterPresentResponse]:
+        self, suppress_response: bool = False, config: UDSRequestConfig | None = None
+    ) -> service.NegativeResponse | service.TesterPresentResponse:
         """Signals to the ECU, that the tester is still present.
         This is an implementation of the UDS request for service TesterPresent (0x3E).
 
@@ -297,8 +298,8 @@ class UDSClient:
         dtc_setting_type: int,
         dtc_setting_control_option_record: bytes = b"",
         suppress_response: bool = False,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.ControlDTCSettingResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.ControlDTCSettingResponse:
         """Control the setting of DTCs.
         This is an implementation of the UDS request for service ControlDTCSetting (0x85).
 
@@ -319,9 +320,9 @@ class UDSClient:
 
     async def read_data_by_identifier(
         self,
-        data_identifiers: Union[int, Sequence[int]],
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.ReadDataByIdentifierResponse]:
+        data_identifiers: int | Sequence[int],
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.ReadDataByIdentifierResponse:
         """Reads data which is identified by a specific dataIdentifier.
         This is an implementation of the UDS request for service ReadDataByIdentifier (0x22).
         While this implementation supports requesting multiple dataIdentifiers at once, as is
@@ -343,9 +344,9 @@ class UDSClient:
         self,
         memory_address: int,
         memory_size: int,
-        address_and_length_format_identifier: Optional[int] = None,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.ReadMemoryByAddressResponse]:
+        address_and_length_format_identifier: int | None = None,
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.ReadMemoryByAddressResponse:
         """Reads data from a specific memory address on the UDS server.
         This is an implementation of the UDS request for service ReadMemoryByAddress (0x3d).
         While it exposes each parameter of the corresponding specification,
@@ -371,8 +372,8 @@ class UDSClient:
         self,
         data_identifier: int,
         data_record: bytes,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.WriteDataByIdentifierResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.WriteDataByIdentifierResponse:
         """Writes data which is identified by a specific dataIdentifier.
         This is an implementation of the UDS request for service WriteDataByIdentifier (0x2E).
 
@@ -389,10 +390,10 @@ class UDSClient:
         self,
         memory_address: int,
         data_record: bytes,
-        memory_size: Optional[int] = None,
-        address_and_length_format_identifier: Optional[int] = None,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.WriteMemoryByAddressResponse]:
+        memory_size: int | None = None,
+        address_and_length_format_identifier: int | None = None,
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.WriteMemoryByAddressResponse:
         """Writes data to a specific memory on the UDS server.
         This is an implementation of the UDS request for service writeMemoryByAddress (0x3d).
         While it exposes each parameter of the corresponding specification,
@@ -420,8 +421,8 @@ class UDSClient:
         )
 
     async def clear_diagnostic_information(
-        self, group_of_dtc: int, config: Optional[UDSRequestConfig] = None
-    ) -> Union[service.NegativeResponse, service.ClearDiagnosticInformationResponse]:
+        self, group_of_dtc: int, config: UDSRequestConfig | None = None
+    ) -> service.NegativeResponse | service.ClearDiagnosticInformationResponse:
         """Clears diagnostic trouble codes according to a given mask.
         This is an implementation of the UDS request for service clearDiagnosticInformation (0x14).
 
@@ -437,8 +438,8 @@ class UDSClient:
         self,
         dtc_status_mask: int,
         suppress_response: bool = False,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.ReportNumberOfDTCByStatusMaskResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.ReportNumberOfDTCByStatusMaskResponse:
         """Read the number of DTCs with the specified state from the UDS server.
         This is an implementation of the UDS request for the reportNumberOfDTCByStatusMask
         sub-function of the service ReadDTCInformation (0x19).
@@ -460,8 +461,8 @@ class UDSClient:
         self,
         dtc_status_mask: int,
         suppress_response: bool = False,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.ReportDTCByStatusMaskResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.ReportDTCByStatusMaskResponse:
         """Read DTCs and their state from the UDS server.
         This is an implementation of the UDS request for the reportDTCByStatusMask sub-function of
         the service ReadDTCInformation (0x19).
@@ -481,10 +482,8 @@ class UDSClient:
         self,
         dtc_status_mask: int,
         suppress_response: bool = False,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[
-        service.NegativeResponse, service.ReportMirrorMemoryDTCByStatusMaskResponse
-    ]:
+        config: UDSRequestConfig | None = None,
+    ) -> (service.NegativeResponse | service.ReportMirrorMemoryDTCByStatusMaskResponse):
         """Read DTCs and their state from the UDS server's mirror memory.
         This is an implementation of the UDS request for the reportMirrorMemoryDTCByStatusMask
         sub-function of the
@@ -507,11 +506,11 @@ class UDSClient:
         self,
         dtc_status_mask: int,
         suppress_response: bool = False,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[
-        service.NegativeResponse,
-        service.ReportNumberOfMirrorMemoryDTCByStatusMaskResponse,
-    ]:
+        config: UDSRequestConfig | None = None,
+    ) -> (
+        service.NegativeResponse
+        | service.ReportNumberOfMirrorMemoryDTCByStatusMaskResponse
+    ):
         """Read the number of DTCs with the specified state from the UDS server's mirror memory.
         This is an implementation of the UDS request for the
         reportNumberOfMirrorMemoryDTCByStatusMask sub-function of
@@ -534,11 +533,11 @@ class UDSClient:
         self,
         dtc_status_mask: int,
         suppress_response: bool = False,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[
-        service.NegativeResponse,
-        service.ReportNumberOfEmissionsRelatedOBDDTCByStatusMaskResponse,
-    ]:
+        config: UDSRequestConfig | None = None,
+    ) -> (
+        service.NegativeResponse
+        | service.ReportNumberOfEmissionsRelatedOBDDTCByStatusMaskResponse
+    ):
         """Read the number of emission related DTCs with the specified state from the UDS server.
         This is an implementation of the UDS request for the
         reportNumberOfEmissionsRelatedOBDDTCByStatusMask sub-function of the service
@@ -561,11 +560,11 @@ class UDSClient:
         self,
         dtc_status_mask: int,
         suppress_response: bool = False,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[
-        service.NegativeResponse,
-        service.ReportEmissionsRelatedOBDDTCByStatusMaskResponse,
-    ]:
+        config: UDSRequestConfig | None = None,
+    ) -> (
+        service.NegativeResponse
+        | service.ReportEmissionsRelatedOBDDTCByStatusMaskResponse
+    ):
         """Read the number of emission related DTCs with the specified state from the UDS server.
         This is an implementation of the UDS request for the
         reportNumberOfEmissionsRelatedOBDDTCByStatusMask
@@ -589,10 +588,8 @@ class UDSClient:
         data_identifier: int,
         control_option_record: bytes,
         control_enable_mask_record: bytes = b"",
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[
-        service.NegativeResponse, service.InputOutputControlByIdentifierResponse
-    ]:
+        config: UDSRequestConfig | None = None,
+    ) -> (service.NegativeResponse | service.InputOutputControlByIdentifierResponse):
         """Controls input or output values on the server.
         This is an implementation of the UDS request for the service InputOutputControlByIdentifier
         (0x2F).
@@ -627,10 +624,8 @@ class UDSClient:
         self,
         data_identifier: int,
         control_enable_mask_record: bytes = b"",
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[
-        service.NegativeResponse, service.InputOutputControlByIdentifierResponse
-    ]:
+        config: UDSRequestConfig | None = None,
+    ) -> (service.NegativeResponse | service.InputOutputControlByIdentifierResponse):
         """Gives the control over input / output parameters back to the ECU.
         This is a convenience wrapper for the generic input_output_control_by_id() for the case
         where an inputOutputControlParameter is used and is set to returnControlToECU.
@@ -655,10 +650,8 @@ class UDSClient:
         self,
         data_identifier: int,
         control_enable_mask_record: bytes = b"",
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[
-        service.NegativeResponse, service.InputOutputControlByIdentifierResponse
-    ]:
+        config: UDSRequestConfig | None = None,
+    ) -> (service.NegativeResponse | service.InputOutputControlByIdentifierResponse):
         """Sets the input / output parameters to the default value(s).
         This is a convenience wrapper of the generic request for the case where an
         inputOutputControlParameter is used and is set to resetToDefault.
@@ -681,10 +674,8 @@ class UDSClient:
         self,
         data_identifier: int,
         control_enable_mask_record: bytes = b"",
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[
-        service.NegativeResponse, service.InputOutputControlByIdentifierResponse
-    ]:
+        config: UDSRequestConfig | None = None,
+    ) -> (service.NegativeResponse | service.InputOutputControlByIdentifierResponse):
         """Freezes the input / output parameters at their current state.
         This is a convenience wrapper of the generic request for the case where an
         inputOutputControlParameter is used and is set to  freezeCurrentState.
@@ -709,10 +700,8 @@ class UDSClient:
         data_identifier: int,
         control_states: bytes,
         control_enable_mask_record: bytes = b"",
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[
-        service.NegativeResponse, service.InputOutputControlByIdentifierResponse
-    ]:
+        config: UDSRequestConfig | None = None,
+    ) -> (service.NegativeResponse | service.InputOutputControlByIdentifierResponse):
         """Sets the input / output parameters as specified in the controlOptionRecord.
         This is a convenience wrapper of the generic request for the case
         where an inputOutputControlParameter is used and is set to freezeCurrentState.
@@ -739,8 +728,8 @@ class UDSClient:
         routine_identifier: int,
         routine_control_option_record: bytes = b"",
         suppress_response: bool = False,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.StartRoutineResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.StartRoutineResponse:
         """Starts a specific routine on the server.
         This is an implementation of the UDS request for the startRoutine sub-function of the
         service routineControl (0x31).
@@ -764,8 +753,8 @@ class UDSClient:
         routine_identifier: int,
         routine_control_option_record: bytes = b"",
         suppress_response: bool = False,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.StopRoutineResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.StopRoutineResponse:
         """Stops a specific routine on the server.
         This is an implementation of the UDS request for the stopRoutine sub-function of the service
         routineControl (0x31).
@@ -789,8 +778,8 @@ class UDSClient:
         routine_identifier: int,
         routine_control_option_record: bytes = b"",
         suppress_response: bool = False,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.RequestRoutineResultsResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.RequestRoutineResultsResponse:
         """Requests the results of a specific routine on the server.
         This is an implementation of the UDS request for the requestRoutineResults sub-function of
         the service routineControl (0x31).
@@ -815,9 +804,9 @@ class UDSClient:
         memory_size: int,
         compression_method: int = 0x0,
         encryption_method: int = 0x0,
-        address_and_length_format_identifier: Optional[int] = None,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.RequestDownloadResponse]:
+        address_and_length_format_identifier: int | None = None,
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.RequestDownloadResponse:
         """Requests the download of data, i.e. the possibility to send data from the client to the
         server.
         This is an implementation of the UDS request for requestDownload (0x34).
@@ -850,9 +839,9 @@ class UDSClient:
         memory_size: int,
         compression_method: int = 0x0,
         encryption_method: int = 0x0,
-        address_and_length_format_identifier: Optional[int] = None,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.RequestUploadResponse]:
+        address_and_length_format_identifier: int | None = None,
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.RequestUploadResponse:
         """Requests the upload of data, i.e. the possibility to receive data from the server.
         This is an implementation of the UDS request for requestUpload (0x35).
 
@@ -882,8 +871,8 @@ class UDSClient:
         self,
         block_sequence_counter: int,
         transfer_request_parameter_record: bytes = b"",
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.TransferDataResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.TransferDataResponse:
         """Transfers data to the server or requests the next data from the server.
         This is an implementation of the UDS request for transferData (0x36).
 
@@ -905,8 +894,8 @@ class UDSClient:
     async def request_transfer_exit(
         self,
         transfer_request_parameter_record: bytes = b"",
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.RequestTransferExitResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.RequestTransferExitResponse:
         """Ends the transfer of data.
         This is an implementation of the UDS request for requestTransferExit (0x77).
 
@@ -921,231 +910,227 @@ class UDSClient:
 
     @overload
     async def request(
-        self, request: service.RawRequest, config: Optional[UDSRequestConfig] = None
-    ) -> Union[service.NegativeResponse, service.PositiveResponse]:
+        self, request: service.RawRequest, config: UDSRequestConfig | None = None
+    ) -> service.NegativeResponse | service.PositiveResponse:
         ...
 
     @overload
     async def request(
         self,
         request: service.DiagnosticSessionControlRequest,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.DiagnosticSessionControlResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.DiagnosticSessionControlResponse:
         ...
 
     @overload
     async def request(
         self,
         request: service.ECUResetRequest,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.ECUResetResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.ECUResetResponse:
         ...
 
     @overload
     async def request(
         self,
         request: service.RequestSeedRequest,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.SecurityAccessResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.SecurityAccessResponse:
         ...
 
     @overload
     async def request(
-        self, request: service.SendKeyRequest, config: Optional[UDSRequestConfig] = None
-    ) -> Union[service.NegativeResponse, service.SecurityAccessResponse]:
+        self, request: service.SendKeyRequest, config: UDSRequestConfig | None = None
+    ) -> service.NegativeResponse | service.SecurityAccessResponse:
         ...
 
     @overload
     async def request(
         self,
         request: service.CommunicationControlRequest,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.CommunicationControlResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.CommunicationControlResponse:
         ...
 
     @overload
     async def request(
         self,
         request: service.TesterPresentRequest,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.TesterPresentResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.TesterPresentResponse:
         ...
 
     @overload
     async def request(
         self,
         request: service.ControlDTCSettingRequest,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.ControlDTCSettingResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.ControlDTCSettingResponse:
         ...
 
     @overload
     async def request(
         self,
         request: service.ReadDataByIdentifierRequest,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.ReadDataByIdentifierResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.ReadDataByIdentifierResponse:
         ...
 
     @overload
     async def request(
         self,
         request: service.ReadMemoryByAddressRequest,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.ReadMemoryByAddressResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.ReadMemoryByAddressResponse:
         ...
 
     @overload
     async def request(
         self,
         request: service.WriteDataByIdentifierRequest,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.WriteDataByIdentifierResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.WriteDataByIdentifierResponse:
         ...
 
     @overload
     async def request(
         self,
         request: service.WriteMemoryByAddressRequest,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.WriteMemoryByAddressResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.WriteMemoryByAddressResponse:
         ...
 
     @overload
     async def request(
         self,
         request: service.ClearDiagnosticInformationRequest,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.ClearDiagnosticInformationResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.ClearDiagnosticInformationResponse:
         ...
 
     @overload
     async def request(
         self,
         request: service.ReportNumberOfDTCByStatusMaskRequest,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.ReportNumberOfDTCByStatusMaskResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.ReportNumberOfDTCByStatusMaskResponse:
         ...
 
     @overload
     async def request(
         self,
         request: service.ReportDTCByStatusMaskRequest,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.ReportDTCByStatusMaskResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.ReportDTCByStatusMaskResponse:
         ...
 
     @overload
     async def request(
         self,
         request: service.ReportMirrorMemoryDTCByStatusMaskRequest,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[
-        service.NegativeResponse, service.ReportMirrorMemoryDTCByStatusMaskResponse
-    ]:
+        config: UDSRequestConfig | None = None,
+    ) -> (service.NegativeResponse | service.ReportMirrorMemoryDTCByStatusMaskResponse):
         ...
 
     @overload
     async def request(
         self,
         request: service.ReportNumberOfMirrorMemoryDTCByStatusMaskRequest,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[
-        service.NegativeResponse,
-        service.ReportNumberOfMirrorMemoryDTCByStatusMaskResponse,
-    ]:
+        config: UDSRequestConfig | None = None,
+    ) -> (
+        service.NegativeResponse
+        | service.ReportNumberOfMirrorMemoryDTCByStatusMaskResponse
+    ):
         ...
 
     @overload
     async def request(
         self,
         request: service.ReportNumberOfEmissionsRelatedOBDDTCByStatusMaskRequest,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[
-        service.NegativeResponse,
-        service.ReportNumberOfEmissionsRelatedOBDDTCByStatusMaskResponse,
-    ]:
+        config: UDSRequestConfig | None = None,
+    ) -> (
+        service.NegativeResponse
+        | service.ReportNumberOfEmissionsRelatedOBDDTCByStatusMaskResponse
+    ):
         ...
 
     @overload
     async def request(
         self,
         request: service.ReportEmissionsRelatedOBDDTCByStatusMaskRequest,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[
-        service.NegativeResponse,
-        service.ReportEmissionsRelatedOBDDTCByStatusMaskResponse,
-    ]:
+        config: UDSRequestConfig | None = None,
+    ) -> (
+        service.NegativeResponse
+        | service.ReportEmissionsRelatedOBDDTCByStatusMaskResponse
+    ):
         ...
 
     @overload
     async def request(
         self,
         request: service.InputOutputControlByIdentifierRequest,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[
-        service.NegativeResponse, service.InputOutputControlByIdentifierResponse
-    ]:
+        config: UDSRequestConfig | None = None,
+    ) -> (service.NegativeResponse | service.InputOutputControlByIdentifierResponse):
         ...
 
     @overload
     async def request(
         self,
         request: service.StartRoutineRequest,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.StartRoutineResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.StartRoutineResponse:
         ...
 
     @overload
     async def request(
         self,
         request: service.StopRoutineRequest,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.StopRoutineResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.StopRoutineResponse:
         ...
 
     @overload
     async def request(
         self,
         request: service.RequestRoutineResultsRequest,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.RequestRoutineResultsResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.RequestRoutineResultsResponse:
         ...
 
     @overload
     async def request(
         self,
         request: service.RequestDownloadRequest,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.RequestDownloadResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.RequestDownloadResponse:
         ...
 
     @overload
     async def request(
         self,
         request: service.RequestUploadRequest,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.RequestUploadResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.RequestUploadResponse:
         ...
 
     @overload
     async def request(
         self,
         request: service.TransferDataRequest,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.TransferDataResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.TransferDataResponse:
         ...
 
     @overload
     async def request(
         self,
         request: service.RequestTransferExitRequest,
-        config: Optional[UDSRequestConfig] = None,
-    ) -> Union[service.NegativeResponse, service.RequestTransferExitResponse]:
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.RequestTransferExitResponse:
         ...
 
     async def request(
-        self, request: service.UDSRequest, config: Optional[UDSRequestConfig] = None
+        self, request: service.UDSRequest, config: UDSRequestConfig | None = None
     ) -> service.UDSResponse:
         """Sends a raw UDS request and returns the response.
         Network errors are handled via exponential backoff.
@@ -1158,7 +1143,7 @@ class UDSClient:
         return await self._request(request, config)
 
     async def _request(
-        self, request: service.UDSRequest, config: Optional[UDSRequestConfig] = None
+        self, request: service.UDSRequest, config: UDSRequestConfig | None = None
     ) -> service.UDSResponse:
         async with self.transport.mutex:
             return await self.request_unsafe(request, config)

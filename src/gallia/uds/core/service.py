@@ -9,8 +9,9 @@ from __future__ import annotations
 import inspect
 import struct
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from struct import pack
-from typing import Any, Optional, Sequence, Type, TypeVar, Union
+from typing import Any, TypeVar
 
 from gallia.uds import logger
 from gallia.uds.core.constants import (
@@ -47,18 +48,18 @@ T_UDSRequest = TypeVar("T_UDSRequest", bound="UDSRequest")
 
 
 class UDSRequest(ABC):
-    SERVICE_ID: Optional[int]
-    RESPONSE_TYPE: Type[PositiveResponse]
+    SERVICE_ID: int | None
+    RESPONSE_TYPE: type[PositiveResponse]
     _MINIMAL_LENGTH: int
-    _MAXIMAL_LENGTH: Optional[int]
+    _MAXIMAL_LENGTH: int | None
 
     def __init_subclass__(
         cls,
         /,
-        service_id: Optional[int],
-        response_type: Type[PositiveResponse],
+        service_id: int | None,
+        response_type: type[PositiveResponse],
         minimal_length: int,
-        maximal_length: Optional[int],
+        maximal_length: int | None,
         **kwargs: Any,
     ) -> None:
         super().__init_subclass__(**kwargs)
@@ -74,7 +75,7 @@ class UDSRequest(ABC):
         pass
 
     @classmethod
-    def from_pdu(cls: Type[T_UDSRequest], pdu: bytes) -> T_UDSRequest:
+    def from_pdu(cls: type[T_UDSRequest], pdu: bytes) -> T_UDSRequest:
         cls._check_pdu(pdu)
         result = cls._from_pdu(pdu)
 
@@ -84,7 +85,7 @@ class UDSRequest(ABC):
 
     @classmethod
     @abstractmethod
-    def _from_pdu(cls: Type[T_UDSRequest], pdu: bytes) -> T_UDSRequest:
+    def _from_pdu(cls: type[T_UDSRequest], pdu: bytes) -> T_UDSRequest:
         pass
 
     @classmethod
@@ -151,17 +152,17 @@ T_UDSResponse = TypeVar("T_UDSResponse", bound="UDSResponse")
 
 
 class UDSResponse(ABC):
-    SERVICE_ID: Optional[int]
-    RESPONSE_SERVICE_ID: Optional[int]
+    SERVICE_ID: int | None
+    RESPONSE_SERVICE_ID: int | None
     _MINIMAL_LENGTH: int
-    _MAXIMAL_LENGTH: Optional[int]
+    _MAXIMAL_LENGTH: int | None
 
     def __init_subclass__(
         cls,
         /,
-        service_id: Optional[int],
+        service_id: int | None,
         minimal_length: int,
-        maximal_length: Optional[int],
+        maximal_length: int | None,
         **kwargs: Any,
     ) -> None:
         super().__init_subclass__(**kwargs)
@@ -172,7 +173,7 @@ class UDSResponse(ABC):
         cls._MAXIMAL_LENGTH = maximal_length
 
     def __init__(self) -> None:
-        self.trigger_request: Optional[UDSRequest] = None
+        self.trigger_request: UDSRequest | None = None
 
     @property
     @abstractmethod
@@ -180,13 +181,13 @@ class UDSResponse(ABC):
         pass
 
     @classmethod
-    def from_pdu(cls: Type[T_UDSResponse], pdu: bytes) -> T_UDSResponse:
+    def from_pdu(cls: type[T_UDSResponse], pdu: bytes) -> T_UDSResponse:
         cls._check_pdu(pdu)
         return cls._from_pdu(pdu)
 
     @classmethod
     @abstractmethod
-    def _from_pdu(cls: Type[T_UDSResponse], pdu: bytes) -> T_UDSResponse:
+    def _from_pdu(cls: type[T_UDSResponse], pdu: bytes) -> T_UDSResponse:
         pass
 
     @classmethod
@@ -218,7 +219,7 @@ class UDSResponse(ABC):
         if pdu[0] == UDSIsoServices.NegativeResponse:
             return NegativeResponse.from_pdu(pdu)
 
-        response_type: Type[PositiveResponse]
+        response_type: type[PositiveResponse]
 
         logger.trace("Dynamically parsing response")
         logger.trace(f" - Got PDU {pdu.hex()}")
@@ -275,7 +276,7 @@ class RawResponse(
         self._pdu = pdu
 
     @classmethod
-    def _from_pdu(cls: Type[T_RawResponse], pdu: bytes) -> T_RawResponse:
+    def _from_pdu(cls: type[T_RawResponse], pdu: bytes) -> T_RawResponse:
         return cls(pdu)
 
     @property
@@ -381,8 +382,8 @@ class PositiveResponse(
 
     @classmethod
     def parse_static(
-        cls: Type[T_PositiveResponse], response_pdu: bytes
-    ) -> Union[NegativeResponse, T_PositiveResponse]:
+        cls: type[T_PositiveResponse], response_pdu: bytes
+    ) -> NegativeResponse | T_PositiveResponse:
         if response_pdu[0] == 0x7F:
             negative_response = NegativeResponse.from_pdu(response_pdu)
             return negative_response
@@ -392,21 +393,21 @@ class PositiveResponse(
 
 
 class UDSService(ABC):
-    SERVICE_ID: Optional[UDSIsoServices]
-    _SERVICES: dict[Optional[UDSIsoServices], Type[UDSService]] = {}
-    Response: Optional[Type[PositiveResponse]] = None
-    Request: Optional[Type[UDSRequest]] = None
+    SERVICE_ID: UDSIsoServices | None
+    _SERVICES: dict[UDSIsoServices | None, type[UDSService]] = {}
+    Response: type[PositiveResponse] | None = None
+    Request: type[UDSRequest] | None = None
 
     @classmethod
-    def _response_type(cls, pdu: bytes) -> Optional[Type[PositiveResponse]]:
+    def _response_type(cls, pdu: bytes) -> type[PositiveResponse] | None:
         return cls.Response
 
     @classmethod
-    def _request_type(cls, pdu: bytes) -> Optional[Type[UDSRequest]]:
+    def _request_type(cls, pdu: bytes) -> type[UDSRequest] | None:
         return cls.Request
 
     def __init_subclass__(
-        cls, /, service_id: Optional[UDSIsoServices], **kwargs: Any
+        cls, /, service_id: UDSIsoServices | None, **kwargs: Any
     ) -> None:
         super().__init_subclass__(**kwargs)
 
@@ -415,13 +416,11 @@ class UDSService(ABC):
 
 
 class SubFunction(ABC):
-    SUB_FUNCTION_ID: Optional[int]
-    Response: Optional[Type[PositiveResponse]]
-    Request: Optional[Type[UDSRequest]]
+    SUB_FUNCTION_ID: int | None
+    Response: type[PositiveResponse] | None
+    Request: type[UDSRequest] | None
 
-    def __init_subclass__(
-        cls, /, sub_function_id: Optional[int], **kwargs: Any
-    ) -> None:
+    def __init_subclass__(cls, /, sub_function_id: int | None, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
 
         cls.SUB_FUNCTION_ID = sub_function_id
@@ -429,7 +428,7 @@ class SubFunction(ABC):
 
 class SpecializedSubFunctionService(UDSService, ABC, service_id=None):
     @classmethod
-    def _sub_function_type(cls, pdu: bytes) -> Type[SubFunction]:
+    def _sub_function_type(cls, pdu: bytes) -> type[SubFunction]:
         sub_function_id = pdu[1] % 0x80
 
         sub_functions = [
@@ -445,11 +444,11 @@ class SpecializedSubFunctionService(UDSService, ABC, service_id=None):
         raise ValueError(f"SubFunction not supported: {int_repr(sub_function_id)}")
 
     @classmethod
-    def _response_type(cls, pdu: bytes) -> Optional[Type[PositiveResponse]]:
+    def _response_type(cls, pdu: bytes) -> type[PositiveResponse] | None:
         return cls._sub_function_type(pdu).Response
 
     @classmethod
-    def _request_type(cls, pdu: bytes) -> Optional[Type[UDSRequest]]:
+    def _request_type(cls, pdu: bytes) -> type[UDSRequest] | None:
         return cls._sub_function_type(pdu).Request
 
 
@@ -735,7 +734,7 @@ class ECUResetResponse(
     minimal_length=2,
     maximal_length=3,
 ):
-    def __init__(self, reset_type: int, power_down_time: Optional[int] = None) -> None:
+    def __init__(self, reset_type: int, power_down_time: int | None = None) -> None:
         if power_down_time is not None:
             check_range(power_down_time, "powerDownTime", 0, 0xFF)
 
@@ -977,7 +976,7 @@ class SecurityAccess(
         Request = SendKeyRequest
 
     @classmethod
-    def _sub_function_type(cls, pdu: bytes) -> Type[SubFunction]:
+    def _sub_function_type(cls, pdu: bytes) -> type[SubFunction]:
         sub_function_id = pdu[1]
         return (
             SecurityAccess.RequestSeed
@@ -1262,8 +1261,8 @@ class ReadDataByIdentifierResponse(
 ):
     def __init__(
         self,
-        data_identifiers: Union[int, Sequence[int]],
-        data_records: Union[bytes, Sequence[bytes]],
+        data_identifiers: int | Sequence[int],
+        data_records: bytes | Sequence[bytes],
     ) -> None:
         super().__init__()
 
@@ -1358,7 +1357,7 @@ class ReadDataByIdentifierRequest(
     minimal_length=3,
     maximal_length=None,
 ):
-    def __init__(self, data_identifiers: Union[int, Sequence[int]]) -> None:
+    def __init__(self, data_identifiers: int | Sequence[int]) -> None:
         """Reads data which is identified by a specific dataIdentifier.
         This is an implementation of the UDS request for service ReadDataByIdentifier (0x22).
         While this implementation supports requesting multiple dataIdentifiers at once, as is
@@ -1454,7 +1453,7 @@ class ReadMemoryByAddressRequest(
         self,
         memory_address: int,
         memory_size: int,
-        address_and_length_format_identifier: Optional[int] = None,
+        address_and_length_format_identifier: int | None = None,
     ) -> None:
         """Reads data from a specific memory address on the UDS server.
         This is an implementation of the UDS request for service ReadMemoryByAddress (0x3d).
@@ -1651,7 +1650,7 @@ class WriteMemoryByAddressResponse(
         self,
         memory_address: int,
         memory_size: int,
-        address_and_length_format_identifier: Optional[int] = None,
+        address_and_length_format_identifier: int | None = None,
     ) -> None:
         super().__init__()
 
@@ -1686,8 +1685,8 @@ class WriteMemoryByAddressRequest(
         self,
         memory_address: int,
         data_record: bytes,
-        memory_size: Optional[int] = None,
-        address_and_length_format_identifier: Optional[int] = None,
+        memory_size: int | None = None,
+        address_and_length_format_identifier: int | None = None,
     ) -> None:
         """Writes data to a specific memory on the UDS server.
         This is an implementation of the UDS request for service writeMemoryByAddress (0x3d).
@@ -1889,7 +1888,7 @@ class _ReadDTCType0Response(
 
     @classmethod
     def _from_pdu(
-        cls: Type[T_ReadDTCType0Response], pdu: bytes
+        cls: type[T_ReadDTCType0Response], pdu: bytes
     ) -> T_ReadDTCType0Response:
         dtc_status_availability_mask = pdu[2]
         dtc_format_identifier = DTCFormatIdentifier(pdu[3])
@@ -1913,7 +1912,7 @@ class _ReadDTCType1Response(
     def __init__(
         self,
         dtc_status_availability_mask: int,
-        dtc_and_status_record: Union[bytes, dict[int, int]],
+        dtc_and_status_record: bytes | dict[int, int],
     ) -> None:
         super().__init__()
 
@@ -1923,13 +1922,12 @@ class _ReadDTCType1Response(
             if len(dtc_and_status_record) % 4 != 0:
                 raise ValueError("Not a valid dtc_and_status_record")
 
-            self.dtc_and_status_record = dict(
-                (
-                    from_bytes(dtc_and_status_record[i : i + 3]),
-                    dtc_and_status_record[i + 3],
-                )
+            self.dtc_and_status_record = {
+                from_bytes(dtc_and_status_record[i : i + 3]): dtc_and_status_record[
+                    i + 3
+                ]
                 for i in range(0, len(dtc_and_status_record), 4)
-            )
+            }
         else:
             for dtc, status in dtc_and_status_record.items():
                 check_range(dtc, "DTC", 0, 0xFFFFFF)
@@ -1961,7 +1959,7 @@ class _ReadDTCType1Response(
 
     @classmethod
     def _from_pdu(
-        cls: Type[T_ReadDTCType1Response], pdu: bytes
+        cls: type[T_ReadDTCType1Response], pdu: bytes
     ) -> T_ReadDTCType1Response:
         dtc_status_availability_mask = pdu[2]
         dtc_and_status_record = pdu[3:]
@@ -1998,7 +1996,7 @@ class _ReadDTCType0Request(
 
     @classmethod
     def _from_pdu(
-        cls: Type[T_ReadDTCType0Request], pdu: bytes
+        cls: type[T_ReadDTCType0Request], pdu: bytes
     ) -> T_ReadDTCType0Request:
         dtc_status_mask = pdu[2]
         return cls(dtc_status_mask, cls.suppress_response_set(pdu))
@@ -2027,7 +2025,7 @@ class _ReadDTCType6Request(
 
     @classmethod
     def _from_pdu(
-        cls: Type[T_ReadDTCType6Request], pdu: bytes
+        cls: type[T_ReadDTCType6Request], pdu: bytes
     ) -> T_ReadDTCType6Request:
         return cls(cls.suppress_response_set(pdu))
 
@@ -2815,7 +2813,7 @@ class RoutineControlResponse(
 
     @classmethod
     def _from_pdu(
-        cls: Type[T_RoutineControlResponse], pdu: bytes
+        cls: type[T_RoutineControlResponse], pdu: bytes
     ) -> T_RoutineControlResponse:
         routine_identifier = from_bytes(pdu[2:4])
         routine_status_record = pdu[4:]
@@ -2880,7 +2878,7 @@ class RoutineControlRequest(
 
     @classmethod
     def _from_pdu(
-        cls: Type[T_RoutineControlRequest], pdu: bytes
+        cls: type[T_RoutineControlRequest], pdu: bytes
     ) -> T_RoutineControlRequest:
         routine_identifier = from_bytes(pdu[2:4])
         routine_control_option_record = pdu[4:]
@@ -3038,7 +3036,7 @@ class _RequestUpOrDownloadResponse(
     def __init__(
         self,
         max_number_of_block_length: int,
-        length_format_identifier: Optional[int] = None,
+        length_format_identifier: int | None = None,
     ) -> None:
         super().__init__()
 
@@ -3077,7 +3075,7 @@ class _RequestUpOrDownloadResponse(
 
     @classmethod
     def _from_pdu(
-        cls: Type[T_RequestUpOrDownloadResponse], pdu: bytes
+        cls: type[T_RequestUpOrDownloadResponse], pdu: bytes
     ) -> T_RequestUpOrDownloadResponse:
         length_format_identifier = pdu[1]
         max_number_of_block_length = from_bytes(pdu[2:])
@@ -3108,7 +3106,7 @@ class _RequestUpOrDownloadRequest(
         memory_size: int,
         compression_method: int = 0x0,
         encryption_method: int = 0x0,
-        address_and_length_format_identifier: Optional[int] = None,
+        address_and_length_format_identifier: int | None = None,
     ) -> None:
         check_range(compression_method, "compressionMethod", 0, 0xF)
         check_range(encryption_method, "encryptionMethod", 0, 0xF)
@@ -3147,7 +3145,7 @@ class _RequestUpOrDownloadRequest(
 
     @classmethod
     def _from_pdu(
-        cls: Type[T_RequestUpOrDownloadRequest], pdu: bytes
+        cls: type[T_RequestUpOrDownloadRequest], pdu: bytes
     ) -> T_RequestUpOrDownloadRequest:
         data_format_identifier = pdu[1]
         address_and_length_format_identifier = pdu[2]
@@ -3191,7 +3189,7 @@ class RequestDownloadRequest(
         memory_size: int,
         compression_method: int = 0x0,
         encryption_method: int = 0x0,
-        address_and_length_format_identifier: Optional[int] = None,
+        address_and_length_format_identifier: int | None = None,
     ) -> None:
         """Requests the download of data, i.e. the possibility to send data from the client to the
         server.
@@ -3247,7 +3245,7 @@ class RequestUploadRequest(
         memory_size: int,
         compression_method: int = 0x0,
         encryption_method: int = 0x0,
-        address_and_length_format_identifier: Optional[int] = None,
+        address_and_length_format_identifier: int | None = None,
     ) -> None:
         """Requests the upload of data, i.e. the possibility to receive data from the server.
         This is an implementation of the UDS request for requestUpload (0x35).

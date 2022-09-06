@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import asyncio
 from abc import ABC
-from typing import Any, Optional, Type
+from typing import Any
 
 from gallia.uds.core.constants import UDSErrorCodes
 from gallia.uds.core.service import NegativeResponse, UDSRequest, UDSResponse
@@ -17,7 +17,7 @@ from gallia.uds.core.service import NegativeResponse, UDSRequest, UDSResponse
 
 
 class UDSException(Exception):
-    def __init__(self, request: UDSRequest, message: Optional[str] = None):
+    def __init__(self, request: UDSRequest, message: str | None = None):
         self.request = request
         self.message = message
 
@@ -45,7 +45,7 @@ class MissingResponse(UDSException, asyncio.TimeoutError):
 
 class ResponseException(UDSException):
     def __init__(
-        self, request: UDSRequest, response: UDSResponse, message: Optional[str] = None
+        self, request: UDSRequest, response: UDSResponse, message: str | None = None
     ):
         self.response = response
 
@@ -75,7 +75,7 @@ class UnexpectedResponse(ResponseException):
 class UnexpectedNegativeResponse(UnexpectedResponse, ABC):
     RESPONSE_CODE: UDSErrorCodes
     _CONCRETE_EXCEPTIONS: dict[
-        Optional[UDSErrorCodes], Type[UnexpectedNegativeResponse]
+        UDSErrorCodes | None, type[UnexpectedNegativeResponse]
     ] = {}
 
     def __init_subclass__(cls, /, response_code: UDSErrorCodes, **kwargs: Any) -> None:
@@ -88,7 +88,7 @@ class UnexpectedNegativeResponse(UnexpectedResponse, ABC):
         self,
         request: UDSRequest,
         response: NegativeResponse,
-        message: Optional[str] = None,
+        message: str | None = None,
     ):
         self.response: NegativeResponse = response
 
@@ -96,7 +96,7 @@ class UnexpectedNegativeResponse(UnexpectedResponse, ABC):
 
     @staticmethod
     def parse_dynamic(
-        request: UDSRequest, response: NegativeResponse, message: Optional[str] = None
+        request: UDSRequest, response: NegativeResponse, message: str | None = None
     ) -> UnexpectedNegativeResponse:
         return UnexpectedNegativeResponse._CONCRETE_EXCEPTIONS[response.response_code](
             request, response, message

@@ -11,7 +11,7 @@ import sys
 from importlib.metadata import entry_points, version
 from pathlib import Path
 from pprint import pprint
-from typing import Any, Optional
+from typing import Any
 
 import argcomplete  # type: ignore
 
@@ -96,8 +96,8 @@ def add_cli_category(
     category: str,
     help_: str,
     metavar: str,
-    description: Optional[str] = None,
-    epilog: Optional[str] = None,
+    description: str | None = None,
+    epilog: str | None = None,
 ) -> None:
     parser = parent["subparsers"].add_parser(
         category,
@@ -253,7 +253,7 @@ def build_cli(parsers: dict[str, Any], config: dict[str, Any]) -> None:
 def cmd_show_config(
     args: argparse.Namespace,
     config: dict[str, Any],
-    config_path: Optional[Path],
+    config_path: Path | None,
 ) -> None:
     if (p := os.getenv("GALLIA_CONFIG")) is not None:
         print(f"path to config set by env variable: {p}", file=sys.stderr)

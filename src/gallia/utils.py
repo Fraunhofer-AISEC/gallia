@@ -2,22 +2,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import ipaddress
 import logging
 import re
 from argparse import Action, ArgumentError, ArgumentParser, Namespace
+from collections.abc import Awaitable, Callable, Sequence
 from enum import Enum
 from pathlib import Path
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Awaitable,
-    Callable,
-    Optional,
-    Sequence,
-    TypeVar,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, TypeVar
 from urllib.parse import urlparse
 
 import aiofiles
@@ -36,8 +30,8 @@ def auto_int(arg: str) -> int:
 
 def split_host_port(
     hostport: str,
-    default_port: Optional[int] = None,
-) -> tuple[str, Optional[int]]:
+    default_port: int | None = None,
+) -> tuple[str, int | None]:
     """Splits a combination of ip address/hostname + port into hostname/ip address
     and port.  The default_port argument can be used to return a port if it is
     absent in the hostport argument."""
@@ -141,10 +135,10 @@ class ParseSkips(Action):
         self,
         parser: ArgumentParser,
         namespace: Namespace,
-        values: Union[str, Sequence[Any], None],
-        option_string: Optional[str] = None,
+        values: str | Sequence[Any] | None,
+        option_string: str | None = None,
     ) -> None:
-        skip_sids: dict[int, Optional[list[int]]] = {}
+        skip_sids: dict[int, list[int] | None] = {}
 
         try:
             if values is not None:
@@ -181,7 +175,7 @@ async def catch_and_log_exception(
     func: Callable[..., Awaitable[T]],
     *args: Any,
     **kwargs: Any,
-) -> Optional[T]:
+) -> T | None:
     """Runs an async function. If an exception is raised,
     it will be logged via logger.
 
@@ -198,8 +192,8 @@ async def catch_and_log_exception(
 
 async def write_target_list(
     path: Path,
-    targets: list["TargetURI"],
-    db_handler: Optional["DBHandler"] = None,
+    targets: list[TargetURI],
+    db_handler: DBHandler | None = None,
 ) -> None:
     """Write a list of ECU connection strings (urls) into file
 

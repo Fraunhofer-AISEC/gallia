@@ -8,7 +8,7 @@ import asyncio
 import struct
 from dataclasses import dataclass
 from enum import IntEnum, unique
-from typing import Optional, Union
+from typing import Union
 
 from pydantic import BaseModel
 
@@ -286,8 +286,8 @@ class DoIPConnection:
         self,
         reader: asyncio.StreamReader,
         writer: asyncio.StreamWriter,
-        src_addr: Optional[int],
-        target_addr: Optional[int],
+        src_addr: int | None,
+        target_addr: int | None,
     ):
         self.logger = get_logger("doip")
         self.reader = reader
@@ -545,7 +545,7 @@ class DoIPTransport(BaseTransport, scheme="doip"):
 
     @classmethod
     async def connect(
-        cls, target: TargetURI, timeout: Optional[float] = None
+        cls, target: TargetURI, timeout: float | None = None
     ) -> DoIPTransport:
         if target.hostname is None:
             raise ValueError("no hostname specified")
@@ -569,8 +569,8 @@ class DoIPTransport(BaseTransport, scheme="doip"):
 
     async def read(
         self,
-        timeout: Optional[float] = None,
-        tags: Optional[list[str]] = None,
+        timeout: float | None = None,
+        tags: list[str] | None = None,
     ) -> bytes:
         data = await asyncio.wait_for(self._conn.read_diag_request(), timeout)
 
@@ -581,8 +581,8 @@ class DoIPTransport(BaseTransport, scheme="doip"):
     async def write(
         self,
         data: bytes,
-        timeout: Optional[float] = None,
-        tags: Optional[list[str]] = None,
+        timeout: float | None = None,
+        tags: list[str] | None = None,
     ) -> int:
         await asyncio.wait_for(self._conn.write_diag_request(data), timeout)
 

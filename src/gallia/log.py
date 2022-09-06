@@ -11,7 +11,7 @@ import traceback
 from datetime import datetime
 from enum import Enum, IntEnum, unique
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import msgspec
 import zstandard
@@ -115,7 +115,7 @@ priority_to_level = dict(zip(level_to_priority.values(), level_to_priority.keys(
 def setup_logging(
     level: int,
     file_level: int = logging.DEBUG,
-    path: Optional[Path] = None,
+    path: Path | None = None,
 ) -> None:
     # These are slow and not used by gallia.
     logging.logMultiprocessing = False
@@ -152,10 +152,10 @@ class PenlogRecordV1(msgspec.Struct, omit_defaults=True):
     data: str
     timestamp: str
     priority: int
-    type: Optional[str] = None
-    tags: Optional[list[str]] = None
-    line: Optional[str] = None
-    stacktrace: Optional[str] = None
+    type: str | None = None
+    tags: list[str] | None = None
+    line: str | None = None
+    stacktrace: str | None = None
 
     def to_log_record(self) -> logging.LogRecord:
         name = self.component
@@ -205,12 +205,12 @@ class PenlogRecordV2(msgspec.Struct, omit_defaults=True, tag=2, tag_field="versi
     data: str
     datetime: str
     priority: int
-    tags: Optional[list[str]] = None
-    line: Optional[str] = None
-    stacktrace: Optional[str] = None
-    _python_level_no: Optional[int] = None
-    _python_level_name: Optional[str] = None
-    _python_func_name: Optional[str] = None
+    tags: list[str] | None = None
+    line: str | None = None
+    stacktrace: str | None = None
+    _python_level_no: int | None = None
+    _python_level_name: str | None = None
+    _python_func_name: str | None = None
 
     def to_log_record(self) -> logging.LogRecord:
         level = priority_to_level[PenlogPriority(self.priority)]
@@ -242,10 +242,10 @@ class PenlogRecordV2(msgspec.Struct, omit_defaults=True, tag=2, tag_field="versi
         )
 
 
-def parse_penlog_record(data: bytes) -> Union[PenlogRecordV1, PenlogRecordV2]:
+def parse_penlog_record(data: bytes) -> PenlogRecordV1 | PenlogRecordV2:
     # PenlogRecordV1 has no version field, thus the tagged
     # union based approach does not work.
-    record: Union[PenlogRecordV1, PenlogRecordV2]
+    record: PenlogRecordV1 | PenlogRecordV2
     try:
         record = msgspec.json.decode(data, type=PenlogRecordV2)
     except msgspec.ValidationError:
@@ -353,7 +353,7 @@ class ConsoleFormatter(logging.Formatter):
 
 
 class ZstdFileHandler(logging.Handler):
-    def __init__(self, path: Path, level: Union[int, str] = logging.NOTSET) -> None:
+    def __init__(self, path: Path, level: int | str = logging.NOTSET) -> None:
         super().__init__(level)
         self.file = path.open("wb")
         self.compressor = zstandard.ZstdCompressor()
@@ -376,9 +376,9 @@ class Logger(logging.Logger):
         self,
         msg: Any,
         *args: Any,
-        exc_info: "_ExcInfoType" = None,
+        exc_info: _ExcInfoType = None,
         stack_info: bool = False,
-        extra: Optional[dict[str, Any]] = None,
+        extra: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
         if self.isEnabledFor(logging.TRACE):  # type: ignore
@@ -396,9 +396,9 @@ class Logger(logging.Logger):
         self,
         msg: Any,
         *args: Any,
-        exc_info: "_ExcInfoType" = None,
+        exc_info: _ExcInfoType = None,
         stack_info: bool = False,
-        extra: Optional[dict[str, Any]] = None,
+        extra: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
         if self.isEnabledFor(logging.NOTICE):  # type: ignore
@@ -416,9 +416,9 @@ class Logger(logging.Logger):
         self,
         msg: Any,
         *args: Any,
-        exc_info: "_ExcInfoType" = None,
+        exc_info: _ExcInfoType = None,
         stack_info: bool = False,
-        extra: Optional[dict[str, Any]] = None,
+        extra: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
         extra = extra if extra is not None else {}

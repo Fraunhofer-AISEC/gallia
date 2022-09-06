@@ -14,7 +14,7 @@ from asyncio import subprocess
 from datetime import datetime
 from pathlib import Path
 from socket import SocketKind
-from typing import Optional, cast
+from typing import cast
 from urllib.parse import urlparse
 
 from gallia.log import Logger, get_logger
@@ -124,9 +124,7 @@ class Dumpcap:
         return cast(int, struct.unpack(">H", struct.pack("<H", x))[0])
 
     @staticmethod
-    def _can_cmd(
-        iface: str, src_addr: Optional[int], dst_addr: Optional[int]
-    ) -> list[str]:
+    def _can_cmd(iface: str, src_addr: int | None, dst_addr: int | None) -> list[str]:
         args = ["dumpcap", "-q", "-i", iface, "-w", "-"]
         # Debug this with `dumpcap -d` or `tshark -x` to inspect the captured buffer.
         filter_ = "link[1] == 0x01"  # broadcast flag; ignore "sent by us" frames

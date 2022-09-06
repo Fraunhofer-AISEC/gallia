@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import asyncio
 import binascii
-from typing import Optional
 
 from gallia.transports.base import BaseTransport, TargetURI
 
@@ -24,7 +23,7 @@ class TCPTransport(BaseTransport, scheme="tcp"):
 
     @classmethod
     async def connect(
-        cls, target: TargetURI, timeout: Optional[float] = None
+        cls, target: TargetURI, timeout: float | None = None
     ) -> TCPTransport:
         reader, writer = await asyncio.wait_for(
             asyncio.open_connection(target.hostname, target.port), timeout
@@ -38,8 +37,8 @@ class TCPTransport(BaseTransport, scheme="tcp"):
     async def write(
         self,
         data: bytes,
-        timeout: Optional[float] = None,
-        tags: Optional[list[str]] = None,
+        timeout: float | None = None,
+        tags: list[str] | None = None,
     ) -> int:
         t = tags + ["write"] if tags is not None else ["write"]
         self.logger.trace(data.hex(), tags=t)
@@ -50,8 +49,8 @@ class TCPTransport(BaseTransport, scheme="tcp"):
 
     async def read(
         self,
-        timeout: Optional[float] = None,
-        tags: Optional[list[str]] = None,
+        timeout: float | None = None,
+        tags: list[str] | None = None,
     ) -> bytes:
         data = await asyncio.wait_for(self.reader.read(self.BUFSIZE), timeout)
 
@@ -63,15 +62,15 @@ class TCPTransport(BaseTransport, scheme="tcp"):
         self,
         data: bytes,
         dst: int,
-        timeout: Optional[float] = None,
-        tags: Optional[list[str]] = None,
+        timeout: float | None = None,
+        tags: list[str] | None = None,
     ) -> int:
         raise RuntimeError("sendto() is not implemented")
 
     async def recvfrom(
         self,
-        timeout: Optional[float] = None,
-        tags: Optional[list[str]] = None,
+        timeout: float | None = None,
+        tags: list[str] | None = None,
     ) -> tuple[int, bytes]:
         raise RuntimeError("recvfrom() is not implemented")
 
@@ -80,8 +79,8 @@ class TCPLineSepTransport(TCPTransport, scheme="tcp-lines"):
     async def write(
         self,
         data: bytes,
-        timeout: Optional[float] = None,
-        tags: Optional[list[str]] = None,
+        timeout: float | None = None,
+        tags: list[str] | None = None,
     ) -> int:
         t = tags + ["write"] if tags is not None else ["write"]
 
@@ -93,8 +92,8 @@ class TCPLineSepTransport(TCPTransport, scheme="tcp-lines"):
 
     async def read(
         self,
-        timeout: Optional[float] = None,
-        tags: Optional[list[str]] = None,
+        timeout: float | None = None,
+        tags: list[str] | None = None,
     ) -> bytes:
         data = await asyncio.wait_for(self.reader.readline(), timeout)
         d = data.decode().strip()

@@ -5,7 +5,7 @@
 import os
 import subprocess
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import tomlkit
 from xdg import xdg_config_dirs
@@ -13,7 +13,7 @@ from xdg import xdg_config_dirs
 ConfigType = dict[str, Any]
 
 
-def get_git_root() -> Optional[Path]:
+def get_git_root() -> Path | None:
     try:
         p = subprocess.run(
             ["git", "rev-parse", "--show-toplevel"],
@@ -35,7 +35,7 @@ def get_config_dirs() -> list[Path]:
     return [cwd] + dirs
 
 
-def search_config(filename: Optional[Path] = None) -> Optional[Path]:
+def search_config(filename: Path | None = None) -> Path | None:
     name = filename if filename is not None else Path("gallia.toml")
     if (s := os.getenv("GALLIA_CONFIG")) is not None:
         if (path := Path(s)).exists():
@@ -50,8 +50,8 @@ def search_config(filename: Optional[Path] = None) -> Optional[Path]:
 
 
 def load_config_file(
-    filename: Optional[Path] = None,
-) -> tuple[ConfigType, Optional[Path]]:
+    filename: Path | None = None,
+) -> tuple[ConfigType, Path | None]:
     if (path := search_config(filename)) is not None:
         raw_toml = path.read_text()
         return tomlkit.loads(raw_toml), path

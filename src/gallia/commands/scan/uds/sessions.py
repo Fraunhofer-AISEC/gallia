@@ -5,7 +5,7 @@
 import asyncio
 import sys
 from argparse import Namespace
-from typing import Any, Union
+from typing import Any
 
 from gallia.command import UDSScanner
 from gallia.uds.core.client import UDSRequestConfig
@@ -59,7 +59,7 @@ class SessionsScanner(UDSScanner):
 
     async def set_session_with_hooks_handling(
         self, session: int, use_hooks: bool
-    ) -> Union[NegativeResponse, DiagnosticSessionControlResponse]:
+    ) -> NegativeResponse | DiagnosticSessionControlResponse:
         resp = await self.ecu.set_session(
             session, config=UDSRequestConfig(skip_hooks=True)
         )

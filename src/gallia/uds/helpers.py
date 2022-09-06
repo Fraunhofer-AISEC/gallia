@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Optional, Union
-
 from gallia.uds.core import service
 from gallia.uds.core.constants import UDSErrorCodes, UDSIsoServices
 from gallia.uds.core.exception import (
@@ -13,9 +11,7 @@ from gallia.uds.core.exception import (
 )
 
 
-def raise_for_error(
-    response: service.UDSResponse, message: Optional[str] = None
-) -> None:
+def raise_for_error(response: service.UDSResponse, message: str | None = None) -> None:
     if isinstance(response, service.NegativeResponse):
         if response.trigger_request is None:
             raise ValueError("The response has not been assigned a trigger request")
@@ -26,7 +22,7 @@ def raise_for_error(
 
 
 def as_exception(
-    response: service.NegativeResponse, message: Optional[str] = None
+    response: service.NegativeResponse, message: str | None = None
 ) -> UnexpectedNegativeResponse:
     if response.trigger_request is None:
         raise ValueError("The response has not been assigned a trigger request")
@@ -39,14 +35,14 @@ def as_exception(
 def raise_for_mismatch(
     request: service.UDSRequest,
     response: service.UDSResponse,
-    message: Optional[str] = None,
+    message: str | None = None,
 ) -> None:
     if not response.matches(request):
         raise RequestResponseMismatch(request, response, message)
 
 
 def _suggests_not_supported(
-    response: Union[service.UDSResponse, UDSErrorCodes],
+    response: service.UDSResponse | UDSErrorCodes,
     not_supported_codes: list[UDSErrorCodes],
 ) -> bool:
     if isinstance(response, service.UDSResponse):
@@ -61,7 +57,7 @@ def _suggests_not_supported(
 
 
 def suggests_service_not_supported(
-    response: Union[service.UDSResponse, UDSErrorCodes]
+    response: service.UDSResponse | UDSErrorCodes,
 ) -> bool:
     return _suggests_not_supported(
         response,
@@ -73,7 +69,7 @@ def suggests_service_not_supported(
 
 
 def suggests_sub_function_not_supported(
-    response: Union[service.UDSResponse, UDSErrorCodes]
+    response: service.UDSResponse | UDSErrorCodes,
 ) -> bool:
     return _suggests_not_supported(
         response,
@@ -87,7 +83,7 @@ def suggests_sub_function_not_supported(
 
 
 def suggests_identifier_not_supported(
-    response: Union[service.UDSResponse, UDSErrorCodes]
+    response: service.UDSResponse | UDSErrorCodes,
 ) -> bool:
     return _suggests_not_supported(
         response,

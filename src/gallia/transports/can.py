@@ -9,7 +9,7 @@ import errno
 import socket as s
 import struct
 import time
-from typing import Optional, cast
+from typing import cast
 
 from can import Message  # type: ignore
 from pydantic import BaseModel, validator
@@ -52,10 +52,10 @@ class ISOTPConfig(BaseModel):
     is_extended: bool = False
     is_fd: bool = False
     frame_txtime: int = 10
-    ext_address: Optional[int] = None
-    rx_ext_address: Optional[int] = None
-    tx_padding: Optional[int] = None
-    rx_padding: Optional[int] = None
+    ext_address: int | None = None
+    rx_ext_address: int | None = None
+    tx_padding: int | None = None
+    rx_padding: int | None = None
     tx_dl: int = 64
 
     _auto_int = validator("src_addr", "dst_addr", pre=True, allow_reuse=True)(auto_int)
@@ -71,7 +71,7 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
     async def connect(
         cls,
         target: TargetURI,
-        timeout: Optional[float] = None,
+        timeout: float | None = None,
     ) -> ISOTPTransport:
         if target.hostname is not None:
             raise ValueError("empty interface")
@@ -111,10 +111,10 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
     def _setsockopts(
         sock: s.socket,
         frame_txtime: int,
-        tx_padding: Optional[int] = None,
-        rx_padding: Optional[int] = None,
-        ext_address: Optional[int] = None,
-        rx_ext_address: Optional[int] = None,
+        tx_padding: int | None = None,
+        rx_padding: int | None = None,
+        ext_address: int | None = None,
+        rx_ext_address: int | None = None,
         flags: int = 0,
     ) -> None:
         if ext_address is not None:
@@ -168,8 +168,8 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
     async def write(
         self,
         data: bytes,
-        timeout: Optional[float] = None,
-        tags: Optional[list[str]] = None,
+        timeout: float | None = None,
+        tags: list[str] | None = None,
     ) -> int:
         t = tags + ["write"] if tags is not None else ["write"]
         self.logger.trace(data.hex(), extra={"tags": t})
@@ -179,7 +179,7 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
         return len(data)
 
     async def read(
-        self, timeout: Optional[float] = None, tags: Optional[list[str]] = None
+        self, timeout: float | None = None, tags: list[str] | None = None
     ) -> bytes:
         loop = asyncio.get_running_loop()
         try:
@@ -286,7 +286,7 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
 
     @classmethod
     async def connect(
-        cls, target: TargetURI, timeout: Optional[float] = None
+        cls, target: TargetURI, timeout: float | None = None
     ) -> RawCANTransport:
         if target.hostname is not None:
             raise ValueError("empty interface")
@@ -317,16 +317,16 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
 
     async def read(
         self,
-        timeout: Optional[float] = None,
-        tags: Optional[list[str]] = None,
+        timeout: float | None = None,
+        tags: list[str] | None = None,
     ) -> bytes:
         raise RuntimeError("RawCANTransport is a special snowflake")
 
     async def write(
         self,
         data: bytes,
-        timeout: Optional[float] = None,
-        tags: Optional[list[str]] = None,
+        timeout: float | None = None,
+        tags: list[str] | None = None,
     ) -> int:
         raise RuntimeError("RawCANTransport is a special snowflake")
 
@@ -334,8 +334,8 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
         self,
         data: bytes,
         dst: int,
-        timeout: Optional[float] = None,
-        tags: Optional[list[str]] = None,
+        timeout: float | None = None,
+        tags: list[str] | None = None,
     ) -> int:
         msg = CANMessage(
             arbitration_id=dst,
@@ -355,7 +355,7 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
         return len(data)
 
     async def recvfrom(
-        self, timeout: Optional[float] = None, tags: Optional[list[str]] = None
+        self, timeout: float | None = None, tags: list[str] | None = None
     ) -> tuple[int, bytes]:
         loop = asyncio.get_running_loop()
         can_frame = await asyncio.wait_for(
