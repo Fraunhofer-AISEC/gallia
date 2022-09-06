@@ -133,7 +133,7 @@ class FindXCP:
         # TODO: rewrite as async
 
         data = bytes([0xFF, 0x00])
-        endpoints = list()
+        endpoints = []
         for port in args.tcp_ports.split(","):
             port = int(port, 0)
             self.logger.info(f"Testing TCP port: {port}")
@@ -176,7 +176,7 @@ class FindXCP:
         # TODO: rewrite as async
 
         data = bytes([0xFF, 0x00])
-        endpoints = list()
+        endpoints = []
         for port in args.udp_ports.split(","):
             port = int(port, 0)
             self.logger.info(f"Testing UDP port: {port}")
@@ -209,7 +209,7 @@ class FindXCP:
         )
         transport = RawCANTransport(target)
         await transport.connect()
-        endpoints = list()
+        endpoints = []
 
         sniff_time: int = args.sniff_time
         self.logger.result(f"Listening to idle bus communication for {sniff_time}s...")
@@ -266,7 +266,7 @@ class FindXCP:
         self.socket.settimeout(2)
 
         xcp_discover = bytes([0xFA, 0x01])
-        endpoints = list()
+        endpoints = []
         self.socket.sendto(self.pack_xcp_eth(xcp_discover), multicast_group)
         try:
             while True:

@@ -408,7 +408,7 @@ class RawCANTransport(BaseTransport, scheme="can-raw", spec=spec_can_raw):
         which are seen in the specified period of time.
         The output of this function can be used as input to set_filter.
         """
-        addr_idle: list[int] = list()
+        addr_idle: list[int] = []
         t1 = time.time()
         while time.time() - t1 < sniff_time:
             try:

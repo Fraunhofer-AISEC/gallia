@@ -53,9 +53,9 @@ class ResetScanner(UDSScanner):
         )
 
     async def main(self, args: Namespace) -> None:
-        l_ok: dict[int, list[int]] = dict()
-        l_timeout: dict[int, list[int]] = dict()
-        l_error: dict[int, list[Any]] = dict()
+        l_ok: dict[int, list[int]] = {}
+        l_timeout: dict[int, list[int]] = {}
+        l_error: dict[int, list[Any]] = {}
 
         if args.sessions is None:
             self.logger.info("No sessions specified, starting with session scan")
@@ -89,9 +89,9 @@ class ResetScanner(UDSScanner):
                 continue
 
             self.logger.result(f"Scanning in session: {g_repr(session)}")
-            l_ok[session] = list()
-            l_timeout[session] = list()
-            l_error[session] = list()
+            l_ok[session] = []
+            l_timeout[session] = []
+            l_error[session] = []
 
             for sub_func in range(0x01, 0x80):
                 if session in args.skip and sub_func in args.skip[session]:
