@@ -65,12 +65,6 @@ class BaseTransport(ABC):
     BUFSIZE: int = io.DEFAULT_BUFFER_SIZE
 
     def __init__(self, target: TargetURI) -> None:
-        if target.scheme != self.SCHEME:
-            raise ValueError(
-                f"invalid scheme: {target.scheme}; expected: {self.SCHEME}"
-            )
-
-        self._args: dict[str, Any] = {}
         self.mutex = asyncio.Lock()
         self.logger = get_logger(self.SCHEME)
         self.target = target
@@ -85,6 +79,11 @@ class BaseTransport(ABC):
         super().__init_subclass__(**kwargs)
         cls.SCHEME = scheme
         cls.BUFSIZE = bufsize
+
+    @classmethod
+    def check_scheme(cls, target: TargetURI) -> None:
+        if target.scheme != cls.SCHEME:
+            raise ValueError(f"invalid scheme: {target.scheme}; expected: {cls.SCHEME}")
 
     @classmethod
     @abstractmethod

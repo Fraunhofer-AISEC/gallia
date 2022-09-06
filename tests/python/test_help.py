@@ -15,6 +15,6 @@ def test_help() -> None:
     check(["gallia", "-h"])
 
     all_entries = entry_points()
-    for entry in all_entries["console_scripts"]:
+    for entry in all_entries.select(group="console_scripts"):
         if (e := entry.name).startswith("gallia_"):
             check([e, "-h"])
