@@ -99,7 +99,9 @@ class BaseTransport(ABC):
     async def close(self) -> None:
         ...
 
-    async def reconnect(self: TransportT, timeout: Optional[float] = None) -> TransportT:
+    async def reconnect(
+        self: TransportT, timeout: Optional[float] = None
+    ) -> TransportT:
         async with self.mutex:
             await self.close()
             return await self.connect(self.target)

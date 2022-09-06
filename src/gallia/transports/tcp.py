@@ -23,7 +23,9 @@ class TCPTransport(BaseTransport, scheme="tcp"):
         self.writer = writer
 
     @classmethod
-    async def connect(cls, target: TargetURI, timeout: Optional[float] = None) -> TCPTransport:
+    async def connect(
+        cls, target: TargetURI, timeout: Optional[float] = None
+    ) -> TCPTransport:
         reader, writer = await asyncio.wait_for(
             asyncio.open_connection(target.hostname, target.port), timeout
         )
