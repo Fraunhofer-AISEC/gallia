@@ -14,8 +14,8 @@ from typing import Optional, cast
 from can import Message  # type: ignore
 from pydantic import BaseModel, validator
 
-from gallia.utils import auto_int
 from gallia.transports.base import BaseTransport, TargetURI
+from gallia.utils import auto_int
 
 CANFD_MTU = 72
 CAN_MTU = 16
@@ -58,7 +58,7 @@ class ISOTPConfig(BaseModel):
     rx_padding: Optional[int] = None
     tx_dl: int = 64
 
-    _auto_int = validator('src_addr', "dst_addr", pre=True, allow_reuse=True)(auto_int)
+    _auto_int = validator("src_addr", "dst_addr", pre=True, allow_reuse=True)(auto_int)
 
 
 class ISOTPTransport(BaseTransport, scheme="isotp"):
@@ -285,7 +285,9 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
         self.config = config
 
     @classmethod
-    async def connect(cls, target: TargetURI, timeout: Optional[float] = None) -> RawCANTransport:
+    async def connect(
+        cls, target: TargetURI, timeout: Optional[float] = None
+    ) -> RawCANTransport:
         if target.hostname is not None:
             raise ValueError("empty interface")
 
@@ -314,7 +316,9 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
             self._sock.setsockopt(s.SOL_CAN_RAW, s.CAN_RAW_JOIN_FILTERS, 1)
 
     async def read(
-        self, timeout: Optional[float] = None, tags: Optional[list[str]] = None,
+        self,
+        timeout: Optional[float] = None,
+        tags: Optional[list[str]] = None,
     ) -> bytes:
         raise RuntimeError("RawCANTransport is a special snowflake")
 
