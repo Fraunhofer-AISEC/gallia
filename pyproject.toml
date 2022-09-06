@@ -38,7 +38,7 @@ tomlkit = "^0.11.0"
 msgspec = "^0.8.0"
 
 [tool.poetry.dev-dependencies]
-black = "^22.6.0"
+black = "^22.8.0"
 Sphinx = "^5.1.1"
 flake8 = "^5.0.4"
 isort = "^5.10.1"
