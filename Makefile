@@ -4,9 +4,9 @@
 
 .PHONY: lint
 lint:
-	flake8 --config setup.cfg src
-	mypy --config-file pyproject.toml src
-	pylint --rcfile pyproject.toml src
+	flake8 --config setup.cfg src tests
+	mypy --config-file pyproject.toml src tests
+	pylint --rcfile pyproject.toml src tests
 
 BINDIR ?= "${HOME}/bin"
 

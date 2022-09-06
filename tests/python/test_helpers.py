@@ -2,20 +2,18 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# mypy: allow-untyped-defs
-
 import pytest
 from gallia.uds.core.utils import uds_memory_parameters, address_and_size_length
 from gallia.utils import split_host_port
 
 
-def test_split_host_port_v4():
+def test_split_host_port_v4() -> None:
     host, port = split_host_port("1.2.3.4:82")
     assert host == "1.2.3.4"
     assert port == 82
 
 
-def test_split_host_port_v6():
+def test_split_host_port_v6() -> None:
     host, port = split_host_port("[fec2::10]:80")
     assert host == "fec2::10"
     assert port == 80
@@ -24,7 +22,7 @@ def test_split_host_port_v6():
     assert port == 80
 
 
-def test_split_host_port_broken():
+def test_split_host_port_broken() -> None:
     with pytest.raises(ValueError):
         split_host_port("[fec2::10]:4509823409582350")
 
@@ -32,7 +30,7 @@ def test_split_host_port_broken():
         split_host_port("hallo:3575983275498230")
 
 
-def test_split_host_port_default():
+def test_split_host_port_default() -> None:
     host, port = split_host_port("1.1.1.1", 22)
     assert host == "1.1.1.1"
     assert port == 22
@@ -58,7 +56,7 @@ def test_split_host_port_default():
     assert port is None
 
 
-def test_uds_memory_parameters():
+def test_uds_memory_parameters() -> None:
     # Arbitrary test case with one size having even and one odd nibble size
     fmt, addr, size = uds_memory_parameters(0x1234567890, 0x12345)
     assert fmt == 0x35
@@ -126,7 +124,7 @@ def test_uds_memory_parameters():
         uds_memory_parameters(0, 0, 0x10)
 
 
-def test_address_and_size_length():
+def test_address_and_size_length() -> None:
     # Arbitrary test case with different lengths
     address_length, size_length = address_and_size_length(0x74)
     assert address_length == 4

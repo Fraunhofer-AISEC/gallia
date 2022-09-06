@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# mypy: allow-untyped-defs
-
 import subprocess
 from importlib.metadata import entry_points
 
