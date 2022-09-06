@@ -79,14 +79,14 @@ def test_uds_memory_parameters():
 
     # The max value should result in the max bytes (corner case for highest applicable value)
     fmt, addr, size = uds_memory_parameters(256**15 - 1, 256**15 - 1)
-    assert fmt == 0xff
-    assert addr == bytes([0xff] * 15)
-    assert size == bytes([0xff] * 15)
+    assert fmt == 0xFF
+    assert addr == bytes([0xFF] * 15)
+    assert size == bytes([0xFF] * 15)
 
     # Corner case between two byte sizes
-    fmt, addr, size = uds_memory_parameters(0xff, 0x100)
+    fmt, addr, size = uds_memory_parameters(0xFF, 0x100)
     assert fmt == 0x21
-    assert addr == bytes([0xff])
+    assert addr == bytes([0xFF])
     assert size == bytes([0x01, 0x00])
 
     # Lowest value which is out of range
@@ -138,9 +138,9 @@ def test_address_and_size_length():
     assert size_length == 1
 
     # Highest applicable value
-    address_length, size_length = address_and_size_length(0xff)
-    assert address_length == 0xf
-    assert size_length == 0xf
+    address_length, size_length = address_and_size_length(0xFF)
+    assert address_length == 0xF
+    assert size_length == 0xF
 
     # Invalid addressAndLengthFormatIdentifier
     with pytest.raises(ValueError):
