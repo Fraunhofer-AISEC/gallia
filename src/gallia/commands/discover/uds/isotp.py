@@ -5,7 +5,6 @@
 import asyncio
 from argparse import Namespace
 from binascii import unhexlify
-from typing import Optional
 
 from gallia.command import DiscoveryScanner
 from gallia.transports.base import TargetURI
@@ -132,8 +131,8 @@ class IsotpDiscoverer(DiscoveryScanner):
     def build_isotp_frame(
         self,
         req: UDSRequest,
-        ext_addr: Optional[int] = None,
-        padding: Optional[int] = None,
+        ext_addr: int | None = None,
+        padding: int | None = None,
     ) -> bytes:
         pdu = req.pdu
         max_pdu_len = 7 if ext_addr is None else 6

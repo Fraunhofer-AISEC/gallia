@@ -12,7 +12,7 @@ import uuid
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from enum import Enum, IntEnum, unique
-from typing import Any, Optional, TextIO
+from typing import Any, TextIO
 
 
 @unique
@@ -65,10 +65,10 @@ class RecordType:
     priority: MessagePrio
     timestamp: str
     type: str
-    id: Optional[str] = None
-    line: Optional[str] = None
-    stacktrace: Optional[str] = None
-    tags: Optional[list[str]] = None
+    id: str | None = None
+    line: str | None = None
+    stacktrace: str | None = None
+    tags: list[str] | None = None
 
 
 def colorize(color: Color, s: str) -> str:
@@ -181,8 +181,8 @@ class Logger:
         component: str = "root",
         flush: bool = False,
         file_: TextIO = sys.stderr,
-        loglevel: Optional[MessagePrio] = None,
-        output_type: Optional[OutputType] = None,
+        loglevel: MessagePrio | None = None,
+        output_type: OutputType | None = None,
         show_colors: bool = True,
         include_uuid: bool = False,
     ):
@@ -269,7 +269,7 @@ class Logger:
         data: Any,
         type_: str = MessageType.MESSAGE,
         prio: MessagePrio = MessagePrio.INFO,
-        tags: Optional[list[str]] = None,
+        tags: list[str] | None = None,
         _depth: int = 3,
     ) -> None:
         msg = RecordType(
@@ -286,25 +286,25 @@ class Logger:
         )
         self._log(msg, _depth)
 
-    def log_trace(self, data: Any, tags: Optional[list[str]] = None) -> None:
+    def log_trace(self, data: Any, tags: list[str] | None = None) -> None:
         self.log_msg(data, MessageType.MESSAGE, MessagePrio.TRACE, tags, 4)
 
-    def log_debug(self, data: Any, tags: Optional[list[str]] = None) -> None:
+    def log_debug(self, data: Any, tags: list[str] | None = None) -> None:
         self.log_msg(data, MessageType.MESSAGE, MessagePrio.DEBUG, tags, 4)
 
-    def log_info(self, data: Any, tags: Optional[list[str]] = None) -> None:
+    def log_info(self, data: Any, tags: list[str] | None = None) -> None:
         self.log_msg(data, MessageType.MESSAGE, MessagePrio.INFO, tags, 4)
 
-    def log_notice(self, data: Any, tags: Optional[list[str]] = None) -> None:
+    def log_notice(self, data: Any, tags: list[str] | None = None) -> None:
         self.log_msg(data, MessageType.MESSAGE, MessagePrio.NOTICE, tags, 4)
 
-    def log_warning(self, data: Any, tags: Optional[list[str]] = None) -> None:
+    def log_warning(self, data: Any, tags: list[str] | None = None) -> None:
         self.log_msg(data, MessageType.MESSAGE, MessagePrio.WARNING, tags, 4)
 
-    def log_error(self, data: Any, tags: Optional[list[str]] = None) -> None:
+    def log_error(self, data: Any, tags: list[str] | None = None) -> None:
         self.log_msg(data, MessageType.MESSAGE, MessagePrio.ERROR, tags, 4)
 
-    def log_critical(self, data: Any, tags: Optional[list[str]] = None) -> None:
+    def log_critical(self, data: Any, tags: list[str] | None = None) -> None:
         self.log_msg(data, MessageType.MESSAGE, MessagePrio.CRITICAL, tags, 4)
 
 

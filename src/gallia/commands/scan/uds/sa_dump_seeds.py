@@ -9,7 +9,7 @@ import sys
 import time
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import aiofiles
 
@@ -84,7 +84,7 @@ class SASeedsDumper(UDSScanner):
             help="Append an optional data record to each seed request",
         )
 
-    async def request_seed(self, level: int, data: bytes) -> Optional[bytes]:
+    async def request_seed(self, level: int, data: bytes) -> bytes | None:
         resp = await self.ecu.security_access_request_seed(
             level, data, config=UDSRequestConfig(tags=["ANALYZE"])
         )

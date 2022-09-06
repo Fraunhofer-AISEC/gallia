@@ -23,7 +23,7 @@ from datetime import datetime
 from enum import IntEnum, unique
 from math import ceil
 from pathlib import Path
-from typing import Any, BinaryIO, Optional, Union
+from typing import Any, BinaryIO
 
 import zstandard as zstd
 
@@ -41,7 +41,7 @@ class InterpretationColor(IntEnum):
 
 @dataclass
 class PenlogEntry(RecordType):
-    interpretation: Optional[str] = None
+    interpretation: str | None = None
     interpretation_color: InterpretationColor = InterpretationColor.DEFAULT
 
 
@@ -80,7 +80,7 @@ class PriorityZone:
     """
 
     start: int
-    end: Optional[int]
+    end: int | None
     priority: MessagePrio
 
 
@@ -94,7 +94,7 @@ class EntryCache:
 
     def __init__(
         self,
-        file: Union[BinaryIO, mmap.mmap],
+        file: BinaryIO | mmap.mmap,
         entry_positions: array[int],
         cache_size: int = 20_000,
     ):
@@ -163,7 +163,7 @@ class CursedHR:
         self,
         in_file: Path,
         priority: MessagePrio = MessagePrio.DEBUG,
-        filters: Optional[list[str]] = None,
+        filters: list[str] | None = None,
     ):
         self.in_file = in_file
         self.level_pointers: list[array[int]] = list(array("L") for _ in range(9))
@@ -233,7 +233,7 @@ class CursedHR:
         )
         curses.init_pair(InterpretationColor.UDS_NEGATIVE_RESPONSE, 166, -1)
 
-        return dict((prio, color[0]) for prio, color in prio_colors.items())
+        return {prio: color[0] for prio, color in prio_colors.items()}
 
     def uncompressed_file(self) -> BinaryIO:
         """
@@ -272,7 +272,7 @@ class CursedHR:
         except Exception as e:
             raise ValueError("Unsupported file format") from e
 
-    def parse_structure(self, file: Union[BinaryIO, mmap.mmap]) -> None:
+    def parse_structure(self, file: BinaryIO | mmap.mmap) -> None:
         """
         Parses an (already uncompressed) penlog file to a skeleton containing structural information but no data.
 
@@ -289,7 +289,7 @@ class CursedHR:
                                    This allows to quickly find entries which are to be displayed inside a priority zone
                                    even if there are many entries with filtered out priority in between.
         """
-        prio_prefix = '"priority":'.encode("ascii")
+        prio_prefix = b'"priority":'
         prio_prefix_len = len(prio_prefix)
 
         file.seek(0, 2)
@@ -698,7 +698,7 @@ class CursedHR:
 
         return display_entries[:max_lines]
 
-    def next_sufficient_entry(self, entry_id: int) -> Optional[int]:
+    def next_sufficient_entry(self, entry_id: int) -> int | None:
         """
         Returns the index of the next entry after the given one,
         which has a sufficiently high priority to be displayed and also passes any filters.
@@ -716,7 +716,7 @@ class CursedHR:
             self.level_pointers[zone.priority][pointer] if pointer is not None else None
         )
 
-    def previous_sufficient_entry(self, entry_id: int) -> Optional[int]:
+    def previous_sufficient_entry(self, entry_id: int) -> int | None:
         """
         Returns the index of the previous entry after the given one,
         which has a sufficiently high priority to be displayed and also passes any filters.
@@ -735,8 +735,8 @@ class CursedHR:
         )
 
     def next_sufficient_pointer(
-        self, prio_zone: Optional[PriorityZone], pointer: int, entry_id: int
-    ) -> tuple[PriorityZone, Optional[int]]:
+        self, prio_zone: PriorityZone | None, pointer: int, entry_id: int
+    ) -> tuple[PriorityZone, int | None]:
         """
         Returns the index of the next priority pointer after the given one,
         which has a sufficiently high priority to be displayed and also passes any filters,
@@ -764,8 +764,8 @@ class CursedHR:
         return zone, ptr
 
     def previous_sufficient_pointer(
-        self, prio_zone: Optional[PriorityZone], pointer: int, entry_id: int
-    ) -> tuple[PriorityZone, Optional[int]]:
+        self, prio_zone: PriorityZone | None, pointer: int, entry_id: int
+    ) -> tuple[PriorityZone, int | None]:
         """
         Returns the index of the previous priority pointer before the given one,
         which has a sufficiently high priority to be displayed and also passes any filters,
@@ -793,8 +793,8 @@ class CursedHR:
         return zone, ptr
 
     def next_sufficient_pointer_without_filters(
-        self, prio_zone: Optional[PriorityZone], pointer: int, entry_id: int
-    ) -> tuple[PriorityZone, Optional[int]]:
+        self, prio_zone: PriorityZone | None, pointer: int, entry_id: int
+    ) -> tuple[PriorityZone, int | None]:
         """
         Returns the index of the next priority pointer after the given one,
         which has a sufficiently high priority to be displayed, along with the priority zone to which it belongs.
@@ -815,7 +815,7 @@ class CursedHR:
             if len(prio_entries) == 0:
                 continue
 
-            next_pointer: Optional[int]
+            next_pointer: int | None
 
             if zone == prio_zone and pointer + 1 < len(prio_entries):
                 next_pointer = pointer + 1
@@ -832,8 +832,8 @@ class CursedHR:
         return self.configuration.priority_zones[-1], None
 
     def previous_sufficient_pointer_without_filters(
-        self, prio_zone: Optional[PriorityZone], pointer: int, entry_id: int
-    ) -> tuple[PriorityZone, Optional[int]]:
+        self, prio_zone: PriorityZone | None, pointer: int, entry_id: int
+    ) -> tuple[PriorityZone, int | None]:
         """
         Returns the index of the previous priority pointer before the given one,
         which has a sufficiently high priority to be displayed, along with the priority zone to which it belongs.
@@ -854,7 +854,7 @@ class CursedHR:
             if len(prio_entries) == 0:
                 continue
 
-            prev_pointer: Optional[int]
+            prev_pointer: int | None
 
             if zone == prio_zone and pointer > 0:
                 prev_pointer = pointer - 1
@@ -872,7 +872,7 @@ class CursedHR:
 
     def priority_pointer(
         self, entry_id: int, prio: MessagePrio, mode: int = 0
-    ) -> Optional[int]:
+    ) -> int | None:
         """
         Returns the index of the level pointer of the entry with the given id,
         or depending on the mode the previous or next entry, in the level pointers with the given priority.
@@ -941,7 +941,7 @@ class CursedHR:
         return pointer
 
     def handle_io(self) -> None:
-        start_entry: Optional[int] = None
+        start_entry: int | None = None
         max_lines, max_columns = self.window.getmaxyx()
         max_lines -= 1
         filter_history = [self.configuration.filter]

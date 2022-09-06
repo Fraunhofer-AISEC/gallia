@@ -11,7 +11,7 @@ from binascii import hexlify, unhexlify
 from copy import copy
 from pathlib import Path
 from time import time
-from typing import Any, Optional, Union
+from typing import Any
 
 import aiosqlite
 
@@ -50,12 +50,12 @@ class UDSServer(ABC):
     @abstractmethod
     def supported_services(
         self,
-    ) -> dict[int, dict[UDSIsoServices, Optional[list[int]]]]:
+    ) -> dict[int, dict[UDSIsoServices, list[int] | None]]:
         ...
 
     def default_response_if_service_not_supported(
         self, request: service.UDSRequest
-    ) -> Optional[service.NegativeResponse]:
+    ) -> service.NegativeResponse | None:
         assert (
             self.state.session in self.supported_services
         ), "Virtual ECU in unsupported session"
@@ -91,7 +91,7 @@ class UDSServer(ABC):
 
     def default_response_if_missing_sub_function(
         self, request: service.UDSRequest
-    ) -> Optional[service.NegativeResponse]:
+    ) -> service.NegativeResponse | None:
         try:
             if self._is_sub_function_request(request) and len(request.pdu) < 2:
                 return service.NegativeResponse(
@@ -105,7 +105,7 @@ class UDSServer(ABC):
 
     def default_response_if_sub_function_not_supported(
         self, request: service.UDSRequest
-    ) -> Optional[service.NegativeResponse]:
+    ) -> service.NegativeResponse | None:
         assert (
             self.state.session in self.supported_services
         ), "Virtual ECU in unsupported session"
@@ -155,7 +155,7 @@ class UDSServer(ABC):
 
     def default_response_if_incorrect_format(
         self, request: service.UDSRequest
-    ) -> Optional[service.NegativeResponse]:
+    ) -> service.NegativeResponse | None:
         if isinstance(request, service.RawRequest):
             return service.NegativeResponse(
                 request.service_id, UDSErrorCodes.incorrectMessageLengthOrInvalidFormat
@@ -165,9 +165,7 @@ class UDSServer(ABC):
 
     def default_response_if_session_change(
         self, request: service.UDSRequest
-    ) -> Optional[
-        Union[service.NegativeResponse, service.DiagnosticSessionControlResponse]
-    ]:
+    ) -> None | (service.NegativeResponse | service.DiagnosticSessionControlResponse):
         if isinstance(request, service.DiagnosticSessionControlRequest):
             return service.DiagnosticSessionControlResponse(
                 request.diagnostic_session_type
@@ -177,7 +175,7 @@ class UDSServer(ABC):
 
     def default_response_if_session_read(
         self, request: service.UDSRequest
-    ) -> Optional[service.ReadDataByIdentifierResponse]:
+    ) -> service.ReadDataByIdentifierResponse | None:
         if isinstance(request, service.ReadDataByIdentifierRequest):
             if (
                 request.data_identifier
@@ -191,7 +189,7 @@ class UDSServer(ABC):
 
     def default_response_if_tester_present(
         self, request: service.UDSRequest
-    ) -> Optional[service.TesterPresentResponse]:
+    ) -> service.TesterPresentResponse | None:
         if isinstance(request, service.TesterPresentRequest):
             return service.TesterPresentResponse()
 
@@ -204,7 +202,7 @@ class UDSServer(ABC):
 
     def default_response_if_suppress(
         self, request: service.UDSRequest, response: service.UDSResponse
-    ) -> Optional[service.UDSResponse]:
+    ) -> service.UDSResponse | None:
         if (
             isinstance(response, service.NegativeResponse)
             or not isinstance(request, service.SubFunctionRequest)
@@ -239,8 +237,8 @@ class UDSServer(ABC):
     # pylint: disable=too-many-return-statements
     async def respond_without_state_change(
         self, request: service.UDSRequest
-    ) -> Optional[service.UDSResponse]:
-        response: Optional[service.UDSResponse]
+    ) -> service.UDSResponse | None:
+        response: service.UDSResponse | None
 
         if (
             self.use_default_response_if_service_not_supported
@@ -300,9 +298,7 @@ class UDSServer(ABC):
 
         return None
 
-    async def respond(
-        self, request: service.UDSRequest
-    ) -> Optional[service.UDSResponse]:
+    async def respond(self, request: service.UDSRequest) -> service.UDSResponse | None:
         response = await self.respond_without_state_change(request)
 
         if response is not None:
@@ -321,7 +317,7 @@ class UDSServer(ABC):
     @abstractmethod
     async def respond_after_default(
         self, request: service.UDSRequest
-    ) -> Optional[service.UDSResponse]:
+    ) -> service.UDSResponse | None:
         ...
 
 
@@ -346,7 +342,7 @@ class RNG(random.Random):
     def random_bool(self, p_true: float) -> bool:
         return self.random() <= p_true
 
-    def random_payload(self, min_len: int = 0, max_len: Optional[int] = None) -> bytes:
+    def random_payload(self, min_len: int = 0, max_len: int | None = None) -> bytes:
         # Mean length should be a few bytes (here 8)
         byte_length = max(min_len, int(self.expovariate(1 / 8) + 0.5))
 
@@ -360,7 +356,7 @@ class RNGEcuState(ECUState):
     def __init__(self) -> None:
         super().__init__()
 
-        self.last_sa_response: Optional[service.SecurityAccessResponse] = None
+        self.last_sa_response: service.SecurityAccessResponse | None = None
 
     def reset(self) -> None:
         super().reset()
@@ -379,10 +375,10 @@ class RandomUDSServer(UDSServer):
         self.optional_sessions = [2, 3, 4] + list(range(0x40, 0x7F))
         self.p_session = 0.05
 
-        self.services: dict[int, dict[UDSIsoServices, Optional[list[int]]]] = {}
+        self.services: dict[int, dict[UDSIsoServices, list[int] | None]] = {}
         self.mandatory_services = [UDSIsoServices.DiagnosticSessionControl]
         self.optional_services = list(
-            set(s for s in UDSIsoServices)
+            set(UDSIsoServices)
             - set(self.mandatory_services + [UDSIsoServices.NegativeResponse])
         )
         self.p_service = 0.2
@@ -398,21 +394,17 @@ class RandomUDSServer(UDSServer):
         self.logger.notice(f"Initialized random UDS server with seed {self.seed}")
         self.logger.info(
             json.dumps(
-                dict(
-                    (
-                        int_repr(session),
-                        dict(
-                            (
-                                f"{int_repr(s.value)} ({service_repr(s)})",
-                                str(list(int_repr(sf) for sf in sfs))
-                                if sfs is not None
-                                else None,
-                            )
-                            for s, sfs in services.items()
-                        ),
-                    )
+                {
+                    int_repr(session): {
+                        f"{int_repr(s.value)} ({service_repr(s)})": str(
+                            list(int_repr(sf) for sf in sfs)
+                        )
+                        if sfs is not None
+                        else None
+                        for s, sfs in services.items()
+                    }
                     for session, services in self.services.items()
-                ),
+                },
                 indent=4,
                 sort_keys=True,
             )
@@ -469,7 +461,7 @@ class RandomUDSServer(UDSServer):
             for supported_service in self.mandatory_services + list(
                 s for s in self.optional_services if rng.random() < self.p_service
             ):
-                supported_sub_functions: Optional[list[int]] = None
+                supported_sub_functions: list[int] | None = None
 
                 if self._is_sub_function_service(supported_service):
                     # For SecurityAccess there are always two consecutive sub functions, the uneven one for RequestSeed,
@@ -506,7 +498,7 @@ class RandomUDSServer(UDSServer):
     @property
     def supported_services(
         self,
-    ) -> dict[int, dict[UDSIsoServices, Optional[list[int]]]]:
+    ) -> dict[int, dict[UDSIsoServices, list[int] | None]]:
         return self.services
 
     def stateful_rng(self, *args: Any) -> RNG:
@@ -520,7 +512,7 @@ class RandomUDSServer(UDSServer):
     # pylint: disable=too-many-return-statements
     async def respond_after_default(
         self, request: service.UDSRequest
-    ) -> Optional[service.UDSResponse]:
+    ) -> service.UDSResponse | None:
         # Service specific handling starts here
         # It is assumed, that the service and sub-function, if any, are both supported
         # Furthermore, it is assumed that the request is a valid request for that particular service and sub-function
@@ -715,14 +707,14 @@ class RandomUDSServer(UDSServer):
 
 class DBUDSServer(UDSServer):
     def __init__(
-        self, db_path: Path, ecu: Optional[str], properties: Optional[dict[str, Any]]
+        self, db_path: Path, ecu: str | None, properties: dict[str, Any] | None
     ):
         super().__init__()
 
         self.db_path = db_path
         self.ecu = ecu
         self.properties = properties
-        self.connection: Optional[aiosqlite.Connection] = None
+        self.connection: aiosqlite.Connection | None = None
         self.last_response = -1
 
         # Override defaults
@@ -746,12 +738,12 @@ class DBUDSServer(UDSServer):
     @property
     def supported_services(
         self,
-    ) -> dict[int, dict[UDSIsoServices, Optional[list[int]]]]:
+    ) -> dict[int, dict[UDSIsoServices, list[int] | None]]:
         return {}
 
     async def respond_after_default(
         self, request: service.UDSRequest
-    ) -> Optional[service.UDSResponse]:
+    ) -> service.UDSResponse | None:
         assert self.connection is not None
 
         query = "SELECT r.id, r.response_pdu FROM scan_result r WHERE "
@@ -809,7 +801,7 @@ class DBUDSServer(UDSServer):
 
         if result is not None:
             self.last_response = result[0]
-            response_pdu: Optional[bytes] = result[1]
+            response_pdu: bytes | None = result[1]
 
             if response_pdu is not None:
                 response = service.UDSResponse.parse_dynamic(unhexlify(response_pdu))
@@ -831,7 +823,7 @@ class UDSServerTransport:
     async def run(self) -> None:
         ...
 
-    async def handle_request(self, request_pdu: bytes) -> tuple[Optional[bytes], float]:
+    async def handle_request(self, request_pdu: bytes) -> tuple[bytes | None, float]:
         start = time()
 
         if start - self.last_time_active > 10:

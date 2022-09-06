@@ -5,8 +5,8 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Awaitable, Callable
 from functools import partial
-from typing import Awaitable, Callable, Optional, Union
 
 from gallia.log import get_logger
 from gallia.transports.base import TargetURI
@@ -26,14 +26,14 @@ class PowerSupplyURI(TargetURI):
         return int(self.qs["id"][0], 0)
 
     @property
-    def channel(self) -> Union[int, list[int]]:
+    def channel(self) -> int | list[int]:
         if len(ch := self.qs["channel"]) == 1:
             return int(ch[0], 0)
         return list(map(partial(int, base=0), ch))
 
 
 class PowerSupply:
-    def __init__(self, channel_id: Union[int, list[int]], client: Netzteil) -> None:
+    def __init__(self, channel_id: int | list[int], client: Netzteil) -> None:
         self.logger = get_logger("power_supply")
         self.channel_id = channel_id
         self.netzteil = client
@@ -63,7 +63,7 @@ class PowerSupply:
     async def power_cycle(
         self,
         sleep: float = 2.0,
-        callback: Optional[Callable[[], Awaitable[None]]] = None,
+        callback: Callable[[], Awaitable[None]] | None = None,
     ) -> None:
         async with self.mutex:
             await self.power_down()

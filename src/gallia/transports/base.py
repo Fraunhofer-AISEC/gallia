@@ -7,7 +7,7 @@ from __future__ import annotations
 import asyncio
 import io
 from abc import ABC, abstractmethod
-from typing import Any, Optional, TypeVar
+from typing import Any, TypeVar
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 from gallia.log import get_logger
@@ -25,7 +25,7 @@ class TargetURI:
         cls,
         scheme: str,
         host: str,
-        port: Optional[int],
+        port: int | None,
         args: dict[str, Any],
     ) -> TargetURI:
         netloc = host if port is None else join_host_port(host, port)
@@ -36,11 +36,11 @@ class TargetURI:
         return self.url.scheme
 
     @property
-    def hostname(self) -> Optional[str]:
+    def hostname(self) -> str | None:
         return self.url.hostname
 
     @property
-    def port(self) -> Optional[int]:
+    def port(self) -> int | None:
         return self.url.port
 
     @property
@@ -91,7 +91,7 @@ class BaseTransport(ABC):
     async def connect(
         cls: type[TransportT],
         target: TargetURI,
-        timeout: Optional[float] = None,
+        timeout: float | None = None,
     ) -> TransportT:
         ...
 
@@ -99,9 +99,7 @@ class BaseTransport(ABC):
     async def close(self) -> None:
         ...
 
-    async def reconnect(
-        self: TransportT, timeout: Optional[float] = None
-    ) -> TransportT:
+    async def reconnect(self: TransportT, timeout: float | None = None) -> TransportT:
         async with self.mutex:
             await self.close()
             return await self.connect(self.target)
@@ -109,8 +107,8 @@ class BaseTransport(ABC):
     @abstractmethod
     async def read(
         self,
-        timeout: Optional[float] = None,
-        tags: Optional[list[str]] = None,
+        timeout: float | None = None,
+        tags: list[str] | None = None,
     ) -> bytes:
         ...
 
@@ -118,16 +116,16 @@ class BaseTransport(ABC):
     async def write(
         self,
         data: bytes,
-        timeout: Optional[float] = None,
-        tags: Optional[list[str]] = None,
+        timeout: float | None = None,
+        tags: list[str] | None = None,
     ) -> int:
         ...
 
     async def request(
         self,
         data: bytes,
-        timeout: Optional[float] = None,
-        tags: Optional[list[str]] = None,
+        timeout: float | None = None,
+        tags: list[str] | None = None,
     ) -> bytes:
         async with self.mutex:
             return await self.request_unsafe(data, timeout, tags)
@@ -135,8 +133,8 @@ class BaseTransport(ABC):
     async def request_unsafe(
         self,
         data: bytes,
-        timeout: Optional[float] = None,
-        tags: Optional[list[str]] = None,
+        timeout: float | None = None,
+        tags: list[str] | None = None,
     ) -> bytes:
         await self.write(data, timeout, tags)
         return await self.read(timeout, tags)

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Any, Optional
+from typing import Any
 
 from gallia.log import get_logger
 from gallia.services.xcp import types
@@ -18,7 +18,7 @@ class XCPService:
         # dependency. Let's go with Any for this attribute.
         self.byte_order: Any
 
-    async def request(self, data: bytes, timeout: Optional[float] = None) -> bytes:
+    async def request(self, data: bytes, timeout: float | None = None) -> bytes:
         t = timeout if timeout else self.timeout
         resp = await self.transport.request(data, t)
         header = types.Response.parse(resp)

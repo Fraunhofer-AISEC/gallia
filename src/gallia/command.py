@@ -17,7 +17,7 @@ from enum import Enum, IntEnum, unique
 from importlib.metadata import EntryPoint, entry_points
 from pathlib import Path
 from tempfile import gettempdir
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 import aiofiles
 import msgspec
@@ -54,7 +54,7 @@ class FileNames(Enum):
 
 class CommandMeta(msgspec.Struct):
     category: str
-    subcategory: Optional[str]
+    subcategory: str | None
     command: str
 
 
@@ -124,9 +124,9 @@ class BaseCommand(ABC):
 
     COMMAND: str
     CATEGORY: str
-    SUBCATEGORY: Optional[str]
+    SUBCATEGORY: str | None
     SHORT_HELP: str
-    EPILOG: Optional[str] = None
+    EPILOG: str | None = None
 
     LOGGER_NAME = "gallia"
     HAS_ARTIFACTS_DIR: bool = False
@@ -159,11 +159,11 @@ class BaseCommand(ABC):
     def get_config_value(
         self,
         key: str,
-        default: Optional[Any] = None,
-    ) -> Optional[Any]:
+        default: Any | None = None,
+    ) -> Any | None:
         parts = key.split(".")
-        subdict: Optional[dict[str, Any]] = self.config
-        val: Optional[Any] = None
+        subdict: dict[str, Any] | None = self.config
+        val: Any | None = None
 
         for part in parts:
             if subdict is None:
@@ -237,8 +237,8 @@ class BaseCommand(ABC):
 
     def prepare_artifactsdir(
         self,
-        base_dir: Optional[Path] = None,
-        force_path: Optional[Path] = None,
+        base_dir: Path | None = None,
+        force_path: Path | None = None,
     ) -> Path:
         if force_path is not None:
             if force_path.is_dir():
@@ -316,7 +316,7 @@ class Script(BaseCommand, ABC):
     .main() method."""
 
     CATEGORY = "script"
-    SUBCATEGORY: Optional[str] = None
+    SUBCATEGORY: str | None = None
 
     def setup(self, args: Namespace) -> None:
         ...
@@ -344,7 +344,7 @@ class AsyncScript(BaseCommand, ABC):
     the .main() method."""
 
     CATEGORY = "script"
-    SUBCATEGORY: Optional[str] = None
+    SUBCATEGORY: str | None = None
 
     async def setup(self, args: Namespace) -> None:
         ...
@@ -394,9 +394,9 @@ class Scanner(AsyncScript, ABC):
 
     def __init__(self, parser: ArgumentParser, config: dict[str, Any]) -> None:
         super().__init__(parser, config)
-        self.db_handler: Optional[DBHandler] = None
-        self.power_supply: Optional[PowerSupply] = None
-        self.dumpcap: Optional[Dumpcap] = None
+        self.db_handler: DBHandler | None = None
+        self.power_supply: PowerSupply | None = None
+        self.dumpcap: Dumpcap | None = None
 
     @abstractmethod
     async def main(self, args: Namespace) -> None:

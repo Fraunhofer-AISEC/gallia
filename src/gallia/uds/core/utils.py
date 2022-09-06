@@ -4,7 +4,7 @@
 
 from binascii import hexlify
 from math import ceil
-from typing import Any, Optional
+from typing import Any
 
 from gallia.uds.core.constants import UDSIsoServices
 
@@ -36,7 +36,7 @@ def check_sub_function(sub_function: int) -> None:
 
 
 def check_length(
-    pdu: bytes, minimal_length: int = 0, maximal_length: Optional[int] = None
+    pdu: bytes, minimal_length: int = 0, maximal_length: int | None = None
 ) -> None:
     if len(pdu) < 1:
         raise ValueError("The PDU is empty")
@@ -73,7 +73,7 @@ def any_repr(x: Any) -> str:
     return str(x)
 
 
-def bytes_repr(b: bytes, prefix: bool = False, max_length: Optional[int] = 20) -> str:
+def bytes_repr(b: bytes, prefix: bool = False, max_length: int | None = 20) -> str:
     if len(b) == 0:
         return "''"
 
@@ -93,7 +93,7 @@ def service_repr(service_id: int) -> str:
 
 
 def uds_memory_parameters(
-    memory_address: int, memory_size: int, address_and_length_fmt: Optional[int] = None
+    memory_address: int, memory_size: int, address_and_length_fmt: int | None = None
 ) -> tuple[int, bytes, bytes]:
     """Transfers the address and size into bytes and computes the corresponding
     addressAndLengthFormatIdentifier (cf. ISO 14229-1) and returns all three.

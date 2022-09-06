@@ -6,7 +6,6 @@ import asyncio
 import binascii
 import sys
 from argparse import Namespace
-from typing import Union
 
 from gallia.command import UDSScanner
 from gallia.uds.core.service import NegativeResponse, RoutineControlResponse
@@ -99,9 +98,9 @@ class RTCLPrimitive(UDSScanner):
             self.logger.warning("No instructions were given (start/stop/results)")
 
         if args.start:
-            resp: Union[
-                NegativeResponse, RoutineControlResponse
-            ] = await self.ecu.routine_control_start_routine(
+            resp: (
+                NegativeResponse | RoutineControlResponse
+            ) = await self.ecu.routine_control_start_routine(
                 args.routine_identifier, args.start_parameters
             )
 

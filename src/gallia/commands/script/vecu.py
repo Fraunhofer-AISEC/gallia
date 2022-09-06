@@ -94,7 +94,7 @@ class VirtualECU(AsyncScript):
                     key[len(dynamic_attr_prefix) :],
                     eval(
                         value,
-                        dict((service.name, service) for service in UDSIsoServices),
+                        {service.name: service for service in UDSIsoServices},
                     ),
                 )
 
