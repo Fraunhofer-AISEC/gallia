@@ -8,7 +8,6 @@ import asyncio
 import struct
 from dataclasses import dataclass
 from enum import IntEnum, unique
-from typing import Union
 
 from pydantic import BaseModel
 
@@ -261,22 +260,20 @@ class AliveCheckResponse:
 
 
 # Messages expected to be sent by the DoIP gateway.
-DoIPInData = Union[
-    RoutingActivationResponse,
-    DiagnosticMessage,
-    DiagnosticMessagePositiveAcknowledgement,
-    DiagnosticMessageNegativeAcknowledgement,
-    AliveCheckRequest,
-]
+DoIPInData = (
+    RoutingActivationResponse
+    | DiagnosticMessage
+    | DiagnosticMessagePositiveAcknowledgement
+    | DiagnosticMessageNegativeAcknowledgement
+    | AliveCheckRequest
+)
+
 # Messages expected to be sent by us.
-DoIPOutData = Union[
-    RoutingActivationRequest,
-    DiagnosticMessage,
-    AliveCheckResponse,
-]
+DoIPOutData = RoutingActivationRequest | DiagnosticMessage | AliveCheckResponse
+
 DoIPFrame = tuple[
     GenericHeader,
-    Union[DoIPInData, DoIPOutData],
+    DoIPInData | DoIPOutData,
 ]
 DoIPDiagFrame = tuple[GenericHeader, DiagnosticMessage]
 
