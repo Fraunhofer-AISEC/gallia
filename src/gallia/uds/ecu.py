@@ -325,11 +325,11 @@ class ECU(UDSClient):
         while True:
             try:
                 await asyncio.sleep(sleep_time)
-                await self.reconnect()
                 await self.ping()
                 break
             except UDSException as e:
                 self.logger.debug(f"ECU not ready: {g_repr(e)}")
+                await self.reconnect()
         self.logger.info("ECU ready")
 
     async def wait_for_ecu(

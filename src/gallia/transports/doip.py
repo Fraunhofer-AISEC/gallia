@@ -8,10 +8,12 @@ import asyncio
 import struct
 from dataclasses import dataclass
 from enum import IntEnum, unique
-from typing import Optional, TypedDict, Union, cast
+from typing import Optional, Union
+
+from pydantic import BaseModel
 
 from gallia.log import get_logger
-from gallia.transports.base import BaseTransport, TargetURI, _int_spec
+from gallia.transports.base import BaseTransport, TargetURI
 
 
 @unique
@@ -507,75 +509,70 @@ class DoIPConnection:
         await self.writer.wait_closed()
 
 
-_DoIP_SPEC_TYPE = TypedDict(
-    "_DoIP_SPEC_TYPE",
-    {
-        "src_addr": int,
-        "dst_addr": int,
-        "activation_type": int,
-    },
-)
-
-doip_spec = {
-    "src_addr": (_int_spec(0), True),
-    "dst_addr": (_int_spec(0), True),
-    "activation_type": (
-        _int_spec(RoutingActivationRequestTypes.WWH_OBD),
-        False,
-    ),
-}
-
-assertion_str = "bug: doip not connected"
+class DoIPConfig(BaseModel):
+    src_addr: int
+    target_addr: int
+    activation_type: int = RoutingActivationRequestTypes.WWH_OBD.value
 
 
-class DoIPTransport(BaseTransport, scheme="doip", spec=doip_spec):
-    def __init__(self, target: TargetURI):
+class DoIPTransport(BaseTransport, scheme="doip"):
+    def __init__(
+        self, target: TargetURI, port: int, config: DoIPConfig, conn: DoIPConnection
+    ):
         super().__init__(target)
+        self.port = port
+        self.config = config
+        self._conn = conn
+
+    @staticmethod
+    async def _connect(
+        hostname: str,
+        port: int,
+        src_addr: int,
+        target_addr: int,
+        activation_type: int,
+    ) -> DoIPConnection:
+        conn = await DoIPConnection.connect(
+            hostname,
+            port,
+            src_addr,
+            target_addr,
+        )
+        await conn.write_routing_activation_request(
+            RoutingActivationRequestTypes(activation_type)
+        )
+        return conn
+
+    @classmethod
+    async def connect(
+        cls, target: TargetURI, timeout: Optional[float] = None
+    ) -> DoIPTransport:
         if target.hostname is None:
             raise ValueError("no hostname specified")
-        self.port = target.port if target.port is not None else 6801
-        self.args = cast(_DoIP_SPEC_TYPE, self._args)
-        self.connection: Optional[DoIPConnection] = None
 
-    async def _connect(self) -> None:
-        assert self.target.hostname is not None, "bug: no hostname"
-
-        self.connection = await DoIPConnection.connect(
-            self.target.hostname,
-            self.port,
-            self.args["src_addr"],
-            self.args["dst_addr"],
+        port = target.port if target.port is not None else 6801
+        config = DoIPConfig(**target.qs)
+        conn = await asyncio.wait_for(
+            cls._connect(
+                target.hostname,
+                port,
+                config.src_addr,
+                config.target_addr,
+                config.activation_type,
+            ),
+            timeout,
         )
-        await self.connection.write_routing_activation_request(
-            RoutingActivationRequestTypes(self.args["activation_type"])
-        )
-
-    async def connect(self, timeout: Optional[float] = None) -> None:
-        assert self.target.hostname is not None, "bug: no hostname"
-
-        async with self.mutex:
-            await asyncio.wait_for(self._connect(), timeout)
-
-    async def reconnect(self, timeout: Optional[float] = None) -> None:
-        assert self.target.hostname is not None, "bug: no hostname"
-
-        async with self.mutex:
-            await self.close()
-            await asyncio.wait_for(self._connect(), timeout)
+        return cls(target, port, config, conn)
 
     async def close(self) -> None:
-        assert self.connection is not None, assertion_str
-
-        await self.connection.close()
+        await self._conn.close()
 
     async def read(
         self,
         timeout: Optional[float] = None,
         tags: Optional[list[str]] = None,
     ) -> bytes:
-        assert self.connection is not None, assertion_str
-
-        data = await asyncio.wait_for(self.connection.read_diag_request(), timeout)
+        data = await asyncio.wait_for(self._conn.read_diag_request(), timeout)
 
         t = tags + ["read"] if tags is not None else ["read"]
         self.logger.trace(data.hex(), extra={"tags": t})
@@ -587,9 +584,7 @@ class DoIPTransport(BaseTransport, scheme="doip", spec=doip_spec):
         timeout: Optional[float] = None,
         tags: Optional[list[str]] = None,
     ) -> int:
-        assert self.connection is not None, assertion_str
-
-        await asyncio.wait_for(self.connection.write_diag_request(data), timeout)
+        await asyncio.wait_for(self._conn.write_diag_request(data), timeout)
 
         t = tags + ["read"] if tags is not None else ["read"]
         self.logger.trace(data.hex(), extra={"tags": t})

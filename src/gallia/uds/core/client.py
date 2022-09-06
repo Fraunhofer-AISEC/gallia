@@ -43,7 +43,7 @@ class UDSClient:
 
     async def reconnect(self, timeout: Optional[int] = None) -> None:
         """Calls the underlying transport to trigger a reconnect"""
-        await self.transport.reconnect(timeout)
+        self.transport = await self.transport.reconnect(timeout)
 
     async def _read(
         self, timeout: Optional[float] = None, tags: Optional[list[str]] = None

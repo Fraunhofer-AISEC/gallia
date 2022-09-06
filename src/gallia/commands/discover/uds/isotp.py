@@ -105,8 +105,7 @@ class IsotpDiscoverer(DiscoveryScanner):
             self.logger.result("----------------------------")
             self.logger.result(f"Probing ECU: {target}")
 
-            transport = ISOTPTransport(target)
-            await transport.connect(None)
+            transport = await ISOTPTransport.connect(target)
             uds_client = UDSClient(transport, timeout=2)
             self.logger.result(f"reading device description at {g_repr(did)}")
             try:
@@ -153,8 +152,7 @@ class IsotpDiscoverer(DiscoveryScanner):
         return frame
 
     async def main(self, args: Namespace) -> None:
-        transport = RawCANTransport(args.target)
-        await transport.connect(None)
+        transport = await RawCANTransport.connect(args.target)
         found = []
 
         sniff_time: int = args.sniff_time
@@ -214,9 +212,9 @@ class IsotpDiscoverer(DiscoveryScanner):
                             f"found endpoint on CAN ID [src:dst]: {can_id_repr(ID)}:{can_id_repr(addr)}"
                         )
                         target_args = {}
-                        target_args["is_fd"] = str(transport.args["is_fd"]).lower()
+                        target_args["is_fd"] = str(transport.config.is_fd).lower()
                         target_args["is_extended"] = str(
-                            transport.args["is_extended"]
+                            transport.config.is_extended
                         ).lower()
 
                         if args.extended_addr:

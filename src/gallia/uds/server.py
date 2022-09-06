@@ -895,8 +895,7 @@ class TCPUDSServerTransport(UDSServerTransport):
 
 class ISOTPUDSServerTransport(UDSServerTransport):
     async def run(self) -> None:
-        transport = ISOTPTransport(self.target)
-        await transport.connect()
+        transport = await ISOTPTransport.connect(self.target)
 
         while True:
             try:

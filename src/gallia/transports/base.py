@@ -7,7 +7,7 @@ from __future__ import annotations
 import asyncio
 import io
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Optional
+from typing import Any, Optional, TypeVar
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 from gallia.log import get_logger
@@ -52,47 +52,15 @@ class TargetURI:
         assert self.scheme != "", "url scheme is empty"
         return f"{self.scheme}://{self.url.netloc}"
 
-    @property
-    def src_addr(self) -> Optional[int]:
-        if "src_addr" not in self.qs:
-            return None
-        return int(self.qs["src_addr"][0], 0)
-
-    @property
-    def dst_addr(self) -> Optional[int]:
-        if "dst_addr" not in self.qs:
-            return None
-        return int(self.qs["dst_addr"][0], 0)
-
     def __str__(self) -> str:
         return self.raw
 
 
-def _bool_spec(default: Optional[bool]) -> Callable[..., Optional[bool]]:
-    def func(*args: str) -> Optional[bool]:
-        if len(args) == 0:
-            return default
-        s_low = args[0].lower()
-        if s_low == "true":
-            return True
-        if s_low == "false":
-            return False
-        raise ValueError(f"invalid bool value: {args[0]}")
-
-    return func
-
-
-def _int_spec(default: Optional[int]) -> Callable[..., Optional[int]]:
-    def func(*args: str) -> Optional[int]:
-        if len(args) == 0:
-            return default
-        return int(args[0], base=0)
-
-    return func
+# TODO: Replace this with Self type: Python 3.11
+TransportT = TypeVar("TransportT", bound="BaseTransport")
 
 
 class BaseTransport(ABC):
-    SPEC: dict[str, tuple[Callable[..., Any], bool]] = {}
     SCHEME: str = ""
     BUFSIZE: int = io.DEFAULT_BUFFER_SIZE
 
@@ -106,55 +74,35 @@ class BaseTransport(ABC):
         self.mutex = asyncio.Lock()
         self.logger = get_logger(self.SCHEME)
         self.target = target
-        self.parse_args()
 
     def __init_subclass__(
         cls,
         /,
         scheme: str,
-        spec: dict[str, tuple[Callable[..., Any], bool]],
         bufsize: int = io.DEFAULT_BUFFER_SIZE,
         **kwargs: Any,
     ) -> None:
         super().__init_subclass__(**kwargs)
         cls.SCHEME = scheme
-        cls.SPEC = spec
         cls.BUFSIZE = bufsize
 
-    def parse_args(self) -> None:
-        # Check if a mandatory arg is missing.
-        for spec_key, spec_value in self.SPEC.items():
-            mandatory = spec_value[1]
-            default = spec_value[0]()
-            if spec_key not in self.target.qs:
-                if mandatory:
-                    raise ValueError(f"mandatory argument {spec_key} missing")
-                # Not mandatory, set default.
-                self._args[spec_key] = default
-
-        # Parse the arguments according to the spec.
-        for qs_key, qs_value in self.target.qs.items():
-            if qs_key not in self.SPEC:
-                self.logger.warning(f"ignoring unknown argument: {qs_key}:{qs_value}")
-                continue
-
-            self.logger.debug(f"got {qs_key}:{qs_value}")
-            parse_func = self.SPEC[qs_key][0]
-            # We do not support arg lists.
-            parsed_v = parse_func(qs_value[0])
-            self._args[qs_key] = parsed_v
-
+    @classmethod
     @abstractmethod
-    async def connect(self, timeout: Optional[float] = None) -> None:
-        ...
-
-    @abstractmethod
-    async def reconnect(self, timeout: Optional[float] = None) -> None:
+    async def connect(
+        cls: type[TransportT],
+        target: TargetURI,
+        timeout: Optional[float] = None,
+    ) -> TransportT:
         ...
 
     @abstractmethod
     async def close(self) -> None:
         ...
+
+    async def reconnect(self: TransportT, timeout: Optional[float] = None) -> TransportT:
+        async with self.mutex:
+            await self.close()
+            return await self.connect(self.target)
 
     @abstractmethod
     async def read(

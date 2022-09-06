@@ -208,8 +208,7 @@ class FindXCP:
             f"{RawCANTransport.SCHEME}://{args.xcp_can_iface}"
             + ("?is_fd=true" if args.can_fd else "")
         )
-        transport = RawCANTransport(target)
-        await transport.connect()
+        transport = await RawCANTransport.connect(target)
         endpoints = []
 
         sniff_time: int = args.sniff_time
