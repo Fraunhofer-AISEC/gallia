@@ -11,11 +11,11 @@ import sys
 from importlib.metadata import entry_points, version
 from pathlib import Path
 from pprint import pprint
-from typing import Any
+from typing import Any, Callable
 
 import argcomplete  # type: ignore
 
-from gallia.command import BaseCommand
+from gallia.command import BaseCommand, load_transports, load_ecus
 from gallia.commands.discover.uds.doip import DoIPDiscoverer
 from gallia.commands.discover.uds.isotp import IsotpDiscoverer
 from gallia.commands.fuzz.uds.pdu import PDUFuzzer
@@ -41,49 +41,25 @@ from gallia.commands.script.vecu import VirtualECU
 from gallia.config import load_config_file
 from gallia.log import setup_logging
 
-# from gallia.commands.prims.uds.simple_test_xcp import SimpleTestXCP
 
-registry: list[type[BaseCommand]] = [
-    # SimpleTestXCP,
-    DoIPDiscoverer,
-    IsotpDiscoverer,
-    PDUFuzzer,
-    MemoryFunctionsScanner,
-    ReadByIdentifierPrimitive,
-    ResetScanner,
-    SASeedsDumper,
-    ScanIdentifiers,
-    SessionsScanner,
-    ServicesScanner,
-    DTCPrimitive,
-    ECUResetPrimitive,
-    VINPrimitive,
-    IOCBIPrimitive,
-    PingPrimitive,
-    RMBAPrimitive,
-    RTCLPrimitive,
-    ReadErrorLogPrimitive,
-    SendPDUPrimitive,
-    WMBAPrimitive,
-    VirtualECU,
-    WriteByIdentifierPrimitive,
-]
-
-
-def load_cli_commands() -> None:
+def load_cli_commands() -> list[type[BaseCommand]]:
+    out = []
     eps = entry_points()
     if (s := "gallia_cli_commands") in eps:
         for entry in eps.select(group=s):
             cmd_list: list[type[BaseCommand]] = entry.load()
             for cmd in cmd_list:
-                registry.append(cmd)
+                out.append(cmd)
+    return out
 
 
-def load_cli_init(parsers: dict[str, Any]) -> None:
+def load_cli_init() -> list[Callable[[dict[str, Any]], None]]:
+    out = []
     eps = entry_points()
     if (s := "gallia_cli_init") in eps:
         for entry in eps.select(group=s):
-            entry.load()(parsers)
+            out.append(entry.load())
+    return out
 
 
 def add_cli_category(
@@ -133,6 +109,11 @@ Every command line option can be set via a TOML config file. Check `gallia --tem
         "--show-defaults",
         action="store_true",
         help="show defaults of all flags",
+    )
+    parser.add_argument(
+        "--show-plugins",
+        action="store_true",
+        help="show loaded plugins",
     )
     parser.add_argument(
         "--template",
@@ -226,7 +207,7 @@ Every command line option can be set via a TOML config file. Check `gallia --tem
 
 # This can be annotated once recursive types are supported by mypy.
 # https://github.com/python/mypy/issues/731
-def build_cli(parsers: dict[str, Any], config: dict[str, Any]) -> None:
+def build_cli(parsers: dict[str, Any], config: dict[str, Any], registry: list[type[BaseCommand]]) -> None:
     for cls in registry:
         if cls.SUBCATEGORY is not None:
             subparsers = parsers["siblings"][cls.CATEGORY]["siblings"][cls.SUBCATEGORY][
@@ -317,6 +298,20 @@ def cmd_show_defaults(parser: argparse.ArgumentParser) -> None:
     pprint(defaults)
 
 
+def _print_plugin(description: str, fn: Callable[[], Any]) -> None:
+    if len((objs := fn())) > 0:
+        print(f"{description}:")
+        for obj in objs:
+            print(f" * {obj}")
+
+
+def cmd_show_plugins() -> None:
+    _print_plugin("initialization callbacks", load_cli_init)
+    _print_plugin("commands", load_cli_commands)
+    _print_plugin("transports", load_transports)
+    _print_plugin("ecus", load_ecus)
+
+
 def cmd_template(args: argparse.Namespace) -> None:
     template = """[gallia]
 [gallia.scanner]
@@ -345,7 +340,35 @@ def cmd_template(args: argparse.Namespace) -> None:
 
 
 def main() -> None:
-    load_cli_commands()
+    registry: list[type[BaseCommand]] = [
+        # SimpleTestXCP,
+        DoIPDiscoverer,
+        IsotpDiscoverer,
+        PDUFuzzer,
+        MemoryFunctionsScanner,
+        ReadByIdentifierPrimitive,
+        ResetScanner,
+        SASeedsDumper,
+        ScanIdentifiers,
+        SessionsScanner,
+        ServicesScanner,
+        DTCPrimitive,
+        ECUResetPrimitive,
+        VINPrimitive,
+        IOCBIPrimitive,
+        PingPrimitive,
+        RMBAPrimitive,
+        RTCLPrimitive,
+        ReadErrorLogPrimitive,
+        SendPDUPrimitive,
+        WMBAPrimitive,
+        VirtualECU,
+        WriteByIdentifierPrimitive,
+    ]
+
+    plugin_cmds = load_cli_commands()
+    if len(plugin_cmds) > 0:
+        registry += plugin_cmds
 
     # Will be set to the correct verbosity later.
     setup_logging(logging.DEBUG)
@@ -353,10 +376,11 @@ def main() -> None:
     parsers = load_parsers()
 
     # Load plugins.
-    load_cli_init(parsers)
+    for fn in load_cli_init():
+        fn(parsers)
 
     config, config_path = load_config_file()
-    build_cli(parsers, config)
+    build_cli(parsers, config, registry)
 
     parser = parsers["parser"]
     argcomplete.autocomplete(parser)
@@ -368,6 +392,10 @@ def main() -> None:
 
     if args.show_defaults:
         cmd_show_defaults(parser)
+        sys.exit(0)
+
+    if args.show_plugins:
+        cmd_show_plugins()
         sys.exit(0)
 
     if args.template:

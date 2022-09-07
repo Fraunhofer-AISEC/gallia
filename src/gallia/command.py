@@ -67,7 +67,7 @@ class RunMeta(msgspec.Struct):
     exit_code: int
 
 
-def load_transport(target: TargetURI) -> type[BaseTransport]:
+def load_transports() -> list[type[BaseTransport]]:
     transports: list[type[BaseTransport]] = [
         ISOTPTransport,
         RawCANTransport,
@@ -83,7 +83,11 @@ def load_transport(target: TargetURI) -> type[BaseTransport]:
                     raise ValueError(f"{type(t)} is not derived from BaseTransport")
             transports.append(cast(type[BaseTransport], t))
 
-    for transport in transports:
+    return transports
+
+
+def load_transport(target: TargetURI) -> type[BaseTransport]:
+    for transport in load_transports():
         if target.scheme == transport.SCHEME:
             return transport
 
