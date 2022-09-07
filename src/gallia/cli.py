@@ -27,7 +27,7 @@ from gallia.commands.primitive.uds.read_by_identifier import ReadByIdentifierPri
 from gallia.commands.primitive.uds.read_error_log import ReadErrorLogPrimitive
 from gallia.commands.primitive.uds.rmba import RMBAPrimitive
 from gallia.commands.primitive.uds.rtcl import RTCLPrimitive
-from gallia.commands.primitive.uds.send_pdu import SendPDUPrimitve
+from gallia.commands.primitive.uds.send_pdu import SendPDUPrimitive
 from gallia.commands.primitive.uds.vin import VINPrimitive
 from gallia.commands.primitive.uds.wmba import WMBAPrimitive
 from gallia.commands.primitive.uds.write_by_identifier import WriteByIdentifierPrimitive
@@ -63,7 +63,7 @@ registry: list[type[BaseCommand]] = [
     RMBAPrimitive,
     RTCLPrimitive,
     ReadErrorLogPrimitive,
-    SendPDUPrimitve,
+    SendPDUPrimitive,
     WMBAPrimitive,
     VirtualECU,
     WriteByIdentifierPrimitive,

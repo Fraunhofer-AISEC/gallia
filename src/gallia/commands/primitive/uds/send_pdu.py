@@ -20,7 +20,7 @@ from gallia.uds.helpers import raise_for_error
 from gallia.utils import auto_int, g_repr
 
 
-class SendPDUPrimitve(UDSScanner):
+class SendPDUPrimitive(UDSScanner):
     """A raw scanner to send a plain pdu"""
 
     CATEGORY = "primitive"
