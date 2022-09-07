@@ -207,7 +207,11 @@ Every command line option can be set via a TOML config file. Check `gallia --tem
 
 # This can be annotated once recursive types are supported by mypy.
 # https://github.com/python/mypy/issues/731
-def build_cli(parsers: dict[str, Any], config: dict[str, Any], registry: list[type[BaseCommand]]) -> None:
+def build_cli(
+    parsers: dict[str, Any],
+    config: dict[str, Any],
+    registry: list[type[BaseCommand]],
+) -> None:
     for cls in registry:
         if cls.SUBCATEGORY is not None:
             subparsers = parsers["siblings"][cls.CATEGORY]["siblings"][cls.SUBCATEGORY][
