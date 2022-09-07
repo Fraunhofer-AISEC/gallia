@@ -50,6 +50,8 @@ class ECU(UDSClient):
     class. For the arguments of the constructor, please check uds.uds.UDS.
     """
 
+    OEM = "default"
+
     def __init__(
         self,
         transport: BaseTransport,

@@ -70,11 +70,6 @@ registry: list[type[BaseCommand]] = [
 ]
 
 
-# This can be annotated once recursive types are supported by mypy.
-# https://github.com/python/mypy/issues/731
-PARSERS: dict[str, Any] = {}
-
-
 def load_cli_commands() -> None:
     eps = entry_points()
     if (s := "gallia_cli_commands") in eps:
@@ -84,11 +79,11 @@ def load_cli_commands() -> None:
                 registry.append(cmd)
 
 
-def load_cli_init() -> None:
+def load_cli_init(parsers: dict[str, Any]) -> None:
     eps = entry_points()
     if (s := "gallia_cli_init") in eps:
         for entry in eps.select(group=s):
-            entry.load()()
+            entry.load()(parsers)
 
 
 def add_cli_category(
@@ -226,11 +221,11 @@ Every command line option can be set via a TOML config file. Check `gallia --tem
         metavar=command,
     )
 
-    load_cli_init()
-
     return parsers
 
 
+# This can be annotated once recursive types are supported by mypy.
+# https://github.com/python/mypy/issues/731
 def build_cli(parsers: dict[str, Any], config: dict[str, Any]) -> None:
     for cls in registry:
         if cls.SUBCATEGORY is not None:
@@ -355,13 +350,15 @@ def main() -> None:
     # Will be set to the correct verbosity later.
     setup_logging(logging.DEBUG)
 
-    global PARSERS  # pylint: disable=W0603
-    PARSERS = load_parsers()
+    parsers = load_parsers()
+
+    # Load plugins.
+    load_cli_init(parsers)
 
     config, config_path = load_config_file()
-    build_cli(PARSERS, config)
+    build_cli(parsers, config)
 
-    parser = PARSERS["parser"]
+    parser = parsers["parser"]
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
 

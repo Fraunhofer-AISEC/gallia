@@ -14,7 +14,7 @@ from abc import ABC, abstractmethod
 from argparse import ArgumentParser, Namespace
 from datetime import datetime, timezone
 from enum import Enum, IntEnum, unique
-from importlib.metadata import EntryPoint, entry_points
+from importlib.metadata import entry_points
 from pathlib import Path
 from tempfile import gettempdir
 from typing import Any, cast
@@ -74,16 +74,13 @@ def load_transport(target: TargetURI) -> type[BaseTransport]:
         TCPLineSepTransport,
     ]
 
-    def func(x: EntryPoint) -> type[BaseTransport]:
-        t = x.load()
-        if not issubclass(t, BaseTransport):
-            raise ValueError(f"{type(x)} is not derived from BaseTransport")
-        return cast(type[BaseTransport], t)
-
     eps = entry_points()
     if (s := "gallia_transports") in eps:
-        transports_eps = map(func, eps.select(group=s))
-        transports += transports_eps
+        for ep in eps.select(group=s):
+            for t in ep.load():
+                if not issubclass(t, BaseTransport):
+                    raise ValueError(f"{type(t)} is not derived from BaseTransport")
+            transports.append(cast(type[BaseTransport], t))
 
     for transport in transports:
         if target.scheme == transport.SCHEME:
@@ -92,20 +89,25 @@ def load_transport(target: TargetURI) -> type[BaseTransport]:
     raise ValueError(f"no transport for {target}")
 
 
+def load_ecus() -> list[type[ECU]]:
+    ecus = []
+    eps = entry_points()
+    if (s := "gallia_uds_ecus") in eps:
+        for ep in eps.select(group=s):
+            for t in ep.load():
+                if not issubclass(t, ECU):
+                    raise ValueError(f"entry_point {t} is not derived from ECU")
+                ecus.append(t)
+    return ecus
+
+
 def load_ecu(vendor: str) -> type[ECU]:
     if vendor == "default":
         return ECU
 
-    eps = entry_points()
-    if (s := "gallia_uds_ecus") in eps:
-        for entry_point in eps.select(group=s):
-            if vendor == entry_point.name:
-                cls = entry_point.load()
-                if not issubclass(cls, ECU):
-                    raise ValueError(
-                        f"entry_point {entry_point.name} is not derived from ECU"
-                    )
-                return cast(type[ECU], cls)
+    for ecu in load_ecus():
+        if vendor == ecu.OEM:
+            return ecu
 
     raise ValueError(f"no such OEM: '{vendor}'")
 
@@ -517,7 +519,7 @@ class UDSScanner(Scanner):
     """
 
     CATEGORY = "scan"
-    SUBCATEGORY = "uds"
+    SUBCATEGORY: str | None = "uds"
 
     def __init__(self, parser: ArgumentParser, config: dict[str, Any]) -> None:
         super().__init__(parser, config)
@@ -530,13 +532,7 @@ class UDSScanner(Scanner):
 
         group = self.parser.add_argument_group("UDS scanner related arguments")
 
-        eps = entry_points()
-        choices = (
-            [x.name for x in eps["gallia_uds_ecus"]]
-            if "gallia_uds_ecus" in eps
-            else ["default"]
-        )
-        choices = ["default"] + choices
+        choices = ["default"] + [x.OEM for x in load_ecus()]
         group.add_argument(
             "--ecu-reset",
             const=0x01,
@@ -621,8 +617,7 @@ class UDSScanner(Scanner):
     async def setup(self, args: Namespace) -> None:
         await super().setup(args)
 
-        transport_type = load_transport(args.target)
-        self.transport = await transport_type.connect(args.target)
+        self.transport = await load_transport(args.target).connect(args.target)
 
         self.ecu = load_ecu(args.oem)(
             self.transport,
