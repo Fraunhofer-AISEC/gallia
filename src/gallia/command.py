@@ -68,6 +68,18 @@ class RunMeta(msgspec.Struct):
 
 
 def load_transports() -> list[type[BaseTransport]]:
+    out = []
+    eps = entry_points()
+    if (s := "gallia_transports") in eps:
+        for ep in eps.select(group=s):
+            for t in ep.load():
+                if not issubclass(t, BaseTransport):
+                    raise ValueError(f"{type(t)} is not derived from BaseTransport")
+            out.append(t)
+    return out
+
+
+def load_transport(target: TargetURI) -> type[BaseTransport]:
     transports: list[type[BaseTransport]] = [
         ISOTPTransport,
         RawCANTransport,
@@ -75,19 +87,9 @@ def load_transports() -> list[type[BaseTransport]]:
         TCPLineSepTransport,
     ]
 
-    eps = entry_points()
-    if (s := "gallia_transports") in eps:
-        for ep in eps.select(group=s):
-            for t in ep.load():
-                if not issubclass(t, BaseTransport):
-                    raise ValueError(f"{type(t)} is not derived from BaseTransport")
-            transports.append(cast(type[BaseTransport], t))
+    transports += load_transports()
 
-    return transports
-
-
-def load_transport(target: TargetURI) -> type[BaseTransport]:
-    for transport in load_transports():
+    for transport in transports:
         if target.scheme == transport.SCHEME:
             return transport
 
