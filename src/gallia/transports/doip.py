@@ -550,7 +550,7 @@ class DoIPTransport(BaseTransport, scheme="doip"):
             raise ValueError("no hostname specified")
 
         port = target.port if target.port is not None else 6801
-        config = DoIPConfig(**target.qs)
+        config = DoIPConfig(**target.qs_flat)
         conn = await asyncio.wait_for(
             cls._connect(
                 target.hostname,

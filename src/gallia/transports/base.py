@@ -52,6 +52,13 @@ class TargetURI:
         assert self.scheme != "", "url scheme is empty"
         return f"{self.scheme}://{self.url.netloc}"
 
+    @property
+    def qs_flat(self) -> dict[str, str]:
+        d = {}
+        for k, v in self.qs.items():
+            d[k] = v[0]
+        return d
+
     def __str__(self) -> str:
         return self.raw
 

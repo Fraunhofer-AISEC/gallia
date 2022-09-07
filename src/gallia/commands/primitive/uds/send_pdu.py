@@ -64,7 +64,8 @@ class SendPDUPrimitive(UDSScanner):
 
         try:
             response = await self.ecu.send_raw(
-                pdu, config=UDSRequestConfig(max_retry=args.max_retry)
+                pdu,
+                config=UDSRequestConfig(max_retry=args.max_retry),
             )
         except UDSException as e:
             self.logger.error(g_repr(e))
