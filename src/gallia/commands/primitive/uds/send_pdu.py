@@ -24,7 +24,7 @@ class SendPDUPrimitive(UDSScanner):
     """A raw scanner to send a plain pdu"""
 
     CATEGORY = "primitive"
-    COMMAND = "send-pdu"
+    COMMAND = "pdu"
     SHORT_HELP = "send a plain PDU"
 
     def configure_parser(self) -> None:
