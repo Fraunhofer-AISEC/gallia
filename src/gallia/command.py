@@ -33,6 +33,7 @@ from gallia.transports.doip import DoIPTransport
 from gallia.transports.tcp import TCPLineSepTransport
 from gallia.uds.core.service import NegativeResponse, UDSResponse
 from gallia.uds.ecu import ECU
+from gallia.uds.core.exception import UDSException
 from gallia.uds.helpers import raise_for_error
 from gallia.utils import camel_to_snake, g_repr
 
@@ -392,6 +393,7 @@ class Scanner(AsyncScript, ABC):
     CATCHED_EXCEPTIONS: list[type[Exception]] = [
         BrokenPipeError,
         ConnectionRefusedError,
+        UDSException,
     ]
 
     def __init__(self, parser: ArgumentParser, config: dict[str, Any]) -> None:
