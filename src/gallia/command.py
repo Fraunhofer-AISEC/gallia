@@ -75,7 +75,7 @@ def load_transports() -> list[type[BaseTransport]]:
             for t in ep.load():
                 if not issubclass(t, BaseTransport):
                     raise ValueError(f"{type(t)} is not derived from BaseTransport")
-            out.append(t)
+                out.append(t)
     return out
 
 
