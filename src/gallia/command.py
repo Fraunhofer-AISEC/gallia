@@ -210,14 +210,14 @@ class BaseCommand(ABC):
         _mutex_group = group.add_mutually_exclusive_group()
         _mutex_group.add_argument(
             "--artifacts-dir",
-            default=self.config.get("gallia.scanner.artifacts_dir"),
+            default=self.get_config_value("gallia.scanner.artifacts_dir"),
             type=Path,
             metavar="DIR",
             help="Folder for artifacts",
         )
         _mutex_group.add_argument(
             "--artifacts-base",
-            default=self.config.get(
+            default=self.get_config_value(
                 "gallia.scanner.artifacts_base",
                 Path(gettempdir()).joinpath("gallia"),
             ),
@@ -399,6 +399,7 @@ class Scanner(AsyncScript, ABC):
     CATCHED_EXCEPTIONS: list[type[Exception]] = [
         BrokenPipeError,
         ConnectionRefusedError,
+        ConnectionResetError,
         UDSException,
     ]
 
