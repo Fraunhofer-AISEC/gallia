@@ -218,8 +218,8 @@ class IsotpDiscoverer(DiscoveryScanner):
 
                         if args.extended_addr:
                             target_args["ext_address"] = hex(ID)
-                            target_args["rx_ext_address"] = args.tester_addr & 0xFF
-                            target_args["src_addr"] = args.tester_addr
+                            target_args["rx_ext_address"] = hex(args.tester_addr & 0xFF)
+                            target_args["src_addr"] = hex(args.tester_addr)
                             target_args["dst_addr"] = hex(addr)
                         else:
                             target_args["src_addr"] = hex(ID)
