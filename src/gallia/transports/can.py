@@ -272,8 +272,8 @@ class CANMessage(Message):  # type: ignore
 
 
 class RawCANConfig(BaseModel):
-    is_extended: bool
-    is_fd: bool
+    is_extended: bool = False
+    is_fd: bool = False
 
 
 class RawCANTransport(BaseTransport, scheme="can-raw"):
