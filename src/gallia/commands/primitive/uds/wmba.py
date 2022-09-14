@@ -15,7 +15,7 @@ from gallia.utils import auto_int, g_repr
 class WMBAPrimitive(UDSScanner):
     """Write memory by address"""
 
-    COMMAND = "wmby"
+    COMMAND = "wmba"
     CATEGORY = "primitive"
     SHORT_HELP = "WriteMemoryByAddress"
 
