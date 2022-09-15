@@ -7,7 +7,7 @@ from importlib.metadata import entry_points
 from gallia.transports.base import BaseTransport, TargetURI
 from gallia.transports.can import ISOTPTransport, RawCANTransport
 from gallia.transports.doip import DoIPTransport
-from gallia.transports.tcp import TCPTransport, TCPLinesTransport
+from gallia.transports.tcp import TCPLinesTransport, TCPTransport
 
 
 def load_transports() -> list[type[BaseTransport]]:
