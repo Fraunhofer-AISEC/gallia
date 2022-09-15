@@ -38,9 +38,9 @@ from gallia.commands.scan.uds.sa_dump_seeds import SASeedsDumper
 from gallia.commands.scan.uds.services import ServicesScanner
 from gallia.commands.scan.uds.sessions import SessionsScanner
 from gallia.commands.script.vecu import VirtualECU
-from gallia.transports import load_transports
 from gallia.config import load_config_file
 from gallia.log import setup_logging
+from gallia.transports import load_transports
 
 
 def load_cli_commands() -> list[type[BaseCommand]]:

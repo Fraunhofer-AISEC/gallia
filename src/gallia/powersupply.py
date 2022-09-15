@@ -10,30 +10,34 @@ from functools import partial
 
 from gallia.log import get_logger
 from gallia.transports.base import TargetURI
-from opennetzteil import Netzteil
+from opennetzteil import netzteile
+from opennetzteil.netzteil import BaseNetzteil
 
 
 class PowerSupplyURI(TargetURI):
-    def __init__(self, raw: str) -> None:
-        super().__init__(raw)
-        if "id" not in self.qs:
-            raise ValueError("id is missing in power-supply URI")
-        if "channel" not in self.qs:
-            raise ValueError("channel is missing in power-supply URI")
-
     @property
     def id(self) -> int:
-        return int(self.qs["id"][0], 0)
+        if "id" in self.qs:
+            return int(self.qs["id"][0], 0)
+        return 0
 
     @property
     def channel(self) -> int | list[int]:
-        if len(ch := self.qs["channel"]) == 1:
-            return int(ch[0], 0)
-        return list(map(partial(int, base=0), ch))
+        if "channel" in self.qs:
+            if len(ch := self.qs["channel"]) == 1:
+                return int(ch[0], 0)
+            return list(map(partial(int, base=0), ch))
+        return 0
+
+    @property
+    def product_id(self) -> str:
+        if "product_id" in self.qs:
+            return self.qs["product_id"][0]
+        return ""
 
 
 class PowerSupply:
-    def __init__(self, channel_id: int | list[int], client: Netzteil) -> None:
+    def __init__(self, client: BaseNetzteil, channel_id: int | list[int]) -> None:
         self.logger = get_logger("power_supply")
         self.channel_id = channel_id
         self.netzteil = client
@@ -41,16 +45,28 @@ class PowerSupply:
 
     @classmethod
     async def connect(cls, target: PowerSupplyURI) -> PowerSupply:
-        client = await Netzteil.connect(target.location, target.id)
-        return cls(target.channel, client)
+        if target.product_id == "":
+            raise ValueError("no device_id specified")
+
+        for netzteil in netzteile:
+            if target.product_id == netzteil.PRODUCT_ID:
+                client = await netzteil.connect(target, timeout=1.0)
+                return cls(client, target.channel)
+        raise ValueError(f"{target.product_id} is not supported")
 
     async def _power(self, op: bool) -> None:
         assert self.netzteil
         if isinstance(self.channel_id, list):
             for id_ in self.channel_id:
-                await self.netzteil.set_channel(id_, op)
+                if id_ == 0:
+                    await self.netzteil.set_master(op)
+                else:
+                    await self.netzteil.set_output(id_, op)
         elif isinstance(self.channel_id, int):
-            await self.netzteil.set_channel(self.channel_id, op)
+            if self.channel_id == 0:
+                await self.netzteil.set_master(op)
+            else:
+                await self.netzteil.set_output(self.channel_id, op)
 
     async def power_up(self) -> None:
         self.logger.info("power up experiment")
