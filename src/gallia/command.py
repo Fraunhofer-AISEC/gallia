@@ -27,13 +27,11 @@ from gallia.db.db_handler import DBHandler
 from gallia.dumpcap import Dumpcap
 from gallia.log import get_logger, setup_logging, tz
 from gallia.powersupply import PowerSupply, PowerSupplyURI
+from gallia.transports import load_transport
 from gallia.transports.base import BaseTransport, TargetURI
-from gallia.transports.can import ISOTPTransport, RawCANTransport
-from gallia.transports.doip import DoIPTransport
-from gallia.transports.tcp import TCPLineSepTransport
+from gallia.uds.core.exception import UDSException
 from gallia.uds.core.service import NegativeResponse, UDSResponse
 from gallia.uds.ecu import ECU
-from gallia.uds.core.exception import UDSException
 from gallia.uds.helpers import raise_for_error
 from gallia.utils import camel_to_snake, g_repr
 
@@ -65,35 +63,6 @@ class RunMeta(msgspec.Struct):
     start_time: str
     end_time: str
     exit_code: int
-
-
-def load_transports() -> list[type[BaseTransport]]:
-    out = []
-    eps = entry_points()
-    if (s := "gallia_transports") in eps:
-        for ep in eps.select(group=s):
-            for t in ep.load():
-                if not issubclass(t, BaseTransport):
-                    raise ValueError(f"{type(t)} is not derived from BaseTransport")
-                out.append(t)
-    return out
-
-
-def load_transport(target: TargetURI) -> type[BaseTransport]:
-    transports: list[type[BaseTransport]] = [
-        ISOTPTransport,
-        RawCANTransport,
-        DoIPTransport,
-        TCPLineSepTransport,
-    ]
-
-    transports += load_transports()
-
-    for transport in transports:
-        if target.scheme == transport.SCHEME:
-            return transport
-
-    raise ValueError(f"no transport for {target}")
 
 
 def load_ecus() -> list[type[ECU]]:

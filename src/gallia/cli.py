@@ -15,7 +15,7 @@ from typing import Any, Callable
 
 import argcomplete  # type: ignore
 
-from gallia.command import BaseCommand, load_transports, load_ecus
+from gallia.command import BaseCommand, load_ecus
 from gallia.commands.discover.uds.doip import DoIPDiscoverer
 from gallia.commands.discover.uds.isotp import IsotpDiscoverer
 from gallia.commands.fuzz.uds.pdu import PDUFuzzer
@@ -38,6 +38,7 @@ from gallia.commands.scan.uds.sa_dump_seeds import SASeedsDumper
 from gallia.commands.scan.uds.services import ServicesScanner
 from gallia.commands.scan.uds.sessions import SessionsScanner
 from gallia.commands.script.vecu import VirtualECU
+from gallia.transports import load_transports
 from gallia.config import load_config_file
 from gallia.log import setup_logging
 

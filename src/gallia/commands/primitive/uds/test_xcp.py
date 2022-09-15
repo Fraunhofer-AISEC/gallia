@@ -4,7 +4,8 @@
 
 from argparse import Namespace
 
-from gallia.command import Scanner, load_transport
+from gallia.command import Scanner
+from gallia.transports import load_transport
 from gallia.services.xcp import XCPService
 from gallia.utils import catch_and_log_exception
 
