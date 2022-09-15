@@ -12,7 +12,7 @@ from typing import AsyncIterator, Callable
 import pytest
 from gallia.transports.base import TargetURI
 from gallia.transports.base import BaseTransport
-from gallia.transports.tcp import TCPTransport, TCPLineSepTransport
+from gallia.transports.tcp import TCPTransport, TCPLinesTransport
 
 listen_target = TargetURI("tcp://127.0.0.1:1234")
 test_data = [b"hello" b"tcp"]
@@ -96,7 +96,7 @@ async def test_tcp_echo(tcp_server: TCPServer) -> None:
 
 @pytest.mark.asyncio
 async def test_tcp_linesep_echo(tcp_server: TCPServer) -> None:
-    client = await TCPLineSepTransport.connect(TargetURI("tcp-lines://127.0.0.1:1234"))
+    client = await TCPLinesTransport.connect(TargetURI("tcp-lines://127.0.0.1:1234"))
     server = await tcp_server.accept()
 
     def converter(data: bytes) -> bytes:
@@ -116,7 +116,7 @@ async def test_tcp_close(tcp_server: TCPServer) -> None:
 
 @pytest.mark.asyncio
 async def test_tcp_linesep_request(tcp_server: TCPServer) -> None:
-    client = await TCPLineSepTransport.connect(TargetURI("tcp-lines://127.0.0.1:1234"))
+    client = await TCPLinesTransport.connect(TargetURI("tcp-lines://127.0.0.1:1234"))
     server = await tcp_server.accept()
 
     await server.write(binascii.hexlify(b"world") + b"\n")
@@ -127,7 +127,7 @@ async def test_tcp_linesep_request(tcp_server: TCPServer) -> None:
 
 @pytest.mark.asyncio
 async def test_tcp_timeout(tcp_server: TCPServer) -> None:
-    client = await TCPLineSepTransport.connect(TargetURI("tcp-lines://127.0.0.1:1234"))
+    client = await TCPLinesTransport.connect(TargetURI("tcp-lines://127.0.0.1:1234"))
     _ = await tcp_server.accept()
 
     with pytest.raises(asyncio.TimeoutError):

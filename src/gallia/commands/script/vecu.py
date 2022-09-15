@@ -13,7 +13,7 @@ from pathlib import Path
 from gallia.command import AsyncScript
 from gallia.transports.base import TargetURI
 from gallia.transports.can import ISOTPTransport
-from gallia.transports.tcp import TCPLineSepTransport
+from gallia.transports.tcp import TCPLinesTransport
 from gallia.uds.core.constants import UDSIsoServices
 from gallia.uds.server import (
     DBUDSServer,
@@ -101,14 +101,14 @@ class VirtualECU(AsyncScript):
         target: TargetURI = args.target
         transport: UDSServerTransport
 
-        if target.scheme == TCPLineSepTransport.SCHEME:
+        if target.scheme == TCPLinesTransport.SCHEME:
             transport = TCPUDSServerTransport(server, target)
         elif target.scheme == ISOTPTransport.SCHEME:
             transport = ISOTPUDSServerTransport(server, target)
         else:
             self.logger.error(
                 f"Unsupported transport scheme! Use any of ["
-                f"{TCPLineSepTransport.SCHEME}, {ISOTPTransport.SCHEME}]"
+                f"{TCPLinesTransport.SCHEME}, {ISOTPTransport.SCHEME}]"
             )
             sys.exit(1)
 

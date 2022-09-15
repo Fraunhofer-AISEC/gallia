@@ -61,7 +61,7 @@ class TCPTransport(BaseTransport, scheme="tcp"):
         return data
 
 
-class TCPLineSepTransport(TCPTransport, scheme="tcp-lines"):
+class TCPLinesTransport(TCPTransport, scheme="tcp-lines"):
     async def write(
         self,
         data: bytes,
