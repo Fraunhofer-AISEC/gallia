@@ -542,18 +542,19 @@ class DoIPTransport(BaseTransport, scheme="doip"):
 
     @classmethod
     async def connect(
-        cls, target: TargetURI, timeout: float | None = None
+        cls, target: str | TargetURI, timeout: float | None = None
     ) -> DoIPTransport:
-        cls.check_scheme(target)
+        t = target if isinstance(target, TargetURI) else TargetURI(target)
+        cls.check_scheme(t)
 
-        if target.hostname is None:
+        if t.hostname is None:
             raise ValueError("no hostname specified")
 
-        port = target.port if target.port is not None else 6801
-        config = DoIPConfig(**target.qs_flat)
+        port = t.port if t.port is not None else 6801
+        config = DoIPConfig(**t.qs_flat)
         conn = await asyncio.wait_for(
             cls._connect(
-                target.hostname,
+                t.hostname,
                 port,
                 config.src_addr,
                 config.target_addr,
@@ -561,7 +562,7 @@ class DoIPTransport(BaseTransport, scheme="doip"):
             ),
             timeout,
         )
-        return cls(target, port, config, conn)
+        return cls(t, port, config, conn)
 
     async def close(self) -> None:
         await self._conn.close()

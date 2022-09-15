@@ -70,15 +70,16 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
     @classmethod
     async def connect(
         cls,
-        target: TargetURI,
+        target: str | TargetURI,
         timeout: float | None = None,
     ) -> ISOTPTransport:
-        cls.check_scheme(target)
+        t = target if isinstance(target, TargetURI) else TargetURI(target)
+        cls.check_scheme(t)
 
-        if target.hostname is None:
+        if t.hostname is None:
             raise ValueError("empty interface")
 
-        config = ISOTPConfig(**target.qs_flat)
+        config = ISOTPConfig(**t.qs_flat)
         sock = s.socket(s.PF_CAN, s.SOCK_DGRAM, s.CAN_ISOTP)
         sock.setblocking(False)
 
@@ -98,9 +99,9 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
         if config.is_fd:
             cls._setsockllopts(sock, canfd=config.is_fd, tx_dl=config.tx_dl)
 
-        sock.bind((target.hostname, dst_addr, src_addr))
+        sock.bind((t.hostname, dst_addr, src_addr))
 
-        return cls(target, config, sock)
+        return cls(t, config, sock)
 
     @staticmethod
     def _calc_flags(can_id: int, extended: bool = False) -> int:
@@ -288,23 +289,24 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
 
     @classmethod
     async def connect(
-        cls, target: TargetURI, timeout: float | None = None
+        cls, target: str | TargetURI, timeout: float | None = None
     ) -> RawCANTransport:
-        cls.check_scheme(target)
+        t = target if isinstance(target, TargetURI) else TargetURI(target)
+        cls.check_scheme(t)
 
-        if target.hostname is None:
+        if t.hostname is None:
             raise ValueError("empty interface")
 
         sock = s.socket(s.PF_CAN, s.SOCK_RAW, s.CAN_RAW)
-        sock.bind((target.hostname,))
-        config = RawCANConfig(**target.qs_flat)
+        sock.bind((t.hostname,))
+        config = RawCANConfig(**t.qs_flat)
 
         if config.is_fd is True:
             sock.setsockopt(s.SOL_CAN_RAW, s.CAN_RAW_FD_FRAMES, 1)
 
         sock.setblocking(False)
 
-        return cls(target, config, sock)
+        return cls(t, config, sock)
 
     def set_filter(self, can_ids: list[int], inv_filter: bool = False) -> None:
         if not can_ids:

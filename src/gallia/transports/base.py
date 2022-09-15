@@ -96,7 +96,7 @@ class BaseTransport(ABC):
     @abstractmethod
     async def connect(
         cls: type[TransportT],
-        target: TargetURI,
+        target: str | TargetURI,
         timeout: float | None = None,
     ) -> TransportT:
         ...

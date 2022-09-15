@@ -23,14 +23,15 @@ class TCPTransport(BaseTransport, scheme="tcp"):
 
     @classmethod
     async def connect(
-        cls, target: TargetURI, timeout: float | None = None
+        cls, target: str | TargetURI, timeout: float | None = None
     ) -> TCPTransport:
-        cls.check_scheme(target)
+        t = target if isinstance(target, TargetURI) else TargetURI(target)
+        cls.check_scheme(t)
 
         reader, writer = await asyncio.wait_for(
-            asyncio.open_connection(target.hostname, target.port), timeout
+            asyncio.open_connection(t.hostname, t.port), timeout
         )
-        return cls(target, reader, writer)
+        return cls(t, reader, writer)
 
     async def close(self) -> None:
         self.writer.close()
