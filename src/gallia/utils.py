@@ -28,6 +28,17 @@ def auto_int(arg: str) -> int:
     return int(arg, 0)
 
 
+def strtobool(val: str) -> bool:
+    val = val.lower()
+    match val:
+        case "y" | "yes" | "t" | "true" | "on" | "1":
+            return True
+        case "n" | "no" | "f" | "false" | "off" | "0":
+            return False
+        case _:
+            raise ValueError(f"invalid truth value {val!r}")
+
+
 def split_host_port(
     hostport: str,
     default_port: int | None = None,
