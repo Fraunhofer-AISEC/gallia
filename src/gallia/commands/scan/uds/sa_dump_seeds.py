@@ -137,13 +137,20 @@ class SASeedsDumper(UDSScanner):
         last_seed = b""
         reset = False
         runs_since_last_reset = 0
+        print_speed = False
 
         while duration <= 0 or (time.time() - start_time) < duration:
-            # Only emit logs every 1kB. Otherwise the logs
-            # include too much garbage…
-            i = (i + 1) % 1000
-            if i == 0:
+            # Print information about current dump speed every `interval` seconds.
+            # As request/response times can jitter a few seconds, we 'arm' the print
+            # in one half and 'shoot' once in the other half.
+            interval = 60
+            i = int(time.time() - start_time) % interval
+            if i >= (interval // 2):
+                print_speed = True
+            elif i < (interval // 2) and print_speed is True:
                 self.log_size(seeds_file, time.time() - start_time)
+                print_speed = False
+
             if args.check_session or reset:
                 if not await self.ecu.check_and_set_session(args.session):
                     self.logger.error(
