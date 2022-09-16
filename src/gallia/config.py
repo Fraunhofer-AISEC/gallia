@@ -36,7 +36,8 @@ def get_config_dirs() -> list[Path]:
 
 
 def search_config(
-    filename: Path | None = None, extra_paths: list[Path] | None = None
+    filename: Path | None = None,
+    extra_paths: list[Path] | None = None,
 ) -> Path | None:
     name = filename if filename is not None else Path("gallia.toml")
     if (s := os.getenv("GALLIA_CONFIG")) is not None:
