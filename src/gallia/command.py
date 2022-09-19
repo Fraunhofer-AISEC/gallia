@@ -17,12 +17,12 @@ from enum import Enum, IntEnum, unique
 from importlib.metadata import entry_points
 from pathlib import Path
 from tempfile import gettempdir
-from typing import Any, cast
+from typing import cast
 
 import aiofiles
 import msgspec
 
-from gallia.config import ConfigType
+from gallia.config import Config
 from gallia.db.db_handler import DBHandler
 from gallia.dumpcap import Dumpcap
 from gallia.log import get_logger, setup_logging, tz
@@ -110,7 +110,7 @@ class BaseCommand(ABC):
     HAS_ARTIFACTS_DIR: bool = False
     CATCHED_EXCEPTIONS: list[type[Exception]] = []
 
-    def __init__(self, parser: ArgumentParser, config: ConfigType) -> None:
+    def __init__(self, parser: ArgumentParser, config: Config = Config()) -> None:
         self.id = camel_to_snake(self.__class__.__name__)
         self.logger = get_logger(self.LOGGER_NAME)
         self.parser = parser
@@ -134,24 +134,6 @@ class BaseCommand(ABC):
     def run(self, args: Namespace) -> int:
         ...
 
-    def get_config_value(
-        self,
-        key: str,
-        default: Any | None = None,
-    ) -> Any | None:
-        parts = key.split(".")
-        subdict: dict[str, Any] | None = self.config
-        val: Any | None = None
-
-        for part in parts:
-            if subdict is None:
-                return default
-
-            val = subdict.get(part)
-            subdict = val if isinstance(val, dict) else None
-
-        return val if val is not None else default
-
     def get_log_level(self, args: Namespace) -> int:
         level = logging.INFO
         if args.verbose == 1:
@@ -169,7 +151,7 @@ class BaseCommand(ABC):
             "-v",
             "--verbose",
             action="count",
-            default=self.get_config_value("gallia.verbosity", 0),
+            default=self.config.get_value("gallia.verbosity", 0),
             help="increase verbosity on the console",
         )
 
@@ -179,14 +161,14 @@ class BaseCommand(ABC):
         _mutex_group = group.add_mutually_exclusive_group()
         _mutex_group.add_argument(
             "--artifacts-dir",
-            default=self.get_config_value("gallia.scanner.artifacts_dir"),
+            default=self.config.get_value("gallia.scanner.artifacts_dir"),
             type=Path,
             metavar="DIR",
             help="Folder for artifacts",
         )
         _mutex_group.add_argument(
             "--artifacts-base",
-            default=self.get_config_value(
+            default=self.config.get_value(
                 "gallia.scanner.artifacts_base",
                 Path(gettempdir()).joinpath("gallia"),
             ),
@@ -372,7 +354,7 @@ class Scanner(AsyncScript, ABC):
         UDSException,
     ]
 
-    def __init__(self, parser: ArgumentParser, config: dict[str, Any]) -> None:
+    def __init__(self, parser: ArgumentParser, config: Config = Config()) -> None:
         super().__init__(parser, config)
         self.db_handler: DBHandler | None = None
         self.power_supply: PowerSupply | None = None
@@ -441,14 +423,14 @@ class Scanner(AsyncScript, ABC):
         group = self.parser.add_argument_group("scanner related arguments")
         group.add_argument(
             "--db",
-            default=self.get_config_value("gallia.scanner.db"),
+            default=self.config.get_value("gallia.scanner.db"),
             type=Path,
             help="Path to sqlite3 database",
         )
         group.add_argument(
             "--dumpcap",
             action=argparse.BooleanOptionalAction,
-            default=self.get_config_value("gallia.scanner.dumpcap", default=True),
+            default=self.config.get_value("gallia.scanner.dumpcap", default=True),
             help="Enable/Disable creating a pcap file",
         )
 
@@ -456,7 +438,7 @@ class Scanner(AsyncScript, ABC):
         group.add_argument(
             "--target",
             metavar="TARGET",
-            default=self.get_config_value("gallia.scanner.target"),
+            default=self.config.get_value("gallia.scanner.target"),
             type=TargetURI,
             help="URI that describes the target",
         )
@@ -465,13 +447,13 @@ class Scanner(AsyncScript, ABC):
         group.add_argument(
             "--power-supply",
             metavar="URI",
-            default=self.get_config_value("gallia.scanner.power_supply"),
+            default=self.config.get_value("gallia.scanner.power_supply"),
             type=PowerSupplyURI,
             help="URI specifying the location of the relevant opennetzteil server",
         )
         group.add_argument(
             "--power-cycle",
-            default=self.get_config_value("gallia.scanner.power_cycle"),
+            default=self.config.get_value("gallia.scanner.power_cycle"),
             const=5.0,
             nargs="?",
             type=float,
@@ -499,7 +481,7 @@ class UDSScanner(Scanner):
     CATEGORY = "scan"
     SUBCATEGORY: str | None = "uds"
 
-    def __init__(self, parser: ArgumentParser, config: dict[str, Any]) -> None:
+    def __init__(self, parser: ArgumentParser, config: Config = Config()) -> None:
         super().__init__(parser, config)
         self.ecu: ECU
         self.transport: BaseTransport
@@ -515,26 +497,26 @@ class UDSScanner(Scanner):
             "--ecu-reset",
             const=0x01,
             nargs="?",
-            default=self.get_config_value("gallia.protocols.uds.ecu_reset"),
+            default=self.config.get_value("gallia.protocols.uds.ecu_reset"),
             help="Trigger an initial ecu_reset via UDS; reset level is optional",
         )
         group.add_argument(
             "--oem",
-            default=self.get_config_value("gallia.protocols.uds.oem", "default"),
+            default=self.config.get_value("gallia.protocols.uds.oem", "default"),
             choices=choices,
             metavar="OEM",
             help="The OEM of the ECU, used to choose a OEM specific ECU implementation",
         )
         group.add_argument(
             "--timeout",
-            default=self.get_config_value("gallia.protocols.uds.timeout", 2),
+            default=self.config.get_value("gallia.protocols.uds.timeout", 2),
             type=float,
             metavar="SECONDS",
             help="Timeout value to wait for a response from the ECU",
         )
         group.add_argument(
             "--max-retries",
-            default=self.get_config_value("gallia.protocols.uds.max_retries", 3),
+            default=self.config.get_value("gallia.protocols.uds.max_retries", 3),
             type=int,
             metavar="INT",
             help="Number of maximum retries while sending UDS requests",
@@ -542,12 +524,12 @@ class UDSScanner(Scanner):
         group.add_argument(
             "--ping",
             action=argparse.BooleanOptionalAction,
-            default=self.get_config_value("gallia.protocols.uds.ping", True),
+            default=self.config.get_value("gallia.protocols.uds.ping", True),
             help="Enable/Disable initial TesterPresent request",
         )
         group.add_argument(
             "--tester-present-interval",
-            default=self.get_config_value(
+            default=self.config.get_value(
                 "gallia.protocols.uds.tester_present_interval", 0.5
             ),
             type=float,
@@ -557,18 +539,18 @@ class UDSScanner(Scanner):
         group.add_argument(
             "--tester-present",
             action=argparse.BooleanOptionalAction,
-            default=self.get_config_value("gallia.protocols.uds.tester_present", True),
+            default=self.config.get_value("gallia.protocols.uds.tester_present", True),
             help="Enable/Disable tester present background worker",
         )
         group.add_argument(
             "--properties",
-            default=self.get_config_value("gallia.protocols.uds.properties", True),
+            default=self.config.get_value("gallia.protocols.uds.properties", True),
             action=argparse.BooleanOptionalAction,
             help="Read and store the ECU proporties prior and after scan",
         )
         group.add_argument(
             "--compare-properties",
-            default=self.get_config_value(
+            default=self.config.get_value(
                 "gallia.protocols.uds.compare_properties", True
             ),
             action=argparse.BooleanOptionalAction,
@@ -694,7 +676,7 @@ class DiscoveryScanner(Scanner):
         self.parser.add_argument(
             "--timeout",
             type=float,
-            default=self.get_config_value("gallia.scanner.timeout", 0.5),
+            default=self.config.get_value("gallia.scanner.timeout", 0.5),
             help="timeout value for request",
         )
 
