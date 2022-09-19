@@ -21,9 +21,9 @@ class CLI(AsyncScript):
             "--target",
             metavar="URI",
             type=PowerSupplyURI,
-            default=self.get_config_value(
+            default=self.config.get_value(
                 "opennetzteil.target",
-                self.get_config_value("gallia.scanner.power_supply"),
+                self.config.get_value("gallia.scanner.power_supply"),
             ),
             help="URI specifying the location of the powersupply",
         )

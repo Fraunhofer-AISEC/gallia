@@ -10,7 +10,21 @@ from typing import Any
 import tomlkit
 from xdg import xdg_config_dirs
 
-ConfigType = dict[str, Any]
+
+class Config(dict[str, Any]):
+    def get_value(self, key: str, default: Any | None = None) -> Any | None:
+        parts = key.split(".")
+        subdict: dict[str, Any] | None = self
+        val: Any | None = None
+
+        for part in parts:
+            if subdict is None:
+                return default
+
+            val = subdict.get(part)
+            subdict = val if isinstance(val, dict) else None
+
+        return val if val is not None else default
 
 
 def get_git_root() -> Path | None:
@@ -45,9 +59,13 @@ def search_config(
             return path
         raise FileNotFoundError(s)
 
-    for dir_ in (
-        get_config_dirs() if extra_paths is None else extra_paths + get_config_dirs()
-    ):
+    extra = []
+    if extra_paths is not None:
+        extra = extra_paths
+
+    search_paths = get_config_dirs() + extra
+
+    for dir_ in search_paths:
         if (path := dir_.joinpath(name)).exists():
             return path
 
@@ -57,8 +75,7 @@ def search_config(
 def load_config_file(
     filename: Path | None = None,
     extra_paths: list[Path] | None = None,
-) -> tuple[ConfigType, Path | None]:
+) -> tuple[Config, Path | None]:
     if (path := search_config(filename, extra_paths)) is not None:
-        raw_toml = path.read_text()
-        return tomlkit.loads(raw_toml), path
-    return {}, None
+        return Config(tomlkit.loads(path.read_text())), path
+    return Config(), None

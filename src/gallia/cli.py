@@ -38,7 +38,7 @@ from gallia.commands.scan.uds.sa_dump_seeds import SASeedsDumper
 from gallia.commands.scan.uds.services import ServicesScanner
 from gallia.commands.scan.uds.sessions import SessionsScanner
 from gallia.commands.script.vecu import VirtualECU
-from gallia.config import load_config_file
+from gallia.config import Config, load_config_file
 from gallia.log import setup_logging
 from gallia.transports import load_transports
 
@@ -210,7 +210,7 @@ Every command line option can be set via a TOML config file. Check `gallia --tem
 # https://github.com/python/mypy/issues/731
 def build_cli(
     parsers: dict[str, Any],
-    config: dict[str, Any],
+    config: Config,
     registry: list[type[BaseCommand]],
 ) -> None:
     for cls in registry:
@@ -233,7 +233,7 @@ def build_cli(
 
 def cmd_show_config(
     args: argparse.Namespace,
-    config: dict[str, Any],
+    config: Config,
     config_path: Path | None,
 ) -> None:
     if (p := os.getenv("GALLIA_CONFIG")) is not None:

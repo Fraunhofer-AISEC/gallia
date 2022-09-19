@@ -9,11 +9,11 @@ import sys
 import time
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
-from typing import Any
 
 import aiofiles
 
 from gallia.command import UDSScanner
+from gallia.config import Config
 from gallia.uds.core.client import UDSRequestConfig
 from gallia.uds.core.service import NegativeResponse
 from gallia.utils import auto_int, g_repr
@@ -25,7 +25,7 @@ class SASeedsDumper(UDSScanner):
     COMMAND = "dump-seeds"
     SHORT_HELP = "dump security access seeds"
 
-    def __init__(self, parser: ArgumentParser, config: dict[str, Any]) -> None:
+    def __init__(self, parser: ArgumentParser, config: Config = Config()) -> None:
         super().__init__(parser, config)
 
         self.implicit_logging = False
