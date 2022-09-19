@@ -35,7 +35,7 @@ tabulate = "^0.8.9"
 construct = "^2.10.67"
 xdg = "^5.1.1"
 tomlkit = "^0.11.0"
-msgspec = "^0.8.0"
+msgspec = ">=0.8,<0.10"
 pydantic = "^1.10.2"
 
 [tool.poetry.group.dev.dependencies]
