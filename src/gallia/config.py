@@ -3,11 +3,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
-import subprocess
 from pathlib import Path
 from typing import Any
 
 import tomlkit
+from pygit2 import discover_repository  # type: ignore
 from xdg import xdg_config_dirs
 
 
@@ -28,16 +28,14 @@ class Config(dict[str, Any]):
 
 
 def get_git_root() -> Path | None:
-    try:
-        p = subprocess.run(
-            ["git", "rev-parse", "--show-toplevel"],
-            capture_output=True,
-            check=True,
-        )
-    except subprocess.SubprocessError:
-        return None
+    res = discover_repository(Path.cwd())
+    match res:
+        case str() as p:
+            return Path(p).parent
+        case None:
+            return None
 
-    return Path(p.stdout.decode().strip())
+    raise ValueError(f"unexpected return from pygit2 {res}")
 
 
 def get_config_dirs() -> list[Path]:
