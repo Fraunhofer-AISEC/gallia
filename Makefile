@@ -7,6 +7,7 @@ lint:
 	flake8 --config setup.cfg src tests
 	mypy --config-file pyproject.toml src tests
 	pylint --rcfile pyproject.toml src tests
+	black --check src tests
 
 BINDIR ?= "${HOME}/bin"
 
