@@ -12,18 +12,7 @@ from typing import cast
 
 import zstandard
 
-from gallia.log import (
-    ConsoleFormatter,
-    PenlogPriority,
-    parse_penlog_record,
-    priority_to_level,
-)
-
-
-def _PrioType(x: str) -> PenlogPriority:
-    if x.isnumeric():
-        return PenlogPriority(int(x, base=0))
-    return PenlogPriority.from_str(x)
+from gallia.log import ConsoleFormatter, PenlogPriority, PenlogRecord
 
 
 def parse_args() -> argparse.Namespace:
@@ -32,7 +21,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "-p",
         "--priority",
-        type=_PrioType,
+        type=PenlogPriority.from_str,
         default=PenlogPriority.INFO,
         help="maximal message priority",
     )
@@ -43,13 +32,7 @@ def _main() -> int:
     args = parse_args()
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(ConsoleFormatter())
-
-    if args.priority not in priority_to_level:
-        print(f"invalid priority: {args.priority}", file=sys.stderr)
-        return 1
-
-    loglevel = priority_to_level[args.priority]
-    handler.setLevel(loglevel)
+    handler.setLevel(args.priority.to_level())
 
     for file in args.FILE:
         file = cast(Path, file)
@@ -68,11 +51,11 @@ def _main() -> int:
                 if line == b"":
                     break
 
-                penlog_record = parse_penlog_record(line)
-                if penlog_record.priority > args.priority:
+                log_record = PenlogRecord.parse_json(line)
+                if log_record.priority > args.priority:
                     continue
 
-                handler.emit(penlog_record.to_log_record())
+                handler.emit(log_record.to_log_record())
     return 0
 
 

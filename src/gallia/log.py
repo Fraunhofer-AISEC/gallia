@@ -8,6 +8,7 @@ import logging
 import socket
 import sys
 import traceback
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum, IntEnum, unique
 from pathlib import Path
@@ -73,43 +74,69 @@ class PenlogPriority(IntEnum):
 
     @classmethod
     def from_str(cls, string: str) -> PenlogPriority:
-        s = string.lower()
-        code = 0
-        if s == "emergency":
-            code = 0
-        elif s == "alert":
-            code = 1
-        elif s == "critical":
-            code = 2
-        elif s == "error":
-            code = 3
-        elif s == "warning":
-            code = 4
-        elif s == "notice":
-            code = 5
-        elif s == "info":
-            code = 6
-        elif s == "debug":
-            code = 7
-        elif s == "trace":
-            code = 8
-        else:
-            ValueError(f"{string} not a valid priority")
+        if string.isnumeric():
+            return cls(int(string, 0))
 
-        return PenlogPriority(code)
+        match string.lower():
+            case "emergency":
+                return cls.EMERGENCY
+            case "alert":
+                return cls.ALERT
+            case "critical":
+                return cls.CRITICAL
+            case "error":
+                return cls.ERROR
+            case "warning":
+                return cls.WARNING
+            case "notice":
+                return cls.NOTICE
+            case "info":
+                return cls.INFO
+            case "debug":
+                return cls.DEBUG
+            case "trace":
+                return cls.TRACE
+            case _:
+                raise ValueError(f"{string} not a valid priority")
 
+    @classmethod
+    def from_level(cls, value: int) -> PenlogPriority:
+        match value:
+            case logging.TRACE:  # type: ignore
+                return cls.TRACE
+            case logging.DEBUG:
+                return cls.DEBUG
+            case logging.INFO:
+                return cls.INFO
+            case logging.NOTICE:  # type: ignore
+                return cls.NOTICE
+            case logging.WARNING:
+                return cls.WARNING
+            case logging.ERROR:
+                return cls.ERROR
+            case logging.CRITICAL:
+                return cls.CRITICAL
+            case _:
+                raise ValueError("invalid value")
 
-level_to_priority = {
-    logging.TRACE: PenlogPriority.TRACE,  # type: ignore
-    logging.DEBUG: PenlogPriority.DEBUG,
-    logging.INFO: PenlogPriority.INFO,
-    logging.NOTICE: PenlogPriority.NOTICE,  # type: ignore
-    logging.WARNING: PenlogPriority.WARNING,
-    logging.ERROR: PenlogPriority.ERROR,
-    logging.CRITICAL: PenlogPriority.CRITICAL,
-}
-
-priority_to_level = dict(zip(level_to_priority.values(), level_to_priority.keys()))
+    def to_level(self) -> int:
+        match self:
+            case self.TRACE:
+                return logging.TRACE  # type: ignore
+            case self.DEBUG:
+                return logging.DEBUG
+            case self.INFO:
+                return logging.INFO
+            case self.NOTICE:
+                return logging.NOTICE  # type: ignore
+            case self.WARNING:
+                return logging.WARNING
+            case self.ERROR:
+                return logging.ERROR
+            case self.CRITICAL:
+                return logging.CRITICAL
+            case _:
+                raise ValueError("invalid value")
 
 
 def setup_logging(
@@ -146,7 +173,7 @@ def setup_logging(
     )
 
 
-class PenlogRecordV1(msgspec.Struct, omit_defaults=True):
+class _PenlogRecordV1(msgspec.Struct, omit_defaults=True):
     component: str
     host: str
     data: str
@@ -157,49 +184,8 @@ class PenlogRecordV1(msgspec.Struct, omit_defaults=True):
     line: str | None = None
     stacktrace: str | None = None
 
-    def to_log_record(self) -> logging.LogRecord:
-        name = self.component
-        level = priority_to_level[PenlogPriority(self.priority)]
-        try:
-            created = datetime.fromisoformat(self.timestamp).timestamp()
-        except ValueError:
-            # Workaround for broken ISO strings. Go produced broken strings. :)
-            datestr, _ = self.timestamp.split(".", 2)
-            created = datetime.strptime(datestr, "%Y-%m-%dT%H:%M:%S").timestamp()
-        msecs = (created - int(created)) * 1000
 
-        lineno = 0
-        pathname = ""
-        if self.line is not None:
-            pathname, lineno_str = self.line.rsplit(":", 1)
-            lineno = int(lineno_str)
-
-        if self.tags is not None:
-            tags = self.tags
-        else:
-            tags = []
-
-        if self.type is not None:
-            tags += [self.type]
-
-        return logging.makeLogRecord(
-            {
-                "name": name,
-                "priority": self.priority,
-                "levelno": level,
-                "levelname": logging.getLevelName(level),
-                "msg": self.data,
-                "pathname": pathname,
-                "lineno": lineno,
-                "created": created,
-                "msecs": msecs,
-                "host": self.host,
-                "tags": self.tags,
-            }
-        )
-
-
-class PenlogRecordV2(msgspec.Struct, omit_defaults=True, tag=2, tag_field="version"):
+class _PenlogRecordV2(msgspec.Struct, omit_defaults=True, tag=2, tag_field="version"):
     module: str
     host: str
     data: str
@@ -212,11 +198,81 @@ class PenlogRecordV2(msgspec.Struct, omit_defaults=True, tag=2, tag_field="versi
     _python_level_name: str | None = None
     _python_func_name: str | None = None
 
-    def to_log_record(self) -> logging.LogRecord:
-        level = priority_to_level[PenlogPriority(self.priority)]
 
-        created = datetime.fromisoformat(self.datetime)
-        timestamp = created.timestamp()
+_PenlogRecord = _PenlogRecordV1 | _PenlogRecordV2
+
+
+@dataclass
+class PenlogRecord:
+    module: str
+    host: str
+    data: str
+    datetime: datetime
+    priority: PenlogPriority
+    tags: list[str] | None = None
+    line: str | None = None
+    stacktrace: str | None = None
+    _python_level_no: int | None = None
+    _python_level_name: str | None = None
+    _python_func_name: str | None = None
+
+    @classmethod
+    def parse_json(cls, data: bytes) -> PenlogRecord:
+        # PenlogRecordV1 has no version field, thus the tagged
+        # union based approach does not work.
+        record = _PenlogRecord
+        try:
+            record = msgspec.json.decode(data, type=_PenlogRecordV2)
+        except msgspec.ValidationError:
+            record = msgspec.json.decode(data, type=_PenlogRecordV1)
+
+        match record:
+            case _PenlogRecordV1():
+                try:
+                    dt = datetime.fromisoformat(record.timestamp)
+                except ValueError:
+                    # Workaround for broken ISO strings. Go produced broken strings. :)
+                    # We have some old logfiles with this shortcoming.
+                    datestr, _ = record.timestamp.split(".", 2)
+                    dt = datetime.strptime(datestr, "%Y-%m-%dT%H:%M:%S")
+
+                if record.tags is not None:
+                    tags = record.tags
+                else:
+                    tags = []
+
+                if record.type is not None:
+                    tags += [record.type]
+
+                return cls(
+                    module=record.component,
+                    host=record.host,
+                    data=record.data,
+                    datetime=dt,
+                    priority=PenlogPriority(record.priority),
+                    tags=tags,
+                    line=record.line,
+                    stacktrace=record.stacktrace,
+                )
+            case _PenlogRecordV2():
+                return cls(
+                    module=record.module,
+                    host=record.host,
+                    data=record.data,
+                    datetime=datetime.fromisoformat(record.datetime),
+                    priority=PenlogPriority(record.priority),
+                    tags=record.tags,
+                    line=record.line,
+                    stacktrace=record.stacktrace,
+                    _python_level_no=record._python_level_no,  # pylint: disable=protected-access
+                    _python_level_name=record._python_level_name,  # pylint: disable=protected-access
+                    _python_func_name=record._python_func_name,  # pylint: disable=protected-access
+                )
+        raise ValueError("unknown record version")
+
+    def to_log_record(self) -> logging.LogRecord:
+        level = self.priority.to_level()
+        timestamp = self.datetime.timestamp()
         msecs = (timestamp - int(timestamp)) * 1000
 
         lineno = 0
@@ -240,17 +296,6 @@ class PenlogRecordV2(msgspec.Struct, omit_defaults=True, tag=2, tag_field="versi
                 "tags": self.tags,
             }
         )
-
-
-def parse_penlog_record(data: bytes) -> PenlogRecordV1 | PenlogRecordV2:
-    # PenlogRecordV1 has no version field, thus the tagged
-    # union based approach does not work.
-    record: PenlogRecordV1 | PenlogRecordV2
-    try:
-        record = msgspec.json.decode(data, type=PenlogRecordV2)
-    except msgspec.ValidationError:
-        record = msgspec.json.decode(data, type=PenlogRecordV1)
-    return record
 
 
 @unique
@@ -277,11 +322,11 @@ class JSONFormatter(logging.Formatter):
         tags = record.__dict__["tags"] if "tags" in record.__dict__ else None
         stacktrace = self.formatException(record.exc_info) if record.exc_info else None
 
-        penlog_record = PenlogRecordV2(
+        penlog_record = _PenlogRecordV2(
             module=record.name,
             host=self.hostname,
             data=record.getMessage(),
-            priority=level_to_priority[record.levelno].value,
+            priority=PenlogPriority.from_level(record.levelno).value,
             datetime=datetime.fromtimestamp(record.created, tz=tz).isoformat(),
             line=f"{record.pathname}:{record.lineno}",
             stacktrace=stacktrace,
