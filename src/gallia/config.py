@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import tomlkit
-from pygit2 import discover_repository  # type: ignore
+from pygit2 import discover_repository
 from xdg import xdg_config_dirs
 
 

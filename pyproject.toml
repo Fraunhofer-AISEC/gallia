@@ -71,6 +71,13 @@ pytest-cov = "^3.0.0"
 [tool.mypy]
 strict = true
 
+[[tool.mypy.overrides]]
+module = [
+    "argcomplete",
+    "pygit2",
+]
+ignore_missing_imports = true
+
 [tool.black]
 target-version = ['py310']
 
