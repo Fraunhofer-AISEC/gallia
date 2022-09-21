@@ -20,7 +20,6 @@ packages = [
     { include = "cursed_hr", from = "src" },
     { include = "hr", from = "src" },
     { include = "opennetzteil", from = "src" },
-    { include = "penlog", from = "src" },
 ]
 
 [tool.poetry.dependencies]

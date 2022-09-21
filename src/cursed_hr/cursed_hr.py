@@ -23,12 +23,12 @@ from datetime import datetime
 from enum import IntEnum, unique
 from math import ceil
 from pathlib import Path
-from typing import Any, BinaryIO
+from typing import Any, BinaryIO, cast
 
 import zstandard as zstd
 
+from gallia.log import PenlogPriority, PenlogRecord
 from gallia.services.uds.core.service import NegativeResponse, UDSRequest, UDSResponse
-from penlog import MessagePrio, RecordType
 
 
 @unique
@@ -40,7 +40,7 @@ class InterpretationColor(IntEnum):
 
 
 @dataclass
-class PenlogEntry(RecordType):
+class PenlogEntry(PenlogRecord):
     interpretation: str | None = None
     interpretation_color: InterpretationColor = InterpretationColor.DEFAULT
 
@@ -49,6 +49,11 @@ class PenlogEntry(RecordType):
 class FormattedText:
     text: str
     format: int
+
+    @property
+    def sanitized_text(self) -> str:
+        # Strip 0 bytes…
+        return self.text.encode().replace(b"\x00", b"").decode()
 
 
 @dataclass
@@ -81,7 +86,7 @@ class PriorityZone:
 
     start: int
     end: int | None
-    priority: MessagePrio
+    priority: PenlogPriority
 
 
 class EntryCache:
@@ -126,15 +131,18 @@ class EntryCache:
             self.entries[entry_number] = self.old_entries.pop(entry_number)
         except KeyError:
             try:
-                self.entries[entry_number] = PenlogEntry(**json.loads(line))
+                # TODO: Python 3.11: the cast can be dropped due to typing.Self.
+                self.entries[entry_number] = cast(
+                    PenlogEntry, PenlogEntry.parse_json(line)
+                )
             except (json.decoder.JSONDecodeError, TypeError):
                 self.entries[entry_number] = PenlogEntry(
                     data=line.decode("utf-8"),
                     host="",
-                    component="JSON",
-                    timestamp="",
-                    type="ERROR",
-                    priority=MessagePrio.ERROR,
+                    module="JSON",
+                    datetime=datetime.fromtimestamp(0),
+                    tags=["ERROR"],
+                    priority=PenlogPriority.ERROR,
                 )
 
 
@@ -162,7 +170,7 @@ class CursedHR:
     def __init__(
         self,
         in_file: Path,
-        priority: MessagePrio = MessagePrio.DEBUG,
+        priority: PenlogPriority = PenlogPriority.DEBUG,
         filters: list[str] | None = None,
     ):
         self.in_file = in_file
@@ -212,15 +220,15 @@ class CursedHR:
 
     def define_colors(self) -> dict[int, int]:
         prio_colors = {
-            MessagePrio.EMERGENCY: (100, curses.COLOR_RED),
-            MessagePrio.ALERT: (101, curses.COLOR_RED),
-            MessagePrio.CRITICAL: (102, curses.COLOR_RED),
-            MessagePrio.ERROR: (103, curses.COLOR_RED),
-            MessagePrio.WARNING: (104, curses.COLOR_YELLOW),
-            MessagePrio.NOTICE: (105, -1),
-            MessagePrio.INFO: (106, -1),
-            MessagePrio.DEBUG: (107, 8),
-            MessagePrio.TRACE: (108, curses.COLOR_BLUE),
+            PenlogPriority.EMERGENCY: (100, curses.COLOR_RED),
+            PenlogPriority.ALERT: (101, curses.COLOR_RED),
+            PenlogPriority.CRITICAL: (102, curses.COLOR_RED),
+            PenlogPriority.ERROR: (103, curses.COLOR_RED),
+            PenlogPriority.WARNING: (104, curses.COLOR_YELLOW),
+            PenlogPriority.NOTICE: (105, -1),
+            PenlogPriority.INFO: (106, -1),
+            PenlogPriority.DEBUG: (107, 8),
+            PenlogPriority.TRACE: (108, curses.COLOR_BLUE),
         }
 
         for (identifier, value) in prio_colors.values():
@@ -256,13 +264,14 @@ class CursedHR:
 
                 file = tempfile.TemporaryFile()  # pylint: disable=consider-using-with
 
-                if self.in_file.suffix == ".zst":
-                    with self.in_file.open("rb") as in_file:
-                        decomp = zstd.ZstdDecompressor()
-                        decomp.copy_stream(in_file, file)
-                elif self.in_file.suffix == ".gz":
-                    with gzip.open(self.in_file, "rb") as in_file:
-                        shutil.copyfileobj(in_file, file)
+                match self.in_file.suffix:
+                    case ".zst":
+                        with self.in_file.open("rb") as in_file:
+                            decomp = zstd.ZstdDecompressor()
+                            decomp.copy_stream(in_file, file)
+                    case ".gz":
+                        with gzip.open(self.in_file, "rb") as in_file:
+                            shutil.copyfileobj(in_file, file)
             else:
                 file = self.in_file.open("rb")
 
@@ -312,10 +321,10 @@ class CursedHR:
             if not line:
                 break
 
-            prio = MessagePrio.INFO.value
+            prio = PenlogPriority.INFO.value
 
             if line[0] != 123:
-                prio = MessagePrio.ERROR
+                prio = PenlogPriority.ERROR
             elif (pos := line.find(prio_prefix)) > 0:
                 pos += prio_prefix_len
 
@@ -324,7 +333,7 @@ class CursedHR:
 
                 prio = line[pos] - 48
 
-            for i in reversed(range(prio, MessagePrio.TRACE + 1)):
+            for i in reversed(range(prio, PenlogPriority.TRACE + 1)):
                 self.level_pointers[i].append(num_entries)
 
             self.entry_positions.append(n)
@@ -441,14 +450,14 @@ class CursedHR:
         :param entry: The penlog entry to which the text corresponds.
         :return: The formatted text.
         """
-        if entry.component == "JSON":
+        if entry.tags is not None and "JSON" in entry.tags:
             return FormattedText(
-                text, curses.color_pair(self.color_ids[MessagePrio.ERROR])
+                text, curses.color_pair(self.color_ids[PenlogPriority.ERROR])
             )
 
         text_format = curses.color_pair(self.color_ids[entry.priority])
 
-        if entry.priority < MessagePrio.INFO:
+        if entry.priority < PenlogPriority.INFO:
             text_format = text_format | curses.A_BOLD
 
         return FormattedText(text, text_format)
@@ -473,14 +482,14 @@ class CursedHR:
         entry = self.entries[entry_id]
         _, max_width = self.window.getmaxyx()
 
-        try:
-            formatted_timestamp = datetime.fromisoformat(
-                entry.timestamp[:26] + entry.timestamp[-6:]
-            ).strftime("%b %e %H:%M:%S.%f")[:-3]
-        except ValueError:
-            formatted_timestamp = "0" * 19
+        prefix = ""
+        prefix += entry.datetime.strftime("%b %d %H:%M:%S.%f")[:-3]
+        prefix += " "
+        prefix += entry.module
+        if entry.tags is not None:
+            prefix += f" [{', '.join(entry.tags)}]"
+        prefix += ": "
 
-        prefix = f"{formatted_timestamp} {{{entry.component:8.8}}} [{entry.type:8.8}]: "
         residual_width = max_width - len(prefix) - 1
 
         user_defined_lines = entry.data.splitlines()
@@ -871,7 +880,7 @@ class CursedHR:
         return self.configuration.priority_zones[0], None
 
     def priority_pointer(
-        self, entry_id: int, prio: MessagePrio, mode: int = 0
+        self, entry_id: int, prio: PenlogPriority, mode: int = 0
     ) -> int | None:
         """
         Returns the index of the level pointer of the entry with the given id,
@@ -950,11 +959,11 @@ class CursedHR:
         self.display(
             display_entries, self.status(display_entries, (len(display_entries) - 1, 0))
         )
-        prefix_length = 42
+        prefix_length = 0
         cursor = (0, prefix_length)
         self.window.move(*cursor)
 
-        def update_selected_zones(prio: MessagePrio) -> None:
+        def update_selected_zones(prio: PenlogPriority) -> None:
             nonlocal start_entry
             nonlocal display_entries
             nonlocal cursor
@@ -1026,179 +1035,183 @@ class CursedHR:
                 else:
                     line_start -= 1
 
-            if key == "KEY_UP":
-                if cursor[0] > 0:
-                    cursor = (cursor[0] - 1, cursor[1])
-                else:
-                    line_up()
-            elif key == "KEY_DOWN":
-                if cursor[0] < max_lines - 1:
-                    cursor = cursor[0] + 1, cursor[1]
-                else:
-                    if display_entries[0].last_line:
-                        entry_start = min(len(self.entries) - 1, entry_start + 1)
-                        line_start = 0
+            match key:
+                case "KEY_UP":
+                    if cursor[0] > 0:
+                        cursor = (cursor[0] - 1, cursor[1])
                     else:
-                        line_start += 1
-            elif key == "KEY_PPAGE":
-                if cursor[0] > 0:
+                        line_up()
+                case "KEY_DOWN":
+                    if cursor[0] < max_lines - 1:
+                        cursor = cursor[0] + 1, cursor[1]
+                    else:
+                        if display_entries[0].last_line:
+                            entry_start = min(len(self.entries) - 1, entry_start + 1)
+                            line_start = 0
+                        else:
+                            line_start += 1
+                case "KEY_PPAGE":
+                    if cursor[0] > 0:
+                        cursor = (0, cursor[1])
+                    else:
+                        page_up()
+                case "KEY_NPAGE":
+                    if cursor[0] < len(display_entries) - 1:
+                        cursor = (len(display_entries) - 1, cursor[1])
+                    else:
+                        entry_start = display_entries[-1].penlog_entry_number
+                        line_start = display_entries[-1].entry_line_number
+                case "g":
+                    entry_start = 0
+                    line_start = 0
                     cursor = (0, cursor[1])
-                else:
+                case "G":
+                    entry_start = len(self.entries) - 1
+                    line_start = -1
+
+                    display_entries = self.calculate_display_entries(
+                        entry_start, line_start
+                    )
                     page_up()
-            elif key == "KEY_NPAGE":
-                if cursor[0] < len(display_entries) - 1:
                     cursor = (len(display_entries) - 1, cursor[1])
-                else:
-                    entry_start = display_entries[-1].penlog_entry_number
-                    line_start = display_entries[-1].entry_line_number
-            elif key == "g":
-                entry_start = 0
-                line_start = 0
-                cursor = (0, cursor[1])
-            elif key == "G":
-                entry_start = len(self.entries) - 1
-                line_start = -1
-
-                display_entries = self.calculate_display_entries(
-                    entry_start, line_start
-                )
-                page_up()
-                cursor = (len(display_entries) - 1, cursor[1])
-            elif key == "KEY_LEFT":
-                if cursor[1] > 0:
-                    self.window.move(cursor[0], cursor[1] - 1)
-                    continue
-            elif key == "KEY_RIGHT":
-                if cursor[1] < max_columns - 1:
-                    self.window.move(cursor[0], cursor[1] + 1)
-                    continue
-            elif key in ["v", "V"]:
-                if cursor[0] < len(display_entries):
-                    start_entry = display_entries[cursor[0]].penlog_entry_number
-            elif key == chr(curses.ascii.ESC):
-                start_entry = None
-            elif key in ["p", "P"]:
-                function_key = key
-
-                while (key := self.window.getkey()) != "q":
-                    if key == chr(curses.ascii.ESC):
-                        start_entry = None
-                        break
-
-                    if key == "m":
-                        prio = MessagePrio.EMERGENCY
-                    elif key == "a":
-                        prio = MessagePrio.ALERT
-                    elif key == "c":
-                        prio = MessagePrio.CRITICAL
-                    elif key == "e":
-                        prio = MessagePrio.ERROR
-                    elif key == "w":
-                        prio = MessagePrio.WARNING
-                    elif key == "n":
-                        prio = MessagePrio.NOTICE
-                    elif key == "i":
-                        prio = MessagePrio.INFO
-                    elif key == "d":
-                        prio = MessagePrio.DEBUG
-                    elif key == "t":
-                        prio = MessagePrio.TRACE
-                    else:
+                case "KEY_LEFT":
+                    if cursor[1] > 0:
+                        self.window.move(cursor[0], cursor[1] - 1)
                         continue
+                case "KEY_RIGHT":
+                    if cursor[1] < max_columns - 1:
+                        self.window.move(cursor[0], cursor[1] + 1)
+                        continue
+                case "v" | "V":
+                    if cursor[0] < len(display_entries):
+                        start_entry = display_entries[cursor[0]].penlog_entry_number
+                # TODO: this is chr(curses.ascii.ESC); but that's no pattern.
+                case "\x1b":
+                    start_entry = None
+                case "p" | "P":
+                    function_key = key
 
-                    if function_key == "p":
-                        update_selected_zones(prio)
-                    else:
-                        self.new_configuration()
-                        self.configuration.priority_zones = [
-                            PriorityZone(0, None, prio)
-                        ]
-
-                    break
-            elif key == "u":
-                self.configuration_index = max(0, self.configuration_index - 1)
-            elif key == "r":
-                self.configuration_index = min(
-                    len(self.configuration_history) - 1, self.configuration_index + 1
-                )
-            elif key == "i":
-                self.new_configuration()
-                self.configuration.interpret = not self.configuration.interpret
-            elif key == "f":
-                # fh is short for filter_history to reduce long unreadable lines
-                fh_tmp = list(
-                    "; ".join(filter_commands) for filter_commands in filter_history
-                )
-                fh_tmp.append("")
-                fh_index = len(fh_tmp) - 1
-
-                filter_cursor = len(fh_tmp[fh_index])
-                input_format = curses.color_pair(0)
-
-                self.display(
-                    display_entries, [FormattedText(fh_tmp[fh_index], input_format)]
-                )
-                self.window.move(max_lines, filter_cursor)
-
-                while (key := self.window.getkey()) != chr(curses.ascii.ESC):
-                    if key == "\n":
-                        try:
-                            filter_tmp = parse_filter(fh_tmp[fh_index])
-                            self.debug_log(filter_tmp)
-                            filter_history.append(filter_tmp)
-                            self.new_configuration()
-                            self.configuration.filter = filter_tmp
+                    while (key := self.window.getkey()) != "q":
+                        if key == chr(curses.ascii.ESC):
+                            start_entry = None
                             break
-                        except Exception:
-                            pass
 
-                    elif key == "KEY_BACKSPACE":
-                        if filter_cursor > 0:
-                            fh_tmp[fh_index] = (
-                                fh_tmp[fh_index][: filter_cursor - 1]
-                                + fh_tmp[fh_index][filter_cursor:]
-                            )
-                            filter_cursor -= 1
-                    elif key == "KEY_DC":
-                        if filter_cursor < len(fh_tmp[fh_index]):
-                            fh_tmp[fh_index] = (
-                                fh_tmp[fh_index][:filter_cursor]
-                                + fh_tmp[fh_index][filter_cursor + 1 :]
-                            )
-                    elif key == "KEY_LEFT":
-                        if filter_cursor > 0:
-                            filter_cursor -= 1
-                    elif key == "KEY_RIGHT":
-                        if filter_cursor < len(fh_tmp[fh_index]):
-                            filter_cursor += 1
-                    elif key == "KEY_UP":
-                        fh_index = max(0, fh_index - 1)
-                    elif key == "KEY_DOWN":
-                        fh_index = min(len(fh_tmp) - 1, fh_index + 1)
-                    else:
-                        fh_tmp[fh_index] = (
-                            fh_tmp[fh_index][:filter_cursor]
-                            + key
-                            + fh_tmp[fh_index][filter_cursor:]
-                        )
-                        filter_cursor += 1
+                        match key:
+                            case "m":
+                                prio = PenlogPriority.EMERGENCY
+                            case "a":
+                                prio = PenlogPriority.ALERT
+                            case "c":
+                                prio = PenlogPriority.CRITICAL
+                            case "e":
+                                prio = PenlogPriority.ERROR
+                            case "w":
+                                prio = PenlogPriority.WARNING
+                            case "n":
+                                prio = PenlogPriority.NOTICE
+                            case "i":
+                                prio = PenlogPriority.INFO
+                            case "d":
+                                prio = PenlogPriority.DEBUG
+                            case "t":
+                                prio = PenlogPriority.TRACE
+                            case _:
+                                continue
 
-                    try:
-                        parse_filter(fh_tmp[fh_index])
-                        input_format = curses.color_pair(0)
-                    except Exception:
-                        input_format = curses.color_pair(
-                            self.color_ids[MessagePrio.WARNING]
-                        )
+                        if function_key == "p":
+                            update_selected_zones(prio)
+                        else:
+                            self.new_configuration()
+                            self.configuration.priority_zones = [
+                                PriorityZone(0, None, prio)
+                            ]
+
+                        break
+                case "u":
+                    self.configuration_index = max(0, self.configuration_index - 1)
+                case "r":
+                    self.configuration_index = min(
+                        len(self.configuration_history) - 1,
+                        self.configuration_index + 1,
+                    )
+                case "i":
+                    self.new_configuration()
+                    self.configuration.interpret = not self.configuration.interpret
+                case "f":
+                    # fh is short for filter_history to reduce long unreadable lines
+                    fh_tmp = list(
+                        "; ".join(filter_commands) for filter_commands in filter_history
+                    )
+                    fh_tmp.append("")
+                    fh_index = len(fh_tmp) - 1
+
+                    filter_cursor = len(fh_tmp[fh_index])
+                    input_format = curses.color_pair(0)
 
                     self.display(
                         display_entries, [FormattedText(fh_tmp[fh_index], input_format)]
                     )
-                    self.window.move(
-                        max_lines, min(filter_cursor, len(fh_tmp[fh_index]))
-                    )
-            else:
-                pass
+                    self.window.move(max_lines, filter_cursor)
+
+                    while (key := self.window.getkey()) != chr(curses.ascii.ESC):
+                        match key:
+                            case "\n":
+                                try:
+                                    filter_tmp = parse_filter(fh_tmp[fh_index])
+                                    self.debug_log(filter_tmp)
+                                    filter_history.append(filter_tmp)
+                                    self.new_configuration()
+                                    self.configuration.filter = filter_tmp
+                                    break
+                                except Exception:
+                                    pass
+
+                            case "KEY_BACKSPACE":
+                                if filter_cursor > 0:
+                                    fh_tmp[fh_index] = (
+                                        fh_tmp[fh_index][: filter_cursor - 1]
+                                        + fh_tmp[fh_index][filter_cursor:]
+                                    )
+                                    filter_cursor -= 1
+                            case "KEY_DC":
+                                if filter_cursor < len(fh_tmp[fh_index]):
+                                    fh_tmp[fh_index] = (
+                                        fh_tmp[fh_index][:filter_cursor]
+                                        + fh_tmp[fh_index][filter_cursor + 1 :]
+                                    )
+                            case "KEY_LEFT":
+                                if filter_cursor > 0:
+                                    filter_cursor -= 1
+                            case "KEY_RIGHT":
+                                if filter_cursor < len(fh_tmp[fh_index]):
+                                    filter_cursor += 1
+                            case "KEY_UP":
+                                fh_index = max(0, fh_index - 1)
+                            case "KEY_DOWN":
+                                fh_index = min(len(fh_tmp) - 1, fh_index + 1)
+                            case _:
+                                fh_tmp[fh_index] = (
+                                    fh_tmp[fh_index][:filter_cursor]
+                                    + key
+                                    + fh_tmp[fh_index][filter_cursor:]
+                                )
+                                filter_cursor += 1
+
+                        try:
+                            parse_filter(fh_tmp[fh_index])
+                            input_format = curses.color_pair(0)
+                        except Exception:
+                            input_format = curses.color_pair(
+                                self.color_ids[PenlogPriority.WARNING]
+                            )
+
+                        self.display(
+                            display_entries,
+                            [FormattedText(fh_tmp[fh_index], input_format)],
+                        )
+                        self.window.move(
+                            max_lines, min(filter_cursor, len(fh_tmp[fh_index]))
+                        )
 
             display_entries = self.calculate_display_entries(entry_start, line_start)
 
@@ -1260,7 +1273,10 @@ class CursedHR:
 
         for i, display_entry in enumerate(display_entries):
             for text in display_entry.texts:
-                self.window.addstr(text.text, text.format)
+                try:
+                    self.window.addstr(text.text, text.format)
+                except ValueError:
+                    self.window.addstr(text.sanitized_text, text.format)
 
             if i < len(display_entries) - 1:
                 self.window.addstr("\n")
@@ -1268,7 +1284,10 @@ class CursedHR:
         self.window.move(self.window.getmaxyx()[0] - 1, 0)
 
         for text in status_line:
-            self.window.addstr(text.text, text.format)
+            try:
+                self.window.addstr(text.text, text.format)
+            except ValueError:
+                self.window.addstr(text.sanitized_text, text.format)
 
     def debug_log(self, msg: Any) -> None:
         debug_path = Path("/tmp/cursed_log")
@@ -1280,24 +1299,14 @@ class CursedHR:
             pass
 
 
-def parse_prio(text: str) -> MessagePrio:
-    try:
-        return MessagePrio(int(text, 0))
-    except ValueError:
-        try:
-            return MessagePrio[text.upper()]
-        except ValueError as e:
-            raise ValueError("Not a valid priority") from e
-
-
 def parse_filter(text: str) -> list[str]:
     test_entry = PenlogEntry(
-        "component",
-        "data",
-        "host",
-        MessagePrio.INFO,
-        "1970-01-01T00:00:00.000000+00:00",
-        "type",
+        module="component",
+        data="data",
+        host="host",
+        priority=PenlogPriority.INFO,
+        datetime=datetime.fromtimestamp(0),
+        tags=[],
     )
 
     commands = list(
@@ -1316,7 +1325,9 @@ def parse_filter(text: str) -> list[str]:
 def main() -> None:
     parser = ArgumentParser()
     parser.add_argument("file", type=Path)
-    parser.add_argument("--priority", "-p", type=parse_prio, default=MessagePrio.DEBUG)
+    parser.add_argument(
+        "--priority", "-p", type=PenlogPriority.from_str, default=PenlogPriority.DEBUG
+    )
     parser.add_argument("--filter", "-f", type=parse_filter, default=None)
     args = parser.parse_args()
     CursedHR(args.file, args.priority, args.filter)
