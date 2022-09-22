@@ -345,22 +345,23 @@ class ConsoleFormatter(logging.Formatter):
             return record.getMessage()
 
         out = ""
-        if record.levelno == logging.TRACE:  # type: ignore
-            style = Color.GRAY.value
-        elif record.levelno == logging.DEBUG:
-            style = Color.GRAY.value
-        elif record.levelno == logging.INFO:
-            style = Color.NOP.value
-        elif record.levelno == logging.NOTICE:  # type: ignore
-            style = Color.BOLD.value
-        elif record.levelno == logging.WARNING:
-            style = Color.YELLOW.value
-        elif record.levelno == logging.ERROR:
-            style = Color.RED.value
-        elif record.levelno == logging.CRITICAL:
-            style = Color.RED.value + Color.BOLD.value
-        else:
-            style = Color.NOP.value
+        match record.levelno:
+            case logging.TRACE:  # type: ignore
+                style = Color.GRAY.value
+            case logging.DEBUG:
+                style = Color.GRAY.value
+            case logging.INFO:
+                style = Color.NOP.value
+            case logging.NOTICE:  # type: ignore
+                style = Color.BOLD.value
+            case logging.WARNING:
+                style = Color.YELLOW.value
+            case logging.ERROR:
+                style = Color.RED.value
+            case logging.CRITICAL:
+                style = Color.RED.value + Color.BOLD.value
+            case _:
+                style = Color.NOP.value
 
         out += style
         out += record.getMessage()
