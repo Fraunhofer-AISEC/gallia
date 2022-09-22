@@ -54,18 +54,11 @@ def check_project(rule: BumpMode | str) -> None:
     current_branch = p.stdout.decode().strip()
 
     if isinstance(rule, BumpMode):
-        if rule == BumpMode.PATCH or rule == BumpMode.PREPATCH:
-            if not current_branch.endswith("-maint"):
+        match rule:
+            case BumpMode.PATCH | BumpMode.PREPATCH if not current_branch.endswith("-maint"):
                 die("minor or patch releases must be cut from maintenance branch!")
-        elif (
-            rule == BumpMode.MAJOR
-            or rule == BumpMode.PREMAJOR
-            or rule == BumpMode.MINOR
-            or rule == BumpMode.PREMINOR
-        ):
-            if current_branch != "master":
+            case BumpMode.MAJOR | BumpMode.PREMAJOR | BumpMode.MINOR | BumpMode.PREMINOR if current_branch != "master":
                 die("major releases must be cut from master branch!")
-
     p = run(
         ["git", "diff", "--no-ext-diff", "--quiet", "--exit-code"],
     )
@@ -103,14 +96,15 @@ def github_release(version: str, rule: BumpMode | str, notes: ReleaseNotes) -> N
     run_wrapper(["git", "push", "--follow-tags"], check=True)
 
     cmd = ["gh", "release", "create"]
-    if isinstance(rule, BumpMode):
-        if notes == ReleaseNotes.GENERATE:
+    match rule:
+        case BumpMode() if notes == ReleaseNotes.GENERATE:
             cmd += ["--generate-notes"]
-        if rule.value.startswith("pre"):
+        case BumpMode() if rule.value.startswith("pre"):
+            cmd += ["--p"]
+        # Force experiments to be --prerelease.
+        case str():
             cmd += ["--prerelease"]
-    # Force experiments to be --prerelease.
-    elif isinstance(rule, str):
-        cmd += ["--prerelease"]
+
     cmd += [f"v{version}"]
 
     run_wrapper(cmd, check=True)
