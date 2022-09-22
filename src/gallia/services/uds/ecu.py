@@ -63,6 +63,7 @@ class ECU(UDSClient):
         super().__init__(transport, timeout, max_retry)
         self.logger = get_logger("ecu")
         self.tester_present_task: Task[None] | None = None
+        self.tester_present_interval: float | None = None
         self.power_supply = power_supply
         self.state = ECUState()
         self.db_handler: DBHandler | None = None
@@ -329,7 +330,7 @@ class ECU(UDSClient):
                 await asyncio.sleep(sleep_time)
                 await self.ping()
                 break
-            except UDSException as e:
+            except (BrokenPipeError, UDSException) as e:
                 self.logger.debug(f"ECU not ready: {g_repr(e)}")
                 await self.reconnect()
         self.logger.info("ECU ready")
@@ -340,6 +341,9 @@ class ECU(UDSClient):
     ) -> bool:
         """wait for ecu to be alive again (eg. after reset)
         Wait at most timeout"""
+        if self.tester_present_task and self.tester_present_interval:
+            await self.stop_cyclic_tester_present()
+
         t = timeout if timeout is not None else self.timeout
         try:
             await asyncio.wait_for(self._wait_for_ecu(t * 0.8), timeout=t)
@@ -347,6 +351,9 @@ class ECU(UDSClient):
         except asyncio.TimeoutError:
             self.logger.critical("Timeout while waiting for ECU!")
             return False
+        finally:
+            if self.tester_present_task and self.tester_present_interval:
+                await self.start_cyclic_tester_present(self.tester_present_interval)
 
     async def _tester_present_worker(self, interval: float) -> None:
         assert self.transport
@@ -379,6 +386,7 @@ class ECU(UDSClient):
                 await asyncio.sleep(1)
 
     async def start_cyclic_tester_present(self, interval: float) -> None:
+        self.tester_present_interval = interval
         coroutine = self._tester_present_worker(interval)
         self.tester_present_task = asyncio.create_task(coroutine)
 
