@@ -8,10 +8,11 @@ import argparse
 import logging
 import os
 import sys
+from collections.abc import Callable
 from importlib.metadata import entry_points, version
 from pathlib import Path
 from pprint import pprint
-from typing import Any, Callable
+from typing import Any
 
 import argcomplete
 
@@ -304,7 +305,7 @@ def cmd_show_defaults(parser: argparse.ArgumentParser) -> None:
 
 
 def _print_plugin(description: str, fn: Callable[[], Any]) -> None:
-    if len((objs := fn())) > 0:
+    if len(objs := fn()) > 0:
         print(f"{description}:")
         for obj in objs:
             print(f" * {obj}")
