@@ -168,7 +168,10 @@ class RoutingActivationResponse:
         if reserved != 0x00000000:
             raise ValueError("reserved field contains data")
         return cls(
-            source_address, target_address, routing_activation_response_code, reserved
+            source_address,
+            target_address,
+            routing_activation_response_code,
+            reserved,
         )
 
 
@@ -283,8 +286,8 @@ class DoIPConnection:
         self,
         reader: asyncio.StreamReader,
         writer: asyncio.StreamWriter,
-        src_addr: int | None,
-        target_addr: int | None,
+        src_addr: int,
+        target_addr: int,
     ):
         self.logger = get_logger("doip")
         self.reader = reader
@@ -314,18 +317,21 @@ class DoIPConnection:
 
         payload_buf = await self.reader.readexactly(hdr.PayloadLength)
         payload: DoIPInData
-        if hdr.PayloadType == PayloadTypes.RoutingActivationResponse:
-            payload = RoutingActivationResponse.unpack(payload_buf)
-        elif hdr.PayloadType == PayloadTypes.DiagnosticMessagePositiveAcknowledgement:
-            payload = DiagnosticMessagePositiveAcknowledgement.unpack(payload_buf)
-        elif hdr.PayloadType == PayloadTypes.DiagnosticMessageNegativeAcknowledgement:
-            payload = DiagnosticMessageNegativeAcknowledgement.unpack(payload_buf)
-        elif hdr.PayloadType == PayloadTypes.DiagnosticMessage:
-            payload = DiagnosticMessage.unpack(payload_buf)
-        elif hdr.PayloadType == PayloadTypes.AliveCheckRequest:
-            payload = AliveCheckRequest()
-        else:
-            raise BrokenPipeError(f"unexpected DoIP message: {hdr} {payload_buf.hex()}")
+        match hdr.PayloadType:
+            case PayloadTypes.RoutingActivationResponse:
+                payload = RoutingActivationResponse.unpack(payload_buf)
+            case PayloadTypes.DiagnosticMessagePositiveAcknowledgement:
+                payload = DiagnosticMessagePositiveAcknowledgement.unpack(payload_buf)
+            case PayloadTypes.DiagnosticMessageNegativeAcknowledgement:
+                payload = DiagnosticMessageNegativeAcknowledgement.unpack(payload_buf)
+            case PayloadTypes.DiagnosticMessage:
+                payload = DiagnosticMessage.unpack(payload_buf)
+            case PayloadTypes.AliveCheckRequest:
+                payload = AliveCheckRequest()
+            case _:
+                raise BrokenPipeError(
+                    f"unexpected DoIP message: {hdr} {payload_buf.hex()}"
+                )
         return hdr, payload
 
     async def _read_worker(self) -> None:
@@ -431,27 +437,25 @@ class DoIPConnection:
             self.logger.trace(f"hdr: {hdr}, payload: {payload}")
 
             try:
-                if isinstance(payload, DiagnosticMessage):
-                    # Now an ACK message is expected.
-                    await asyncio.wait_for(
-                        self._read_ack(payload.UserData),
-                        TimingAndCommunicationParameters.DiagnosticMessageMessageAckTimeout
-                        / 1000,
-                    )
-                elif isinstance(payload, RoutingActivationRequest):
-                    await asyncio.wait_for(
-                        self._read_routing_activation_response(),
-                        TimingAndCommunicationParameters.DiagnosticMessageMessageAckTimeout
-                        / 1000,
-                    )
+                match payload:
+                    case DiagnosticMessage():
+                        # Now an ACK message is expected.
+                        await asyncio.wait_for(
+                            self._read_ack(payload.UserData),
+                            TimingAndCommunicationParameters.DiagnosticMessageMessageAckTimeout
+                            / 1000,
+                        )
+                    case RoutingActivationRequest():
+                        await asyncio.wait_for(
+                            self._read_routing_activation_response(),
+                            TimingAndCommunicationParameters.DiagnosticMessageMessageAckTimeout
+                            / 1000,
+                        )
             except asyncio.TimeoutError as e:
                 await self.close()
                 raise BrokenPipeError() from e
 
     async def write_diag_request(self, data: bytes) -> None:
-        assert self.src_addr, "src_addr is not set"
-        assert self.target_addr, "target_addr is not set"
-
         hdr = GenericHeader(
             ProtocolVersion=ProtocolVersions.ISO_13400_2_2012,
             PayloadType=PayloadTypes.DiagnosticMessage,
@@ -469,9 +473,6 @@ class DoIPConnection:
         self,
         activation_type: RoutingActivationRequestTypes,
     ) -> None:
-        assert self.src_addr, "src_addr is not set"
-        assert self.target_addr, "target_addr is not set"
-
         hdr = GenericHeader(
             ProtocolVersion=ProtocolVersions.ISO_13400_2_2012,
             PayloadType=PayloadTypes.RoutingActivationRequest,
@@ -486,9 +487,6 @@ class DoIPConnection:
         await self.write_request_raw(hdr, payload)
 
     async def write_alive_check_response(self) -> None:
-        assert self.src_addr, "src_addr is not set"
-        assert self.target_addr, "target_addr is not set"
-
         hdr = GenericHeader(
             ProtocolVersion=ProtocolVersions.ISO_13400_2_2012,
             PayloadType=PayloadTypes.AliveCheckResponse,
