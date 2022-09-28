@@ -1,0 +1,20 @@
+{
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs";
+    # Just use the poetry package once it is on 1.2.
+    poetry2nix.url = "github:nix-community/poetry2nix";
+  };
+
+  outputs = { self, nixpkgs, poetry2nix }:
+    with import nixpkgs { system = "x86_64-linux"; };
+    let pkgs = nixpkgs.legacyPackages.x86_64-linux;
+    in {
+      devShell.x86_64-linux = pkgs.mkShell {
+        buildInputs = [ pkgs.python310 poetry2nix.packages.x86_64-linux.poetry ];
+        shellHook = ''
+          LD_LIBRARY_PATH=${stdenv.cc.cc.lib}/lib/
+        '';
+      };
+      formatter.x86_64-linux = pkgs.nixpkgs-fmt;
+    };
+}
