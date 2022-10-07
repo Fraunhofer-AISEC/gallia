@@ -100,6 +100,9 @@ def _main() -> int:
 
     for file in args.FILE:
         file = cast(Path, file)
+        if not file.is_file():
+            print(f"not a regular file: {file}", file=sys.stderr)
+            return 1
 
         with file.open("rb") as f:
             if file.suffix == ".zst":
