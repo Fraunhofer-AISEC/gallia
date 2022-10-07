@@ -16,7 +16,7 @@
       devShell.x86_64-linux = pkgs.mkShell {
         buildInputs = [ pkgs.python310 poetry2nix.packages.x86_64-linux.poetry ];
         shellHook = ''
-          LD_LIBRARY_PATH=${stdenv.cc.cc.lib}/lib/
+          LD_LIBRARY_PATH=${pkgs.lib.makeLibraryPath [stdenv.cc.cc]}
         '';
       };
       formatter.x86_64-linux = pkgs.nixpkgs-fmt;
