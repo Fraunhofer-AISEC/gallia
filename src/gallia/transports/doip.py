@@ -563,6 +563,7 @@ class DoIPTransport(BaseTransport, scheme="doip"):
         return cls(t, port, config, conn)
 
     async def close(self) -> None:
+        self.is_closed = True
         await self._conn.close()
 
     async def read(

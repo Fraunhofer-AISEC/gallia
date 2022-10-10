@@ -635,7 +635,7 @@ class UDSScanner(Scanner):
                 )
 
     async def teardown(self, args: Namespace) -> None:
-        if args.properties is True:
+        if args.properties is True and not self.ecu.transport.is_closed:
             path = self.artifacts_dir.joinpath(FileNames.PROPERTIES_POST.value)
             async with aiofiles.open(path, "w") as file:
                 await file.write(json.dumps(await self.ecu.properties(True), indent=4))
