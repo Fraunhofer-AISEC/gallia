@@ -143,6 +143,8 @@ class BaseCommand(ABC):
         return level
 
     def get_file_log_level(self, args: Namespace) -> int:
+        if args.trace_log:
+            return logging.TRACE  # type: ignore
         return logging.TRACE if args.verbose >= 2 else logging.DEBUG  # type: ignore
 
     def configure_class_parser(self) -> None:
@@ -153,6 +155,12 @@ class BaseCommand(ABC):
             action="count",
             default=self.config.get_value("gallia.verbosity", 0),
             help="increase verbosity on the console",
+        )
+        group.add_argument(
+            "--trace-log",
+            action="store_true",
+            default=self.config.get_value("gallia.trace_log", False),
+            help="set the loglevel of the logfile to TRACE",
         )
 
         if self.HAS_ARTIFACTS_DIR is False:
