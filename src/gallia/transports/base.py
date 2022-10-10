@@ -75,6 +75,7 @@ class BaseTransport(ABC):
         self.mutex = asyncio.Lock()
         self.logger = get_logger(self.SCHEME)
         self.target = target
+        self.is_closed = False
 
     def __init_subclass__(
         cls,
