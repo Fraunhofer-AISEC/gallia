@@ -319,6 +319,9 @@ def cmd_show_plugins() -> None:
 
 def cmd_template(args: argparse.Namespace) -> None:
     template = """[gallia]
+# verbosity = <int>
+# trace_log = <bool>
+
 [gallia.scanner]
 # db = <string>
 # target = <string>
@@ -327,7 +330,6 @@ def cmd_template(args: argparse.Namespace) -> None:
 # dumpcap = <bool>
 # artifacts_dir = <string>
 # artifacts_base = <string>
-# verbosity = <int>
 
 [gallia.protocol.uds]
 # dumpcap = <bool>
