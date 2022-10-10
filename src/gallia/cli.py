@@ -300,8 +300,7 @@ def get_cli_defaults(parser: argparse.ArgumentParser) -> dict[str, Any]:
 
 
 def cmd_show_defaults(parser: argparse.ArgumentParser) -> None:
-    defaults = get_cli_defaults(parser)
-    pprint(defaults)
+    pprint(get_cli_defaults(parser))
 
 
 def _print_plugin(description: str, fn: Callable[[], Any]) -> None:
