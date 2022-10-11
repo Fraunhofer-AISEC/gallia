@@ -49,6 +49,7 @@ class FileNames(Enum):
     PROPERTIES_POST = "PROPERTIES_POST.json"
     META = "META.json"
     ENV = "ENV"
+    LOGFILE = "log.json.zst"
 
 
 class CommandMeta(msgspec.Struct):
@@ -242,7 +243,7 @@ class BaseCommand(ABC):
             setup_logging(
                 self.get_log_level(args),
                 self.get_file_log_level(args),
-                self.artifacts_dir.joinpath("log.json.zst"),
+                self.artifacts_dir.joinpath(FileNames.LOGFILE.value),
             )
         else:
             setup_logging(self.get_log_level(args))
