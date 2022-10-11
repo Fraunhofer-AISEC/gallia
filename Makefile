@@ -26,7 +26,13 @@ lint:
 	mypy src tests
 	pylint src tests
 	black --check src tests
+	isort --check src tests
 	reuse lint
+
+.PHONY: fmt
+fmt:
+	isort src tests
+	black src tests
 
 .PHONY: docs
 docs:
