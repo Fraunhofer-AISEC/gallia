@@ -16,6 +16,7 @@ from datetime import datetime, timezone
 from enum import Enum, IntEnum, unique
 from importlib.metadata import entry_points
 from pathlib import Path
+from subprocess import run
 from tempfile import gettempdir
 from typing import cast
 
@@ -50,6 +51,12 @@ class FileNames(Enum):
     META = "META.json"
     ENV = "ENV"
     LOGFILE = "log.json.zst"
+
+
+@unique
+class HookVariant(Enum):
+    PRE = "pre"
+    POST = "post"
 
 
 class CommandMeta(msgspec.Struct):
@@ -148,6 +155,31 @@ class BaseCommand(ABC):
             return logging.TRACE  # type: ignore
         return logging.TRACE if args.verbose >= 2 else logging.DEBUG  # type: ignore
 
+    def run_hook(self, variant: HookVariant, args: Namespace) -> None:
+        script = args.pre_hook if variant == HookVariant.PRE else args.post_hook
+        if script is None:
+            return
+
+        hook_id = f"{variant.value}-hook"
+
+        env = {
+            "GALLIA_ARTIFACTS_DIR": str(self.artifacts_dir),
+            "GALLIA_HOOK": variant.value,
+        } | os.environ
+
+        p = run(  # pylint: disable=subprocess-run-check
+            script, env=env, text=True, capture_output=True, shell=True
+        )
+        if p.returncode != 0:
+            self.logger.warning(
+                f"{variant.value}-hook failed (exit code: {p.returncode})"
+            )
+
+        if p.stdout:
+            self.logger.info(p.stdout.strip(), extra={"tags": [hook_id, "stdout"]})
+        if p.stderr:
+            self.logger.info(p.stderr.strip(), extra={"tags": [hook_id, "stderr"]})
+
     def configure_class_parser(self) -> None:
         group = self.parser.add_argument_group("generic arguments")
         group.add_argument(
@@ -163,28 +195,38 @@ class BaseCommand(ABC):
             default=self.config.get_value("gallia.trace_log", False),
             help="set the loglevel of the logfile to TRACE",
         )
-
-        if self.HAS_ARTIFACTS_DIR is False:
-            return
-
-        _mutex_group = group.add_mutually_exclusive_group()
-        _mutex_group.add_argument(
-            "--artifacts-dir",
-            default=self.config.get_value("gallia.scanner.artifacts_dir"),
-            type=Path,
-            metavar="DIR",
-            help="Folder for artifacts",
+        group.add_argument(
+            "--pre-hook",
+            metavar="SCRIPT",
+            default=self.config.get_value("gallia.pre_hook", None),
+            help="shell script to run before the main entry_point",
         )
-        _mutex_group.add_argument(
-            "--artifacts-base",
-            default=self.config.get_value(
-                "gallia.scanner.artifacts_base",
-                Path(gettempdir()).joinpath("gallia"),
-            ),
-            type=Path,
-            metavar="DIR",
-            help="Base directory for artifacts",
+        group.add_argument(
+            "--post-hook",
+            metavar="SCRIPT",
+            default=self.config.get_value("gallia.post_hook", None),
+            help="shell script to run after the main entry_point",
         )
+
+        if self.HAS_ARTIFACTS_DIR:
+            mutex_group = group.add_mutually_exclusive_group()
+            mutex_group.add_argument(
+                "--artifacts-dir",
+                default=self.config.get_value("gallia.scanner.artifacts_dir"),
+                type=Path,
+                metavar="DIR",
+                help="Folder for artifacts",
+            )
+            mutex_group.add_argument(
+                "--artifacts-base",
+                default=self.config.get_value(
+                    "gallia.scanner.artifacts_base",
+                    Path(gettempdir()).joinpath("gallia"),
+                ),
+                type=Path,
+                metavar="DIR",
+                help="Base directory for artifacts",
+            )
 
     def configure_parser(self) -> None:
         ...
@@ -248,6 +290,8 @@ class BaseCommand(ABC):
         else:
             setup_logging(self.get_log_level(args))
 
+        self.run_hook(HookVariant.PRE, args)
+
         exit_code = 0
         try:
             exit_code = self.run(args)
@@ -275,6 +319,8 @@ class BaseCommand(ABC):
                     data + b"\n"
                 )
                 self.logger.info(f"Stored artifacts at {self.artifacts_dir}")
+
+        self.run_hook(HookVariant.POST, args)
 
         return exit_code
 

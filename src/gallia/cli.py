@@ -321,6 +321,8 @@ def cmd_template(args: argparse.Namespace) -> None:
     template = """[gallia]
 # verbosity = <int>
 # trace_log = <bool>
+# pre_hook = <str>
+# post_hook = <str>
 
 [gallia.scanner]
 # db = <string>
