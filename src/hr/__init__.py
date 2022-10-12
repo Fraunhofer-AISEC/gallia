@@ -3,59 +3,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import argparse
-import gzip
 import io
-import logging
 import sys
-from collections.abc import Iterator, Sized
 from pathlib import Path
-from typing import Generic, TypeVar, cast
+from typing import cast
 
-import zstandard
-
-from gallia.log import ConsoleFormatter, PenlogPriority, PenlogRecord
-
-T = TypeVar("T")
-
-
-class RingBuffer(Sized, Generic[T]):
-    def __init__(self, capacity: int) -> None:
-        self.capacity = capacity
-        self.write_ptr = 0
-        self.read_ptr = 0
-        self.data: list[T] = []
-
-    def __len__(self) -> int:
-        return len(self.data)
-
-    def __iter__(self) -> Iterator[T]:
-        if self.is_full:
-            for i in range(self.read_ptr, self.read_ptr + len(self)):
-                self.read_ptr = i % self.capacity
-                yield self.data[self.read_ptr]
-        else:
-            yield from self.data
-
-    @property
-    def is_full(self) -> bool:
-        if len(self) == self.capacity:
-            return True
-        return False
-
-    def append(self, x: T) -> None:
-        if self.is_full:
-            self.data[self.write_ptr] = x
-        else:
-            self.data.append(x)
-
-        if self.write_ptr == self.read_ptr:
-            self.read_ptr = (self.read_ptr + 1) % self.capacity
-        self.write_ptr = (self.write_ptr + 1) % self.capacity
-
-    def get(self) -> T:
-        res = self.data[self.read_ptr]
-        self.read_ptr = (self.read_ptr + 1) % self.capacity
-        return res
+from gallia.log import PenlogPriority, PenlogReader
 
 
 def parse_args() -> argparse.Namespace:
@@ -76,27 +29,17 @@ def parse_args() -> argparse.Namespace:
         help="jump to tail while parsing max. --tail-size records",
     )
     parser.add_argument(
-        "--tail-size",
-        type=int,
-        metavar="INT",
-        default=1000,
-        help="the maximal amount of parsed records for --tail",
+        "--tail-position",
+        type=float,
+        metavar="FLOAT",
+        default=0.95,
+        help="start at offset = filesize * `FLOAT`",
     )
     return parser.parse_args()
 
 
-def emit_tail(reader: io.BufferedReader, size: int) -> io.BufferedReader:
-    buffer: RingBuffer[bytes] = RingBuffer(size)
-    for line in reader.readlines():
-        buffer.append(line)
-    return io.BufferedReader(io.BytesIO(b"".join(buffer)))  # type: ignore
-
-
 def _main() -> int:
     args = parse_args()
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(ConsoleFormatter())
-    handler.setLevel(args.priority.to_level())
 
     for file in args.FILE:
         file = cast(Path, file)
@@ -104,28 +47,22 @@ def _main() -> int:
             print(f"not a regular file: {file}", file=sys.stderr)
             return 1
 
-        with file.open("rb") as f:
-            if file.suffix == ".zst":
-                cctx = zstandard.ZstdDecompressor()
-                reader = io.BufferedReader(cctx.stream_reader(f))  # type: ignore
-            elif file.suffix == ".gz":
-                reader = io.BufferedReader(gzip.GzipFile(fileobj=f))  # type: ignore
-            else:
-                reader = f
+        reader = PenlogReader(file)
 
-            if args.tail:
-                reader = emit_tail(reader, args.tail_size)
+        if args.tail:
+            reader.seek(0, io.SEEK_END)
+            reader.seek(int(args.tail_position * reader.tell()))
+            # Drop current line which is most likely incomplete.
+            reader.readline()
 
-            while True:
-                line = reader.readline().strip()
-                if line == b"":
-                    break
+        for priority in reader.priorities():
+            if priority > args.priority:
+                continue
 
-                log_record = PenlogRecord.parse_json(line)
-                if log_record.priority > args.priority:
-                    continue
+            print(reader.current_record)
 
-                handler.emit(log_record.to_log_record())
+    reader.close()
+
     return 0
 
 
