@@ -4,15 +4,20 @@
 
 from __future__ import annotations
 
+import gzip
+import io
 import logging
+import mmap
+import shutil
 import socket
 import sys
+import tempfile
 import traceback
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum, IntEnum, unique
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, BinaryIO, Iterator, cast
 
 import msgspec
 import zstandard
@@ -202,12 +207,68 @@ class _PenlogRecordV2(msgspec.Struct, omit_defaults=True, tag=2, tag_field="vers
 _PenlogRecord = _PenlogRecordV1 | _PenlogRecordV2
 
 
+def _colorize_msg(data: str, levelno: int) -> str:
+    if not sys.stderr.isatty():
+        return data
+
+    out = ""
+    match levelno:
+        case logging.TRACE:  # type: ignore
+            style = Color.GRAY.value
+        case logging.DEBUG:
+            style = Color.GRAY.value
+        case logging.INFO:
+            style = Color.NOP.value
+        case logging.NOTICE:  # type: ignore
+            style = Color.BOLD.value
+        case logging.WARNING:
+            style = Color.YELLOW.value
+        case logging.ERROR:
+            style = Color.RED.value
+        case logging.CRITICAL:
+            style = Color.RED.value + Color.BOLD.value
+        case _:
+            style = Color.NOP.value
+
+    out += style
+    out += data
+    out += Color.RESET.value
+
+    return out
+
+
+def _format_record(
+    dt: datetime,
+    name: str,
+    data: str,
+    levelno: int,
+    tags: list[str] | None,
+    stacktrace: str | None,
+) -> str:
+    msg = ""
+    msg += dt.strftime("%b %d %H:%M:%S.%f")[:-3]
+    msg += " "
+    msg += name
+    if tags is not None and len(tags) > 0:
+        msg += f" [{', '.join(tags)}]"
+    msg += ": "
+
+    msg += _colorize_msg(data, levelno)
+
+    if stacktrace is not None:
+        msg += "\n"
+        msg += stacktrace
+
+    return msg
+
+
 @dataclass
 class PenlogRecord:
     module: str
     host: str
     data: str
     datetime: datetime
+    # FIXME: Enums are slow.
     priority: PenlogPriority
     tags: list[str] | None = None
     line: str | None = None
@@ -216,8 +277,31 @@ class PenlogRecord:
     _python_level_name: str | None = None
     _python_func_name: str | None = None
 
+    def __str__(self) -> str:
+        return _format_record(
+            dt=self.datetime,
+            name=self.module,
+            data=self.data,
+            levelno=self._python_level_no
+            if self._python_level_no is not None
+            else self.priority.to_level(),
+            tags=self.tags,
+            stacktrace=self.stacktrace,
+        )
+
+    @classmethod
+    def parse_priority(cls, data: bytes) -> int | None:
+        if not data.startswith(b"<"):
+            return None
+
+        prio_str = data[1 : data.index(b">")]
+        return int(prio_str)
+
     @classmethod
     def parse_json(cls, data: bytes) -> PenlogRecord:
+        if data.startswith(b"<"):
+            data = data[data.index(b">") + 1 :]
+
         # PenlogRecordV1 has no version field, thus the tagged
         # union based approach does not work.
         record = _PenlogRecord
@@ -298,6 +382,80 @@ class PenlogRecord:
         )
 
 
+class PenlogReader:
+    def __init__(self, path: Path) -> None:
+        self.path = path
+        self.decompressed_file = self._decompress(path)
+        self.file_mmap = mmap.mmap(
+            self.decompressed_file.fileno(), 0, access=mmap.ACCESS_READ
+        )
+        self._current_line = b""
+        self._current_record: PenlogRecord | None = None
+
+    def _decompress(self, path: Path) -> BinaryIO:
+        if str(path) == "-":
+            self.path = Path("/dev/stdin")
+
+        if path.suffix in [".zst", ".gz"]:
+            tmpfile = tempfile.TemporaryFile()
+            match path.suffix:
+                case ".zst":
+                    with self.path.open("rb") as f:
+                        decomp = zstandard.ZstdDecompressor()
+                        decomp.copy_stream(f, tmpfile)
+                case ".gz":
+                    with gzip.open(self.path, "rb") as f:
+                        shutil.copyfileobj(f, tmpfile)
+
+            tmpfile.flush()
+            return cast(BinaryIO, tmpfile)
+
+        return self.path.open("rb")
+
+    def close(self) -> None:
+        self.file_mmap.close()
+        self.decompressed_file.close()
+
+    def read(self, n: int = -1) -> bytes:
+        return self.file_mmap.read(n)
+
+    def readline(self) -> bytes:
+        self._current_record = None
+        self._current_line = self.file_mmap.readline()
+        return self._current_line
+
+    def priorities(self) -> Iterator[int]:
+        while True:
+            line = self.readline()
+            if line == b"":
+                break
+
+            prio = PenlogRecord.parse_priority(line)
+            if prio is None:
+                self._current_record = PenlogRecord.parse_json(line)
+                prio = self._current_record.priority
+            yield prio
+
+    @property
+    def current_record(self) -> PenlogRecord:
+        if self._current_record is not None:
+            return self._current_record
+        return PenlogRecord.parse_json(self._current_line)
+
+    def records(self) -> Iterator[PenlogRecord]:
+        while True:
+            line = self.readline()
+            if line == b"":
+                break
+            yield PenlogRecord.parse_json(line)
+
+    def seek(self, offset: int, whence: int = io.SEEK_SET) -> None:
+        self.file_mmap.seek(offset, whence)
+
+    def tell(self) -> int:
+        return self.file_mmap.tell()
+
+
 @unique
 class Color(Enum):
     NOP = ""
@@ -340,49 +498,11 @@ class JSONFormatter(logging.Formatter):
 
 
 class ConsoleFormatter(logging.Formatter):
-    def _colorize_msg(self, record: logging.LogRecord) -> str:
-        if not sys.stderr.isatty():
-            return record.getMessage()
-
-        out = ""
-        match record.levelno:
-            case logging.TRACE:  # type: ignore
-                style = Color.GRAY.value
-            case logging.DEBUG:
-                style = Color.GRAY.value
-            case logging.INFO:
-                style = Color.NOP.value
-            case logging.NOTICE:  # type: ignore
-                style = Color.BOLD.value
-            case logging.WARNING:
-                style = Color.YELLOW.value
-            case logging.ERROR:
-                style = Color.RED.value
-            case logging.CRITICAL:
-                style = Color.RED.value + Color.BOLD.value
-            case _:
-                style = Color.NOP.value
-
-        out += style
-        out += record.getMessage()
-        out += Color.RESET.value
-
-        return out
-
     def format(
         self,
         record: logging.LogRecord,
     ) -> str:
-        msg = ""
-        dt = datetime.fromtimestamp(record.created)
-        msg += dt.strftime("%b %d %H:%M:%S.%f")[:-3]
-        msg += " "
-        msg += f"{record.name}"
-        if "tags" in record.__dict__ and (tags := record.__dict__["tags"]) is not None:
-            msg += f" [{', '.join(tags)}]"
-        msg += ": "
-
-        msg += self._colorize_msg(record)
+        stacktrace = None
 
         if record.exc_info:
             exc_type, exc_value, exc_traceback = record.exc_info
@@ -390,31 +510,44 @@ class ConsoleFormatter(logging.Formatter):
             assert exc_value
             assert exc_traceback
 
-            msg += "\n"
-            msg += "".join(
+            stacktrace = "\n"
+            stacktrace += "".join(
                 traceback.format_exception(exc_type, exc_value, exc_traceback)
             )
 
-        return msg
+        return _format_record(
+            dt=datetime.fromtimestamp(record.created),
+            name=record.name,
+            data=record.getMessage(),
+            levelno=record.levelno,
+            tags=record.__dict__["tags"] if "tags" in record.__dict__ else None,
+            stacktrace=stacktrace,
+        )
 
 
 class ZstdFileHandler(logging.Handler):
     def __init__(self, path: Path, level: int | str = logging.NOTSET) -> None:
         super().__init__(level)
-        self.file = path.open("wb")
-        self.compressor = zstandard.ZstdCompressor()
-        self.zstd_writer = self.compressor.stream_writer(self.file)
+        self.file = zstandard.open(
+            filename=path,
+            mode="wb",
+            cctx=zstandard.ZstdCompressor(
+                write_checksum=True,
+                write_content_size=True,
+                threads=-1,
+            ),
+        )
 
     def close(self) -> None:
-        self.zstd_writer.flush()
-        self.zstd_writer.close()  # type: ignore
+        self.file.flush()
         self.file.close()
 
     def emit(self, record: logging.LogRecord) -> None:
-        data = self.format(record)
+        prio = PenlogPriority.from_level(record.levelno).value
+        data = f"<{prio}>{self.format(record)}"
         if not data.endswith("\n"):
             data += "\n"
-        self.zstd_writer.write(data.encode())
+        self.file.write(data.encode())
 
 
 class Logger(logging.Logger):
