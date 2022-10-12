@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import argparse
-import io
 import sys
 from pathlib import Path
 from typing import cast
@@ -22,18 +21,24 @@ def parse_args() -> argparse.Namespace:
         default=PenlogPriority.INFO,
         help="maximal message priority",
     )
-    parser.add_argument(
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(
         "-t",
         "--tail",
         action="store_true",
-        help="jump to tail while parsing max. --tail-size records",
+        help="jump to tail while parsing max. -n/--lines lines",
+    )
+    group.add_argument(
+        "--head",
+        action="store_true",
+        help="only print first -n/--lines lines",
     )
     parser.add_argument(
-        "--tail-position",
-        type=float,
-        metavar="FLOAT",
-        default=0.95,
-        help="start at offset = filesize * `FLOAT`",
+        "-n",
+        "--lines",
+        type=int,
+        default=100,
+        help="print the last n lines",
     )
     return parser.parse_args()
 
@@ -50,16 +55,24 @@ def _main() -> int:
         reader = PenlogReader(file)
 
         if args.tail:
-            reader.seek(0, io.SEEK_END)
-            reader.seek(int(args.tail_position * reader.tell()))
-            # Drop current line which is most likely incomplete.
-            reader.readline()
+            records = reader.pick_records(
+                args.priority, start=-1, n=args.lines, reverse=True
+            )
+            for record in records:
+                print(record)
+            reader.close()
+            return 0
 
+        n = 0
         for priority in reader.priorities():
             if priority > args.priority:
                 continue
 
             print(reader.current_record)
+
+            n += 1
+            if args.head and n == args.lines:
+                break
 
     reader.close()
 

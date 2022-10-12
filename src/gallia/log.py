@@ -391,6 +391,9 @@ class PenlogReader:
         )
         self._current_line = b""
         self._current_record: PenlogRecord | None = None
+        self._current_record_index = 0
+        self._parsed = False
+        self._record_offsets: list[int] = []
 
     def _decompress(self, path: Path) -> BinaryIO:
         if str(path) == "-":
@@ -412,9 +415,92 @@ class PenlogReader:
 
         return self.path.open("rb")
 
+    def _parse_file_structure(self) -> None:
+        old_offset = self.file_mmap.tell()
+
+        while True:
+            self._record_offsets.append(self.file_mmap.tell())
+
+            line = self.file_mmap.readline()
+            if line == b"":
+                # The last newline char is not relevant, since
+                # no data is following.
+                del self._record_offsets[-1]
+                break
+
+        self.file_mmap.seek(old_offset)
+        self._parsed = True
+
+    @property
+    def number_of_records(self) -> int:
+        if not self._parsed:
+            self._parse_file_structure()
+        return len(self._record_offsets)
+
+    def seek_to_record(self, n: int) -> None:
+        if not self._parsed:
+            self._parse_file_structure()
+        self.file_mmap.seek(self._record_offsets[n])
+        self._current_record_index = n
+
+    def seek_to_current_record(self) -> None:
+        if not self._parsed:
+            self._parse_file_structure()
+        self.file_mmap.seek(self._record_offsets[self._current_record_index])
+
+    def seek_to_previous_record(self) -> None:
+        if not self._parsed:
+            self._parse_file_structure()
+        self._current_record_index -= 1
+        self.seek_to_record(self._current_record_index)
+
+    def seek_to_next_record(self) -> None:
+        if not self._parsed:
+            self._parse_file_structure()
+        self._current_record_index += 1
+        self.seek_to_record(self._current_record_index)
+
+    def pick_records(
+        self, priority: PenlogPriority, start: int, n: int, reverse: bool = False
+    ) -> list[PenlogRecord]:
+        out: list[PenlogRecord] = []
+
+        self.seek_to_record(start)
+
+        # Fastpath, picking records in forward order.
+        if reverse is False:
+            while len(out) <= n:
+                self.readline()
+                if self.current_record.priority <= priority:
+                    out.append(self.current_record)
+            return out
+
+        while len(out) < n:
+            self.readline()
+            try:
+                if reverse:
+                    self.seek_to_previous_record()
+                else:
+                    self.seek_to_next_record()
+            except IndexError:
+                break
+
+            if self.current_record.priority <= priority:
+                out.append(self.current_record)
+
+        return list(reversed(out))
+
     def close(self) -> None:
         self.file_mmap.close()
         self.decompressed_file.close()
+
+    @property
+    def file_size(self) -> int:
+        old_offset = self.file_mmap.tell()
+        self.file_mmap.seek(0, io.SEEK_END)
+        size = self.file_mmap.tell()
+        self.file_mmap.seek(old_offset)
+        return size
 
     def read(self, n: int = -1) -> bytes:
         return self.file_mmap.read(n)
@@ -430,17 +516,21 @@ class PenlogReader:
             if line == b"":
                 break
 
-            prio = PenlogRecord.parse_priority(line)
-            if prio is None:
-                self._current_record = PenlogRecord.parse_json(line)
-                prio = self._current_record.priority
-            yield prio
+            yield self.current_priority
 
     @property
     def current_record(self) -> PenlogRecord:
         if self._current_record is not None:
             return self._current_record
         return PenlogRecord.parse_json(self._current_line)
+
+    @property
+    def current_priority(self) -> int:
+        prio = PenlogRecord.parse_priority(self._current_line)
+        if prio is None:
+            self._current_record = PenlogRecord.parse_json(self._current_line)
+            prio = self._current_record.priority
+        return prio
 
     def records(self) -> Iterator[PenlogRecord]:
         while True:
