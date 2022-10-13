@@ -1012,9 +1012,12 @@ class CursedHR:
                     old_entry_start = entry_start
                     old_line_start = line_start
 
-                    if display_entries[0].entry_line_number == 0 and entry_start > 0:
-                        entry_start = max(0, display_entries[0].penlog_entry_number - 1)
-                        line_start = -1
+                    if display_entries[0].entry_line_number == 0:
+                        if entry_start > 0:
+                            entry_start = max(
+                                0, display_entries[0].penlog_entry_number - 1
+                            )
+                            line_start = -1
                     else:
                         line_start = display_entries[0].entry_line_number - 1
 
@@ -1029,9 +1032,10 @@ class CursedHR:
                 nonlocal entry_start
                 nonlocal line_start
 
-                if display_entries[0].entry_line_number == 0 and entry_start > 0:
-                    entry_start = max(0, entry_start - 1)
-                    line_start = -1
+                if display_entries[0].entry_line_number == 0:
+                    if entry_start > 0:
+                        entry_start = max(0, entry_start - 1)
+                        line_start = -1
                 else:
                     line_start -= 1
 
