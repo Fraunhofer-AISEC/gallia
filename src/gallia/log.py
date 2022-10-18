@@ -189,6 +189,10 @@ def setup_logging(
     logging.logThreads = False
     logging.logProcesses = False
 
+    # TODO: Do we want to have this configurable?
+    logging.getLogger("asyncio").setLevel(logging.CRITICAL)
+    logging.getLogger("aiosqlite").setLevel(logging.CRITICAL)
+
     stderr_handler = logging.StreamHandler(sys.stderr)
     stderr_handler.setLevel(level)
     stderr_handler.setFormatter(ConsoleFormatter())
