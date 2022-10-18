@@ -47,20 +47,18 @@ from gallia.transports import load_transports
 def load_cli_commands() -> list[type[BaseCommand]]:
     out = []
     eps = entry_points()
-    if (s := "gallia_cli_commands") in eps:
-        for entry in eps.select(group=s):
-            cmd_list: list[type[BaseCommand]] = entry.load()
-            for cmd in cmd_list:
-                out.append(cmd)
+    for entry in eps.select(group="gallia_cli_commands"):
+        cmd_list: list[type[BaseCommand]] = entry.load()
+        for cmd in cmd_list:
+            out.append(cmd)
     return out
 
 
 def load_cli_init() -> list[Callable[[dict[str, Any]], None]]:
     out = []
     eps = entry_points()
-    if (s := "gallia_cli_init") in eps:
-        for entry in eps.select(group=s):
-            out.append(entry.load())
+    for entry in eps.select(group="gallia_cli_init"):
+        out.append(entry.load())
     return out
 
 
