@@ -77,12 +77,11 @@ class RunMeta(msgspec.Struct):
 def load_ecus() -> list[type[ECU]]:
     ecus = []
     eps = entry_points()
-    if (s := "gallia_uds_ecus") in eps:
-        for ep in eps.select(group=s):
-            for t in ep.load():
-                if not issubclass(t, ECU):
-                    raise ValueError(f"entry_point {t} is not derived from ECU")
-                ecus.append(t)
+    for ep in eps.select(group="gallia_uds_ecus"):
+        for t in ep.load():
+            if not issubclass(t, ECU):
+                raise ValueError(f"entry_point {t} is not derived from ECU")
+            ecus.append(t)
     return ecus
 
 
