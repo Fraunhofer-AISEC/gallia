@@ -16,7 +16,9 @@ import traceback
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum, IntEnum, unique
+from logging.handlers import QueueHandler, QueueListener
 from pathlib import Path
+from queue import Queue
 from typing import TYPE_CHECKING, Any, BinaryIO, Iterator, cast
 
 import msgspec
@@ -66,6 +68,17 @@ _add_logging_level("NOTICE", 25)
 
 
 @unique
+class Loglevel(IntEnum):
+    CRITICAL = logging.CRITICAL
+    ERROR = logging.ERROR
+    WARNING = logging.WARNING
+    NOTICE = logging.NOTICE  # type: ignore
+    INFO = logging.INFO
+    DEBUG = logging.DEBUG
+    TRACE = logging.TRACE  # type: ignore
+
+
+@unique
 class PenlogPriority(IntEnum):
     EMERGENCY = 0
     ALERT = 1
@@ -107,19 +120,19 @@ class PenlogPriority(IntEnum):
     @classmethod
     def from_level(cls, value: int) -> PenlogPriority:
         match value:
-            case logging.TRACE:  # type: ignore
+            case Loglevel.TRACE:
                 return cls.TRACE
-            case logging.DEBUG:
+            case Loglevel.DEBUG:
                 return cls.DEBUG
-            case logging.INFO:
+            case Loglevel.INFO:
                 return cls.INFO
-            case logging.NOTICE:  # type: ignore
+            case Loglevel.NOTICE:
                 return cls.NOTICE
-            case logging.WARNING:
+            case Loglevel.WARNING:
                 return cls.WARNING
-            case logging.ERROR:
+            case Loglevel.ERROR:
                 return cls.ERROR
-            case logging.CRITICAL:
+            case Loglevel.CRITICAL:
                 return cls.CRITICAL
             case _:
                 raise ValueError("invalid value")
@@ -127,38 +140,54 @@ class PenlogPriority(IntEnum):
     def to_level(self) -> int:
         match self:
             case self.TRACE:
-                return logging.TRACE  # type: ignore
+                return Loglevel.TRACE
             case self.DEBUG:
-                return logging.DEBUG
+                return Loglevel.DEBUG
             case self.INFO:
-                return logging.INFO
+                return Loglevel.INFO
             case self.NOTICE:
-                return logging.NOTICE  # type: ignore
+                return Loglevel.NOTICE
             case self.WARNING:
-                return logging.WARNING
+                return Loglevel.WARNING
             case self.ERROR:
-                return logging.ERROR
+                return Loglevel.ERROR
             case self.CRITICAL:
-                return logging.CRITICAL
+                return Loglevel.CRITICAL
             case _:
                 raise ValueError("invalid value")
+
+
+def _setup_queue() -> QueueListener:
+    queue: Queue[Any] = Queue()
+    root = logging.getLogger()
+
+    handlers: list[logging.Handler] = []
+
+    handler = QueueHandler(queue)
+    root.addHandler(handler)
+    for h in root.handlers[:]:
+        if h is not handler:
+            root.removeHandler(h)
+            handlers.append(h)
+
+    listener = QueueListener(
+        queue,
+        *handlers,
+        respect_handler_level=True,
+    )
+    listener.start()
+    return listener
 
 
 def setup_logging(
     level: int,
     file_level: int = logging.DEBUG,
     path: Path | None = None,
-) -> None:
+) -> QueueListener:
     # These are slow and not used by gallia.
     logging.logMultiprocessing = False
     logging.logThreads = False
     logging.logProcesses = False
-
-    # If ctrl+c is hit, the asyncio logger wants to log some stuff;
-    # this causes annoying and kind of useless stacktraces. Disable
-    # these messages.
-    logging.getLogger("asyncio").setLevel(logging.CRITICAL)
-    logging.getLogger("aiosqlite").setLevel(logging.CRITICAL)
 
     stderr_handler = logging.StreamHandler(sys.stderr)
     stderr_handler.setLevel(level)
@@ -176,6 +205,10 @@ def setup_logging(
         level=file_level,
         force=True,
     )
+
+    # Replace handlers on the root logger with a LocalQueueHandler, and start a
+    # logging.QueueListener holding the original handlers.
+    return _setup_queue()
 
 
 class _PenlogRecordV1(msgspec.Struct, omit_defaults=True):
@@ -213,19 +246,19 @@ def _colorize_msg(data: str, levelno: int) -> str:
 
     out = ""
     match levelno:
-        case logging.TRACE:  # type: ignore
+        case Loglevel.TRACE:
             style = Color.GRAY.value
-        case logging.DEBUG:
+        case Loglevel.DEBUG:
             style = Color.GRAY.value
-        case logging.INFO:
+        case Loglevel.INFO:
             style = Color.NOP.value
-        case logging.NOTICE:  # type: ignore
+        case Loglevel.NOTICE:
             style = Color.BOLD.value
-        case logging.WARNING:
+        case Loglevel.WARNING:
             style = Color.YELLOW.value
-        case logging.ERROR:
+        case Loglevel.ERROR:
             style = Color.RED.value
-        case logging.CRITICAL:
+        case Loglevel.CRITICAL:
             style = Color.RED.value + Color.BOLD.value
         case _:
             style = Color.NOP.value
@@ -650,9 +683,9 @@ class Logger(logging.Logger):
         extra: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
-        if self.isEnabledFor(logging.TRACE):  # type: ignore
+        if self.isEnabledFor(Loglevel.TRACE):
             self._log(
-                logging.TRACE,  # type: ignore
+                Loglevel.TRACE,
                 msg,
                 args,
                 exc_info=exc_info,
@@ -670,9 +703,9 @@ class Logger(logging.Logger):
         extra: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
-        if self.isEnabledFor(logging.NOTICE):  # type: ignore
+        if self.isEnabledFor(Loglevel.NOTICE):
             self._log(
-                logging.NOTICE,  # type: ignore
+                Loglevel.NOTICE,
                 msg,
                 args,
                 exc_info=exc_info,
@@ -692,9 +725,9 @@ class Logger(logging.Logger):
     ) -> None:
         extra = extra if extra is not None else {}
         extra["tags"] = ["result"]
-        if self.isEnabledFor(logging.NOTICE):  # type: ignore
+        if self.isEnabledFor(Loglevel.NOTICE):
             self._log(
-                logging.NOTICE,  # type: ignore
+                Loglevel.NOTICE,
                 msg,
                 args,
                 exc_info=exc_info,
