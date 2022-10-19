@@ -4,6 +4,7 @@
 
 import argparse
 import asyncio
+import fcntl
 import json
 import logging
 import os
@@ -136,6 +137,7 @@ class BaseCommand(ABC):
             end_time=0,
         )
         self._log_queue: QueueListener | None = None
+        self._lock_file_fd: int | None = None
         self.configure_class_parser()
         self.configure_parser()
 
@@ -208,6 +210,13 @@ class BaseCommand(ABC):
             default=self.config.get_value("gallia.post_hook", None),
             help="shell script to run after the main entry_point",
         )
+        group.add_argument(
+            "--lock-file",
+            type=Path,
+            metavar="PATH",
+            default=self.config.get_value("gallia.lock_file", None),
+            help="path to file used for a posix lock",
+        )
 
         if self.HAS_ARTIFACTS_DIR:
             mutex_group = group.add_mutually_exclusive_group()
@@ -277,7 +286,31 @@ class BaseCommand(ABC):
 
         raise ValueError("base_dir or force_path must be different from None")
 
+    def _aquire_flock(self, path: Path) -> None:
+        path.touch()
+        self._lock_file_fd = os.open(path, os.O_RDONLY)
+        try:
+            # First do a non blocking flock. If waiting is required,
+            # log a message and do a blocking wait afterwards.
+            fcntl.flock(self._lock_file_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            self.logger.notice(f"Waiting for flock: {path}")
+            fcntl.flock(self._lock_file_fd, fcntl.LOCK_EX)
+        self.logger.info("Acquired lock. Continuing.")
+
+    def _release_flock(self) -> None:
+        assert self._lock_file_fd
+        fcntl.flock(self._lock_file_fd, fcntl.LOCK_UN)
+        os.close(self._lock_file_fd)
+
     def entry_point(self, args: Namespace) -> int:
+        if (p := args.lock_file) is not None:
+            try:
+                self._aquire_flock(p)
+            except OSError as e:
+                self.logger.critical(f"Unable to lock {p}: {e}")
+                return ExitCodes.GENERIC_ERROR
+
         if self.HAS_ARTIFACTS_DIR:
             self.artifacts_dir = self.prepare_artifactsdir(
                 args.artifacts_base,
@@ -325,6 +358,8 @@ class BaseCommand(ABC):
 
         if self._log_queue is not None:
             self._log_queue.stop()
+        if self._lock_file_fd is not None:
+            self._release_flock()
 
         return exit_code
 

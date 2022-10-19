@@ -321,6 +321,7 @@ def cmd_template(args: argparse.Namespace) -> None:
 # trace_log = <bool>
 # pre_hook = <str>
 # post_hook = <str>
+# lock_file = <str>
 
 [gallia.scanner]
 # db = <string>
