@@ -361,7 +361,9 @@ class ECU(UDSClient):
         while True:
             try:
                 async with self.transport.mutex:
-                    await self.transport.write(bytes([0x3E, 0x80]), tags=["IGNORE"])
+                    payload = bytes([0x3E, 0x80])
+                    await self.transport.write(payload)
+                    self.logger.debug(payload.hex(), extra={"tags": ["uds", "write"]})
 
                     # Hold the mutex for 10 ms to synchronize this background
                     # worker with the main sender task.
