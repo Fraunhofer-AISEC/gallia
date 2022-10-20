@@ -217,7 +217,7 @@ def setup_logging(
 
 class _PenlogRecordV1(msgspec.Struct, omit_defaults=True):
     component: str
-    host: str
+    host: str = ""
     data: str
     timestamp: str
     priority: int
