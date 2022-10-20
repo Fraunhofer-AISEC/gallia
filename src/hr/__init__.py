@@ -4,6 +4,7 @@
 
 import argparse
 import sys
+from itertools import islice
 from pathlib import Path
 from typing import cast
 
@@ -33,6 +34,12 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="only print first -n/--lines lines",
     )
+    group.add_argument(
+        "-r",
+        "--reverse",
+        action="store_true",
+        help="print the log records in reverse order",
+    )
     parser.add_argument(
         "-n",
         "--lines",
@@ -54,25 +61,14 @@ def _main() -> int:
 
         reader = PenlogReader(file)
 
-        if args.tail:
-            records = reader.pick_records(
-                args.priority, start=-1, n=args.lines, reverse=True
-            )
-            for record in records:
-                print(record)
-            reader.close()
-            return 0
+        record_generator = reader.records(args.priority, reverse=args.reverse)
+        if args.head:
+            record_generator = islice(record_generator, args.lines)
+        elif args.tail:
+            record_generator = reader.records(args.priority, offset=-args.lines)
 
-        n = 0
-        for priority in reader.priorities():
-            if priority > args.priority:
-                continue
-
-            print(reader.current_record)
-
-            n += 1
-            if args.head and n == args.lines:
-                break
+        for record in record_generator:
+            print(record)
 
     reader.close()
 

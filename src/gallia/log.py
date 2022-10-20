@@ -468,68 +468,12 @@ class PenlogReader:
         self.file_mmap.seek(old_offset)
         self._parsed = True
 
-    @property
-    def number_of_records(self) -> int:
+    def _lookup_offset(self, index: int) -> int:
+        if index == 0:
+            return 0
         if not self._parsed:
             self._parse_file_structure()
-        return len(self._record_offsets)
-
-    def seek_to_record(self, n: int) -> None:
-        if not self._parsed:
-            self._parse_file_structure()
-        self.file_mmap.seek(self._record_offsets[n])
-        self._current_record_index = n
-
-    def seek_to_current_record(self) -> None:
-        if not self._parsed:
-            self._parse_file_structure()
-        self.file_mmap.seek(self._record_offsets[self._current_record_index])
-
-    def seek_to_previous_record(self) -> None:
-        if not self._parsed:
-            self._parse_file_structure()
-        self._current_record_index -= 1
-        self.seek_to_record(self._current_record_index)
-
-    def seek_to_next_record(self) -> None:
-        if not self._parsed:
-            self._parse_file_structure()
-        self._current_record_index += 1
-        self.seek_to_record(self._current_record_index)
-
-    def pick_records(
-        self, priority: PenlogPriority, start: int, n: int, reverse: bool = False
-    ) -> list[PenlogRecord]:
-        out: list[PenlogRecord] = []
-
-        self.seek_to_record(start)
-
-        # Fastpath, picking records in forward order.
-        if reverse is False:
-            while len(out) <= n:
-                self.readline()
-                if self.current_record.priority <= priority:
-                    out.append(self.current_record)
-            return out
-
-        while len(out) < n:
-            self.readline()
-            try:
-                if reverse:
-                    self.seek_to_previous_record()
-                else:
-                    self.seek_to_next_record()
-            except IndexError:
-                break
-
-            if self.current_record.priority <= priority:
-                out.append(self.current_record)
-
-        return list(reversed(out))
-
-    def close(self) -> None:
-        self.file_mmap.close()
-        self.decompressed_file.close()
+        return self._record_offsets[index]
 
     @property
     def file_size(self) -> int:
@@ -538,22 +482,6 @@ class PenlogReader:
         size = self.file_mmap.tell()
         self.file_mmap.seek(old_offset)
         return size
-
-    def read(self, n: int = -1) -> bytes:
-        return self.file_mmap.read(n)
-
-    def readline(self) -> bytes:
-        self._current_record = None
-        self._current_line = self.file_mmap.readline()
-        return self._current_line
-
-    def priorities(self) -> Iterator[int]:
-        while True:
-            line = self.readline()
-            if line == b"":
-                break
-
-            yield self.current_priority
 
     @property
     def current_record(self) -> PenlogRecord:
@@ -569,18 +497,57 @@ class PenlogReader:
             prio = self._current_record.priority
         return prio
 
-    def records(self) -> Iterator[PenlogRecord]:
-        while True:
-            line = self.readline()
-            if line == b"":
-                break
-            yield PenlogRecord.parse_json(line)
+    def seek_to_record(self, n: int) -> None:
+        self.file_mmap.seek(self._lookup_offset(n))
+        self._current_record_index = n
 
-    def seek(self, offset: int, whence: int = io.SEEK_SET) -> None:
-        self.file_mmap.seek(offset, whence)
+    def seek_to_current_record(self) -> None:
+        self.file_mmap.seek(self._lookup_offset(self._current_record_index))
 
-    def tell(self) -> int:
-        return self.file_mmap.tell()
+    def seek_to_previous_record(self) -> None:
+        self._current_record_index -= 1
+        self.seek_to_record(self._current_record_index)
+
+    def seek_to_next_record(self) -> None:
+        self._current_record_index += 1
+        self.seek_to_record(self._current_record_index)
+
+    def records(
+        self,
+        priority: PenlogPriority = PenlogPriority.TRACE,
+        offset: int = 0,
+        reverse: bool = False,
+    ) -> Iterator[PenlogRecord]:
+        self.seek_to_record(offset)
+        if reverse is False:
+            while True:
+                if self.readline() == b"":
+                    break
+                if self.current_priority >= priority:
+                    yield self.current_record
+        else:
+            while True:
+                self.readline()
+                if self.current_priority >= priority:
+                    yield self.current_record
+                try:
+                    self.seek_to_previous_record()
+                except IndexError:
+                    break
+
+    def readline(self) -> bytes:
+        self._current_record = None
+        self._current_line = self.file_mmap.readline()
+        return self._current_line
+
+    def close(self) -> None:
+        self.file_mmap.close()
+        self.decompressed_file.close()
+
+    def __len__(self) -> int:
+        if not self._parsed:
+            self._parse_file_structure()
+        return len(self._record_offsets)
 
 
 @unique
