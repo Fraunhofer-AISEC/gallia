@@ -77,6 +77,7 @@ def add_cli_category(
         help=help_,
         description=description,
         epilog=epilog,
+        exit_on_error=False
     )
     parser.set_defaults(usage_func=parser.print_usage)
     parser.set_defaults(help_func=parser.print_help)
@@ -94,6 +95,7 @@ def load_parsers() -> dict[str, Any]:
 Every command line option can be set via a TOML config file. Check `gallia --template` for a starting point.
         """,
         epilog="""https://fraunhofer-aisec.github.io/gallia/index.html""",
+        exit_on_error=False
     )
     parser.set_defaults(usage_func=parser.print_usage)
     parser.set_defaults(help_func=parser.print_help)
@@ -227,6 +229,7 @@ def build_cli(
             description=cls.__doc__,
             help=cls.SHORT_HELP,
             epilog=cls.EPILOG,
+            exit_on_error=False
         )
         cmd = cls(subparser, config)
         subparser.set_defaults(run_func=cmd.entry_point)
@@ -345,7 +348,7 @@ def cmd_template(args: argparse.Namespace) -> None:
     print(template.strip())
 
 
-def main() -> None:
+def create_arg_parser():
     registry: list[type[BaseCommand]] = [
         # SimpleTestXCP,
         DoIPDiscoverer,
@@ -387,6 +390,11 @@ def main() -> None:
 
     config, config_path = load_config_file()
     build_cli(parsers, config, registry)
+    return config, config_path, parsers
+
+
+def main() -> None:
+    config, config_path, parsers = create_arg_parser()
 
     parser = parsers["parser"]
     argcomplete.autocomplete(parser)

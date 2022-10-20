@@ -44,10 +44,10 @@ class CLI(AsyncScript):
 
         subparsers = self.parser.add_subparsers()
 
-        get_parser = subparsers.add_parser("get")
+        get_parser = subparsers.add_parser("get", exit_on_error=False)
         get_parser.set_defaults(subcommand="get")
 
-        set_parser = subparsers.add_parser("set")
+        set_parser = subparsers.add_parser("set", exit_on_error=False)
         set_parser.set_defaults(subcommand="set")
         set_parser.add_argument("VALUE")
 

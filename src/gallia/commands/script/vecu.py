@@ -43,7 +43,7 @@ class VirtualECU(AsyncScript):
         sub_parsers = self.parser.add_subparsers(dest="cmd")
         sub_parsers.required = True
 
-        db = sub_parsers.add_parser("db")
+        db = sub_parsers.add_parser("db", exit_on_error=False)
         db.add_argument(
             "path",
             type=Path,
@@ -52,7 +52,7 @@ class VirtualECU(AsyncScript):
         db.add_argument("--properties", type=json.loads)
         # db.set_defaults(yolo=True)
 
-        rng = sub_parsers.add_parser("rng")
+        rng = sub_parsers.add_parser("rng", exit_on_error=False)
         rng.add_argument(
             "--seed",
             default=random.randint(0, sys.maxsize),

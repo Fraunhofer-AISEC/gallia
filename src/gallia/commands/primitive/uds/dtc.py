@@ -32,7 +32,7 @@ class DTCPrimitive(UDSScanner):
         )
         sub_parser = self.parser.add_subparsers(dest="cmd", required=True)
         read_parser = sub_parser.add_parser(
-            "read", help="Read the DTCs using the ReadDTCInformation service"
+            "read", help="Read the DTCs using the ReadDTCInformation service", exit_on_error=False
         )
         read_parser.add_argument(
             "--mask",
@@ -57,7 +57,7 @@ class DTCPrimitive(UDSScanner):
             help="Show a summary of the codes which have not completed",
         )
         clear_parser = sub_parser.add_parser(
-            "clear", help="Clear the DTCs using the ClearDiagnosticInformation service"
+            "clear", help="Clear the DTCs using the ClearDiagnosticInformation service", exit_on_error=False
         )
         clear_parser.add_argument(
             "--group-of-dtc",
@@ -69,7 +69,7 @@ class DTCPrimitive(UDSScanner):
         control_parser = sub_parser.add_parser(
             "control",
             help="Stop or resume the setting of DTCs using the "
-            "ControlDTCSetting service",
+            "ControlDTCSetting service", exit_on_error=False
         )
         control_group = control_parser.add_mutually_exclusive_group(required=True)
         control_group.add_argument(
