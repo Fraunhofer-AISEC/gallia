@@ -384,8 +384,6 @@ class ECU(UDSClient):
                 break
             except Exception as e:
                 self.logger.debug(f"tester present got {g_repr(e)}")
-                # Wait until the stack recovers, but not for too long…
-                await asyncio.sleep(1)
 
     async def start_cyclic_tester_present(self, interval: float) -> None:
         self.tester_present_interval = interval
