@@ -27,7 +27,7 @@ import msgspec
 from gallia.config import Config
 from gallia.db.db_handler import DBHandler
 from gallia.dumpcap import Dumpcap
-from gallia.log import get_logger, setup_logging, tz
+from gallia.log import Loglevel, get_logger, setup_logging, tz
 from gallia.powersupply import PowerSupply, PowerSupplyURI
 from gallia.services.uds.core.exception import UDSException
 from gallia.services.uds.core.service import NegativeResponse, UDSResponse
@@ -146,15 +146,15 @@ class BaseCommand(ABC):
     def get_log_level(self, args: Namespace) -> int:
         level = logging.INFO
         if args.verbose == 1:
-            level = logging.DEBUG
+            level = Loglevel.DEBUG
         elif args.verbose >= 2:
-            level = logging.TRACE  # type: ignore
+            level = Loglevel.TRACE
         return level
 
     def get_file_log_level(self, args: Namespace) -> int:
         if args.trace_log:
-            return logging.TRACE  # type: ignore
-        return logging.TRACE if args.verbose >= 2 else logging.DEBUG  # type: ignore
+            return Loglevel.TRACE
+        return Loglevel.TRACE if args.verbose >= 2 else Loglevel.DEBUG
 
     def run_hook(self, variant: HookVariant, args: Namespace) -> None:
         script = args.pre_hook if variant == HookVariant.PRE else args.post_hook
