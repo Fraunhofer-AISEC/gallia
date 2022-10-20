@@ -421,20 +421,26 @@ class PenlogRecord:
 
 class PenlogReader:
     def __init__(self, path: Path) -> None:
-        self.path = path
-        self.decompressed_file = self._decompress(path)
-        self.file_mmap = mmap.mmap(
-            self.decompressed_file.fileno(), 0, access=mmap.ACCESS_READ
-        )
+        self.path = path if str(path) != "-" else Path("/dev/stdin")
+        self.raw_file = self._prepare_for_mmap(self.path)
+        self.file_mmap = mmap.mmap(self.raw_file.fileno(), 0, access=mmap.ACCESS_READ)
         self._current_line = b""
         self._current_record: PenlogRecord | None = None
         self._current_record_index = 0
         self._parsed = False
         self._record_offsets: list[int] = []
 
-    def _decompress(self, path: Path) -> BinaryIO:
-        if str(path) == "-":
-            self.path = Path("/dev/stdin")
+    def _prepare_for_mmap(self, path: Path) -> BinaryIO:
+        if path.is_fifo():
+            tmpfile = tempfile.TemporaryFile()
+            with path.open("rb") as f:
+                while True:
+                    chunk = f.read(io.DEFAULT_BUFFER_SIZE)
+                    if chunk == b"":
+                        break
+                    tmpfile.write(chunk)
+            tmpfile.flush()
+            return cast(BinaryIO, tmpfile)
 
         if path.suffix in [".zst", ".gz"]:
             tmpfile = tempfile.TemporaryFile()
@@ -542,7 +548,7 @@ class PenlogReader:
 
     def close(self) -> None:
         self.file_mmap.close()
-        self.decompressed_file.close()
+        self.raw_file.close()
 
     def __len__(self) -> int:
         if not self._parsed:
