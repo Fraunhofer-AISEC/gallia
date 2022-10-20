@@ -323,12 +323,14 @@ class CursedHR:
 
             prio = PenlogPriority.INFO.value
 
-            if line[0] != 123:
+            if line[0] == 60:  # <P> priority prefix
+                prio = line[1] - 48
+            elif line[0] != 123:  # no json
                 prio = PenlogPriority.ERROR
-            elif (pos := line.find(prio_prefix)) > 0:
+            elif (pos := line.find(prio_prefix)) > 0:  # json with priority
                 pos += prio_prefix_len
 
-                while not 48 <= line[pos] <= 57:
+                while not 48 <= line[pos] <= 57:  # find first digit after key
                     pos += 1
 
                 prio = line[pos] - 48
