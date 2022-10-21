@@ -16,7 +16,6 @@ from argparse import ArgumentParser, Namespace
 from datetime import datetime, timezone
 from enum import Enum, IntEnum, unique
 from importlib.metadata import entry_points
-from logging.handlers import QueueListener
 from pathlib import Path
 from subprocess import run
 from tempfile import gettempdir
@@ -136,7 +135,6 @@ class BaseCommand(ABC):
             exit_code=0,
             end_time=0,
         )
-        self._log_queue: QueueListener | None = None
         self._lock_file_fd: int | None = None
         self.configure_class_parser()
         self.configure_parser()
@@ -316,13 +314,13 @@ class BaseCommand(ABC):
                 args.artifacts_base,
                 args.artifacts_dir,
             )
-            self._log_queue = setup_logging(
+            setup_logging(
                 self.get_log_level(args),
                 self.get_file_log_level(args),
                 self.artifacts_dir.joinpath(FileNames.LOGFILE.value),
             )
         else:
-            self._log_queue = setup_logging(self.get_log_level(args))
+            setup_logging(self.get_log_level(args))
 
         self.run_hook(HookVariant.PRE, args)
 
@@ -356,8 +354,6 @@ class BaseCommand(ABC):
 
         self.run_hook(HookVariant.POST, args)
 
-        if self._log_queue is not None:
-            self._log_queue.stop()
         if self._lock_file_fd is not None:
             self._release_flock()
 
