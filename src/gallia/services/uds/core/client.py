@@ -40,11 +40,13 @@ class UDSClient:
         self.max_retry = max_retry
         self.retry_wait = 0.2
         self.pending_timeout = 5
+        self.mutex = asyncio.Lock()
         self.logger = get_logger("uds")
 
     async def reconnect(self, timeout: int | None = None) -> None:
         """Calls the underlying transport to trigger a reconnect"""
-        self.transport = await self.transport.reconnect(timeout)
+        async with self.mutex:
+            self.transport = await self.transport.reconnect(timeout)
 
     async def _read(
         self, timeout: float | None = None, tags: list[str] | None = None
@@ -1145,5 +1147,5 @@ class UDSClient:
     async def _request(
         self, request: service.UDSRequest, config: UDSRequestConfig | None = None
     ) -> service.UDSResponse:
-        async with self.transport.mutex:
+        async with self.mutex:
             return await self.request_unsafe(request, config)

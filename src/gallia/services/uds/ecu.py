@@ -360,7 +360,7 @@ class ECU(UDSClient):
         self.logger.debug("tester present worker started")
         while True:
             try:
-                async with self.transport.mutex:
+                async with self.mutex:
                     payload = bytes([0x3E, 0x80])
                     await self.transport.write(payload)
                     self.logger.debug(payload.hex(), extra={"tags": ["uds", "write"]})
