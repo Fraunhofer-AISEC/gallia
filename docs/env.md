@@ -1,0 +1,21 @@
+<!--
+SPDX-FileCopyrightText: AISEC Pentesting Team
+
+SPDX-License-Identifier: CC0-1.0
+-->
+
+# Environment Variables
+
+For some cases `gallia` can be configured with environment variables.
+All these variables begin with `GALLIA_`.
+
+GALLIA_CONFIG
+: The path to the config file usually called `gallia.toml`.
+  Disables autodiscovery of the config.
+
+GALLIA_LOGLEVEL
+: When `setup_logging()` is called without an argument this environment variable is read to set the loglevel.
+  Supported value are: `trace`, `debug`, `info`, `notice`, `warning`, `error`, `critical`.
+  As an alternative, the int values from 0 to 7 can be used.
+  Mostly useful in own scripts or tests.
+  This variable is not read when using the gallia cli.
