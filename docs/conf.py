@@ -39,10 +39,12 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx.ext.githubpages",
     "sphinx.ext.napoleon",
-    'sphinx.ext.autosectionlabel',
-    'sphinx.ext.viewcode',
+    "sphinx.ext.autosectionlabel",
+    "sphinx.ext.viewcode",
     "myst_parser",
 ]
+
+myst_enable_extensions = ["deflist"]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -79,8 +81,4 @@ autosectionlabel_prefix_document = True
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    ('penrun.1', 'penrun',
-     'A configurable runner for commands which create artifacts',
-     ['AISEC Pentest Team'], 1),
-]
+man_pages = []
