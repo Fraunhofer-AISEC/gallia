@@ -529,12 +529,12 @@ class PenlogReader:
             while True:
                 if self.readline() == b"":
                     break
-                if self.current_priority >= priority:
+                if self.current_priority <= priority:
                     yield self.current_record
         else:
             while True:
                 self.readline()
-                if self.current_priority >= priority:
+                if self.current_priority <= priority:
                     yield self.current_record
                 try:
                     self.seek_to_previous_record()
