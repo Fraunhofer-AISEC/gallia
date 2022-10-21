@@ -36,6 +36,7 @@ fmt:
 
 .PHONY: docs
 docs:
+	$(MAKE) -C docs api-stubs
 	$(MAKE) -C docs html
 
 .PHONY: test
