@@ -69,20 +69,14 @@ $ poetry run gallia
 
 ## Development with Plugins
 
-If you want to develop gallia and plugins at the same time, then you need to manage your `gallia` (e.g. in `~/.venvs/gallia`) virtual python environment by yourself.
-You can use `poetry install` to install multiple plugin repos into the `gallia` venv.
+If you want to develop gallia and plugins at the same time, then you need to add `gallia` as a development dependency to your plugin package.
+Use your plugin repo for `poetry install`  and `poetry shell`.
 
-``` shell-session
-$ python -m venv ~/.venvs/gallia
-$ source ~/.venvs/gallia/activate
-$ cd /path/to/gallia && poetry install
-$ cd /path/to/gallia-plugins && poetry install
-```
+This snippet in `pyproject.toml` is sufficiant to add a local, editable checkout to your repo:
 
-If it does not work, you might try deleting the venvs managed by `poetry` via:
-
-``` shell-session
-$ rm -rf ~/.cache/pypoetry/virtualenvs/*
+``` toml
+[tool.poetry.dependencies]
+gallia = { path = "/path/to/local/gallia", develop = true }
 ```
 
 ### Shell Completion
