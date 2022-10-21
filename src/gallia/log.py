@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import atexit
 import gzip
 import io
 import logging
@@ -183,7 +184,7 @@ def setup_logging(
     level: int,
     file_level: int = logging.DEBUG,
     path: Path | None = None,
-) -> QueueListener:
+) -> None:
     # These are slow and not used by gallia.
     logging.logMultiprocessing = False
     logging.logThreads = False
@@ -212,7 +213,8 @@ def setup_logging(
 
     # Replace handlers on the root logger with a LocalQueueHandler, and start a
     # logging.QueueListener holding the original handlers.
-    return _setup_queue()
+    queue = _setup_queue()
+    atexit.register(queue.stop)
 
 
 class _PenlogRecordV1(msgspec.Struct, omit_defaults=True):
