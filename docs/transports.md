@@ -64,7 +64,7 @@ Example:
 isotp://can0?src_addr=0x6f4&dst_addr=0x654&rx_ext_address=0xf4&ext_address=0x54&is_fd=false
 ```
 
-## can-raw
+### can-raw
 
 `src_addr` (required)
 : The ISOTP source address as int.
@@ -88,8 +88,11 @@ can-raw://can1?is_fd=true
 
 The DoIP gateway address is specified in the location.
 
-* `src_addr` (required): The source address as int.
-* `dst_addr` (required): The destination address as int.
+`src_addr` (required)
+: The source address as int.
+
+`dst_addr` (required)
+: The destination address as int.
 
 Example:
 
@@ -110,7 +113,7 @@ tcp-lines://127.0.0.1:6801
 ```
 
 
-### API
+## API
 
 Transports can also be used in own standalone scripts; transports are created with the `.connect()` method which takes a URI.
 
