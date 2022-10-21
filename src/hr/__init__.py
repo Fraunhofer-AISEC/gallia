@@ -78,7 +78,8 @@ def _main() -> int:
 def main() -> None:
     try:
         sys.exit(_main())
-    except KeyboardInterrupt:
+    # BrokenPipeError appears when stuff is piped to | head.
+    except (KeyboardInterrupt, BrokenPipeError):
         pass
 
 
