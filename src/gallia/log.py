@@ -9,6 +9,7 @@ import gzip
 import io
 import logging
 import mmap
+import os
 import shutil
 import socket
 import sys
@@ -138,7 +139,7 @@ class PenlogPriority(IntEnum):
             case _:
                 raise ValueError("invalid value")
 
-    def to_level(self) -> int:
+    def to_level(self) -> Loglevel:
         match self:
             case self.TRACE:
                 return Loglevel.TRACE
@@ -181,10 +182,16 @@ def _setup_queue() -> QueueListener:
 
 
 def setup_logging(
-    level: int,
-    file_level: int = logging.DEBUG,
+    level: Loglevel | None = None,
+    file_level: Loglevel = Loglevel.DEBUG,
     path: Path | None = None,
 ) -> None:
+    if level is None:
+        if (l := os.getenv("GALLIA_LOGLEVEL")) is not None:
+            level = PenlogPriority.from_str(l).to_level()
+        else:
+            level = Loglevel.DEBUG
+
     # These are slow and not used by gallia.
     logging.logMultiprocessing = False
     logging.logThreads = False

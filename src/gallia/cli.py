@@ -5,7 +5,6 @@
 # PYTHON_ARGCOMPLETE_OK
 
 import argparse
-import logging
 import os
 import sys
 from collections.abc import Callable
@@ -40,7 +39,7 @@ from gallia.commands.scan.uds.services import ServicesScanner
 from gallia.commands.scan.uds.sessions import SessionsScanner
 from gallia.commands.script.vecu import VirtualECU
 from gallia.config import Config, load_config_file
-from gallia.log import setup_logging
+from gallia.log import Loglevel, setup_logging
 from gallia.transports import load_transports
 
 
@@ -379,7 +378,7 @@ def main() -> None:
         registry += plugin_cmds
 
     # Will be set to the correct verbosity later.
-    setup_logging(logging.DEBUG)
+    setup_logging(Loglevel.DEBUG)
 
     parsers = load_parsers()
 

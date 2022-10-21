@@ -6,7 +6,6 @@ import argparse
 import asyncio
 import fcntl
 import json
-import logging
 import os
 import signal
 import sys
@@ -143,15 +142,15 @@ class BaseCommand(ABC):
     def run(self, args: Namespace) -> int:
         ...
 
-    def get_log_level(self, args: Namespace) -> int:
-        level = logging.INFO
+    def get_log_level(self, args: Namespace) -> Loglevel:
+        level = Loglevel.INFO
         if args.verbose == 1:
             level = Loglevel.DEBUG
         elif args.verbose >= 2:
             level = Loglevel.TRACE
         return level
 
-    def get_file_log_level(self, args: Namespace) -> int:
+    def get_file_log_level(self, args: Namespace) -> Loglevel:
         if args.trace_log:
             return Loglevel.TRACE
         return Loglevel.TRACE if args.verbose >= 2 else Loglevel.DEBUG
