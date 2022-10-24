@@ -6,11 +6,12 @@
 default:
 	@echo "available targets:"
 	@echo ""
-	@echo " zipapp		build a standalone python zipapp"
-	@echo " lint		run linters"
-	@echo " docs		build docs"
-	@echo " test		run testsuite"
-	@echo " clean		delete build artifacts"
+	@echo " zipapp      build a standalone python zipapp"
+	@echo " fmt         run autoformatters"
+	@echo " lint        run linters"
+	@echo " docs        build docs"
+	@echo " test        run testsuite"
+	@echo " clean       delete build artifacts"
 
 .PHONY: zipapp
 TEMPDIR = $(shell mktemp -d)
