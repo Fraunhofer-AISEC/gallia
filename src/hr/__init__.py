@@ -66,18 +66,16 @@ def _main() -> int:
             return 1
 
         set_color_mode(ColorMode(args.color), stream=sys.stdout)
-        reader = PenlogReader(file)
 
-        record_generator = reader.records(args.priority, reverse=args.reverse)
-        if args.head:
-            record_generator = islice(record_generator, args.lines)
-        elif args.tail:
-            record_generator = reader.records(args.priority, offset=-args.lines)
+        with PenlogReader(file) as reader:
+            record_generator = reader.records(args.priority, reverse=args.reverse)
+            if args.head:
+                record_generator = islice(record_generator, args.lines)
+            elif args.tail:
+                record_generator = reader.records(args.priority, offset=-args.lines)
 
-        for record in record_generator:
-            print(record)
-
-    reader.close()
+            for record in record_generator:
+                print(record)
 
     return 0
 
