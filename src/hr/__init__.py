@@ -8,7 +8,7 @@ from itertools import islice
 from pathlib import Path
 from typing import cast
 
-from gallia.log import PenlogPriority, PenlogReader
+from gallia.log import ColorMode, PenlogPriority, PenlogReader, set_color_mode
 
 
 def parse_args() -> argparse.Namespace:
@@ -47,6 +47,12 @@ def parse_args() -> argparse.Namespace:
         default=100,
         help="print the last n lines",
     )
+    parser.add_argument(
+        "--color",
+        choices=["auto", "always", "never"],
+        default="auto",
+        help="when to use terminal colors",
+    )
     return parser.parse_args()
 
 
@@ -59,6 +65,7 @@ def _main() -> int:
             print(f"not a regular file: {file}", file=sys.stderr)
             return 1
 
+        set_color_mode(ColorMode(args.color), stream=sys.stdout)
         reader = PenlogReader(file)
 
         record_generator = reader.records(args.priority, reverse=args.reverse)
