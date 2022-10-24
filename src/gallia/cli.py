@@ -331,7 +331,7 @@ def cmd_template(args: argparse.Namespace) -> None:
 # artifacts_dir = <string>
 # artifacts_base = <string>
 
-[gallia.protocol.uds]
+[gallia.protocols.uds]
 # dumpcap = <bool>
 # ecu_reset = <float>
 # oem = <string>
