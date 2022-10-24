@@ -21,7 +21,7 @@ from enum import Enum, IntEnum, unique
 from logging.handlers import QueueHandler, QueueListener
 from pathlib import Path
 from queue import Queue
-from typing import TYPE_CHECKING, Any, BinaryIO, Iterator, cast
+from typing import TYPE_CHECKING, Any, BinaryIO, Iterator, TextIO, cast
 
 import msgspec
 import zstandard
@@ -31,6 +31,27 @@ if TYPE_CHECKING:
 
 
 tz = datetime.utcnow().astimezone().tzinfo
+
+
+@unique
+class ColorMode(Enum):
+    ALWAYS = "always"
+    AUTO = "auto"
+    NEVER = "never"
+
+
+_COLORS_ENABLED = False
+
+
+def set_color_mode(mode: ColorMode, stream: TextIO = sys.stderr) -> None:
+    global _COLORS_ENABLED  # pylint: disable=global-statement
+    match mode:
+        case ColorMode.ALWAYS:
+            _COLORS_ENABLED = True
+        case ColorMode.AUTO:
+            _COLORS_ENABLED = stream.isatty()
+        case ColorMode.NEVER:
+            _COLORS_ENABLED = False
 
 
 # https://stackoverflow.com/a/35804945
@@ -185,7 +206,10 @@ def setup_logging(
     level: Loglevel | None = None,
     file_level: Loglevel = Loglevel.DEBUG,
     path: Path | None = None,
+    color_mode: ColorMode = ColorMode.AUTO,
 ) -> None:
+    set_color_mode(color_mode)
+
     if level is None:
         if (l := os.getenv("GALLIA_LOGLEVEL")) is not None:
             level = PenlogPriority.from_str(l).to_level()
@@ -290,6 +314,7 @@ def _format_record(
     levelno: int,
     tags: list[str] | None,
     stacktrace: str | None,
+    colored: bool = False,
 ) -> str:
     msg = ""
     msg += dt.strftime("%b %d %H:%M:%S.%f")[:-3]
@@ -299,7 +324,10 @@ def _format_record(
         msg += f" [{', '.join(tags)}]"
     msg += ": "
 
-    msg += _colorize_msg(data, levelno)
+    if colored:
+        msg += _colorize_msg(data, levelno)
+    else:
+        msg += data
 
     if stacktrace is not None:
         msg += "\n"
@@ -333,6 +361,7 @@ class PenlogRecord:
             else self.priority.to_level(),
             tags=self.tags,
             stacktrace=self.stacktrace,
+            colored=_COLORS_ENABLED,
         )
 
     @classmethod
@@ -631,6 +660,7 @@ class ConsoleFormatter(logging.Formatter):
             levelno=record.levelno,
             tags=record.__dict__["tags"] if "tags" in record.__dict__ else None,
             stacktrace=stacktrace,
+            colored=_COLORS_ENABLED,
         )
 
 
