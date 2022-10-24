@@ -4,11 +4,14 @@
 
 import pytest
 
+from gallia.log import setup_logging
 from gallia.services.uds.core.utils import (
     address_and_size_length,
     uds_memory_parameters,
 )
 from gallia.utils import split_host_port
+
+setup_logging()
 
 
 def test_split_host_port_v4() -> None:
