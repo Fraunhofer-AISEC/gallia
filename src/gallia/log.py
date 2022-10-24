@@ -21,6 +21,7 @@ from enum import Enum, IntEnum, unique
 from logging.handlers import QueueHandler, QueueListener
 from pathlib import Path
 from queue import Queue
+from types import TracebackType
 from typing import TYPE_CHECKING, Any, BinaryIO, Iterator, TextIO, cast
 
 import msgspec
@@ -592,6 +593,18 @@ class PenlogReader:
         if not self._parsed:
             self._parse_file_structure()
         return len(self._record_offsets)
+
+    def __enter__(self) -> PenlogReader:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        tb: TracebackType | None,
+    ) -> None:
+        if exc_type is not None:
+            self.close()
 
 
 @unique
