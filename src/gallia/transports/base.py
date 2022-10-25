@@ -148,12 +148,10 @@ class BaseTransport(ABC):
         The target argument is a URI, such as `doip://192.0.2.2:13400?src_addr=0xf4&dst_addr=0x1d"`
         An instance of the relevant transport class is returned.
         """
-        ...
 
     @abstractmethod
     async def close(self) -> None:
         """Terminates the connection and clean up all allocated ressources."""
-        ...
 
     async def reconnect(self: TransportT, timeout: float | None = None) -> TransportT:
         """Closes the connection to the target and reconnects. A new
@@ -174,7 +172,6 @@ class BaseTransport(ABC):
         An example for one message is 'one line, terminated by newline'
         for a TCP transport yielding lines.
         """
-        ...
 
     @abstractmethod
     async def write(
@@ -184,7 +181,6 @@ class BaseTransport(ABC):
         tags: list[str] | None = None,
     ) -> int:
         """Writes one message and return the number of written bytes."""
-        ...
 
     async def request(
         self,

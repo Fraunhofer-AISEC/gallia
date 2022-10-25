@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: AISEC Pentesting Team
+
+SPDX-License-Identifier: CC0-1.0
+-->
+
 # Public API
 
 ## gallia.log
