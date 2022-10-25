@@ -348,7 +348,7 @@ class NegativeResponse(
         return self.request_service_id == request.service_id
 
     def __str__(self) -> str:
-        return self.response_code.name
+        return str(self.response_code.name)
 
     def __repr__(self) -> str:
         return (

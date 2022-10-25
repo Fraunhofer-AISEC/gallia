@@ -106,7 +106,7 @@ def g_repr(x: Any) -> str:
     Object string representation with default gallia output settings.
     """
     if isinstance(x, Enum):
-        return x.name
+        return str(x.name)
     if isinstance(x, bool):
         return repr(x)
     if isinstance(x, int):
