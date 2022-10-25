@@ -6,6 +6,14 @@ SPDX-License-Identifier: CC0-1.0
 
 # Public API
 
+## gallia.command
+
+```{eval-rst}
+.. automodule:: gallia.command
+    :members:
+    :show-inheritance:
+```
+
 ## gallia.log
 
 ```{eval-rst}

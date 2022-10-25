@@ -96,25 +96,38 @@ def load_ecu(vendor: str) -> type[ECU]:
 
 
 class BaseCommand(ABC):
-    """GalliaBase is a baseclass for all gallia commands.
-    In order to register cli arguments:
+    """BaseCommand is the baseclass for all gallia commands.
+    This class can be used in standalone scripts via the
+    gallia command line interface facility.
 
-    - `configure_class_parser()` can be overwritten to create
-       e.g. scanner related arguments shared by all scanners
-    - `configure_parser()` can be overwritten to create specific
-      arguments for a specific scanner.
+    This class needs to be subclassed and all the abstract
+    methods need to be implemented. The artifacts_dir is
+    generated based on the COMMAND, CATEGORY, SUBCATEGORY
+    properties (falls back to the class name if all three
+    are not set).
 
-    The main entry_point is `run()`.
+    The main entry_point is :meth:`entry_point()`.
     """
 
-    COMMAND: str
-    CATEGORY: str
-    SUBCATEGORY: str | None
-    SHORT_HELP: str
+    #: The command name when used in the gallia CLI.
+    COMMAND: str | None = None
+    #: The category name when used in the gallia CLI.
+    CATEGORY: str | None = None
+    #: The subcategory name when used in the gallia CLI.
+    SUBCATEGORY: str | None = None
+    #: The string which is shown on the cli with --help.
+    SHORT_HELP: str | None = None
+    #: The string which is shown at the bottom of --help.
     EPILOG: str | None = None
 
+    #: The name of the logger when this command is run.
     LOGGER_NAME = "gallia"
+    #: Enable a artifacts_dir. Setting this property to
+    #: True enables the creation of a logfile.
     HAS_ARTIFACTS_DIR: bool = False
+    #: A list of exception types for which tracebacks are
+    #: suppressed at the top level. For these exceptions
+    #: a log message with level critical is logged.
     CATCHED_EXCEPTIONS: list[type[Exception]] = []
 
     def __init__(self, parser: ArgumentParser, config: Config = Config()) -> None:
@@ -266,10 +279,24 @@ class BaseCommand(ABC):
             return force_path
 
         if base_dir is not None:
-            _command_dir = self.CATEGORY
+            _command_dir = ""
+            if self.CATEGORY is not None:
+                _command_dir += self.CATEGORY
             if self.SUBCATEGORY is not None:
                 _command_dir += f"_{self.SUBCATEGORY}"
-            _command_dir += f"_{self.COMMAND}"
+            if self.COMMAND is not None:
+                _command_dir += f"_{self.COMMAND}"
+
+            # When self.CATEGORY is None, then
+            # _command_dir starts with "_"; remove it.
+            if _command_dir.startswith("_"):
+                _command_dir = _command_dir.removeprefix("_")
+
+            # If self.CATEGORY, self.SUBCATEGORY, and
+            # self.COMMAND are None, then fallback to self.id.
+            if _command_dir == "":
+                _command_dir = self.id
+
             command_dir = base_dir.joinpath(_command_dir)
 
             _run_dir = f"run-{datetime.now().strftime('%Y%m%d-%H%M%S.%f')}"
@@ -365,7 +392,6 @@ class Script(BaseCommand, ABC):
     .main() method."""
 
     CATEGORY = "script"
-    SUBCATEGORY: str | None = None
 
     def setup(self, args: Namespace) -> None:
         ...
@@ -393,7 +419,6 @@ class AsyncScript(BaseCommand, ABC):
     the .main() method."""
 
     CATEGORY = "script"
-    SUBCATEGORY: str | None = None
 
     async def setup(self, args: Namespace) -> None:
         ...
@@ -568,7 +593,7 @@ class UDSScanner(Scanner):
     """
 
     CATEGORY = "scan"
-    SUBCATEGORY: str | None = "uds"
+    SUBCATEGORY = "uds"
 
     def __init__(self, parser: ArgumentParser, config: Config = Config()) -> None:
         super().__init__(parser, config)
