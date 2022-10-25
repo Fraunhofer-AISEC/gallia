@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-import tomlkit
+import tomli
 from pygit2 import discover_repository
 from xdg import xdg_config_dirs
 
@@ -75,5 +75,5 @@ def load_config_file(
     extra_paths: list[Path] | None = None,
 ) -> tuple[Config, Path | None]:
     if (path := search_config(filename, extra_paths)) is not None:
-        return Config(tomlkit.loads(path.read_text())), path
+        return Config(tomli.loads(path.read_text())), path
     return Config(), None
