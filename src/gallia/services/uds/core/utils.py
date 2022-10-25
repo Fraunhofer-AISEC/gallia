@@ -87,7 +87,7 @@ def bytes_repr(b: bytes, prefix: bool = False, max_length: int | None = 20) -> s
 
 def service_repr(service_id: int) -> str:
     try:
-        return UDSIsoServices(service_id).name
+        return str(UDSIsoServices(service_id).name)
     except Exception:
         return f"Unknown service {int_repr(service_id)}"
 
