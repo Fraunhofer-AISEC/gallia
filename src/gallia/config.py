@@ -3,12 +3,18 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+import sys
 from pathlib import Path
 from typing import Any
 
-import tomli
 from pygit2 import discover_repository
 from xdg import xdg_config_dirs
+
+# TODO: Remove this check when dropping Python 3.10.
+if sys.version_info[1] < 11:
+    import tomli as tomllib
+else:
+    import tomllib
 
 
 class Config(dict[str, Any]):
@@ -75,5 +81,5 @@ def load_config_file(
     extra_paths: list[Path] | None = None,
 ) -> tuple[Config, Path | None]:
     if (path := search_config(filename, extra_paths)) is not None:
-        return Config(tomli.loads(path.read_text())), path
+        return Config(tomllib.loads(path.read_text())), path
     return Config(), None

@@ -1221,7 +1221,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.10,<3.11"
-content-hash = "c369f7f1dae71051afe7ea38a0b7e1a60b09e1598700a5a4f68adbda7bc347ac"
+content-hash = "ab739672d6ccc480eaacfeedc7855fc83cb5adeed8edbc5be4746c74a65bb601"
 
 [metadata.files]
 aiofiles = [
