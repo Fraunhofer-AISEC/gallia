@@ -18,11 +18,12 @@ class TargetURI:
     """TargetURI represents a target to which gallia can connect.
     The target string must conform to a URI is specified by RFC3986.
 
-    Basically, this is a wrapper around Python's `urlparse()` and
-    `parse_qs()` methods. TargetURI provides frequently used properties
+    Basically, this is a wrapper around Python's ``urlparse()`` and
+    ``parse_qs()`` methods. TargetURI provides frequently used properties
     for a more userfriendly usage. Instances are meant to be passed to
-    the `connect()` method of transports.
+    :meth:`BaseTransport.connect()` of transport implementations.
     """
+
     def __init__(self, raw: str) -> None:
         self.raw = raw
         self.url = urlparse(raw)
@@ -37,7 +38,7 @@ class TargetURI:
         args: dict[str, Any],
     ) -> TargetURI:
         """Constructs a instance of TargetURI with the given arguments.
-        The `args` dict is used for the query string.
+        The ``args`` dict is used for the query string.
         """
         netloc = host if port is None else join_host_port(host, port)
         return TargetURI(urlunparse((scheme, netloc, "", "", urlencode(args), "")))
@@ -74,7 +75,7 @@ class TargetURI:
         """A dict which contains the query string's key/value pairs.
         In case a key appears multiple times, this variant only
         contains the first found key/value pair. In contrast to
-        `self.qs`, this variant avoids lists and might be easier
+        :attr:`qs`, this variant avoids lists and might be easier
         to use for some cases.
         """
         d = {}
@@ -102,15 +103,15 @@ class BaseTransport(ABC):
     This class is to be used as a subclass with all abstractmethods
     implemented and the SCHEME property filled.
 
-    A few methods provide a `tags` argument. The debug logs of these
-    calls include these tags in the `tags` property of the relevant
-    `gallia.log.PenlogRecord`.
+    A few methods provide a ``tags`` argument. The debug logs of these
+    calls include these tags in the ``tags`` property of the relevant
+    :class:`gallia.log.PenlogRecord`.
     """
 
     #: The scheme for the implemented protocol, e.g. "doip".
     SCHEME: str = ""
     #: The buffersize of the transport. Might be used in read() calls.
-    #: Defaults to `io.DEFAULT_BUFFER_SIZE`.
+    #: Defaults to :const:`io.DEFAULT_BUFFER_SIZE`.
     BUFSIZE: int = io.DEFAULT_BUFFER_SIZE
 
     def __init__(self, target: TargetURI) -> None:
@@ -170,8 +171,8 @@ class BaseTransport(ABC):
         tags: list[str] | None = None,
     ) -> bytes:
         """Reads one message and returns its raw byte representation.
-        An example for one message is 'one line, terminated by \\n' for
-        a TCP transport yielding lines.
+        An example for one message is 'one line, terminated by newline'
+        for a TCP transport yielding lines.
         """
         ...
 
@@ -191,7 +192,7 @@ class BaseTransport(ABC):
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> bytes:
-        """Chains a `self.write()` call with a `self.read()` call.
+        """Chains a :meth:`write()` call with a :meth:`read()` call.
         The call is protected by a mutex and is thus safe for concurrent
         use.
         """
@@ -204,7 +205,7 @@ class BaseTransport(ABC):
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> bytes:
-        """Chains a `self.write()` call with a `self.read()` call.
+        """Chains a :meth:`write()` call with a :meth:`read()` call.
         The call is **not** protected by a mutex. Only use this method
         when you know what you are doing.
         """

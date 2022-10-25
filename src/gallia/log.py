@@ -36,8 +36,15 @@ tz = datetime.utcnow().astimezone().tzinfo
 
 @unique
 class ColorMode(Enum):
+    """ColorMode is used as an argument to :func:`set_color_mode`."""
+
+    #: Colors are always turned on.
     ALWAYS = "always"
+    #: Colors are turned off if the target
+    #: stream (e.g. stderr) is not a tty.
     AUTO = "auto"
+    #: No colors are used. In other words,
+    #: no ANSI escape codes are included.
     NEVER = "never"
 
 
@@ -45,6 +52,11 @@ _COLORS_ENABLED = False
 
 
 def set_color_mode(mode: ColorMode, stream: TextIO = sys.stderr) -> None:
+    """Sets the color mode of the console log handler.
+
+    :param mode: The available options are described in :class:`ColorMode`.
+    :param stream: Used as a reference for :attr:`ColorMode.AUTO`.
+    """
     global _COLORS_ENABLED  # pylint: disable=global-statement
     match mode:
         case ColorMode.ALWAYS:
@@ -93,6 +105,18 @@ _add_logging_level("NOTICE", 25)
 
 @unique
 class Loglevel(IntEnum):
+    """A wrapper around the constants exposed by python's
+    ``logging`` module. Since gallia adds two additional
+    loglevel's (``NOTICE`` and ``TRACE``), this class
+    provides a type safe way to access the loglevels.
+    The level ``NOTICE`` was added to conform better to
+    RFC3164. Subsequently, ``TRACE`` was added to have
+    a facility for optional debug messages.
+    Loglevel describes python specific values for loglevels
+    which are required to integrate with the python ecosystem.
+    For generic priority values, see :class:`PenlogPriority`.
+    """
+
     CRITICAL = logging.CRITICAL
     ERROR = logging.ERROR
     WARNING = logging.WARNING
@@ -104,6 +128,15 @@ class Loglevel(IntEnum):
 
 @unique
 class PenlogPriority(IntEnum):
+    """PenlogPriority holds the values which are written
+    to json log records. These values conform to RFC3164
+    with the addition of ``TRACE``. Since Python uses different
+    int values for the loglevels, there are two enums in
+    gallia describing loglevels. PenlogPriority describes
+    generic priority values which are included in json
+    log records.
+    """
+
     EMERGENCY = 0
     ALERT = 1
     CRITICAL = 2
@@ -116,6 +149,11 @@ class PenlogPriority(IntEnum):
 
     @classmethod
     def from_str(cls, string: str) -> PenlogPriority:
+        """Converts a string to an instance of PenlogPriority.
+        ``string`` can be a numeric value (0 to 8 inclusive)
+        or a string with a case insensitive name of the level
+        (e.g. ``debug``).
+        """
         if string.isnumeric():
             return cls(int(string, 0))
 
@@ -143,6 +181,9 @@ class PenlogPriority(IntEnum):
 
     @classmethod
     def from_level(cls, value: int) -> PenlogPriority:
+        """Converts an int value (e.g. from python's logging module)
+        to an instance of this class.
+        """
         match value:
             case Loglevel.TRACE:
                 return cls.TRACE
@@ -162,6 +203,7 @@ class PenlogPriority(IntEnum):
                 raise ValueError("invalid value")
 
     def to_level(self) -> Loglevel:
+        """Converts an instance of PenlogPriority to :class:`Loglevel`."""
         match self:
             case self.TRACE:
                 return Loglevel.TRACE
@@ -209,6 +251,21 @@ def setup_logging(
     path: Path | None = None,
     color_mode: ColorMode = ColorMode.AUTO,
 ) -> None:
+    """Enable and configure gallia's logging system.
+    If this fuction is not called as early as possible,
+    the logging system is in an undefined state und might
+    not behave as expected. Always use this function to
+    initialize gallia's logging. For instance, ``setup_logging()``
+    initializes a QueueHandler to avoid blocking calls during
+    logging.
+
+    :param level: The loglevel to enable for the console handler.
+                  If this argument is None, the env variable
+                  ``GALLIA_LOGLEVEL`` (see :doc:`../env`) is read.
+    :param file_level: The loglevel to enable for the file handler.
+    :param path: The path to the logfile containing json records.
+    :param color_mode: The color mode to use for the console.
+    """
     set_color_mode(color_mode)
 
     if level is None:
@@ -228,13 +285,13 @@ def setup_logging(
 
     stderr_handler = logging.StreamHandler(sys.stderr)
     stderr_handler.setLevel(level)
-    stderr_handler.setFormatter(ConsoleFormatter())
+    stderr_handler.setFormatter(_ConsoleFormatter())
 
     handlers: list[logging.Handler] = [stderr_handler]
 
     if path is not None:
-        zstd_handler = ZstdFileHandler(path, level=file_level)
-        zstd_handler.setFormatter(JSONFormatter())
+        zstd_handler = _ZstdFileHandler(path, level=file_level)
+        zstd_handler.setFormatter(_JSONFormatter())
         handlers.append(zstd_handler)
 
     logging.basicConfig(
@@ -285,25 +342,25 @@ def _colorize_msg(data: str, levelno: int) -> str:
     out = ""
     match levelno:
         case Loglevel.TRACE:
-            style = Color.GRAY.value
+            style = _Color.GRAY.value
         case Loglevel.DEBUG:
-            style = Color.GRAY.value
+            style = _Color.GRAY.value
         case Loglevel.INFO:
-            style = Color.NOP.value
+            style = _Color.NOP.value
         case Loglevel.NOTICE:
-            style = Color.BOLD.value
+            style = _Color.BOLD.value
         case Loglevel.WARNING:
-            style = Color.YELLOW.value
+            style = _Color.YELLOW.value
         case Loglevel.ERROR:
-            style = Color.RED.value
+            style = _Color.RED.value
         case Loglevel.CRITICAL:
-            style = Color.RED.value + Color.BOLD.value
+            style = _Color.RED.value + _Color.BOLD.value
         case _:
-            style = Color.NOP.value
+            style = _Color.NOP.value
 
     out += style
     out += data
-    out += Color.RESET.value
+    out += _Color.RESET.value
 
     return out
 
@@ -608,7 +665,7 @@ class PenlogReader:
 
 
 @unique
-class Color(Enum):
+class _Color(Enum):
     NOP = ""
     RESET = "\033[0m"
     BOLD = "\033[1m"
@@ -622,7 +679,7 @@ class Color(Enum):
     GRAY = "\033[0;38;5;245m"
 
 
-class JSONFormatter(logging.Formatter):
+class _JSONFormatter(logging.Formatter):
     def __init__(self) -> None:
         super().__init__()
         self.hostname = socket.gethostname()
@@ -648,7 +705,7 @@ class JSONFormatter(logging.Formatter):
         return msgspec.json.encode(penlog_record).decode()
 
 
-class ConsoleFormatter(logging.Formatter):
+class _ConsoleFormatter(logging.Formatter):
     def format(
         self,
         record: logging.LogRecord,
@@ -677,7 +734,7 @@ class ConsoleFormatter(logging.Formatter):
         )
 
 
-class ZstdFileHandler(logging.Handler):
+class _ZstdFileHandler(logging.Handler):
     def __init__(self, path: Path, level: int | str = logging.NOTSET) -> None:
         super().__init__(level)
         self.file = zstandard.open(
