@@ -38,8 +38,6 @@ jobs:
         poetry install
     - name: Invoke sphinx-build
       run: |
-        mkdir docs/api
-        poetry run make -C docs api-stubs
         poetry run make -C docs SPHINXOPTS="-W" html
     - name: Archive webpage
       uses: actions/upload-artifact@v3

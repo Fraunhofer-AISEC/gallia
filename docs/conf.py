@@ -44,6 +44,7 @@ extensions = [
     "myst_parser",
 ]
 
+myst_heading_anchors = 2
 myst_enable_extensions = ["deflist"]
 
 # Add any paths that contain templates here, relative to this directory.

@@ -52,7 +52,7 @@ Several concepts and ideas are implemented in `gallia` in order to provide compr
 :maxdepth: 1
 :caption: API
 
-api/modules
+api
 ```
 
 `gallia` is designed as a pentesting framework where each test produces a lot of data.

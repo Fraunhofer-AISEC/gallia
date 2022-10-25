@@ -25,6 +25,8 @@ The relevant transport protocol is specified in the scheme.
 
 ### isotp
 
+ISO-TP (ISO 15765-2) as provided by the Linux [socket API](https://www.kernel.org/doc/html/latest/networking/can.html).
+
 The can interface is specified as a host, e.g. `can0`.
 The following parameters are available (these are ISOTP transport settings):
 
