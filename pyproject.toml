@@ -37,6 +37,7 @@ tomli = { version = "^2.0.1", python = "<3.11" }
 msgspec = ">=0.8,<0.10"
 pydantic = "^1.10"
 pygit2 = "^1.10"
+tqdm = "^4.64.1"
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.10"
@@ -59,6 +60,7 @@ sphinx-rtd-theme = "^1.0"
 reuse = "^1.0.0"
 construct-typing = "^0.5.2"
 pytest-cov = "^4.0"
+types-tqdm = "^4.64.7.1"
 
 [tool.poetry.scripts]
 "gallia" = "gallia.cli:main"

@@ -227,6 +227,15 @@ class BaseCommand(ABC):
             default=self.config.get_value("gallia.lock_file", None),
             help="path to file used for a posix lock",
         )
+        group.add_argument(
+            "--progress",
+            action=argparse.BooleanOptionalAction,
+            default=self.config.get_value(
+                "gallia.scanner.progress",
+                default=sys.stderr.isatty(),
+            ),
+            help="Enable/Disable progress bar",
+        )
 
         if self.HAS_ARTIFACTS_DIR:
             mutex_group = group.add_mutually_exclusive_group()
@@ -344,9 +353,10 @@ class BaseCommand(ABC):
                 self.get_log_level(args),
                 self.get_file_log_level(args),
                 self.artifacts_dir.joinpath(FileNames.LOGFILE.value),
+                progress=args.progress,
             )
         else:
-            setup_logging(self.get_log_level(args))
+            setup_logging(self.get_log_level(args), progress=args.progress)
 
         self.run_hook(HookVariant.PRE, args)
 

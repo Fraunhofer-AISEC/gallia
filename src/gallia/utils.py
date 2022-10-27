@@ -14,10 +14,11 @@ from collections.abc import Awaitable, Callable, Sequence
 from enum import Enum
 from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, Iterable, TypeVar
 from urllib.parse import urlparse
 
 import aiofiles
+from tqdm import tqdm
 
 from gallia.services.uds.core.service import NegativeResponse
 from gallia.services.uds.core.utils import bytes_repr, int_repr
@@ -239,3 +240,25 @@ def lazy_import(name: str) -> ModuleType:
     sys.modules[name] = module
     loader.exec_module(module)
     return module
+
+
+_T = TypeVar("_T")
+
+
+def wrap_progress(
+    generator: Iterable[_T],
+    description: str = "",
+    unit: str = "",
+    total: int | None = None,
+    enabled: bool = True,
+) -> Iterable[_T]:
+    return tqdm(
+        generator,
+        disable=not enabled,
+        total=total,
+        leave=False,
+        desc=description,
+        unit=unit,
+        miniters=100,
+        dynamic_ncols=True,
+    )

@@ -15,7 +15,7 @@ from gallia.services.uds.core.exception import IllegalResponse
 from gallia.services.uds.core.service import NegativeResponse, UDSResponse
 from gallia.services.uds.core.utils import service_repr
 from gallia.services.uds.helpers import suggests_service_not_supported
-from gallia.utils import ParseSkips, auto_int, g_repr
+from gallia.utils import ParseSkips, auto_int, g_repr, wrap_progress
 
 
 class ScanIdentifiers(UDSScanner):
@@ -152,8 +152,16 @@ class ScanIdentifiers(UDSScanner):
                     )
                     args.end = 0xFF
 
-            for (DID, sub_function) in product(
-                range(args.start, args.end + 1), sub_functions
+            end_index = args.end + 1
+            n_iterations = (end_index - args.start) * len(sub_functions)
+            for (DID, sub_function) in wrap_progress(
+                product(
+                    range(args.start, end_index),
+                    sub_functions,
+                ),
+                enabled=args.progress,
+                total=n_iterations,
+                description=f"session {session:#x}",
             ):
                 if session in args.skip and DID in args.skip[session]:
                     self.logger.info(f"{g_repr(DID)}: skipped")

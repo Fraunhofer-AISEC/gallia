@@ -330,6 +330,7 @@ def cmd_template(args: argparse.Namespace) -> None:
 # dumpcap = <bool>
 # artifacts_dir = <string>
 # artifacts_base = <string>
+# progress = <bool>
 
 [gallia.protocols.uds]
 # dumpcap = <bool>
