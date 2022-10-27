@@ -12,8 +12,7 @@ from typing import AsyncIterator, Callable
 import pytest
 
 from gallia.log import setup_logging
-from gallia.transports.base import BaseTransport, TargetURI
-from gallia.transports.tcp import TCPLinesTransport, TCPTransport
+from gallia.transports import BaseTransport, TargetURI, TCPLinesTransport, TCPTransport
 
 listen_target = TargetURI("tcp://127.0.0.1:1234")
 test_data = [b"hello" b"tcp"]

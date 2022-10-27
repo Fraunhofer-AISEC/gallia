@@ -12,7 +12,13 @@ from typing import Any
 import aiosqlite
 
 from gallia.log import get_logger
-from gallia.services.uds.core import service
+from gallia.services.uds import (
+    PositiveResponse,
+    SubFunctionRequest,
+    SubFunctionResponse,
+    UDSRequest,
+    UDSResponse,
+)
 from gallia.services.uds.core.utils import bytes_repr as bytes_repr_
 from gallia.utils import g_repr
 
@@ -282,8 +288,8 @@ class DBHandler:
     async def insert_scan_result(
         self,
         state: dict[str, Any],
-        request: service.UDSRequest,
-        response: service.UDSResponse | None,
+        request: UDSRequest,
+        response: UDSResponse | None,
         exception: Exception | None,
         send_time: datetime,
         receive_time: datetime | None,
@@ -299,7 +305,7 @@ class DBHandler:
         }
         response_attributes: dict[str, Any] = {}
 
-        if isinstance(request, service.SubFunctionRequest):
+        if isinstance(request, SubFunctionRequest):
             request_attributes["sub_function"] = request.sub_function
 
         for attr, value in request.__dict__.items():
@@ -318,10 +324,10 @@ class DBHandler:
         if response is not None:
             response_attributes = {"service_id": response.service_id}
 
-            if isinstance(response, service.PositiveResponse):
+            if isinstance(response, PositiveResponse):
                 response_attributes["data"] = bytes_repr(response.data)
 
-            if isinstance(response, service.SubFunctionResponse):
+            if isinstance(response, SubFunctionResponse):
                 response_attributes["sub_function"] = response.sub_function
 
             for attr, value in response.__dict__.items():
