@@ -26,6 +26,7 @@ from typing import TYPE_CHECKING, Any, BinaryIO, Iterator, TextIO, cast
 
 import msgspec
 import zstandard
+from tqdm.contrib import DummyTqdmFile
 
 if TYPE_CHECKING:
     from logging import _ExcInfoType
@@ -250,6 +251,7 @@ def setup_logging(
     file_level: Loglevel = Loglevel.DEBUG,
     path: Path | None = None,
     color_mode: ColorMode = ColorMode.AUTO,
+    progress: bool = False,
 ) -> None:
     """Enable and configure gallia's logging system.
     If this fuction is not called as early as possible,
@@ -265,6 +267,9 @@ def setup_logging(
     :param file_level: The loglevel to enable for the file handler.
     :param path: The path to the logfile containing json records.
     :param color_mode: The color mode to use for the console.
+    :param progress: If a progress bar via ``tqdm`` is used, set
+                     this to ``True`` to setup the console handler
+                     correctly.
     """
     set_color_mode(color_mode)
 
@@ -283,7 +288,8 @@ def setup_logging(
     logging.getLogger("asyncio").setLevel(logging.CRITICAL)
     logging.getLogger("aiosqlite").setLevel(logging.CRITICAL)
 
-    stderr_handler = logging.StreamHandler(sys.stderr)
+    stream = DummyTqdmFile(sys.stderr) if progress else sys.stderr
+    stderr_handler = logging.StreamHandler(stream)  # type: ignore
     stderr_handler.setLevel(level)
     stderr_handler.setFormatter(_ConsoleFormatter())
 

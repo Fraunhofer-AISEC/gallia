@@ -8,6 +8,8 @@ import reprlib
 from argparse import Namespace
 from itertools import product
 
+from tqdm import tqdm
+
 from gallia.command import UDSScanner
 from gallia.services.uds.core.client import UDSRequestConfig
 from gallia.services.uds.core.constants import RCSubFuncs, UDSErrorCodes, UDSIsoServices
@@ -152,8 +154,19 @@ class ScanIdentifiers(UDSScanner):
                     )
                     args.end = 0xFF
 
-            for (DID, sub_function) in product(
-                range(args.start, args.end + 1), sub_functions
+            end_index = args.end + 1
+            n_iterations = (end_index - args.start) * len(sub_functions)
+            for (DID, sub_function) in tqdm(
+                product(
+                    range(args.start, end_index),
+                    sub_functions,
+                ),
+                disable=not args.progress,
+                total=n_iterations,
+                leave=False,
+                desc=f"session {session:#x}",
+                unit="",
+                miniters=100,
             ):
                 if session in args.skip and DID in args.skip[session]:
                     self.logger.info(f"{g_repr(DID)}: skipped")
