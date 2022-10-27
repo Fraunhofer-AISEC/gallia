@@ -26,7 +26,7 @@ class UDSScanner(Scanner):
     """
 
     CATEGORY = "scan"
-    SUBCATEGORY = "uds"
+    SUBCATEGORY: str | None = "uds"
 
     def __init__(self, parser: ArgumentParser, config: Config = Config()) -> None:
         super().__init__(parser, config)
