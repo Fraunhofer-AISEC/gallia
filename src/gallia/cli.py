@@ -7,81 +7,26 @@
 import argparse
 import os
 import sys
-from collections.abc import Callable
-from importlib.metadata import entry_points, version
+from importlib.metadata import EntryPoint, version
 from pathlib import Path
 from pprint import pprint
 from typing import Any
 
 import argcomplete
 
-from gallia.command import BaseCommand, load_ecus
-from gallia.commands.discover.uds.doip import DoIPDiscoverer
-from gallia.commands.discover.uds.isotp import IsotpDiscoverer
-from gallia.commands.fuzz.uds.pdu import PDUFuzzer
-from gallia.commands.primitive.uds.dtc import DTCPrimitive
-from gallia.commands.primitive.uds.ecu_reset import ECUResetPrimitive
-from gallia.commands.primitive.uds.iocbi import IOCBIPrimitive
-from gallia.commands.primitive.uds.ping import PingPrimitive
-from gallia.commands.primitive.uds.read_by_identifier import ReadByIdentifierPrimitive
-from gallia.commands.primitive.uds.read_error_log import ReadErrorLogPrimitive
-from gallia.commands.primitive.uds.rmba import RMBAPrimitive
-from gallia.commands.primitive.uds.rtcl import RTCLPrimitive
-from gallia.commands.primitive.uds.send_pdu import SendPDUPrimitive
-from gallia.commands.primitive.uds.vin import VINPrimitive
-from gallia.commands.primitive.uds.wmba import WMBAPrimitive
-from gallia.commands.primitive.uds.write_by_identifier import WriteByIdentifierPrimitive
-from gallia.commands.scan.uds.identifiers import ScanIdentifiers
-from gallia.commands.scan.uds.memory import MemoryFunctionsScanner
-from gallia.commands.scan.uds.reset import ResetScanner
-from gallia.commands.scan.uds.sa_dump_seeds import SASeedsDumper
-from gallia.commands.scan.uds.services import ServicesScanner
-from gallia.commands.scan.uds.sessions import SessionsScanner
-from gallia.commands.script.vecu import VirtualECU
+from gallia.command.base import BaseCommand
+from gallia.commands import registry as cmd_registry
 from gallia.config import Config, load_config_file
-from gallia.log import Loglevel, setup_logging
-from gallia.transports import load_transports
-
-
-def load_cli_commands() -> list[type[BaseCommand]]:
-    out = []
-    eps = entry_points()
-    for entry in eps.select(group="gallia_cli_commands"):
-        cmd_list: list[type[BaseCommand]] = entry.load()
-        for cmd in cmd_list:
-            out.append(cmd)
-    return out
-
-
-def load_cli_init() -> list[Callable[[dict[str, Any]], None]]:
-    out = []
-    eps = entry_points()
-    for entry in eps.select(group="gallia_cli_init"):
-        out.append(entry.load())
-    return out
-
-
-def add_cli_category(
-    parent: dict[str, Any],
-    category: str,
-    help_: str,
-    metavar: str,
-    description: str | None = None,
-    epilog: str | None = None,
-) -> None:
-    parser = parent["subparsers"].add_parser(
-        category,
-        help=help_,
-        description=description,
-        epilog=epilog,
-    )
-    parser.set_defaults(usage_func=parser.print_usage)
-    parser.set_defaults(help_func=parser.print_help)
-
-    parent["siblings"][category] = {}
-    parent["siblings"][category]["siblings"] = {}
-    parent["siblings"][category]["parser"] = parser
-    parent["siblings"][category]["subparsers"] = parser.add_subparsers(metavar=metavar)
+from gallia.log import setup_logging
+from gallia.plugins import (
+    add_cli_category,
+    load_cli_init_plugin_eps,
+    load_cli_init_plugins,
+    load_command_plugin_eps,
+    load_command_plugins,
+    load_ecu_plugin_eps,
+    load_transport_plugin_eps,
+)
 
 
 def load_parsers() -> dict[str, Any]:
@@ -300,18 +245,22 @@ def cmd_show_defaults(parser: argparse.ArgumentParser) -> None:
     pprint(get_cli_defaults(parser))
 
 
-def _print_plugin(description: str, fn: Callable[[], Any]) -> None:
-    if len(objs := fn()) > 0:
-        print(f"{description}:")
-        for obj in objs:
-            print(f" * {obj}")
+def _print_plugin(description: str, eps: list[EntryPoint]) -> None:
+    print(f"{description}:")
+    for ep in eps:
+        print(f" {ep.name}:")
+        cls_list = ep.load()
+        for cls in cls_list:
+            print(f"  * {cls}")
 
 
 def cmd_show_plugins() -> None:
-    _print_plugin("initialization callbacks", load_cli_init)
-    _print_plugin("commands", load_cli_commands)
-    _print_plugin("transports", load_transports)
-    _print_plugin("ecus", load_ecus)
+    _print_plugin(
+        "initialization callbacks (gallia_cli_init)", load_cli_init_plugin_eps()
+    )
+    _print_plugin("commands (gallia_cli_commands)", load_command_plugin_eps())
+    _print_plugin("transports (gallia_transports)", load_transport_plugin_eps())
+    _print_plugin("ecus (gallia_ecus)", load_ecu_plugin_eps())
 
 
 def cmd_template(args: argparse.Namespace) -> None:
@@ -347,43 +296,19 @@ def cmd_template(args: argparse.Namespace) -> None:
 
 
 def main() -> None:
-    registry: list[type[BaseCommand]] = [
-        # SimpleTestXCP,
-        DoIPDiscoverer,
-        IsotpDiscoverer,
-        PDUFuzzer,
-        MemoryFunctionsScanner,
-        ReadByIdentifierPrimitive,
-        ResetScanner,
-        SASeedsDumper,
-        ScanIdentifiers,
-        SessionsScanner,
-        ServicesScanner,
-        DTCPrimitive,
-        ECUResetPrimitive,
-        VINPrimitive,
-        IOCBIPrimitive,
-        PingPrimitive,
-        RMBAPrimitive,
-        RTCLPrimitive,
-        ReadErrorLogPrimitive,
-        SendPDUPrimitive,
-        WMBAPrimitive,
-        VirtualECU,
-        WriteByIdentifierPrimitive,
-    ]
+    registry = cmd_registry[:]
 
-    plugin_cmds = load_cli_commands()
+    plugin_cmds = load_command_plugins()
     if len(plugin_cmds) > 0:
         registry += plugin_cmds
 
     # Will be set to the correct verbosity later.
-    setup_logging(Loglevel.DEBUG)
+    setup_logging()
 
     parsers = load_parsers()
 
     # Load plugins.
-    for fn in load_cli_init():
+    for fn in load_cli_init_plugins():
         fn(parsers)
 
     config, config_path = load_config_file()

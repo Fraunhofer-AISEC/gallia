@@ -22,12 +22,12 @@ SPDX-License-Identifier: CC0-1.0
     :show-inheritance:
 ```
 
-## gallia.transports.base
+## gallia.transports
 
 All available transports are documented in {doc}`../transports`.
 
 ```{eval-rst}
-.. automodule:: gallia.transports.base
+.. automodule:: gallia.transports
     :members:
     :show-inheritance:
 ```

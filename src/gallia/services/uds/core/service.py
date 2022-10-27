@@ -13,7 +13,7 @@ from collections.abc import Sequence
 from struct import pack
 from typing import Any, TypeVar
 
-from gallia.services.uds import logger
+from gallia.log import get_logger
 from gallia.services.uds.core.constants import (
     DTCFormatIdentifier,
     InputOutputControlParameter,
@@ -38,6 +38,8 @@ from gallia.services.uds.core.utils import (
     to_bytes,
     uds_memory_parameters,
 )
+
+logger = get_logger("uds")
 
 # ****************
 # * Base classes *

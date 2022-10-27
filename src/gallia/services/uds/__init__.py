@@ -2,6 +2,21 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from gallia.log import get_logger
 
-logger = get_logger("uds")
+from gallia.services.uds.core.service import (
+    NegativeResponse,
+    PositiveResponse,
+    SubFunctionRequest,
+    SubFunctionResponse,
+    UDSRequest,
+    UDSResponse,
+)
+
+__all__ = [
+    "UDSRequest",
+    "UDSResponse",
+    "SubFunctionRequest",
+    "SubFunctionResponse",
+    "PositiveResponse",
+    "NegativeResponse",
+]
