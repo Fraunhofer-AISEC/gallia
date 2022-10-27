@@ -258,7 +258,7 @@ def cmd_show_plugins() -> None:
     _print_plugin(
         "initialization callbacks (gallia_cli_init)", load_cli_init_plugin_eps()
     )
-    _print_plugin("commands (gallia_cli_commands)", load_command_plugin_eps())
+    _print_plugin("commands (gallia_commands)", load_command_plugin_eps())
     _print_plugin("transports (gallia_transports)", load_transport_plugin_eps())
     _print_plugin("ecus (gallia_ecus)", load_ecu_plugin_eps())
 

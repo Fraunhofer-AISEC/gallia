@@ -42,7 +42,7 @@ def load_ecu(vendor: str) -> type[ECU]:
 
 def load_command_plugin_eps() -> list[EntryPoint]:
     eps = entry_points()
-    return list(eps.select(group="gallia_cli_commands"))
+    return list(eps.select(group="gallia_commands"))
 
 
 def load_command_plugins() -> list[type[BaseCommand]]:
