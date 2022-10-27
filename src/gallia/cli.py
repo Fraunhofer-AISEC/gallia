@@ -7,6 +7,7 @@
 import argparse
 import os
 import sys
+from collections.abc import Iterable
 from importlib.metadata import EntryPoint, version
 from pathlib import Path
 from pprint import pprint
@@ -248,10 +249,13 @@ def cmd_show_defaults(parser: argparse.ArgumentParser) -> None:
 def _print_plugin(description: str, eps: list[EntryPoint]) -> None:
     print(f"{description}:")
     for ep in eps:
-        print(f" {ep.name}:")
-        cls_list = ep.load()
-        for cls in cls_list:
-            print(f"  * {cls}")
+        print(f"  EntryPoint.name: {ep.name}")
+        ep_loaded = ep.load()
+        if isinstance(ep_loaded, Iterable):
+            for cls in ep_loaded:
+                print(f"    * {cls}")
+        else:
+            print(f"    * {ep_loaded}")
 
 
 def cmd_show_plugins() -> None:
