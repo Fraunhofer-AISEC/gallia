@@ -10,7 +10,7 @@ SPDX-License-Identifier: CC0-1.0
 `gallia` uses the [`entry_points` mechanism](https://docs.python.org/3/library/importlib.metadata.html#entry-points) for registering plugins.
 These entry points are known by `gallia`:
 
-`gallia_cli_commands`
+`gallia_commands`
 : List of subclasses of {class}`gallia.command.BaseCommand` add new a command to the CLI.
 
 `gallia_cli_init`
@@ -50,7 +50,7 @@ commands = [HelloWorld]
 In `pyproject.toml` using `poetry` the following entry_point needs to be specified:
 
 ``` toml
-[tool.poetry.plugins."gallia_cli_commands"]
+[tool.poetry.plugins."gallia_commands"]
 "hello_world_commands" = "hello_gallia.hello:commands"
 ```
 
