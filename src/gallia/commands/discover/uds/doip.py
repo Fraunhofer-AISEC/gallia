@@ -5,7 +5,7 @@
 import asyncio
 from argparse import Namespace
 
-from gallia.command import DiscoveryScanner
+from gallia.command import UDSDiscoveryScanner
 from gallia.services.uds.core.service import (
     DiagnosticSessionControlRequest,
     DiagnosticSessionControlResponse,
@@ -24,7 +24,7 @@ from gallia.transports.doip import (
 from gallia.utils import auto_int, write_target_list
 
 
-class DoIPDiscoverer(DiscoveryScanner):
+class DoIPDiscoverer(UDSDiscoveryScanner):
     """ECU and routing discovery scanner for DoIP"""
 
     SUBCATEGORY = "uds"

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from gallia.command.base import AsyncScript, BaseCommand, Scanner, Script
-from gallia.command.uds import DiscoveryScanner, UDSScanner
+from gallia.command.uds import UDSDiscoveryScanner, UDSScanner
 
 __all__ = [
     "BaseCommand",
@@ -11,5 +11,5 @@ __all__ = [
     "Script",
     "Scanner",
     "UDSScanner",
-    "DiscoveryScanner",
+    "UDSDiscoveryScanner",
 ]

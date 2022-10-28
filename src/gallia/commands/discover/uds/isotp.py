@@ -6,7 +6,7 @@ import asyncio
 from argparse import Namespace
 from binascii import unhexlify
 
-from gallia.command import DiscoveryScanner
+from gallia.command import UDSDiscoveryScanner
 from gallia.services.uds.core.client import UDSClient
 from gallia.services.uds.core.service import NegativeResponse, UDSRequest
 from gallia.transports.base import TargetURI
@@ -14,7 +14,7 @@ from gallia.transports.can import ISOTPTransport, RawCANTransport
 from gallia.utils import auto_int, can_id_repr, g_repr, write_target_list
 
 
-class IsotpDiscoverer(DiscoveryScanner):
+class IsotpDiscoverer(UDSDiscoveryScanner):
     """This scanner discovers all UDS endpoints on a ECU using ISO-TP normal addressing.
     This is the default protocol used by OBD.
     When using normal addressing, the ISO-TP header does not include an address and there is no generic tester address.
