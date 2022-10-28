@@ -365,7 +365,8 @@ class BaseCommand(ABC):
                 self.logger.info(f"Stored artifacts at {self.artifacts_dir}")
 
         if not args.skip_hooks:
-            self.run_hook(HookVariant.POST, args, exit_code)
+            code = exit_code.value if isinstance(exit_code, ExitCodes) else exit_code
+            self.run_hook(HookVariant.POST, args, code)
 
         if self._lock_file_fd is not None:
             self._release_flock()
