@@ -140,7 +140,12 @@ class BaseCommand(ABC):
             return Loglevel.TRACE
         return Loglevel.TRACE if args.verbose >= 2 else Loglevel.DEBUG
 
-    def run_hook(self, variant: HookVariant, args: Namespace) -> None:
+    def run_hook(
+        self,
+        variant: HookVariant,
+        args: Namespace,
+        exit_code: int | None = None,
+    ) -> None:
         script = args.pre_hook if variant == HookVariant.PRE else args.post_hook
         if script is None:
             return
@@ -151,6 +156,9 @@ class BaseCommand(ABC):
             "GALLIA_ARTIFACTS_DIR": str(self.artifacts_dir),
             "GALLIA_HOOK": variant.value,
         } | os.environ
+
+        if exit_code is not None:
+            env |= {"GALLIA_EXIT_CODE": str(exit_code)}
 
         p = run(  # pylint: disable=subprocess-run-check
             script, env=env, text=True, capture_output=True, shell=True
@@ -357,7 +365,7 @@ class BaseCommand(ABC):
                 self.logger.info(f"Stored artifacts at {self.artifacts_dir}")
 
         if not args.skip_hooks:
-            self.run_hook(HookVariant.POST, args)
+            self.run_hook(HookVariant.POST, args, exit_code)
 
         if self._lock_file_fd is not None:
             self._release_flock()
