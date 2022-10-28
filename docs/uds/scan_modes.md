@@ -21,7 +21,7 @@ The idea is crafting a valid UDS payload which is valid and at least some answer
 A well working payload is `1001` which is a request to the DiagnosticSessionControl service.
 This request instructs an ECU to change to the so called DefaultSession.
 The DiagnosticSessionControl service and the DefaultSession should be always available, thus this payload is a good candidate for a discovery scan.
-Payloads different from `1001` can be used as well; for instance `1003` is also useful since a lot of ECUs provide acoustic feedback when the ExtendedDiagnosticSession (the session id is `0x03`) is enabled.
+Payloads different from `1001` can be used as well; for instance `1003` to enable the ExtendedDiagnosticSession (session id `0x03`).
 
 The **addressing** of the ECU is provided by the underlying transport protocol.
 Most of the time there are two addresses: the tester address and the ECU address.
