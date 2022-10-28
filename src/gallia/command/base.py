@@ -6,6 +6,7 @@ import argparse
 import asyncio
 import fcntl
 import os
+import shutil
 import signal
 import sys
 import traceback
@@ -495,6 +496,8 @@ class Scanner(AsyncScript, ABC):
         # Start dumpcap as the first subprocess; otherwise network
         # traffic might be missing.
         if args.dumpcap:
+            if shutil.which("dumpcap") is None:
+                self.parser.error("--dumpcap specified but `dumpcap` is not available")
             self.dumpcap = await Dumpcap.start(args.target, self.artifacts_dir)
             await self.dumpcap.sync()
 
