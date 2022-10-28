@@ -214,7 +214,7 @@ class UDSScanner(Scanner):
         await super().teardown(args)
 
 
-class DiscoveryScanner(Scanner):
+class UDSDiscoveryScanner(Scanner):
     CATEGORY = "discover"
 
     def configure_class_parser(self) -> None:
