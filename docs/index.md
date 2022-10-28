@@ -24,7 +24,6 @@ Acting as a generic interface, the [logging](https://fraunhofer-aisec.github.io/
 :caption: Usage
 
 setup
-architecture
 automation
 transports
 env
