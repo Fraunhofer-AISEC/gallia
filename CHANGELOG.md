@@ -15,7 +15,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Added
 
+* New utility `hr` for displaying logfiles (#215)
+* Builtin support for controlling power supplies (#255).
+* New utility `opennetzteil` for controlling power supplies from the command line (#255)
+* Config file support: `gallia.toml` (#209)
+* Hooks for starting pre-/postprocessing scripts (#271)
+* Documented public API: https://fraunhofer-aisec.github.io/gallia/api.html
 * Add a payload fuzzer scanner (#154)
+* More documentation… :) For instance, how UDS scanning works: https://fraunhofer-aisec.github.io/gallia/uds/scan_modes.html
+
+## Changed
+
+* Overhauled logging system. Logfiles are now produced by `gallia` itself (#215).
+* The CLI interface is now based on subcommands and much cleaner.
+* Plugin Interface: https://fraunhofer-aisec.github.io/gallia/plugins.html
+
+## Removed
+
+* Drop support for Python 3.9. Python 3.10 and 3.11 are now supported.
+* `penrun` script: Functionality is now completely available within `gallia`.
 
 ## 1.0.3 (2022-06-30)
 
