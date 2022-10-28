@@ -99,7 +99,7 @@ The DoIP gateway address is specified in the location.
 Example:
 
 ``` text
-doip://169.254.100.100:6801?src_addr=0xf4&dst_addr=0x1d
+doip://169.254.100.100:1234?src_addr=0xf4&dst_addr=0x1d
 ```
 
 ### tcp-lines
@@ -111,7 +111,7 @@ Mainly useful for testing.
 Example:
 
 ``` text
-tcp-lines://127.0.0.1:6801
+tcp-lines://127.0.0.1:1234
 ```
 
 
@@ -127,7 +127,7 @@ from gallia.transports.doip import DOiPTransport
 
 
 async def main():
-    transport = await DOiPTransport.connect("doip://169.254.100.100:6801?src_addr=0xf4&dst_addr=0x1d")
+    transport = await DOiPTransport.connect("doip://192.0.2.5:13400?src_addr=0xf4&dst_addr=0x1d")
     await transport.write(bytes([0x10, 0x01]))
 
 
