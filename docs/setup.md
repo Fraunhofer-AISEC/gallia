@@ -11,7 +11,7 @@ This project has the following system level dependencies:
 
 * [Linux](https://kernel.org) >= 5.10
 * [Python](https://python.org) >= 3.10
-* [poetry](https://python-poetry.org) (optional, for development)
+* [poetry](https://python-poetry.org) >= 1.2 (optional, for development)
 * [dumpcap](https://www.wireshark.org/docs/man-pages/dumpcap.html) (optional, part of [wireshark](https://www.wireshark.org/))
 
 Python dependencies are listed in `pyproject.toml`.
