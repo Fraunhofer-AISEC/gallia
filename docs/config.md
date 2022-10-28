@@ -35,7 +35,7 @@ Alternatively, they can be useful for e.g. sending notifications about the exit_
 Hooks are shell scripts which are executed before (= pre-hook) or after (= post-hook) the `main()` method.
 These scripts can be specified via `--pre-hook` or `--post-hook` or via `gallia.toml` as well.
 
-The hook scripts have these environment variables set:
+The hook scripts have these environment variables set; some are optional and hook scripts are encouraged to check their presence before accessing them:
 
 GALLIA_HOOK
 : Either `pre` or `post`.
@@ -43,6 +43,22 @@ GALLIA_HOOK
 GALLIA_ARTIFACTS_DIR
 : Path to the artifactsdir for the current testrun.
 
-GALLIA_EXIT_CODE
+GALLIA_EXIT_CODE (optional)
 : Only set for post-hooks; is set to the exit_code which `gallia` will use after the hook terminates.
   For instance GALLIA_EXIT_CODE different from zero means that the current testrun failed.
+
+GALLIA_INVOCATION
+: The content os `sys.argv`, in other words the raw invocation of `gallia`.
+
+GALLIA_CATEGORY (optional)
+: Usually the first part of the command on the cli. For instance, for `gallia scan uds identifiers` 
+  `GALLIA_CATEGORY` is `scan.`
+
+GALLIA_SUBCATEGORY (optional)
+: Usually the second part of the command on the cli. For instance, for `gallia scan uds identifiers` 
+  `GALLIA_CATEGORY` is `uds.`
+
+GALLIA_COMMAND (optional)
+: Usually the last part of the command on the cli. For instance, for `gallia scan uds identifiers` 
+  `GALLIA_COMMAND` is `identifiers.`
+

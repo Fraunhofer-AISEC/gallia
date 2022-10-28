@@ -155,8 +155,15 @@ class BaseCommand(ABC):
         env = {
             "GALLIA_ARTIFACTS_DIR": str(self.artifacts_dir),
             "GALLIA_HOOK": variant.value,
+            "GALLIA_INVOCATION": sys.argv[0],
         } | os.environ
 
+        if self.COMMAND is not None:
+            env |= {"GALLIA_COMMAND": self.COMMAND}
+        if self.CATEGORY is not None:
+            env |= {"GALLIA_CATEGORY": self.CATEGORY}
+        if self.SUBCATEGORY is not None:
+            env |= {"GALLIA_CATEGORY": self.SUBCATEGORY}
         if exit_code is not None:
             env |= {"GALLIA_EXIT_CODE": str(exit_code)}
 
