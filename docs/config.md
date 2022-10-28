@@ -52,13 +52,13 @@ GALLIA_INVOCATION
 
 GALLIA_CATEGORY (optional)
 : Usually the first part of the command on the cli. For instance, for `gallia scan uds identifiers` 
-  `GALLIA_CATEGORY` is `scan.`
+  `GALLIA_CATEGORY` is `scan`.
 
 GALLIA_SUBCATEGORY (optional)
 : Usually the second part of the command on the cli. For instance, for `gallia scan uds identifiers` 
-  `GALLIA_CATEGORY` is `uds.`
+  `GALLIA_CATEGORY` is `uds`.
 
 GALLIA_COMMAND (optional)
 : Usually the last part of the command on the cli. For instance, for `gallia scan uds identifiers` 
-  `GALLIA_COMMAND` is `identifiers.`
+  `GALLIA_COMMAND` is `identifiers`.
 
