@@ -15,7 +15,7 @@ from argparse import ArgumentParser, Namespace
 from datetime import datetime, timezone
 from enum import Enum, IntEnum, unique
 from pathlib import Path
-from subprocess import run
+from subprocess import CalledProcessError, run
 from tempfile import gettempdir
 from typing import cast
 
@@ -167,17 +167,27 @@ class BaseCommand(ABC):
         if exit_code is not None:
             env |= {"GALLIA_EXIT_CODE": str(exit_code)}
 
-        p = run(  # pylint: disable=subprocess-run-check
-            script, env=env, text=True, capture_output=True, shell=True
-        )
-        if p.returncode != 0:
+        try:
+            p = run(
+                script,
+                env=env,
+                text=True,
+                capture_output=True,
+                shell=True,
+                check=True,
+            )
+            stdout = p.stdout
+            stderr = p.stderr
+        except CalledProcessError as e:
             self.logger.warning(
                 f"{variant.value}-hook failed (exit code: {p.returncode})"
             )
+            stdout = e.stdout
+            stderr = e.stderr
 
-        if p.stdout:
+        if stdout:
             self.logger.info(p.stdout.strip(), extra={"tags": [hook_id, "stdout"]})
-        if p.stderr:
+        if stderr:
             self.logger.info(p.stderr.strip(), extra={"tags": [hook_id, "stderr"]})
 
     def configure_class_parser(self) -> None:
