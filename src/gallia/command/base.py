@@ -193,6 +193,11 @@ class BaseCommand(ABC):
             help="shell script to run after the main entry_point",
         )
         group.add_argument(
+            "--skip-hooks",
+            action="store_true",
+            help="do not execute pre and post hooks",
+        )
+        group.add_argument(
             "--lock-file",
             type=Path,
             metavar="PATH",
@@ -320,7 +325,8 @@ class BaseCommand(ABC):
         else:
             setup_logging(self.get_log_level(args))
 
-        self.run_hook(HookVariant.PRE, args)
+        if not args.skip_hooks:
+            self.run_hook(HookVariant.PRE, args)
 
         exit_code = 0
         try:
@@ -350,7 +356,8 @@ class BaseCommand(ABC):
                 )
                 self.logger.info(f"Stored artifacts at {self.artifacts_dir}")
 
-        self.run_hook(HookVariant.POST, args)
+        if not args.skip_hooks:
+            self.run_hook(HookVariant.POST, args)
 
         if self._lock_file_fd is not None:
             self._release_flock()
