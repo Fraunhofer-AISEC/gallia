@@ -15,7 +15,6 @@ SPDX-License-Identifier: CC0-1.0
 Gallia is an extendable pentesting framework with the focus on the automotive domain.
 The scope of the toolchain is conducting penetration tests from a single ECU up to whole cars.
 Currently, the main focus lies on the [UDS](https://www.iso.org/standard/72439.html) interface.
-Taking advantage of this modular design, the [logging and archiving](https://fraunhofer-aisec.github.io/gallia/penlog.7.html) functionality was developed separately.
 Acting as a generic interface, the logging functionality implements reproducible tests and enables post-processing tasks.
 The [rendered documentation](https://fraunhofer-aisec.github.io/gallia) is available via Github Pages.
 Alternatively, the documentation is hosted on [readthedocs](https://gallia.readthedocs.io/en/latest) as well.
