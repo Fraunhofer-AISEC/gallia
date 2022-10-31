@@ -12,6 +12,8 @@ jobs:
   deploy:
 
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
     - uses: actions/checkout@v3
@@ -34,4 +36,4 @@ jobs:
 
     - name: Upload zipapp
       run: |
-        env "GH_TOKEN=${{ secrets.GITHUB_TOKEN }}" gh release upload ${{ github.ref }} gallia.pyz
+       gh release upload ${{ github.ref_name }} gallia.pyz
