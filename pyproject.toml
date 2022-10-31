@@ -15,6 +15,16 @@ readme = "README.md"
 documentation = "https://fraunhofer-aisec.github.io/gallia"
 repository = "https://github.com/Fraunhofer-AISEC/gallia"
 authors = ["AISEC Pentesting Team"]
+maintainers = [
+    "Stefan Tatschner <stefan.tatschner@aisec.fraunhofer.de>",
+    "Tobias Specht <tobias.specht@aisec.fraunhofer.de>",
+]
+keywords = ["pentesting", "automotive", "uds"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: AsyncIO",
+    "Operating System :: POSIX :: Linux",
+]
 packages = [
     { include = "gallia", from = "src" },
     { include = "cursed_hr", from = "src" },
