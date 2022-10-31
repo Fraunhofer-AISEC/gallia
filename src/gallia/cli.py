@@ -279,7 +279,8 @@ def cmd_template(args: argparse.Namespace) -> None:
 # db = <string>
 # target = <string>
 # power_supply = <string>
-# power_cycle = <float>
+# power_cycle = <bool>
+# power_cycle_sleep = <float>
 # dumpcap = <bool>
 # artifacts_dir = <string>
 # artifacts_base = <string>
