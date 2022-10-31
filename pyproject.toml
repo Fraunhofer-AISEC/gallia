@@ -79,6 +79,8 @@ pytest-cov = "^4.0"
 
 [tool.mypy]
 strict = true
+# mypy 0.990 will have this enabled by default
+enable_recursive_aliases = true
 
 [[tool.mypy.overrides]]
 module = [

@@ -4,6 +4,8 @@
 
 # PYTHON_ARGCOMPLETE_OK
 
+from __future__ import annotations
+
 import argparse
 import os
 import sys
@@ -20,6 +22,7 @@ from gallia.commands import registry as cmd_registry
 from gallia.config import Config, load_config_file
 from gallia.log import setup_logging
 from gallia.plugins import (
+    Parsers,
     add_cli_category,
     load_cli_init_plugin_eps,
     load_cli_init_plugins,
@@ -30,7 +33,7 @@ from gallia.plugins import (
 )
 
 
-def load_parsers() -> dict[str, Any]:
+def load_parsers() -> Parsers:
     parser = argparse.ArgumentParser(
         description="""gallia COMMANDs are grouped by CATEGORY and SUBCATEGORY.
         Each CATEGORY, SUBCATEGORY, or COMMAND contains a help page which can be accessed via `-h` or `--help`.
@@ -67,7 +70,7 @@ Every command line option can be set via a TOML config file. Check `gallia --tem
     )
 
     subparsers = parser.add_subparsers(metavar="CATEGORY")
-    parsers: dict[str, Any] = {
+    parsers: Parsers = {
         "parser": parser,
         "subparsers": subparsers,
         "siblings": {},
@@ -150,14 +153,15 @@ Every command line option can be set via a TOML config file. Check `gallia --tem
     return parsers
 
 
-# This can be annotated once recursive types are supported by mypy.
-# https://github.com/python/mypy/issues/731
 def build_cli(
-    parsers: dict[str, Any],
+    parsers: Parsers,
     config: Config,
     registry: list[type[BaseCommand]],
 ) -> None:
     for cls in registry:
+        if cls.CATEGORY is None:
+            continue
+
         if cls.SUBCATEGORY is not None:
             subparsers = parsers["siblings"][cls.CATEGORY]["siblings"][cls.SUBCATEGORY][
                 "subparsers"
@@ -165,6 +169,8 @@ def build_cli(
         else:
             subparsers = parsers["siblings"][cls.CATEGORY]["subparsers"]
 
+        # Seems like a mypy bug. This is already covered by the check above.
+        assert cls.COMMAND is not None
         subparser = subparsers.add_parser(
             cls.COMMAND,
             description=cls.__doc__,
