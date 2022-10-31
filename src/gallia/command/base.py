@@ -524,9 +524,11 @@ class Scanner(AsyncScript, ABC):
 
         if args.power_supply is not None:
             self.power_supply = await PowerSupply.connect(args.power_supply)
-            if (time_ := args.power_cycle) is not None:
-                await self.power_supply.power_cycle(time_, lambda: asyncio.sleep(2))
-        elif args.power_cycle is not None:
+            if args.power_cycle is True:
+                await self.power_supply.power_cycle(
+                    args.power_cycle_sleep, lambda: asyncio.sleep(2)
+                )
+        elif args.power_cycle is True:
             self.parser.error("--power-cycle needs --power-supply")
 
         # Start dumpcap as the first subprocess; otherwise network
@@ -577,14 +579,16 @@ class Scanner(AsyncScript, ABC):
         )
         group.add_argument(
             "--power-cycle",
-            default=self.config.get_value("gallia.scanner.power_cycle"),
-            const=5.0,
-            nargs="?",
+            action=argparse.BooleanOptionalAction,
+            default=self.config.get_value("gallia.scanner.power_cycle", False),
+            help="trigger a powercycle before starting the scan",
+        )
+        group.add_argument(
+            "--power-cycle-sleep",
+            metavar="SECs",
             type=float,
-            help=(
-                "trigger a powercycle before starting the scan; "
-                "optional argument specifies the sleep time in secs"
-            ),
+            default=self.config.get_value("gallia.scanner.power_cycle_sleep", 5.0),
+            help="time to sleep after the power-cycle",
         )
 
     def entry_point(self, args: Namespace) -> int:
