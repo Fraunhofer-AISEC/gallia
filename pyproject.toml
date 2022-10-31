@@ -99,9 +99,9 @@ asyncio_mode = "auto"
 
 [tool.pylint.messages_control]
 disable = [
-    "R0801",
     "broad-except",
     "c-extension-no-member",
+    "duplicate-code",
     "fixme",
     "invalid-name",
     "line-too-long",  # handled by black
