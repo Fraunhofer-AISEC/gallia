@@ -292,11 +292,15 @@ def setup_logging(
     if path is not None:
         zstd_handler = _ZstdFileHandler(path, level=file_level)
         zstd_handler.setFormatter(_JSONFormatter())
+        zstd_handler.setLevel(file_level)
         handlers.append(zstd_handler)
 
     logging.basicConfig(
         handlers=handlers,
-        level=file_level,
+        # Enable all log messages at the root logger.
+        # The stderr_handler and the zstd_handler have
+        # individual loglevels for appropriate filtering.
+        level=logging.NOTSET,
         force=True,
     )
 
