@@ -22,6 +22,14 @@ SPDX-License-Identifier: CC0-1.0
     :show-inheritance:
 ```
 
+## gallia.plugins
+
+```{eval-rst}
+.. automodule:: gallia.plugins
+    :members:
+    :show-inheritance:
+```
+
 ## gallia.transports
 
 All available transports are documented in {doc}`../transports`.

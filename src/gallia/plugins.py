@@ -22,21 +22,29 @@ class Parsers(TypedDict):
 
 
 def load_ecu_plugin_eps() -> list[EntryPoint]:
+    """Loads the ``gallia_uds_ecus`` entry_point."""
     eps = entry_points()
     return list(eps.select(group="gallia_uds_ecus"))
 
 
 def load_ecu_plugins() -> list[type[ECU]]:
+    """Loads the ``gallia_uds_ecus`` entry_point and
+    imports the ecu classes with some sanity checks."""
     ecus = []
     for ep in load_ecu_plugin_eps():
         for t in ep.load():
             if not issubclass(t, ECU):
-                raise ValueError(f"entry_point {t} is not derived from ECU")
+                raise ValueError(f"entry_point {t} not derived from ECU")
             ecus.append(t)
     return ecus
 
 
 def load_ecu(vendor: str) -> type[ECU]:
+    """Selects an ecu class depending on a vendor string.
+    The lookup is performed in builtin ecus and all
+    classes behind the ``gallia_uds_ecus`` entry_point.
+    The vendor string ``default`` selects a generic ECU.
+    """
     if vendor == "default":
         return ECU
 
@@ -48,25 +56,32 @@ def load_ecu(vendor: str) -> type[ECU]:
 
 
 def load_command_plugin_eps() -> list[EntryPoint]:
+    """Loads the ``gallia_commands`` entry_point."""
     eps = entry_points()
     return list(eps.select(group="gallia_commands"))
 
 
 def load_command_plugins() -> list[type[BaseCommand]]:
+    """Loads the ``gallia_commands`` entry_point and
+    imports the command classes with some sanity checks."""
     out = []
     for ep in load_command_plugin_eps():
-        cmd_list: list[type[BaseCommand]] = ep.load()
-        for cmd in cmd_list:
-            out.append(cmd)
+        for t in ep.load():
+            if not issubclass(t, BaseCommand):
+                raise ValueError(f"{type(t)} not derived from BaseCommand")
+            out.append(t)
     return out
 
 
 def load_cli_init_plugin_eps() -> list[EntryPoint]:
+    """Loads the ``gallia_cli_init`` entry_point."""
     eps = entry_points()
     return list(eps.select(group="gallia_cli_init"))
 
 
 def load_cli_init_plugins() -> list[Callable[[Parsers], None]]:
+    """Loads the ``gallia_cli_init`` entry_point and
+    imports the functions behind it."""
     out = []
     for entry in load_cli_init_plugin_eps():
         out.append(entry.load())
@@ -74,21 +89,29 @@ def load_cli_init_plugins() -> list[Callable[[Parsers], None]]:
 
 
 def load_transport_plugin_eps() -> list[EntryPoint]:
+    """Loads the ``gallia_transports`` entry_point."""
     eps = entry_points()
     return list(eps.select(group="gallia_transports"))
 
 
 def load_transport_plugins() -> list[type[BaseTransport]]:
+    """Loads the ``gallia_transports`` entry_point and
+    imports the transport classes with some sanity checks.
+    """
     out = []
     for ep in load_transport_plugin_eps():
         for t in ep.load():
             if not issubclass(t, BaseTransport):
-                raise ValueError(f"{type(t)} is not derived from BaseTransport")
+                raise ValueError(f"{type(t)} not derived from BaseTransport")
             out.append(t)
     return out
 
 
 def load_transport(target: TargetURI) -> type[BaseTransport]:
+    """Selects a transport class depending on a TargetURI.
+    The lookup is performed in builtin transports and all
+    classes behind the ``gallia_transports`` entry_point.
+    """
     transports = registry[:]
     transports += load_transport_plugins()
 
@@ -107,6 +130,11 @@ def add_cli_category(
     description: str | None = None,
     epilog: str | None = None,
 ) -> None:
+    """Adds a category to the gallia CLI interface. The arguments
+    correspond to the arguments of :meth:`argparse.ArgumentParser.add_argument()`.
+    The ``parent`` argument must contain the relevant entry point to the cli
+    parse tree. The parse tree is passed to the entry_point ``gallia_cli_init``.
+    """
     parser = parent["subparsers"].add_parser(
         category,
         help=help_,
