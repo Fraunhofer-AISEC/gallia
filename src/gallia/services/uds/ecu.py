@@ -327,11 +327,11 @@ class ECU(UDSClient):
         self.logger.info("waiting for ECU…")
         while True:
             try:
-                await asyncio.sleep(sleep_time)
                 await self.ping()
                 break
             except (BrokenPipeError, UDSException) as e:
                 self.logger.debug(f"ECU not ready: {g_repr(e)}")
+                await asyncio.sleep(sleep_time)
                 await self.reconnect()
         self.logger.info("ECU ready")
 
