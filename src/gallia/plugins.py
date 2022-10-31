@@ -4,14 +4,21 @@
 
 from __future__ import annotations
 
+import argparse
 from importlib.metadata import EntryPoint, entry_points
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Callable, TypedDict
 
 from gallia.services.uds.ecu import ECU
 from gallia.transports import BaseTransport, TargetURI, registry
 
 if TYPE_CHECKING:
     from gallia.command import BaseCommand
+
+
+class Parsers(TypedDict):
+    siblings: dict[str, Parsers]
+    parser: argparse.ArgumentParser
+    subparsers: argparse._SubParsersAction[argparse.ArgumentParser]
 
 
 def load_ecu_plugin_eps() -> list[EntryPoint]:
@@ -59,7 +66,7 @@ def load_cli_init_plugin_eps() -> list[EntryPoint]:
     return list(eps.select(group="gallia_cli_init"))
 
 
-def load_cli_init_plugins() -> list[Callable[[dict[str, Any]], None]]:
+def load_cli_init_plugins() -> list[Callable[[Parsers], None]]:
     out = []
     for entry in load_cli_init_plugin_eps():
         out.append(entry.load())
@@ -93,7 +100,7 @@ def load_transport(target: TargetURI) -> type[BaseTransport]:
 
 
 def add_cli_category(
-    parent: dict[str, Any],
+    parent: Parsers,
     category: str,
     help_: str,
     metavar: str,
@@ -109,7 +116,8 @@ def add_cli_category(
     parser.set_defaults(usage_func=parser.print_usage)
     parser.set_defaults(help_func=parser.print_help)
 
-    parent["siblings"][category] = {}
-    parent["siblings"][category]["siblings"] = {}
-    parent["siblings"][category]["parser"] = parser
-    parent["siblings"][category]["subparsers"] = parser.add_subparsers(metavar=metavar)
+    parent["siblings"][category] = {
+        "siblings": {},
+        "parser": parser,
+        "subparsers": parser.add_subparsers(metavar=metavar),
+    }
