@@ -6,6 +6,7 @@ import argparse
 import asyncio
 import fcntl
 import os
+import os.path
 import shutil
 import signal
 import sys
@@ -152,10 +153,12 @@ class BaseCommand(ABC):
 
         hook_id = f"{variant.value}-hook"
 
+        argv = sys.argv[:]
+        argv[0] = os.path.basename(argv[0])
         env = {
             "GALLIA_ARTIFACTS_DIR": str(self.artifacts_dir),
             "GALLIA_HOOK": variant.value,
-            "GALLIA_INVOCATION": sys.argv[0],
+            "GALLIA_INVOCATION": " ".join(argv),
         } | os.environ
 
         if self.COMMAND is not None:
