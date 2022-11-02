@@ -148,7 +148,7 @@ class BaseCommand(ABC):
         exit_code: int | None = None,
     ) -> None:
         script = args.pre_hook if variant == HookVariant.PRE else args.post_hook
-        if script is None:
+        if script is None or script == "":
             return
 
         hook_id = f"{variant.value}-hook"
@@ -204,26 +204,27 @@ class BaseCommand(ABC):
         )
         group.add_argument(
             "--trace-log",
-            action="store_true",
+            action=argparse.BooleanOptionalAction,
             default=self.config.get_value("gallia.trace_log", False),
             help="set the loglevel of the logfile to TRACE",
         )
         group.add_argument(
             "--pre-hook",
             metavar="SCRIPT",
-            default=self.config.get_value("gallia.pre_hook", None),
+            default=self.config.get_value("gallia.hooks.pre", None),
             help="shell script to run before the main entry_point",
         )
         group.add_argument(
             "--post-hook",
             metavar="SCRIPT",
-            default=self.config.get_value("gallia.post_hook", None),
+            default=self.config.get_value("gallia.hooks.post", None),
             help="shell script to run after the main entry_point",
         )
         group.add_argument(
-            "--skip-hooks",
-            action="store_true",
-            help="do not execute pre and post hooks",
+            "--hooks",
+            action=argparse.BooleanOptionalAction,
+            default=self.config.get_value("gallia.hooks.enable", True),
+            help="execute pre and post hooks",
         )
         group.add_argument(
             "--lock-file",
@@ -353,7 +354,7 @@ class BaseCommand(ABC):
         else:
             setup_logging(self.get_log_level(args))
 
-        if not args.skip_hooks:
+        if args.hooks:
             self.run_hook(HookVariant.PRE, args)
 
         exit_code = 0
@@ -384,7 +385,7 @@ class BaseCommand(ABC):
                 )
                 self.logger.info(f"Stored artifacts at {self.artifacts_dir}")
 
-        if not args.skip_hooks:
+        if args.hooks:
             code = exit_code.value if isinstance(exit_code, ExitCodes) else exit_code
             self.run_hook(HookVariant.POST, args, code)
 

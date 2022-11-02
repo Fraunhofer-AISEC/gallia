@@ -274,14 +274,17 @@ def cmd_show_plugins() -> None:
 
 
 def cmd_template(args: argparse.Namespace) -> None:
-    template = """[gallia]
+    template = """# [gallia]
 # verbosity = <int>
 # trace_log = <bool>
-# pre_hook = <str>
-# post_hook = <str>
 # lock_file = <str>
 
-[gallia.scanner]
+# [gallia.hooks]
+# enable = <bool>
+# pre = <str>
+# post = <str>
+
+# [gallia.scanner]
 # db = <string>
 # target = <string>
 # power_supply = <string>
@@ -291,7 +294,7 @@ def cmd_template(args: argparse.Namespace) -> None:
 # artifacts_dir = <string>
 # artifacts_base = <string>
 
-[gallia.protocols.uds]
+# [gallia.protocols.uds]
 # dumpcap = <bool>
 # ecu_reset = <float>
 # oem = <string>
