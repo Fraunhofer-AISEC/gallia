@@ -23,12 +23,12 @@ from typing import cast
 import msgspec
 
 from gallia.config import Config
-from gallia.db.db_handler import DBHandler
+from gallia.db.handler import DBHandler
 from gallia.dumpcap import Dumpcap
 from gallia.log import Loglevel, get_logger, setup_logging, tz
 from gallia.powersupply import PowerSupply, PowerSupplyURI
 from gallia.services.uds.core.exception import UDSException
-from gallia.transports.base import TargetURI
+from gallia.transports import TargetURI
 from gallia.utils import camel_to_snake, g_repr
 
 

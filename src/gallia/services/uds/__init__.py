@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from gallia.services.uds.core.client import UDSClient
 from gallia.services.uds.core.service import (
     NegativeResponse,
     PositiveResponse,
@@ -11,6 +12,7 @@ from gallia.services.uds.core.service import (
     UDSRequest,
     UDSResponse,
 )
+from gallia.services.uds.ecu import ECU
 
 __all__ = [
     "UDSRequest",
@@ -19,4 +21,6 @@ __all__ = [
     "SubFunctionResponse",
     "PositiveResponse",
     "NegativeResponse",
+    "UDSClient",
+    "ECU",
 ]

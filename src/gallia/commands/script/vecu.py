@@ -20,8 +20,7 @@ from gallia.services.uds.server import (
     UDSServer,
     UDSServerTransport,
 )
-from gallia.transports.base import TargetURI
-from gallia.transports.can import ISOTPTransport
+from gallia.transports import ISOTPTransport, TargetURI
 from gallia.transports.tcp import TCPLinesTransport
 
 dynamic_attr_prefix = "dynamic_attr_"

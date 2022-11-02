@@ -13,7 +13,7 @@ from gallia.plugins import load_ecu, load_ecu_plugins, load_transport
 from gallia.services.uds.core.service import NegativeResponse, UDSResponse
 from gallia.services.uds.ecu import ECU
 from gallia.services.uds.helpers import raise_for_error
-from gallia.transports.base import BaseTransport
+from gallia.transports import BaseTransport
 from gallia.utils import g_repr
 
 

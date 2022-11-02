@@ -7,7 +7,7 @@ SPDX-License-Identifier: CC0-1.0
 # Transports
 
 All scanner share the same basic connection args.
-Transports are subclasses of {class}`gallia.transports.base.BaseTransport`.
+Transports are subclasses of {class}`gallia.transports.BaseTransport`.
 
 ## URIs
 
@@ -123,7 +123,7 @@ Transports can also be used in own standalone scripts; transports are created wi
 import asyncio
 
 from gallia.log import setup_logging
-from gallia.transports.doip import DOiPTransport
+from gallia.transports import DOiPTransport
 
 
 async def main():

@@ -5,14 +5,14 @@
 import asyncio
 import json
 from datetime import datetime
-from enum import Enum, unique
 from pathlib import Path
 from typing import Any
 
 import aiosqlite
 
+from gallia.db.log import LogMode
 from gallia.log import get_logger
-from gallia.services.uds import (
+from gallia.services.uds.core.service import (
     PositiveResponse,
     SubFunctionRequest,
     SubFunctionResponse,
@@ -122,13 +122,6 @@ GROUP BY ru.id;
 
 INSERT OR IGNORE INTO version VALUES('main', '{schema_version}');
 """
-
-
-@unique
-class LogMode(Enum):
-    implicit = "implicit"
-    explicit = "explicit"
-    emphasized = "emphasized"
 
 
 class DBHandler:

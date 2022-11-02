@@ -17,10 +17,10 @@ These entry points are known by `gallia`:
 : List of callables which get called during the initialization phase of the `ArgumentParser`; can be used to add new groups to the CLI.
 
 `gallia_transports`
-: List of subclasses of {class}`gallia.transports.base.BaseTransport` add a new URI scheme for the `--target` flag.
+: List of subclasses of {class}`gallia.transports.BaseTransport` add a new URI scheme for the `--target` flag.
 
 `gallia_uds_ecus`
-: List of subclasses of {class}`gallia.services.uds.ecu.ECU` which add new choices for the `--oem` flag.
+: List of subclasses of {class}`gallia.services.uds.ECU` which add new choices for the `--oem` flag.
 
 ## Example
 

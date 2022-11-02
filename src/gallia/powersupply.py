@@ -9,7 +9,7 @@ from collections.abc import Awaitable, Callable
 from functools import partial
 
 from gallia.log import get_logger
-from gallia.transports.base import TargetURI
+from gallia.transports import TargetURI
 from opennetzteil import netzteile
 from opennetzteil.netzteil import BaseNetzteil
 

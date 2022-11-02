@@ -7,9 +7,9 @@ from __future__ import annotations
 import asyncio
 from asyncio import Task
 from datetime import datetime, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from gallia.db.db_handler import DBHandler, LogMode
+from gallia.db.log import LogMode
 from gallia.log import get_logger
 from gallia.powersupply import PowerSupply
 from gallia.services.uds.core import service
@@ -28,6 +28,9 @@ from gallia.services.uds.helpers import (
 )
 from gallia.transports.base import BaseTransport
 from gallia.utils import g_repr
+
+if TYPE_CHECKING:
+    from gallia.db.handler import DBHandler
 
 
 class ECUState:

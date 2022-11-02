@@ -18,8 +18,7 @@ from typing import cast
 from urllib.parse import urlparse
 
 from gallia.log import Logger, get_logger
-from gallia.transports.base import TargetURI
-from gallia.transports.can import ISOTPTransport, RawCANTransport
+from gallia.transports import ISOTPTransport, RawCANTransport, TargetURI
 from gallia.utils import auto_int, g_repr, split_host_port
 
 

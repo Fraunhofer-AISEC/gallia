@@ -6,7 +6,7 @@ from typing import Any
 
 from gallia.log import get_logger
 from gallia.services.xcp import types
-from gallia.transports.base import BaseTransport
+from gallia.transports import BaseTransport
 
 
 class XCPService:
