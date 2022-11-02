@@ -67,8 +67,9 @@ def load_command_plugins() -> list[type[BaseCommand]]:
     out = []
     for ep in load_command_plugin_eps():
         for t in ep.load():
-            if not issubclass(t, BaseCommand):
-                raise ValueError(f"{type(t)} not derived from BaseCommand")
+            # TODO: Find out how to avoid the circular dep.
+            # if not issubclass(t, BaseCommand):
+            #     raise ValueError(f"{type(t)} not derived from BaseCommand")
             out.append(t)
     return out
 
