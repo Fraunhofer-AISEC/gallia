@@ -23,7 +23,7 @@ from gallia.config import Config, load_config_file
 from gallia.log import setup_logging
 from gallia.plugins import (
     Parsers,
-    add_cli_category,
+    add_cli_group,
     load_cli_init_plugin_eps,
     load_cli_init_plugins,
     load_command_plugin_eps,
@@ -35,8 +35,8 @@ from gallia.plugins import (
 
 def load_parsers() -> Parsers:
     parser = argparse.ArgumentParser(
-        description="""gallia COMMANDs are grouped by CATEGORY and SUBCATEGORY.
-        Each CATEGORY, SUBCATEGORY, or COMMAND contains a help page which can be accessed via `-h` or `--help`.
+        description="""gallia COMMANDs are grouped by GROUP and SUBGROUP.
+        Each GROUP, SUBGROUP, or COMMAND contains a help page which can be accessed via `-h` or `--help`.
 Every command line option can be set via a TOML config file. Check `gallia --template` for a starting point.
         """,
         epilog="""https://fraunhofer-aisec.github.io/gallia/index.html""",
@@ -69,7 +69,7 @@ Every command line option can be set via a TOML config file. Check `gallia --tem
         help="print a config template",
     )
 
-    subparsers = parser.add_subparsers(metavar="CATEGORY")
+    subparsers = parser.add_subparsers(metavar="GROUP")
     parsers: Parsers = {
         "parser": parser,
         "subparsers": subparsers,
@@ -77,15 +77,15 @@ Every command line option can be set via a TOML config file. Check `gallia --tem
     }
 
     command = "COMMAND"
-    subcategory = "SUBCATEGORY"
+    subgroup = "SUBGROUP"
 
-    add_cli_category(
+    add_cli_group(
         parsers,
         "discover",
         "discover scanners for hosts and endpoints",
-        metavar=subcategory,
+        metavar=subgroup,
     )
-    add_cli_category(
+    add_cli_group(
         parsers["siblings"]["discover"],
         "uds",
         "Universal Diagnostic Services",
@@ -93,20 +93,20 @@ Every command line option can be set via a TOML config file. Check `gallia --tem
         epilog="https://fraunhofer-aisec.github.io/gallia/uds/scan_modes.html#discovery-scan",
         metavar=command,
     )
-    add_cli_category(
+    add_cli_group(
         parsers["siblings"]["discover"],
         "xcp",
         "Universal Measurement and Calibration Protocol",
         metavar=command,
     )
 
-    add_cli_category(
+    add_cli_group(
         parsers,
         "primitive",
         "protocol specific primitives",
-        metavar=subcategory,
+        metavar=subgroup,
     )
-    add_cli_category(
+    add_cli_group(
         parsers["siblings"]["primitive"],
         "uds",
         "Universal Diagnostic Services",
@@ -114,13 +114,13 @@ Every command line option can be set via a TOML config file. Check `gallia --tem
         metavar=command,
     )
 
-    add_cli_category(
+    add_cli_group(
         parsers,
         "scan",
         "scanners for network protocol parameters",
-        metavar=subcategory,
+        metavar=subgroup,
     )
-    add_cli_category(
+    add_cli_group(
         parsers["siblings"]["scan"],
         "uds",
         "Universal Diagnostic Services",
@@ -129,20 +129,20 @@ Every command line option can be set via a TOML config file. Check `gallia --tem
         metavar=command,
     )
 
-    add_cli_category(
+    add_cli_group(
         parsers,
         "fuzz",
         "fuzzing tools",
-        metavar=subcategory,
+        metavar=subgroup,
     )
-    add_cli_category(
+    add_cli_group(
         parsers["siblings"]["fuzz"],
         "uds",
         "Universal Diagnostic Services",
         metavar=command,
     )
 
-    add_cli_category(
+    add_cli_group(
         parsers,
         "script",
         "miscellaneous helper scripts",
@@ -159,15 +159,15 @@ def build_cli(
     registry: list[type[BaseCommand]],
 ) -> None:
     for cls in registry:
-        if cls.CATEGORY is None:
+        if cls.GROUP is None:
             continue
 
-        if cls.SUBCATEGORY is not None:
-            subparsers = parsers["siblings"][cls.CATEGORY]["siblings"][cls.SUBCATEGORY][
+        if cls.SUBGROUP is not None:
+            subparsers = parsers["siblings"][cls.GROUP]["siblings"][cls.SUBGROUP][
                 "subparsers"
             ]
         else:
-            subparsers = parsers["siblings"][cls.CATEGORY]["subparsers"]
+            subparsers = parsers["siblings"][cls.GROUP]["subparsers"]
 
         # Seems like a mypy bug. This is already covered by the check above.
         assert cls.COMMAND is not None

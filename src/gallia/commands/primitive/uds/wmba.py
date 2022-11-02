@@ -16,7 +16,7 @@ class WMBAPrimitive(UDSScanner):
     """Write memory by address"""
 
     COMMAND = "wmba"
-    CATEGORY = "primitive"
+    GROUP = "primitive"
     SHORT_HELP = "WriteMemoryByAddress"
 
     def configure_parser(self) -> None:

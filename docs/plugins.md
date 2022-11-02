@@ -14,7 +14,7 @@ These entry points are known by `gallia`:
 : List of subclasses of {class}`gallia.command.BaseCommand` add new a command to the CLI.
 
 `gallia_cli_init`
-: List of callables which get called during the initialization phase of the `ArgumentParser`; can be used to add new categories to the CLI.
+: List of callables which get called during the initialization phase of the `ArgumentParser`; can be used to add new groups to the CLI.
 
 `gallia_transports`
 : List of subclasses of {class}`gallia.transports.base.BaseTransport` add a new URI scheme for the `--target` flag.

@@ -15,7 +15,7 @@ from gallia.utils import auto_int, g_repr
 class RTCLPrimitive(UDSScanner):
     """Start or stop a provided routine or request its results"""
 
-    CATEGORY = "primitive"
+    GROUP = "primitive"
     COMMAND = "rtcl"
     SHORT_HELP = "RoutineControl"
 

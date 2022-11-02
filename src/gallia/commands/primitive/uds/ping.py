@@ -14,7 +14,7 @@ from gallia.utils import auto_int
 class PingPrimitive(UDSScanner):
     """Ping ECU via TesterPresent"""
 
-    CATEGORY = "primitive"
+    GROUP = "primitive"
     COMMAND = "ping"
     SHORT_HELP = "ping ECU via TesterPresent"
 

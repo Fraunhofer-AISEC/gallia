@@ -50,13 +50,13 @@ GALLIA_EXIT_CODE (optional)
 GALLIA_INVOCATION
 : The content os `sys.argv`, in other words the raw invocation of `gallia`.
 
-GALLIA_CATEGORY (optional)
+GALLIA_GROUP (optional)
 : Usually the first part of the command on the cli. For instance, for `gallia scan uds identifiers` 
-  `GALLIA_CATEGORY` is `scan`.
+  `GALLIA_GROUP` is `scan`.
 
-GALLIA_SUBCATEGORY (optional)
+GALLIA_SUBGROUP (optional)
 : Usually the second part of the command on the cli. For instance, for `gallia scan uds identifiers` 
-  `GALLIA_CATEGORY` is `uds`.
+  `GALLIA_GROUP` is `uds`.
 
 GALLIA_COMMAND (optional)
 : Usually the last part of the command on the cli. For instance, for `gallia scan uds identifiers` 

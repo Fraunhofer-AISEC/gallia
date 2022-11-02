@@ -21,7 +21,7 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
     Addressing is only done via CAN IDs. Every endpoint has a source and destination CAN ID.
     Typically, there is also a broadcast destination ID to address all endpoints."""
 
-    SUBCATEGORY = "uds"
+    SUBGROUP = "uds"
     COMMAND = "isotp"
     SHORT_HELP = "ISO-TP enumeration scanner"
 

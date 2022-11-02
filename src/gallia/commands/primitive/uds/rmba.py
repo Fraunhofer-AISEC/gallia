@@ -13,7 +13,7 @@ from gallia.utils import auto_int, g_repr
 class RMBAPrimitive(UDSScanner):
     """Read memory by address"""
 
-    CATEGORY = "primitive"
+    GROUP = "primitive"
     COMMAND = "rmba"
     SHORT_HELP = "ReadMemoryByAddress"
 

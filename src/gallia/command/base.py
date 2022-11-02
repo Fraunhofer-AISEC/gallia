@@ -55,8 +55,8 @@ class HookVariant(Enum):
 
 
 class CommandMeta(msgspec.Struct):
-    category: str
-    subcategory: str | None
+    group: str
+    subgroup: str | None
     command: str
 
 
@@ -75,7 +75,7 @@ class BaseCommand(ABC):
 
     This class needs to be subclassed and all the abstract
     methods need to be implemented. The artifacts_dir is
-    generated based on the COMMAND, CATEGORY, SUBCATEGORY
+    generated based on the COMMAND, GROUP, SUBGROUP
     properties (falls back to the class name if all three
     are not set).
 
@@ -84,10 +84,10 @@ class BaseCommand(ABC):
 
     #: The command name when used in the gallia CLI.
     COMMAND: str | None = None
-    #: The category name when used in the gallia CLI.
-    CATEGORY: str | None = None
-    #: The subcategory name when used in the gallia CLI.
-    SUBCATEGORY: str | None = None
+    #: The group name when used in the gallia CLI.
+    GROUP: str | None = None
+    #: The subgroup name when used in the gallia CLI.
+    SUBGROUP: str | None = None
     #: The string which is shown on the cli with --help.
     SHORT_HELP: str | None = None
     #: The string which is shown at the bottom of --help.
@@ -113,8 +113,8 @@ class BaseCommand(ABC):
             command=sys.argv,
             command_meta=CommandMeta(
                 command=self.COMMAND,
-                category=self.CATEGORY,
-                subcategory=self.SUBCATEGORY,
+                group=self.GROUP,
+                subgroup=self.SUBGROUP,
             ),
             start_time=datetime.now(tz).isoformat(),
             exit_code=0,
@@ -163,10 +163,10 @@ class BaseCommand(ABC):
 
         if self.COMMAND is not None:
             env |= {"GALLIA_COMMAND": self.COMMAND}
-        if self.CATEGORY is not None:
-            env |= {"GALLIA_CATEGORY": self.CATEGORY}
-        if self.SUBCATEGORY is not None:
-            env |= {"GALLIA_CATEGORY": self.SUBCATEGORY}
+        if self.GROUP is not None:
+            env |= {"GALLIA_GROUP": self.GROUP}
+        if self.SUBGROUP is not None:
+            env |= {"GALLIA_GROUP": self.SUBGROUP}
         if exit_code is not None:
             env |= {"GALLIA_EXIT_CODE": str(exit_code)}
 
@@ -285,19 +285,19 @@ class BaseCommand(ABC):
 
         if base_dir is not None:
             _command_dir = ""
-            if self.CATEGORY is not None:
-                _command_dir += self.CATEGORY
-            if self.SUBCATEGORY is not None:
-                _command_dir += f"_{self.SUBCATEGORY}"
+            if self.GROUP is not None:
+                _command_dir += self.GROUP
+            if self.SUBGROUP is not None:
+                _command_dir += f"_{self.SUBGROUP}"
             if self.COMMAND is not None:
                 _command_dir += f"_{self.COMMAND}"
 
-            # When self.CATEGORY is None, then
+            # When self.GROUP is None, then
             # _command_dir starts with "_"; remove it.
             if _command_dir.startswith("_"):
                 _command_dir = _command_dir.removeprefix("_")
 
-            # If self.CATEGORY, self.SUBCATEGORY, and
+            # If self.GROUP, self.SUBGROUP, and
             # self.COMMAND are None, then fallback to self.id.
             if _command_dir == "":
                 _command_dir = self.id
@@ -399,7 +399,7 @@ class Script(BaseCommand, ABC):
     To implement a script, create a subclass and implement the
     .main() method."""
 
-    CATEGORY = "script"
+    GROUP = "script"
 
     def setup(self, args: Namespace) -> None:
         ...
@@ -426,7 +426,7 @@ class AsyncScript(BaseCommand, ABC):
     To implement an async script, create a subclass and implement
     the .main() method."""
 
-    CATEGORY = "script"
+    GROUP = "script"
 
     async def setup(self, args: Namespace) -> None:
         ...
@@ -467,7 +467,7 @@ class Scanner(AsyncScript, ABC):
     - `main()` is the relevant entry_point for the scanner and must be implemented.
     """
 
-    CATEGORY = "scan"
+    GROUP = "scan"
     HAS_ARTIFACTS_DIR = True
     CATCHED_EXCEPTIONS: list[type[Exception]] = [
         BrokenPipeError,

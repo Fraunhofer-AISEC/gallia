@@ -122,21 +122,21 @@ def load_transport(target: TargetURI) -> type[BaseTransport]:
     raise ValueError(f"no transport for {target}")
 
 
-def add_cli_category(
+def add_cli_group(
     parent: Parsers,
-    category: str,
+    group: str,
     help_: str,
     metavar: str,
     description: str | None = None,
     epilog: str | None = None,
 ) -> None:
-    """Adds a category to the gallia CLI interface. The arguments
+    """Adds a group to the gallia CLI interface. The arguments
     correspond to the arguments of :meth:`argparse.ArgumentParser.add_argument()`.
     The ``parent`` argument must contain the relevant entry point to the cli
     parse tree. The parse tree is passed to the entry_point ``gallia_cli_init``.
     """
     parser = parent["subparsers"].add_parser(
-        category,
+        group,
         help=help_,
         description=description,
         epilog=epilog,
@@ -144,7 +144,7 @@ def add_cli_category(
     parser.set_defaults(usage_func=parser.print_usage)
     parser.set_defaults(help_func=parser.print_help)
 
-    parent["siblings"][category] = {
+    parent["siblings"][group] = {
         "siblings": {},
         "parser": parser,
         "subparsers": parser.add_subparsers(metavar=metavar),
