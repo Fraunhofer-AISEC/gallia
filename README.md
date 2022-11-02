@@ -28,11 +28,22 @@ We do not take any responsibility for damage caused by the usage of this tool.
 
 See the [setup instructions](https://fraunhofer-aisec.github.io/gallia/setup.html).
 
+First create a config template with `--template`, store it to a file called [`gallia.toml`](https://fraunhofer-aisec.github.io/gallia/config.html), and adjust it to your needs.
+`gallia` reads this file to set the defaults of the command line flags.
+All options correspond to a command line flag; the only required option for scans is `gallia.scanner.target`, for instance `isotp://can0?src_addr=0x123&dst_addr=0x312&tx_padding=0xaa&rx_padding=0xaa`.
+
 ```
-$ gallia primitive uds dtc --target "isotp://can0?src_addr=0x123&dst_addr=0x312&tx_padding=0xaa&rx_padding=0xaa" read
+$ gallia --template > gallia.toml
 ```
 
-For specifying the `--target` argument see the [transports documentation](https://fraunhofer-aisec.github.io/gallia/transports.html).
+You are all set to start your first scan, for instance read the diagnostic trouble codes:
+
+```
+$ gallia primitive uds dtc read
+```
+
+The target can also be specified by the `--target` option on the command line.
+For the format of the `--target` argument see the [transports documentation](https://fraunhofer-aisec.github.io/gallia/transports.html).
 
 ## Acknowledgments
 

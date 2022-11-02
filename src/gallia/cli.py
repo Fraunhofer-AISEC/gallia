@@ -37,7 +37,7 @@ def load_parsers() -> Parsers:
     parser = argparse.ArgumentParser(
         description="""gallia COMMANDs are grouped by GROUP and SUBGROUP.
         Each GROUP, SUBGROUP, or COMMAND contains a help page which can be accessed via `-h` or `--help`.
-Every command line option can be set via a TOML config file. Check `gallia --template` for a starting point.
+        A few command line option can be set via a TOML config file. Check `gallia --template` for a starting point.
         """,
         epilog="""https://fraunhofer-aisec.github.io/gallia/index.html""",
     )
