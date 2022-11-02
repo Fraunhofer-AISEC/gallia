@@ -13,8 +13,7 @@ from gallia.services.uds.core.constants import UDSErrorCodes, UDSIsoServices
 from gallia.services.uds.core.exception import IllegalResponse
 from gallia.services.uds.core.service import NegativeResponse, UDSResponse
 from gallia.services.uds.helpers import suggests_identifier_not_supported
-from gallia.transports.base import TargetURI
-from gallia.transports.can import RawCANTransport
+from gallia.transports import RawCANTransport, TargetURI
 from gallia.utils import auto_int
 
 

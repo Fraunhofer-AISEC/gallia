@@ -27,8 +27,7 @@ from gallia.services.uds.core.constants import (
 )
 from gallia.services.uds.core.utils import bytes_repr, int_repr, service_repr, to_bytes
 from gallia.services.uds.ecu import ECUState
-from gallia.transports.base import TargetURI
-from gallia.transports.can import ISOTPTransport
+from gallia.transports import ISOTPTransport, TargetURI
 
 
 class UDSServer(ABC):

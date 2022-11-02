@@ -23,8 +23,8 @@ from gallia.services.uds.core.service import NegativeResponse
 from gallia.services.uds.core.utils import bytes_repr, int_repr
 
 if TYPE_CHECKING:
-    from gallia.db.db_handler import DBHandler
-    from gallia.transports.base import TargetURI
+    from gallia.db.handler import DBHandler
+    from gallia.transports import TargetURI
 
 
 def auto_int(arg: str) -> int:

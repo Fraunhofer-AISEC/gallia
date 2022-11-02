@@ -9,7 +9,7 @@ from urllib.parse import urljoin
 
 import aiohttp
 
-from gallia.transports.base import TargetURI
+from gallia.transports import TargetURI
 from opennetzteil.exceptions import OperationNotSupportedError
 from opennetzteil.netzteil import BaseNetzteil
 

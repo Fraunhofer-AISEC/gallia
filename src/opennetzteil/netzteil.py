@@ -7,7 +7,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any
 
-from gallia.transports.base import TargetURI
+from gallia.transports import TargetURI
 
 
 class BaseNetzteil(ABC):
