@@ -101,7 +101,6 @@ asyncio_mode = "auto"
 [tool.pylint.messages_control]
 disable = [
     "broad-except",
-    "c-extension-no-member",
     "duplicate-code",  # https://github.com/Fraunhofer-AISEC/gallia/issues/306
     "fixme",
     "invalid-name",
