@@ -17,7 +17,7 @@ from gallia.utils import auto_int, g_repr
 class DTCPrimitive(UDSScanner):
     """Read out the Diagnostic Troube Codes (DTC)"""
 
-    CATEGORY = "primitive"
+    GROUP = "primitive"
     COMMAND = "dtc"
     SHORT_HELP = "DiagnosticTroubleCodes"
 

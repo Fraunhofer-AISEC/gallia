@@ -11,7 +11,7 @@ from gallia.services.uds.core.service import NegativeResponse
 class VINPrimitive(UDSScanner):
     """Request VIN"""
 
-    CATEGORY = "primitive"
+    GROUP = "primitive"
     COMMAND = "vin"
     SHORT_HELP = "request VIN"
 

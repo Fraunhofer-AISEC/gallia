@@ -14,7 +14,7 @@ class ReadErrorLogPrimitive(UDSScanner):
     """Read the error log via the DTC service"""
 
     COMMAND = "error-log"
-    CATEGORY = "primitive"
+    GROUP = "primitive"
     SHORT_HELP = "read the error log via DTC"
 
     def configure_parser(self) -> None:

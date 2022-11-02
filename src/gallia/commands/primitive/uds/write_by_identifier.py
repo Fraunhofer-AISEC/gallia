@@ -14,7 +14,7 @@ from gallia.utils import auto_int, g_repr
 class WriteByIdentifierPrimitive(UDSScanner):
     """A simple scanner to talk to the write by identifier service"""
 
-    CATEGORY = "primitive"
+    GROUP = "primitive"
     COMMAND = "wdbid"
     SHORT_HELP = "WriteDataByIdentifier"
 

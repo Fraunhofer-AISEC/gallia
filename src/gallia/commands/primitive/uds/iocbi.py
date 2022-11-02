@@ -14,7 +14,7 @@ from gallia.utils import auto_int, g_repr
 class IOCBIPrimitive(UDSScanner):
     """Input output control"""
 
-    CATEGORY = "primitive"
+    GROUP = "primitive"
     COMMAND = "iocbi"
     SHORT_HELP = "InputOutputControl"
 

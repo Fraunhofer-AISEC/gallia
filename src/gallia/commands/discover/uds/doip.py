@@ -27,7 +27,7 @@ from gallia.utils import auto_int, write_target_list
 class DoIPDiscoverer(UDSDiscoveryScanner):
     """ECU and routing discovery scanner for DoIP"""
 
-    SUBCATEGORY = "uds"
+    SUBGROUP = "uds"
     COMMAND = "doip"
     SHORT_HELP = "DoIP enumeration scanner"
 

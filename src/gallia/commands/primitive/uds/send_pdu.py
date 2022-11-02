@@ -23,7 +23,7 @@ from gallia.utils import auto_int, g_repr
 class SendPDUPrimitive(UDSScanner):
     """A raw scanner to send a plain pdu"""
 
-    CATEGORY = "primitive"
+    GROUP = "primitive"
     COMMAND = "pdu"
     SHORT_HELP = "send a plain PDU"
 

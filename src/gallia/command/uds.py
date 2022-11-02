@@ -25,8 +25,8 @@ class UDSScanner(Scanner):
     - A background tasks sends TesterPresent regularly to avoid timeouts.
     """
 
-    CATEGORY = "scan"
-    SUBCATEGORY: str | None = "uds"
+    GROUP = "scan"
+    SUBGROUP: str | None = "uds"
 
     def __init__(self, parser: ArgumentParser, config: Config = Config()) -> None:
         super().__init__(parser, config)
@@ -215,7 +215,7 @@ class UDSScanner(Scanner):
 
 
 class UDSDiscoveryScanner(Scanner):
-    CATEGORY = "discover"
+    GROUP = "discover"
 
     def configure_class_parser(self) -> None:
         super().configure_class_parser()

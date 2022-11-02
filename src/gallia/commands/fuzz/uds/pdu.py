@@ -21,7 +21,7 @@ from gallia.utils import auto_int
 class PDUFuzzer(UDSScanner):
     """Payload fuzzer"""
 
-    CATEGORY = "fuzz"
+    GROUP = "fuzz"
     COMMAND = "pdu"
     SHORT_HELP = "fuzz the UDS pdu of selected services"
 

@@ -13,7 +13,7 @@ from gallia.utils import auto_int, g_repr
 class ECUResetPrimitive(UDSScanner):
     """Use the ECUReset UDS service to reset the ECU"""
 
-    CATEGORY = "primitive"
+    GROUP = "primitive"
     COMMAND = "ecu-reset"
     SHORT_HELP = "ECUReset"
 

@@ -13,7 +13,7 @@ from gallia.utils import auto_int, g_repr
 class ReadByIdentifierPrimitive(UDSScanner):
     """Read data via the ReadDataByIdentifier service"""
 
-    CATEGORY = "primitive"
+    GROUP = "primitive"
     COMMAND = "rdbid"
     SHORT_HELP = "ReadDataByIdentifier"
 
