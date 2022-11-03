@@ -20,12 +20,14 @@ from gallia.transports import BaseTransport
 
 @dataclass
 class UDSRequestConfig:
-    timeout: float | None = None  # specify a timeout for this request
-    max_retry: None | (
-        int
-    ) = None  # maximum number of attempts in case of network errors
-    skip_hooks: bool = False  # skip hooks
-    tags: list[str] | None = None  # tags to be applied to the logged output
+    # timeout for this request in sec
+    timeout: float | None = None
+    # maximum number of attempts in case of network errors
+    max_retry: int | None = None
+    # Skip the hooks which apply to session changes.
+    skip_hooks: bool = False
+    # tags to be applied to the logged output
+    tags: list[str] | None = None
 
 
 class UDSClient:
