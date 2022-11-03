@@ -21,7 +21,7 @@ class ServicesScanner(UDSScanner):
     """Iterate sessions and services and find endpoints"""
 
     COMMAND = "services"
-    SHORT_HELP = "service scan on a ECU"
+    SHORT_HELP = "service scan on an ECU"
     EPILOG = (
         "https://fraunhofer-aisec.github.io/gallia/uds/scan_modes.html#service-scan"
     )

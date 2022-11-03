@@ -22,7 +22,7 @@ class SessionsScanner(UDSScanner):
     """Iterate Sessions"""
 
     COMMAND = "sessions"
-    SHORT_HELP = "session scan on a ECU"
+    SHORT_HELP = "session scan on an ECU"
 
     def configure_parser(self) -> None:
         self.parser.add_argument(
