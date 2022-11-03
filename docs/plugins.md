@@ -55,3 +55,10 @@ In `pyproject.toml` using `poetry` the following entry_point needs to be specifi
 ```
 
 After issueing `poetry install`, the script can be called with `gallia script hello`.
+
+If a standalone script is desired, the `HelloWorld` class can be called like this:
+
+``` python
+parser = argparse.ArgumentParser()
+sys.exit(HelloWorld(parser).entry_point(parser.parse_args()))
+```
