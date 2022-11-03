@@ -1,72 +1,23 @@
 {
   "nodes": {
-    "flake-utils": {
-      "locked": {
-        "lastModified": 1659877975,
-        "narHash": "sha256-zllb8aq3YO3h8B/U0/J1WBgAL8EX5yWf5pMj3G0NAmc=",
-        "owner": "numtide",
-        "repo": "flake-utils",
-        "rev": "c0e246b9b83f637f4681389ecabcb2681b4f3af0",
-        "type": "github"
-      },
-      "original": {
-        "owner": "numtide",
-        "repo": "flake-utils",
-        "type": "github"
-      }
-    },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1666855023,
-        "narHash": "sha256-JiEH6voqgTmHzc92hFLMYtBrRSWqkGFZOm1iuCt3Qnc=",
+        "lastModified": 1667485691,
+        "narHash": "sha256-78VwJl1f6ElK/p7CbudB7ujadxOHCSmHDR1k9w6haGg=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "4fc5d982c9f563c2bd00d0bafd0be9fba7518024",
+        "rev": "64543d86ae3849fef754589d34fb291a13209b53",
         "type": "github"
       },
       "original": {
         "owner": "nixos",
         "repo": "nixpkgs",
         "type": "github"
-      }
-    },
-    "nixpkgs_2": {
-      "locked": {
-        "lastModified": 1666855023,
-        "narHash": "sha256-JiEH6voqgTmHzc92hFLMYtBrRSWqkGFZOm1iuCt3Qnc=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "4fc5d982c9f563c2bd00d0bafd0be9fba7518024",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
-    "poetry2nix": {
-      "inputs": {
-        "flake-utils": "flake-utils",
-        "nixpkgs": "nixpkgs_2"
-      },
-      "locked": {
-        "lastModified": 1666419213,
-        "narHash": "sha256-HMlUJnMbvRJO7bxwQhn9VQmv0wcBv9Q29NTPD/bbr94=",
-        "owner": "nix-community",
-        "repo": "poetry2nix",
-        "rev": "3b9040d19e18db212f8f83cb9241f8102b519f94",
-        "type": "github"
-      },
-      "original": {
-        "id": "poetry2nix",
-        "type": "indirect"
       }
     },
     "root": {
       "inputs": {
-        "nixpkgs": "nixpkgs",
-        "poetry2nix": "poetry2nix"
+        "nixpkgs": "nixpkgs"
       }
     }
   },
