@@ -8,8 +8,9 @@ from binascii import unhexlify
 
 from gallia.command import UDSDiscoveryScanner
 from gallia.services.uds import NegativeResponse, UDSClient, UDSRequest
+from gallia.services.uds.core.utils import g_repr
 from gallia.transports import ISOTPTransport, RawCANTransport, TargetURI
-from gallia.utils import auto_int, can_id_repr, g_repr, write_target_list
+from gallia.utils import auto_int, can_id_repr, write_target_list
 
 
 class IsotpDiscoverer(UDSDiscoveryScanner):
@@ -112,7 +113,7 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
                 else:
                     self.logger.result(f"response was: {resp}")
             except Exception as e:
-                self.logger.result(f"reading description failed: {g_repr(e)}")
+                self.logger.result(f"reading description failed: {e!r}")
 
     def _build_isotp_frame_extended(
         self,

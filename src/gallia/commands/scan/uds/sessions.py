@@ -8,14 +8,15 @@ from argparse import Namespace
 from typing import Any
 
 from gallia.command import UDSScanner
-from gallia.services.uds.core.client import UDSRequestConfig
-from gallia.services.uds.core.constants import UDSErrorCodes
-from gallia.services.uds.core.service import (
-    DiagnosticSessionControlResponse,
+from gallia.services.uds import (
     NegativeResponse,
+    UDSErrorCodes,
+    UDSRequestConfig,
     UDSResponse,
 )
-from gallia.utils import auto_int, g_repr
+from gallia.services.uds.core.service import DiagnosticSessionControlResponse
+from gallia.services.uds.core.utils import g_repr
+from gallia.utils import auto_int
 
 
 class SessionsScanner(UDSScanner):
@@ -174,9 +175,7 @@ class SessionsScanner(UDSScanner):
                             )
                             sys.exit(1)
                     except Exception as e:
-                        self.logger.error(
-                            f"Could not change to default session: {g_repr(e)}"
-                        )
+                        self.logger.error(f"Could not change to default session: {e!r}")
                         sys.exit(1)
 
                     self.logger.debug(

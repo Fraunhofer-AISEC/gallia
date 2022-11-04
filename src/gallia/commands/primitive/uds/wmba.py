@@ -8,8 +8,9 @@ from argparse import Namespace
 from pathlib import Path
 
 from gallia.command import UDSScanner
-from gallia.services.uds.core.service import NegativeResponse
-from gallia.utils import auto_int, g_repr
+from gallia.services.uds import NegativeResponse
+from gallia.services.uds.core.utils import g_repr
+from gallia.utils import auto_int
 
 
 class WMBAPrimitive(UDSScanner):
@@ -33,7 +34,9 @@ class WMBAPrimitive(UDSScanner):
         )
         data_group = self.parser.add_mutually_exclusive_group(required=True)
         data_group.add_argument(
-            "--data", type=binascii.unhexlify, help="The data which should be written"
+            "--data",
+            type=binascii.unhexlify,
+            help="The data which should be written",
         )
         data_group.add_argument(
             "--data-file",
@@ -46,7 +49,7 @@ class WMBAPrimitive(UDSScanner):
             await self.ecu.check_and_set_session(args.session)
         except Exception as e:
             self.logger.critical(
-                f"Could not change to session: {g_repr(args.session)}: {g_repr(e)}"
+                f"Could not change to session: {g_repr(args.session)}: {e!r}"
             )
             sys.exit(1)
 

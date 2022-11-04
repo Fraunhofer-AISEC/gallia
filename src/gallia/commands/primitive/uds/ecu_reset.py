@@ -6,8 +6,9 @@ import asyncio
 from argparse import Namespace
 
 from gallia.command import UDSScanner
-from gallia.services.uds.core.service import NegativeResponse, UDSResponse
-from gallia.utils import auto_int, g_repr
+from gallia.services.uds import NegativeResponse, UDSResponse
+from gallia.services.uds.core.utils import g_repr
+from gallia.utils import auto_int
 
 
 class ECUResetPrimitive(UDSScanner):
@@ -21,10 +22,17 @@ class ECUResetPrimitive(UDSScanner):
         self.parser.set_defaults(properties=False)
 
         self.parser.add_argument(
-            "--session", type=auto_int, default=0x01, help="set session perform test in"
+            "--session",
+            type=auto_int,
+            default=0x01,
+            help="set session perform test in",
         )
         self.parser.add_argument(
-            "-f", "--subfunc", type=auto_int, default=0x01, help="subfunc"
+            "-f",
+            "--subfunc",
+            type=auto_int,
+            default=0x01,
+            help="subfunc",
         )
 
     async def main(self, args: Namespace) -> None:

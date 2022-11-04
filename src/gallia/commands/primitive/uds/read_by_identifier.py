@@ -7,7 +7,7 @@ from argparse import Namespace
 
 from gallia.command import UDSScanner
 from gallia.services.uds.core.service import NegativeResponse
-from gallia.utils import auto_int, g_repr
+from gallia.utils import auto_int
 
 
 class ReadByIdentifierPrimitive(UDSScanner):
@@ -38,7 +38,7 @@ class ReadByIdentifierPrimitive(UDSScanner):
             if args.session != 0x01:
                 await self.ecu.set_session(args.session)
         except Exception as e:
-            self.logger.critical(f"fatal error: {g_repr(e)}")
+            self.logger.critical(f"fatal error: {e!r}")
             sys.exit(1)
 
         resp = await self.ecu.read_data_by_identifier(args.data_id)

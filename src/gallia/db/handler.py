@@ -20,7 +20,7 @@ from gallia.services.uds.core.service import (
     UDSResponse,
 )
 from gallia.services.uds.core.utils import bytes_repr as bytes_repr_
-from gallia.utils import g_repr
+from gallia.services.uds.core.utils import g_repr
 
 
 def bytes_repr(data: bytes) -> str:

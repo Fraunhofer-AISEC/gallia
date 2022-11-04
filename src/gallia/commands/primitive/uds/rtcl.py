@@ -8,8 +8,10 @@ import sys
 from argparse import Namespace
 
 from gallia.command import UDSScanner
-from gallia.services.uds.core.service import NegativeResponse, RoutineControlResponse
-from gallia.utils import auto_int, g_repr
+from gallia.services.uds import NegativeResponse
+from gallia.services.uds.core.service import RoutineControlResponse
+from gallia.services.uds.core.utils import g_repr
+from gallia.utils import auto_int
 
 
 class RTCLPrimitive(UDSScanner):
@@ -90,7 +92,7 @@ class RTCLPrimitive(UDSScanner):
             await self.ecu.check_and_set_session(args.session)
         except Exception as e:
             self.logger.critical(
-                f"Could not change to session: {g_repr(args.session)}: {g_repr(e)}"
+                f"Could not change to session: {g_repr(args.session)}: {e!r}"
             )
             sys.exit(1)
 
@@ -109,7 +111,7 @@ class RTCLPrimitive(UDSScanner):
             else:
                 self.logger.result("[start] Positive response:")
                 self.logger.result(f"hex: {resp.routine_status_record.hex()}")
-                self.logger.result(f"raw: {repr(resp.routine_status_record)}")
+                self.logger.result(f"raw: {resp.routine_status_record!r}")
 
         if args.stop:
             delay = args.stop_delay
@@ -129,7 +131,7 @@ class RTCLPrimitive(UDSScanner):
             else:
                 self.logger.result("[stop] Positive response:")
                 self.logger.result(f"hex: {resp.routine_status_record.hex()}")
-                self.logger.result(f"raw: {repr(resp.routine_status_record)}")
+                self.logger.result(f"raw: {resp.routine_status_record!r}")
 
         if args.results:
             delay = args.results_delay
@@ -149,4 +151,4 @@ class RTCLPrimitive(UDSScanner):
             else:
                 self.logger.result("[get result] Positive response:")
                 self.logger.result(f"hex: {resp.routine_status_record.hex()}")
-                self.logger.result(f"raw: {repr(resp.routine_status_record)}")
+                self.logger.result(f"raw: {resp.routine_status_record!r}")

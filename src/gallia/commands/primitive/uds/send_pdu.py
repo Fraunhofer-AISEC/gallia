@@ -7,17 +7,16 @@ import sys
 from argparse import Namespace
 
 from gallia.command import UDSScanner
-from gallia.services.uds.core.client import UDSRequestConfig
-from gallia.services.uds.core.exception import UDSException
-from gallia.services.uds.core.service import (
+from gallia.services.uds import (
     NegativeResponse,
-    RawRequest,
-    RawResponse,
     UDSRequest,
+    UDSRequestConfig,
     UDSResponse,
 )
+from gallia.services.uds.core.exception import UDSException
+from gallia.services.uds.core.service import RawRequest, RawResponse
 from gallia.services.uds.helpers import raise_for_error
-from gallia.utils import auto_int, g_repr
+from gallia.utils import auto_int
 
 
 class SendPDUPrimitive(UDSScanner):
@@ -68,7 +67,7 @@ class SendPDUPrimitive(UDSScanner):
                 config=UDSRequestConfig(max_retry=args.max_retry),
             )
         except UDSException as e:
-            self.logger.error(g_repr(e))
+            self.logger.error(repr(e))
             sys.exit(1)
 
         if isinstance(response, NegativeResponse):
