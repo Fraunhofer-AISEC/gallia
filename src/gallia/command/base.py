@@ -29,7 +29,7 @@ from gallia.log import Loglevel, get_logger, setup_logging, tz
 from gallia.powersupply import PowerSupply, PowerSupplyURI
 from gallia.services.uds.core.exception import UDSException
 from gallia.transports import TargetURI
-from gallia.utils import camel_to_snake, g_repr
+from gallia.utils import camel_to_snake
 
 
 @unique
@@ -370,7 +370,7 @@ class BaseCommand(ABC):
             for t in self.CATCHED_EXCEPTIONS:
                 if isinstance(e, t):
                     exit_code = ExitCodes.GENERIC_ERROR
-                    self.logger.critical(g_repr(e))
+                    self.logger.critical(repr(e))
                     break
             else:
                 exit_code = ExitCodes.UNHANDLED_EXCEPTION
@@ -509,14 +509,14 @@ class Scanner(AsyncScript, ABC):
                     )
                 except Exception as e:
                     self.logger.warning(
-                        f"Could not write the run meta to the database: {g_repr(e)}"
+                        f"Could not write the run meta to the database: {e!r}"
                     )
 
             try:
                 await self.db_handler.disconnect()
             except Exception as e:
                 self.logger.error(
-                    f"Could not close the database connection properly: {g_repr(e)}"
+                    f"Could not close the database connection properly: {e!r}"
                 )
 
     async def setup(self, args: Namespace) -> None:

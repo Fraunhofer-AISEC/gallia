@@ -20,14 +20,13 @@ from gallia.services.uds.core.exception import (
     UDSException,
     UnexpectedNegativeResponse,
 )
-from gallia.services.uds.core.utils import from_bytes
+from gallia.services.uds.core.utils import from_bytes, g_repr
 from gallia.services.uds.helpers import (
     as_exception,
     raise_for_error,
     suggests_identifier_not_supported,
 )
 from gallia.transports.base import BaseTransport
-from gallia.utils import g_repr
 
 if TYPE_CHECKING:
     from gallia.db.handler import DBHandler

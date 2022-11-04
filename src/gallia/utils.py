@@ -11,16 +11,12 @@ import re
 import sys
 from argparse import Action, ArgumentError, ArgumentParser, Namespace
 from collections.abc import Awaitable, Callable, Sequence
-from enum import Enum
 from pathlib import Path
 from types import ModuleType
 from typing import TYPE_CHECKING, Any, TypeVar
 from urllib.parse import urlparse
 
 import aiofiles
-
-from gallia.services.uds.core.service import NegativeResponse
-from gallia.services.uds.core.utils import bytes_repr, int_repr
 
 if TYPE_CHECKING:
     from gallia.db.handler import DBHandler
@@ -99,29 +95,6 @@ def can_id_repr(i: int) -> str:
     Default string representation of a CAN id.
     """
     return f"{i:03x}"
-
-
-def g_repr(x: Any) -> str:
-    """
-    Object string representation with default gallia output settings.
-    """
-    if isinstance(x, Enum):
-        return str(x.name)
-    if isinstance(x, bool):
-        return repr(x)
-    if isinstance(x, int):
-        return int_repr(x)
-    if isinstance(x, str):
-        return x
-    if isinstance(x, (bytes, bytearray)):
-        return bytes_repr(x)
-    if isinstance(x, list):
-        return f'[{", ".join(g_repr(y) for y in x)}]'
-    if isinstance(x, dict):
-        return f'{{{", ".join(f"{g_repr(k)}: {g_repr(v)}" for k, v in x.items())}}}'
-    if isinstance(x, NegativeResponse):
-        return str(x)
-    return repr(x)
 
 
 def _unravel(listing: str) -> list[int]:

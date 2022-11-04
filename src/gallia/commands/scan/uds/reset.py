@@ -9,14 +9,14 @@ from argparse import Namespace
 from typing import Any
 
 from gallia.command import UDSScanner
-from gallia.services.uds.core.client import UDSRequestConfig
+from gallia.services.uds import NegativeResponse, UDSRequestConfig, UDSResponse
 from gallia.services.uds.core.exception import (
     IllegalResponse,
     UnexpectedNegativeResponse,
 )
-from gallia.services.uds.core.service import NegativeResponse, UDSResponse
+from gallia.services.uds.core.utils import g_repr
 from gallia.services.uds.helpers import suggests_sub_function_not_supported
-from gallia.utils import ParseSkips, auto_int, g_repr
+from gallia.utils import ParseSkips, auto_int
 
 
 class ResetScanner(UDSScanner):

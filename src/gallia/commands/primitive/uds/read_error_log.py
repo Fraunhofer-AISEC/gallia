@@ -6,8 +6,9 @@ import asyncio
 from argparse import Namespace
 
 from gallia.command import UDSScanner
-from gallia.services.uds.core.service import NegativeResponse
-from gallia.utils import auto_int, g_repr
+from gallia.services.uds import NegativeResponse
+from gallia.services.uds.core.utils import g_repr
+from gallia.utils import auto_int
 
 
 class ReadErrorLogPrimitive(UDSScanner):

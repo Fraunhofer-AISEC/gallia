@@ -9,12 +9,16 @@ from binascii import unhexlify
 from typing import Any
 
 from gallia.command import UDSScanner
-from gallia.services.uds.core.client import UDSRequestConfig
-from gallia.services.uds.core.constants import UDSIsoServices
+from gallia.services.uds import (
+    NegativeResponse,
+    UDSIsoServices,
+    UDSRequestConfig,
+    UDSResponse,
+)
 from gallia.services.uds.core.exception import UDSException
-from gallia.services.uds.core.service import NegativeResponse, UDSResponse
+from gallia.services.uds.core.utils import g_repr
 from gallia.services.uds.helpers import suggests_service_not_supported
-from gallia.utils import ParseSkips, auto_int, g_repr
+from gallia.utils import ParseSkips, auto_int
 
 
 class ServicesScanner(UDSScanner):
@@ -148,7 +152,7 @@ class ServicesScanner(UDSScanner):
                     self.logger.info(f"{g_repr(sid)}: timeout")
                     continue
                 except Exception as e:
-                    self.logger.info(f"{g_repr(sid)}: {g_repr(e)} occurred")
+                    self.logger.info(f"{g_repr(sid)}: {e!r} occurred")
                     await self.ecu.reconnect()
                     continue
 

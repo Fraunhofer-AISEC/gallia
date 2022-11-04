@@ -19,7 +19,7 @@ from urllib.parse import urlparse
 
 from gallia.log import Logger, get_logger
 from gallia.transports import ISOTPTransport, RawCANTransport, TargetURI
-from gallia.utils import auto_int, g_repr, split_host_port
+from gallia.utils import auto_int, split_host_port
 
 
 class Dumpcap:
@@ -76,7 +76,7 @@ class Dumpcap:
             )
             await asyncio.sleep(0.2)
         except Exception as e:
-            logger.error(f"Could not start dumpcap: ({g_repr(e)})")
+            logger.error(f"Could not start dumpcap: ({e!r})")
             raise
 
         if proc.returncode:

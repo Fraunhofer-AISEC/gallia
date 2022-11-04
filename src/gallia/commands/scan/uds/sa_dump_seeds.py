@@ -14,9 +14,9 @@ import aiofiles
 
 from gallia.command import UDSScanner
 from gallia.config import Config
-from gallia.services.uds.core.client import UDSRequestConfig
-from gallia.services.uds.core.service import NegativeResponse
-from gallia.utils import auto_int, g_repr
+from gallia.services.uds import NegativeResponse, UDSRequestConfig
+from gallia.services.uds.core.utils import g_repr
+from gallia.utils import auto_int
 
 
 class SASeedsDumper(UDSScanner):

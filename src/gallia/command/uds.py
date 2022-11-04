@@ -14,7 +14,6 @@ from gallia.services.uds.core.service import NegativeResponse, UDSResponse
 from gallia.services.uds.ecu import ECU
 from gallia.services.uds.helpers import raise_for_error
 from gallia.transports import BaseTransport
-from gallia.utils import g_repr
 
 
 class UDSScanner(Scanner):
@@ -141,7 +140,7 @@ class UDSScanner(Scanner):
                 self._apply_implicit_logging_setting()
             except Exception as e:
                 self.logger.warning(
-                    f"Could not write the scan run to the database: {g_repr(e)}"
+                    f"Could not write the scan run to the database: {e:!r}"
                 )
 
         if args.ecu_reset is not None:
@@ -178,7 +177,7 @@ class UDSScanner(Scanner):
                 self._apply_implicit_logging_setting()
             except Exception as e:
                 self.logger.warning(
-                    f"Could not write the properties_pre to the database: {g_repr(e)}"
+                    f"Could not write the properties_pre to the database: {e!r}"
                 )
 
     async def teardown(self, args: Namespace) -> None:
@@ -202,7 +201,7 @@ class UDSScanner(Scanner):
                 )
             except Exception as e:
                 self.logger.warning(
-                    f"Could not write the scan run to the database: {g_repr(e)}"
+                    f"Could not write the scan run to the database: {e!r}"
                 )
 
         if args.tester_present:
@@ -235,5 +234,5 @@ class UDSDiscoveryScanner(Scanner):
                 await self.db_handler.insert_discovery_run(args.target.url.scheme)
             except Exception as e:
                 self.logger.warning(
-                    f"Could not write the discovery run to the database: {g_repr(e)}"
+                    f"Could not write the discovery run to the database: {e!r}"
                 )
