@@ -12,7 +12,11 @@
     let pkgs = nixpkgs.legacyPackages.x86_64-linux;
     in {
       devShell.x86_64-linux = pkgs.mkShell {
-        buildInputs = [ pkgs.python310 pkgs.python310Packages.poetry ];
+        buildInputs = with pkgs; [ 
+          python310
+          python310Packages.poetry
+          # taplo-lsp
+        ];
         shellHook = ''
           LD_LIBRARY_PATH=${pkgs.lib.makeLibraryPath [stdenv.cc.cc]}
         '';
