@@ -68,6 +68,7 @@ sphinx-rtd-theme = "^1.0"
 reuse = "^1.0.0"
 construct-typing = "^0.5.2"
 pytest-cov = "^4.0"
+pyls-isort = "^0.2.2"
 
 [tool.poetry.scripts]
 "gallia" = "gallia.cli:main"

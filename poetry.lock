@@ -662,6 +662,18 @@ spelling = ["pyenchant (>=3.2,<4.0)"]
 testutils = ["gitpython (>3)"]
 
 [[package]]
+name = "pyls-isort"
+version = "0.2.2"
+description = "Isort plugin for python-lsp-server"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+isort = "*"
+python-lsp-server = "*"
+
+[[package]]
 name = "pylsp-mypy"
 version = "0.6.3"
 description = "Mypy linter for the Python LSP Server"
@@ -1213,7 +1225,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.10,<3.12"
-content-hash = "899cf69b2565d728d1614d5d31493d0882bf445787bc223d060c16d37358e073"
+content-hash = "af995b7f615ef7b5aa89b06e53175a73bc081d7545158d1d14a34c6cabe054a9"
 
 [metadata.files]
 aiofiles = [
@@ -1988,6 +2000,9 @@ pygments = [
 pylint = [
     {file = "pylint-2.15.5-py3-none-any.whl", hash = "sha256:c2108037eb074334d9e874dc3c783752cc03d0796c88c9a9af282d0f161a1004"},
     {file = "pylint-2.15.5.tar.gz", hash = "sha256:3b120505e5af1d06a5ad76b55d8660d44bf0f2fc3c59c2bdd94e39188ee3a4df"},
+]
+pyls-isort = [
+    {file = "pyls-isort-0.2.2.tar.gz", hash = "sha256:2192bd2203db00459f85eb329521feba58af63075d2dd10a051a4eccd000bba0"},
 ]
 pylsp-mypy = [
     {file = "pylsp-mypy-0.6.3.tar.gz", hash = "sha256:06a6fd68c3e829d2c9f633bd96c15b6671a7e411139110ae9747d9245b31c8bd"},
