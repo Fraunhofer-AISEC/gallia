@@ -135,6 +135,7 @@ class DBHandler:
         self.path = database
         self.connection: aiosqlite.Connection | None = None
         self.scan_run: int | None = None
+        self.target: str | None = None
         self.discovery_run: int | None = None
         self.meta: int | None = None
         self.logger = get_logger("db")
@@ -239,6 +240,7 @@ class DBHandler:
         cursor = await self.connection.execute(query, (target, self.meta))
 
         self.scan_run = cursor.lastrowid
+        self.target = target
         await self.connection.commit()
 
     async def insert_scan_run_properties_pre(
@@ -396,11 +398,36 @@ class DBHandler:
         parameters = (self.scan_run, destination, json.dumps(steps))
         await self.connection.execute(query, parameters)
 
+    async def get_sessions(self) -> list[int]:
+        assert self.connection is not None, "Not connected to the database"
+        assert self.target is not None, "Scan run not yet created, target unknown"
+
+        query = (
+            "SELECT DISTINCT destination "
+            "FROM session_transition st, "
+            "     scan_run sr, "
+            "     address ad "
+            "WHERE st.run = sr.id AND sr.address = ad.id "
+            "AND ad.url = ?"
+        )
+        parameters = (self.target,)
+
+        cursor: aiosqlite.Cursor = await self.connection.execute(query, parameters)
+        return list(x[0] for x in await cursor.fetchall())
+
     async def get_session_transition(self, destination: int) -> list[int] | None:
         assert self.connection is not None, "Not connected to the database"
+        assert self.target is not None, "Scan run not yet created, target unknown"
 
-        query = "SELECT steps FROM session_transition WHERE destination = ?"
-        parameters = (destination,)
+        query = (
+            "SELECT steps "
+            "FROM session_transition st, "
+            "     scan_run sr, "
+            "     address ad "
+            "WHERE st.run = sr.id AND sr.address = ad.id "
+            "AND st.destination = ? AND ad.url = ?"
+        )
+        parameters = (destination, self.target)
         cursor: aiosqlite.Cursor = await self.connection.execute(query, parameters)
         row = await cursor.fetchone()
 
