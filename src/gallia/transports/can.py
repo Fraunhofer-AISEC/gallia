@@ -58,7 +58,14 @@ class ISOTPConfig(BaseModel):
     rx_padding: int | None = None
     tx_dl: int = 64
 
-    _auto_int = validator("src_addr", "dst_addr", pre=True, allow_reuse=True)(auto_int)
+    _auto_int = validator(
+        "src_addr",
+        "dst_addr",
+        "ext_address",
+        "rx_ext_address",
+        pre=True,
+        allow_reuse=True,
+    )(auto_int)
 
 
 class ISOTPTransport(BaseTransport, scheme="isotp"):
