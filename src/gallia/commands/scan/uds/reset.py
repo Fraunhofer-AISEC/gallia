@@ -54,6 +54,11 @@ class ResetScanner(UDSScanner):
             action="store_true",
             help="skip check current session",
         )
+        self.parser.add_argument(
+            "--power-cycle-on-timeout",
+            action="store_true",
+            help="power-cycle ECU in case of a timeout",
+        )
 
     async def main(self, args: Namespace) -> None:
         l_ok: dict[int, list[int]] = {}
@@ -142,10 +147,29 @@ class ResetScanner(UDSScanner):
                         await self.ecu.wait_for_ecu()
 
                 except asyncio.TimeoutError:
-                    self.logger.error(
-                        f"ECU did not respond after reset level {g_repr(sub_func)}; exiting…"
-                    )
-                    sys.exit(1)
+                    if args.power_cycle_on_timeout:
+                        try:
+                            self.logger.warning(
+                                f"ECU did not respond after reset level {g_repr(sub_func)}; trying power-cycle..."
+                            )
+                            await self.ecu.power_cycle()
+                            await self.ecu.wait_for_ecu()
+                        except asyncio.TimeoutError:
+                            self.logger.error(
+                                f"ECU did not respond after power-cycle {g_repr(sub_func)}; exiting…"
+                            )
+                            sys.exit(1)
+                        except ConnectionError:
+                            msg = f"{g_repr(sub_func)}: lost connection to ECU (post), current session: " \
+                                  f"{g_repr(session)}"
+                            self.logger.warning(msg)
+                            await self.ecu.reconnect()
+                            continue
+                    else:
+                        self.logger.error(
+                            f"ECU did not respond after reset level {g_repr(sub_func)}; exiting…"
+                        )
+                        sys.exit(1)
                 except ConnectionError:
                     msg = f"{g_repr(sub_func)}: lost connection to ECU (post), current session: {g_repr(session)}"
                     self.logger.warning(msg)
