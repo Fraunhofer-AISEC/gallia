@@ -137,6 +137,7 @@ class DBHandler:
     async def connect(self) -> None:
         assert self.connection is None, "Already connected to the database"
 
+        self.path.parent.mkdir(exist_ok=True, parents=True)
         self.connection = await aiosqlite.connect(self.path)
         await self.connection.execute("PRAGMA foreign_keys = 1")
 
