@@ -317,11 +317,7 @@ class BaseCommand(ABC):
         raise ValueError("base_dir or force_path must be different from None")
 
     def _aquire_flock(self, path: Path) -> None:
-        try:
-            # Raises 'PermissionError' when file was created by another user.
-            path.touch()
-        except PermissionError:
-            pass
+        path.touch()
         self._lock_file_fd = os.open(path, os.O_RDONLY)
         try:
             # First do a non blocking flock. If waiting is required,
