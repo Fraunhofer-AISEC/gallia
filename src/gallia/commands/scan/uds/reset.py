@@ -160,8 +160,10 @@ class ResetScanner(UDSScanner):
                             )
                             sys.exit(1)
                         except ConnectionError:
-                            msg = f"{g_repr(sub_func)}: lost connection to ECU (post), current session: " \
-                                  f"{g_repr(session)}"
+                            msg = (
+                                f"{g_repr(sub_func)}: lost connection to ECU (post), current session: "
+                                f"{g_repr(session)}"
+                            )
                             self.logger.warning(msg)
                             await self.ecu.reconnect()
                             continue
