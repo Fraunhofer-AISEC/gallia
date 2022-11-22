@@ -146,7 +146,7 @@ class ResetScanner(UDSScanner):
                     else:
                         await self.ecu.wait_for_ecu()
 
-                except asyncio.TimeoutError:
+                except (asyncio.TimeoutError, ConnectionError) as e:
                     if args.power_cycle_on_timeout:
                         try:
                             self.logger.warning(
@@ -165,16 +165,16 @@ class ResetScanner(UDSScanner):
                             self.logger.warning(msg)
                             await self.ecu.reconnect()
                             continue
-                    else:
+                    elif isinstance(e, asyncio.TimeoutError):
                         self.logger.error(
                             f"ECU did not respond after reset level {g_repr(sub_func)}; exiting…"
                         )
                         sys.exit(1)
-                except ConnectionError:
-                    msg = f"{g_repr(sub_func)}: lost connection to ECU (post), current session: {g_repr(session)}"
-                    self.logger.warning(msg)
-                    await self.ecu.reconnect()
-                    continue
+                    elif isinstance(e, ConnectionError):
+                        msg = f"{g_repr(sub_func)}: lost connection to ECU (post), current session: {g_repr(session)}"
+                        self.logger.warning(msg)
+                        await self.ecu.reconnect()
+                        continue
 
                 # We reach this code only for positive responses
                 if not args.skip_check_session:
