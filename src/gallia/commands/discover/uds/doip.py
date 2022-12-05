@@ -146,7 +146,7 @@ class DoIPDiscoverer(UDSDiscoveryScanner):
                     args.request_type,
                     args.timeout,
                 )
-            except (BrokenPipeError, asyncio.TimeoutError):
+            except (ConnectionError, asyncio.TimeoutError):
                 continue
             finally:
                 await conn.close()

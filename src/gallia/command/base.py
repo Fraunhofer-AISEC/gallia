@@ -472,9 +472,7 @@ class Scanner(AsyncScript, ABC):
     GROUP = "scan"
     HAS_ARTIFACTS_DIR = True
     CATCHED_EXCEPTIONS: list[type[Exception]] = [
-        BrokenPipeError,
-        ConnectionRefusedError,
-        ConnectionResetError,
+        ConnectionError,
         UDSException,
     ]
 

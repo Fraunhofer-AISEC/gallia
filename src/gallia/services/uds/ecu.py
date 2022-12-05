@@ -261,7 +261,9 @@ class ECU(UDSClient):
         return sessions
 
     async def set_session(
-        self, level: int, config: UDSRequestConfig | None = None
+        self,
+        level: int,
+        config: UDSRequestConfig | None = None,
     ) -> service.NegativeResponse | service.DiagnosticSessionControlResponse:
         config = config if config is not None else UDSRequestConfig()
 
@@ -333,8 +335,8 @@ class ECU(UDSClient):
                 await asyncio.sleep(sleep_time)
                 await self.ping()
                 break
-            except (BrokenPipeError, UDSException) as e:
-                self.logger.debug(f"ECU not ready: {g_repr(e)}")
+            except (ConnectionError, UDSException) as e:
+                self.logger.debug(f"ECU not ready: {e!r}")
                 await self.reconnect()
         self.logger.info("ECU ready")
 
