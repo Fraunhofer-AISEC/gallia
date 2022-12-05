@@ -174,7 +174,7 @@ class PDUFuzzer(UDSScanner):
                         self.logger.warning(f"{repr(e)}")
                         illegal_resp += 1
                     # Temporary patch: Exception handler is deleted when it goes productive
-                    except BrokenPipeError:
+                    except ConnectionError:
                         self.logger.warning(
                             "isotp flow control frame missing. Reconnecting…"
                         )
