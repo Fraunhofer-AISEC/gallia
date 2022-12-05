@@ -241,7 +241,8 @@ class ECU(UDSClient):
 
         resp = await self.set_session(0x01, config=config)
         if isinstance(resp, service.NegativeResponse):
-            return await self.power_cycle()
+            await self.power_cycle()
+            await self.reconnect()
         return True
 
     async def find_sessions(self, search: list[int], max_retry: int = 4) -> list[int]:
@@ -384,8 +385,11 @@ class ECU(UDSClient):
             except asyncio.CancelledError:
                 self.logger.debug("tester present worker terminated")
                 break
+            except ConnectionError:
+                self.logger.info("connection lost; reconnecting")
+                await self.reconnect()
             except Exception as e:
-                self.logger.debug(f"tester present got {g_repr(e)}")
+                self.logger.debug(f"tester present got {e!r}")
 
     async def start_cyclic_tester_present(self, interval: float) -> None:
         self.tester_present_interval = interval
