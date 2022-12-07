@@ -8,6 +8,8 @@ from itertools import islice
 from pathlib import Path
 from typing import cast
 
+import msgspec
+
 from gallia.log import ColorMode, PenlogPriority, PenlogReader, set_color_mode
 
 
@@ -83,6 +85,8 @@ def _main() -> int:
 def main() -> None:
     try:
         sys.exit(_main())
+    except (msgspec.DecodeError, msgspec.ValidationError) as e:
+        print(f"invalid file format: {e}", file=sys.stderr)
     # BrokenPipeError appears when stuff is piped to | head.
     except (KeyboardInterrupt, BrokenPipeError):
         pass
