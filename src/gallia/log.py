@@ -530,19 +530,16 @@ class PenlogReader:
         self._parsed = False
         self._record_offsets: list[int] = []
 
-    def _prepare_for_mmap(self, path: Path) -> BinaryIO:
-        if path.is_fifo():
-            tmpfile = tempfile.TemporaryFile()
-            with path.open("rb") as f:
-                while True:
-                    chunk = f.read(io.DEFAULT_BUFFER_SIZE)
-                    if chunk == b"":
-                        break
-                    tmpfile.write(chunk)
-            tmpfile.flush()
-            return cast(BinaryIO, tmpfile)
+    def _test_mmap(self, path: Path) -> bool:
+        with path.open("rb") as f:
+            try:
+                mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+                return True
+            except ValueError:
+                return False
 
-        if path.suffix in [".zst", ".gz"]:
+    def _prepare_for_mmap(self, path: Path) -> BinaryIO:
+        if path.is_file() and path.suffix in [".zst", ".gz"]:
             tmpfile = tempfile.TemporaryFile()
             match path.suffix:
                 case ".zst":
@@ -553,6 +550,13 @@ class PenlogReader:
                     with gzip.open(self.path, "rb") as f:
                         shutil.copyfileobj(f, tmpfile)
 
+            tmpfile.flush()
+            return cast(BinaryIO, tmpfile)
+
+        if path.is_fifo() or self._test_mmap(path) is False:
+            tmpfile = tempfile.TemporaryFile()
+            with path.open("rb") as f:
+                shutil.copyfileobj(f, tmpfile)
             tmpfile.flush()
             return cast(BinaryIO, tmpfile)
 
