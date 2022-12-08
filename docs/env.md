@@ -7,7 +7,7 @@ SPDX-License-Identifier: CC0-1.0
 # Environment Variables
 
 For some cases `gallia` can be configured with environment variables.
-All these variables begin with `GALLIA_`.
+`gallia`-specific variables begin with `GALLIA_`.
 
 GALLIA_CONFIG
 : The path to the config file usually called `gallia.toml`.
@@ -19,3 +19,6 @@ GALLIA_LOGLEVEL
   As an alternative, the int values from 0 to 7 can be used.
   Mostly useful in own scripts or tests.
   This variable is not read when using the gallia cli.
+
+NO_COLOR
+: If this variable is set, `gallia` by default does not use color codes, see: https://no-color.org/

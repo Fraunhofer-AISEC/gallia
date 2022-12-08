@@ -62,7 +62,10 @@ def set_color_mode(mode: ColorMode, stream: TextIO = sys.stderr) -> None:
         case ColorMode.ALWAYS:
             _COLORS_ENABLED = True
         case ColorMode.AUTO:
-            _COLORS_ENABLED = stream.isatty()
+            if os.getenv("NO_COLOR") is not None:
+                _COLORS_ENABLED = False
+            else:
+                _COLORS_ENABLED = stream.isatty()
         case ColorMode.NEVER:
             _COLORS_ENABLED = False
 
