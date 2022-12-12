@@ -94,13 +94,6 @@ def load_parsers() -> Parsers:
         metavar=command,
     )
     add_cli_group(
-        parsers["siblings"]["discover"],
-        "xcp",
-        "Universal Measurement and Calibration Protocol",
-        metavar=command,
-    )
-
-    add_cli_group(
         parsers,
         "primitive",
         "protocol specific primitives",

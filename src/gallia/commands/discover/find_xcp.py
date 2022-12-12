@@ -3,32 +3,28 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
-import json
-import os
 import socket
 import struct
-import sys
-from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser, Namespace
-from subprocess import CalledProcessError, run
+from argparse import ArgumentParser, Namespace
 
-from gallia.log import get_logger
+from gallia.command import AsyncScript
+from gallia.config import Config
 from gallia.services.uds.core.utils import bytes_repr, g_repr
 from gallia.transports import RawCANTransport, TargetURI
 from gallia.utils import can_id_repr
 
 
-class FindXCP:
+class FindXCP(AsyncScript):
     """Find XCP Slave"""
 
-    # TODO: This Scanner is not a UDS Scanner and needs a Task base class. See Issue #26
-    def __init__(self) -> None:
-        self.description = self.__class__.__doc__
-        self.logger = get_logger("scanner")
-        self.parser = ArgumentParser(
-            description=self.description, formatter_class=ArgumentDefaultsHelpFormatter
-        )
+    GROUP = "discover"
+    COMMAND = "xcp"
+    SHORT_HELP = "XCP enumeration scanner"
+    HAS_ARTIFACTS_DIR = True
+
+    def __init__(self, parser: ArgumentParser, config: Config = Config()) -> None:
+        super().__init__(parser, config)
         self.socket: socket.socket
-        self.configure_parser()
 
     def configure_parser(self) -> None:
         subparsers = self.parser.add_subparsers(
@@ -86,25 +82,6 @@ class FindXCP:
             help="Comma separated list of UDP ports to test for XCP",
         )
 
-    def run(self) -> int:
-        args = self.parser.parse_args()
-
-        os.environ["PENLOG_OUTPUT"] = "json"
-        try:
-            process = run(
-                ["git", "describe", "--tags", "--always", "--dirty"],
-                capture_output=True,
-                check=True,
-            )
-        except CalledProcessError as e:
-            self.logger.warning(f"could not get version: {g_repr(e)}")
-        else:
-            git_version = process.stdout.decode().strip()
-            self.logger.info(f"version: {git_version}")
-        self.logger.info(json.dumps(sys.argv))
-
-        return asyncio.run(self.main(args))
-
     def pack_xcp_eth(self, data: bytes, ctr: int = 0) -> bytes:
         length = len(data)
         data = struct.pack("<HH", length, ctr) + data
@@ -116,7 +93,7 @@ class FindXCP:
         self.logger.info(f"recv: {data.hex()}")
         return length, ctr, data[4:]
 
-    async def main(self, args: Namespace) -> int:
+    async def main(self, args: Namespace) -> None:
         if args.mode == "can":
             await self.test_can(args)
 
@@ -126,8 +103,6 @@ class FindXCP:
         elif args.mode == "udp":
             self.test_eth_broadcast(args)
             await self.test_udp(args)
-
-        return 0
 
     async def test_tcp(self, args: Namespace) -> None:
         # TODO: rewrite as async
@@ -281,8 +256,3 @@ class FindXCP:
         self.logger.result(
             f"Finished; Found {len(endpoints)} XCP endpoints via multicast group"
         )
-
-
-def main() -> None:
-    scanner = FindXCP()
-    sys.exit(scanner.run())
