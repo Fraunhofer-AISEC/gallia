@@ -6,6 +6,7 @@ from gallia.command.base import BaseCommand
 from gallia.commands.discover.uds.doip import DoIPDiscoverer
 from gallia.commands.discover.uds.isotp import IsotpDiscoverer
 from gallia.commands.fuzz.uds.pdu import PDUFuzzer
+from gallia.commands.primitive.generic.pdu import GenericPDUPrimitive
 from gallia.commands.primitive.uds.dtc import DTCPrimitive
 from gallia.commands.primitive.uds.ecu_reset import ECUResetPrimitive
 from gallia.commands.primitive.uds.iocbi import IOCBIPrimitive
@@ -46,6 +47,7 @@ registry: list[type[BaseCommand]] = [
     RMBAPrimitive,
     RTCLPrimitive,
     ReadErrorLogPrimitive,
+    GenericPDUPrimitive,
     SendPDUPrimitive,
     WMBAPrimitive,
     VirtualECU,
