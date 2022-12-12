@@ -9,11 +9,10 @@ import aiofiles
 
 from gallia.command.base import FileNames, Scanner
 from gallia.config import Config
-from gallia.plugins import load_ecu, load_ecu_plugins, load_transport
+from gallia.plugins import load_ecu, load_ecu_plugins
 from gallia.services.uds.core.service import NegativeResponse, UDSResponse
 from gallia.services.uds.ecu import ECU
 from gallia.services.uds.helpers import raise_for_error
-from gallia.transports import BaseTransport
 
 
 class UDSScanner(Scanner):
@@ -30,7 +29,6 @@ class UDSScanner(Scanner):
     def __init__(self, parser: ArgumentParser, config: Config = Config()) -> None:
         super().__init__(parser, config)
         self.ecu: ECU
-        self.transport: BaseTransport
         self._implicit_logging = True
 
     def configure_class_parser(self) -> None:
@@ -120,8 +118,6 @@ class UDSScanner(Scanner):
     async def setup(self, args: Namespace) -> None:
         await super().setup(args)
 
-        self.transport = await load_transport(args.target).connect(args.target)
-
         self.ecu = load_ecu(args.oem)(
             self.transport,
             timeout=args.timeout,
@@ -205,8 +201,6 @@ class UDSScanner(Scanner):
 
         if args.tester_present:
             await self.ecu.stop_cyclic_tester_present()
-
-        await self.transport.close()
 
         # This must be the last one.
         await super().teardown(args)

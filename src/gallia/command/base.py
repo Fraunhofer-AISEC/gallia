@@ -26,9 +26,10 @@ from gallia.config import Config
 from gallia.db.handler import DBHandler
 from gallia.dumpcap import Dumpcap
 from gallia.log import Loglevel, get_logger, setup_logging, tz
+from gallia.plugins import load_transport
 from gallia.powersupply import PowerSupply, PowerSupplyURI
 from gallia.services.uds.core.exception import UDSException
-from gallia.transports import TargetURI
+from gallia.transports import BaseTransport, TargetURI
 from gallia.utils import camel_to_snake
 
 
@@ -480,6 +481,7 @@ class Scanner(AsyncScript, ABC):
         super().__init__(parser, config)
         self.db_handler: DBHandler | None = None
         self.power_supply: PowerSupply | None = None
+        self.transport: BaseTransport
         self.dumpcap: Dumpcap | None = None
 
     @abstractmethod
@@ -539,7 +541,11 @@ class Scanner(AsyncScript, ABC):
             self.dumpcap = await Dumpcap.start(args.target, self.artifacts_dir)
             await self.dumpcap.sync()
 
+        self.transport = await load_transport(args.target).connect(args.target)
+
     async def teardown(self, args: Namespace) -> None:
+        await self.transport.close()
+
         if self.dumpcap:
             await self.dumpcap.stop()
 
