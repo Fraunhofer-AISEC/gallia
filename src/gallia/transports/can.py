@@ -282,6 +282,13 @@ class CANMessage(Message):  # type: ignore
 class RawCANConfig(BaseModel):
     is_extended: bool = False
     is_fd: bool = False
+    dst_id: int | None = None
+
+    _auto_int = validator(
+        "dst_id",
+        pre=True,
+        allow_reuse=True,
+    )(auto_int)
 
 
 class RawCANTransport(BaseTransport, scheme="can-raw"):
@@ -341,7 +348,9 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> int:
-        raise RuntimeError("RawCANTransport is a special snowflake")
+        if self.config.dst_id:
+            return await self.sendto(data, self.config.dst_id, timeout, tags)
+        raise ValueError("dst_id not set")
 
     async def sendto(
         self,
