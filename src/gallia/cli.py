@@ -113,6 +113,13 @@ def load_parsers() -> Parsers:
         description="primitives for the UDS protocol according to the ISO standard",
         metavar=command,
     )
+    add_cli_group(
+        parsers["siblings"]["primitive"],
+        "generic",
+        "generic networks primitives",
+        description="generic primitives for network protocols, e.g. send a pdu",
+        metavar=command,
+    )
 
     add_cli_group(
         parsers,
