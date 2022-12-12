@@ -29,6 +29,11 @@ $ paru -S gallia
 $ pip install gallia
 ```
 
+```{note}
+`pip` installs executables to `~/.local/bin` which conforms to [XDG](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html).
+Make sure that `~/.local/bin` is included in your []`$PATH`](https://pubs.opengroup.org/onlinepubs/000095399/basedefs/xbd_chap08.html#tag_08_03).
+```
+
 ## Development
 
 The [poetry build system](https://python-poetry.org/) is used to manage dependencies.
