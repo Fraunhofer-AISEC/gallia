@@ -44,7 +44,7 @@ tabulate = ">=0.8.9,<0.10.0"
 construct = "^2.10.67"
 xdg = "^5.1"
 tomli = { version = "^2.0.1", python = "<3.11" }
-msgspec = ">=0.8,<0.10"
+msgspec = ">=0.8,<0.11"
 pydantic = "^1.10"
 pygit2 = "^1.10"
 
