@@ -73,7 +73,6 @@ pyls-isort = "^0.2.2"
 [tool.poetry.scripts]
 "gallia" = "gallia.cli:main"
 "netzteil" = "opennetzteil.cli:main"
-"discover-xcp" = "gallia.udscan.scanner.find_xcp:main"
 "cursed-hr" = "cursed_hr.cursed_hr:main"
 "hr" = "hr:main"
 
