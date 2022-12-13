@@ -13,6 +13,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 1.1.1 (2022-12-13)
+
+### Added
+
+* Add support for the `NO_COLOR` env variable (#332)
+* Log session transitions in db and use them as a fallback (#182)
+* Add `gallia primitive generic pdu` (#336)
+
+### Fixed
+
+* ISOTP: Accept hex values for addresses (#324)
+* lockfile: Do not fail in case of a different owner (#327)
+* db: Create parent directory if it does not exist (#328)
+* Move transport initialization to base class (#336)
+* Port old scanner to new API (#337)
+* Fix a corner case with `.reconnect()` (#330)
+* hr: Do not print tracebacks in a few cornercases (#331)
+
 ## 1.1.0 (2022-11-04)
 
 ### Added
