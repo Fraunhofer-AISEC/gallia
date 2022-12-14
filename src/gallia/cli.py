@@ -325,7 +325,12 @@ def main() -> None:
     for fn in load_cli_init_plugins():
         fn(parsers)
 
-    config, config_path = load_config_file()
+    try:
+        config, config_path = load_config_file()
+    except ValueError as e:
+        print(f"invalid config: {e}")
+        sys.exit(1)
+
     build_cli(parsers, config, registry)
 
     parser = parsers["parser"]
