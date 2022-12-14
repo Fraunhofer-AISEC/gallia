@@ -76,3 +76,15 @@ baz = "fiz"
     config, _ = load_config_file()
 
     assert config.get_value("gallia.foobar.baz") == "fiz"
+
+
+def test_invalid_config(tmp_path: Path) -> None:
+    config_file = tmp_path.joinpath("gallia.toml")
+    config_file.write_text(
+        """[gallia.foobar]
+baz = fiz
+"""
+    )
+
+    with pytest.raises(ValueError):
+        load_config_file(config_file)
