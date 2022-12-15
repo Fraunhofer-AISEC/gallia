@@ -18,7 +18,7 @@ Python dependencies are listed in `pyproject.toml`.
 
 ## Install
 
-An overview of software repos where `gallia` is availble is provided by [repology.org](https://repology.org/project/gallia/versions).
+An overview of software repos where `gallia` is available is provided by [repology.org](https://repology.org/project/gallia/versions).
 
 ### Arch Linux 
 
