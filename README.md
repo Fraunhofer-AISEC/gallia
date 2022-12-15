@@ -12,6 +12,8 @@ SPDX-License-Identifier: CC0-1.0
 [![PyPI - License](https://img.shields.io/pypi/l/gallia)](https://www.apache.org/licenses/LICENSE-2.0.html)
 [![PyPI](https://img.shields.io/pypi/v/gallia)](https://pypi.python.org/pypi/gallia/)
 
+[![Packaging status](https://repology.org/badge/vertical-allrepos/gallia.svg)](https://repology.org/project/gallia/versions)
+
 Gallia is an extendable pentesting framework with the focus on the automotive domain.
 The scope of the toolchain is conducting penetration tests from a single ECU up to whole cars.
 Currently, the main focus lies on the [UDS](https://www.iso.org/standard/72439.html) interface.
