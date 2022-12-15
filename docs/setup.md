@@ -23,6 +23,14 @@ Python dependencies are listed in `pyproject.toml`.
 $ paru -S gallia
 ```
 
+### NixOS
+
+``` shell-session
+$ nix shell nixpgks#gallia
+```
+
+For persistance add `gallia` to your `environment.systemPackages`, or when you use `home-manager` to `home.packages`.
+
 ### Manual
 
 ``` shell-session
