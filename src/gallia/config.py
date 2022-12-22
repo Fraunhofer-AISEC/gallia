@@ -8,7 +8,8 @@ from pathlib import Path
 from typing import Any
 
 from pygit2 import discover_repository
-from xdg import xdg_config_dirs
+
+from gallia.xdg import xdg_config_dirs
 
 # TODO: Remove this check when dropping Python 3.10.
 if sys.version_info[1] < 11:
