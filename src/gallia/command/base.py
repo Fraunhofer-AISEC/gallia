@@ -367,7 +367,11 @@ class BaseCommand(ABC):
         # Ensure that META.json gets written in the case a
         # command calls sys.exit().
         except SystemExit as e:
-            exit_code = e.code
+            match e.code:
+                case int():
+                    exit_code = e.code
+                case _:
+                    exit_code = ExitCodes.GENERIC_ERROR
         except Exception as e:
             for t in self.CATCHED_EXCEPTIONS:
                 if isinstance(e, t):

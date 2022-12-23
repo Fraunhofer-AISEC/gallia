@@ -272,8 +272,8 @@ def setup_logging(
     set_color_mode(color_mode)
 
     if level is None:
-        if (l := os.getenv("GALLIA_LOGLEVEL")) is not None:
-            level = PenlogPriority.from_str(l).to_level()
+        if (raw := os.getenv("GALLIA_LOGLEVEL")) is not None:
+            level = PenlogPriority.from_str(raw).to_level()
         else:
             level = Loglevel.DEBUG
 

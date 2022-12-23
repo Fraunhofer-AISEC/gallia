@@ -117,6 +117,7 @@ class ECU(UDSClient):
         Returns:
             True on success, False on error.
         """
+        return True
 
     async def set_session_post(
         self, level: int, config: UDSRequestConfig | None = None
@@ -132,6 +133,7 @@ class ECU(UDSClient):
         Returns:
             True on success, False on error.
         """
+        return True
 
     async def check_and_set_session(
         self,
