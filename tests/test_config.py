@@ -5,8 +5,8 @@
 import os
 from pathlib import Path
 
-import pytest
 import platformdirs
+import pytest
 from pygit2 import init_repository
 
 from gallia.config import get_config_dirs, load_config_file
