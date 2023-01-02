@@ -6,9 +6,10 @@ import os
 from pathlib import Path
 
 import pytest
+import platformdirs
 from pygit2 import init_repository
 
-from gallia.config import load_config_file
+from gallia.config import get_config_dirs, load_config_file
 
 
 def test_config_discovery_git(tmp_path: Path) -> None:
@@ -62,6 +63,13 @@ def test_config_discovery_env(tmp_path: Path) -> None:
         load_config_file()
 
     del os.environ["GALLIA_CONFIG"]
+
+
+def test_get_config_dirs() -> None:
+    dirs = get_config_dirs()
+    assert len(dirs) == 2
+    assert dirs[0] == Path.cwd()
+    assert dirs[1] == platformdirs.user_config_path("gallia")
 
 
 def test_get_value(tmp_path: Path) -> None:

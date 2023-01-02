@@ -7,9 +7,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from platformdirs import user_config_path
 from pygit2 import discover_repository
-
-from gallia.xdg import xdg_config_dirs
 
 # TODO: Remove this check when dropping Python 3.10.
 if sys.version_info[1] < 11:
@@ -46,12 +45,12 @@ def get_git_root() -> Path | None:
 
 
 def get_config_dirs() -> list[Path]:
-    dirs = xdg_config_dirs()
+    user_conf = user_config_path("gallia")
     git_root = get_git_root()
     cwd = Path.cwd()
     if git_root is not None:
-        return [cwd, git_root] + dirs
-    return [cwd] + dirs
+        return [cwd, git_root, user_conf]
+    return [cwd, user_conf]
 
 
 def search_config(
