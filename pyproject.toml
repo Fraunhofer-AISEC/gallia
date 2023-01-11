@@ -52,7 +52,6 @@ exitcode = "^0.1.0"
 [tool.poetry.group.dev.dependencies]
 black = "^22.10"
 Sphinx = "^5.2"
-isort = "^5.10"
 mypy = "^1.0"
 pylsp-mypy = "^0.6"
 pylsp-rope = "^0.1"
@@ -67,10 +66,8 @@ sphinx-rtd-theme = "^1.0"
 reuse = "^1.0.0"
 construct-typing = "^0.5.2"
 pytest-cov = "^4.0"
-pyls-isort = "^0.2.2"
-ruff = "^0.0.206"
-flake8 = "^6.0.0"
-pylint = "~2.15.0"
+ruff = "^0.0.251"
+python-lsp-ruff = "^1.0.5"
 
 [tool.poetry.scripts]
 "gallia" = "gallia.cli:main"
@@ -89,43 +86,27 @@ module = [
 ignore_missing_imports = true
 
 [tool.ruff]
-line-length = 120
 target-version = "py310"
+select = [
+    "C4",   # flake8-comprehensions
+    "E",    # pycodestlye
+    "F",    # pyflakes
+    "I",    # isort
+    "PL",   # pylint
+    "PTH",  # flake8-use-pathlib
+    "TID",  # flake8-tidy-imports
+    "UP",   # pyupgrade
+]
+ignore = [
+    "E501",     # line length
+    "PLR2004",  # magic value used in comparison
+    "PLR0911",  # too many return statements
+    "PLR0912",  # too many branches
+    "PLR0915",  # too many statements
+]
 
 [tool.black]
 target-version = ['py310']
 
-[tool.isort]
-profile = "black"
-py_version= "310"
-
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-
-[tool.pylint.messages_control]
-disable = [
-    "broad-except",
-    "duplicate-code",  # https://github.com/Fraunhofer-AISEC/gallia/issues/306
-    "fixme",
-    "invalid-name",
-    "line-too-long",  # handled by black
-    "logging-fstring-interpolation",  # https://github.com/Fraunhofer-AISEC/gallia/issues/234
-    "logging-not-lazy",  # https://github.com/Fraunhofer-AISEC/gallia/issues/234
-    "missing-class-docstring",
-    "missing-class-docstring",
-    "missing-function-docstring",
-    "missing-module-docstring",
-    "no-member",  # mypy handles this better
-    "no-name-in-module",  # mypy handles this better
-    "too-few-public-methods",
-    "too-many-arguments",
-    "too-many-branches",
-    "too-many-instance-attributes",
-    "too-many-lines",
-    "too-many-locals",
-    "too-many-nested-blocks",
-    "too-many-public-methods",
-    "too-many-return-statements",
-    "too-many-statements",
-    "unused-argument",
-]

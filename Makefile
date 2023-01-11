@@ -23,16 +23,14 @@ zipapp:
 
 .PHONY: lint
 lint:
-	flake8 src tests
 	mypy src tests
-	pylint src tests
+	ruff check src tests
 	black --check src tests
-	isort --check src tests
 	reuse lint
 
 .PHONY: fmt
 fmt:
-	isort src tests
+	ruff check --fix-only src tests
 	black src tests
 
 .PHONY: docs
