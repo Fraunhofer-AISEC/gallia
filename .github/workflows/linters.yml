@@ -41,15 +41,12 @@ jobs:
     - name: Install Dependencies
       run: |
         poetry install
-    - name: Run flake8
+    - name: Run ruff
       run: |
-        poetry run flake8 src tests
+        poetry run ruff check src tests
     - name: Run mypy
       run: |
         poetry run mypy src tests
-    - name: Run pylint
-      run: |
-        poetry run pylint src tests
     - name: Run black
       run: |
         poetry run black --check --verbose src tests
