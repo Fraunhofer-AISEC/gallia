@@ -1534,14 +1534,14 @@ test = ["coverage", "pytest", "pytest-cov", "tox"]
 
 [[package]]
 name = "pylsp-rope"
-version = "0.1.10"
+version = "0.1.11"
 description = "Extended refactoring capabilities for Python LSP Server using Rope."
 category = "dev"
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "pylsp-rope-0.1.10.tar.gz", hash = "sha256:9e6104f15f922f633a4ba06ba0280f08a5e18973028f9bbdcae57b715d81cdd7"},
-    {file = "pylsp_rope-0.1.10-py3-none-any.whl", hash = "sha256:d5e9094415ff848b2034d4b64b4fdc5ec172ddf4e2a5d85c77bfa2da6f6ec61f"},
+    {file = "pylsp-rope-0.1.11.tar.gz", hash = "sha256:48aadf993dafa5e8fca1108b4a5431314cf80bc78cffdd56400ead9c407553be"},
+    {file = "pylsp_rope-0.1.11-py3-none-any.whl", hash = "sha256:71fb08dc6ead9a69202f2e7c5f7bbc5ada037a0f0722d7eb2d1f8cac2c9a18af"},
 ]
 
 [package.dependencies]
