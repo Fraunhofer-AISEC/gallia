@@ -532,7 +532,8 @@ class Scanner(AsyncScript, ABC):
             self.power_supply = await PowerSupply.connect(args.power_supply)
             if args.power_cycle is True:
                 await self.power_supply.power_cycle(
-                    args.power_cycle_sleep, lambda: asyncio.sleep(2)
+                    args.power_cycle_sleep,
+                    args.power_cycle_sleep_after,
                 )
         elif args.power_cycle is True:
             self.parser.error("--power-cycle needs --power-supply")
@@ -598,6 +599,15 @@ class Scanner(AsyncScript, ABC):
             metavar="SECs",
             type=float,
             default=self.config.get_value("gallia.scanner.power_cycle_sleep", 5.0),
+            help="time to sleep after the power-off",
+        )
+        group.add_argument(
+            "--power-cycle-sleep-after",
+            metavar="SECs",
+            type=float,
+            default=self.config.get_value(
+                "gallia.scanner.power_cycle_sleep_after", 2.0
+            ),
             help="time to sleep after the power-cycle",
         )
 
