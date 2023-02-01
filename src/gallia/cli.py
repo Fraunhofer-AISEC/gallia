@@ -59,6 +59,11 @@ def load_parsers() -> Parsers:
         help="show defaults of all flags",
     )
     parser.add_argument(
+        "--show-cli",
+        action="store_true",
+        help="show the subcommand tree",
+    )
+    parser.add_argument(
         "--show-plugins",
         action="store_true",
         help="show loaded plugins",
@@ -248,6 +253,58 @@ def get_cli_defaults(parser: argparse.ArgumentParser) -> dict[str, Any]:
     return out
 
 
+def _get_command_tree(parser: argparse.ArgumentParser, out: dict[str, Any]) -> None:
+    for action in parser.__dict__["_actions"]:
+        if isinstance(
+            action, argparse._SubParsersAction  # pylint: disable=protected-access
+        ):
+            for cmd, subparser in action.__dict__["choices"].items():
+                out[cmd] = {}
+                d = out[cmd]
+                _get_command_tree(subparser, d)
+
+
+def get_command_tree(parser: argparse.ArgumentParser) -> dict[str, Any]:
+    out: dict[str, Any] = {"gallia": {}}
+    _get_command_tree(parser, out["gallia"])
+    return out
+
+
+def _print_tree(
+    current: str,
+    tree: dict[str, Any],
+    marker: str,
+    level_markers: list[bool],
+) -> None:
+    indent = " " * len(marker)
+    connection = "|" + indent[:-1]
+    level = len(level_markers)
+
+    def mapper(draw: bool) -> str:
+        return connection if draw else indent
+
+    markers = "".join(map(mapper, level_markers[:-1]))
+    markers += marker if level > 0 else ""
+
+    print(f"{markers}{current}")
+    for i, child in enumerate(tree.keys()):
+        is_last = i == len(tree.keys()) - 1
+        _print_tree(child, tree[child], marker, [*level_markers, not is_last])
+
+
+def print_tree(tree: dict[str, Any]) -> None:
+    # Assumption: first level of dict has only one element -> root node.
+    if len(tree) != 1:
+        raise ValueError("invalid tree")
+
+    root = list(tree.keys())[0]
+    _print_tree(root, tree[root], "+-", [])
+
+
+def cmd_show_cli(parser: argparse.ArgumentParser) -> None:
+    print_tree(get_command_tree(parser))
+
+
 def cmd_show_defaults(parser: argparse.ArgumentParser) -> None:
     pprint(get_cli_defaults(parser))
 
@@ -343,6 +400,10 @@ def main() -> None:
 
     if args.show_defaults:
         cmd_show_defaults(parser)
+        sys.exit(0)
+
+    if args.show_cli:
+        cmd_show_cli(parser)
         sys.exit(0)
 
     if args.show_plugins:
