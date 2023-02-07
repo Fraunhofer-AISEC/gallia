@@ -47,7 +47,7 @@ msgspec = ">=0.11,<0.13"
 pydantic = "^1.10"
 pygit2 = "^1.10"
 platformdirs = "^2.6"
-pylint = "2.15.10"
+pylint = "2.16.1"
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.10"
