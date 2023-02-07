@@ -179,7 +179,7 @@ test = ["coverage", "flake8", "pexpect", "wheel"]
 name = "astroid"
 version = "2.13.5"
 description = "An abstract syntax tree for Python with inference support."
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7.2"
 files = [
@@ -438,7 +438,7 @@ colorama = {version = "*", markers = "platform_system == \"Windows\""}
 name = "colorama"
 version = "0.4.6"
 description = "Cross-platform colored terminal text."
-category = "main"
+category = "dev"
 optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,>=2.7"
 files = [
@@ -546,7 +546,7 @@ toml = ["tomli"]
 name = "dill"
 version = "0.3.6"
 description = "serialize all of python"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -737,7 +737,7 @@ files = [
 name = "isort"
 version = "5.12.0"
 description = "A Python utility / library to sort Python imports."
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.8.0"
 files = [
@@ -793,7 +793,7 @@ i18n = ["Babel (>=2.7)"]
 name = "lazy-object-proxy"
 version = "1.9.0"
 description = "A fast and thorough lazy object proxy."
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -943,7 +943,7 @@ files = [
 name = "mccabe"
 version = "0.7.0"
 description = "McCabe checker, plugin for flake8"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
 files = [
@@ -1478,7 +1478,7 @@ plugins = ["importlib-metadata"]
 name = "pylint"
 version = "2.15.10"
 description = "python code static checker"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7.2"
 files = [
@@ -2155,7 +2155,7 @@ files = [
 name = "tomlkit"
 version = "0.11.6"
 description = "Style preserving TOML library"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
 files = [
@@ -2523,4 +2523,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.12"
-content-hash = "5b9dcc0bf32806b019738d7415a0dcd4bdc8a3cd6362f871052fc31b3ad4ccf0"
+content-hash = "86dae2b534e771a933e390a0420fb624e9ca9cf13a0b409ba76dc6091f8b2eb7"

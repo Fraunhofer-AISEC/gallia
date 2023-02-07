@@ -47,14 +47,12 @@ msgspec = ">=0.11,<0.13"
 pydantic = "^1.10"
 pygit2 = "^1.10"
 platformdirs = "^2.6"
-pylint = "2.15.10"
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.10"
 Sphinx = "^5.2"
 isort = "^5.10"
 mypy = "^1.0"
-pylint = "^2.15"
 pylsp-mypy = "^0.6"
 pylsp-rope = "^0.1"
 pytest = "^7.1"
@@ -71,6 +69,7 @@ pytest-cov = "^4.0"
 pyls-isort = "^0.2.2"
 ruff = "^0.0.206"
 flake8 = "^6.0.0"
+pylint = "~2.15.0"
 
 [tool.poetry.scripts]
 "gallia" = "gallia.cli:main"
