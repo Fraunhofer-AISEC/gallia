@@ -22,7 +22,7 @@ from logging.handlers import QueueHandler, QueueListener
 from pathlib import Path
 from queue import Queue
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, BinaryIO, Iterator, TextIO, cast
+from typing import TYPE_CHECKING, Any, BinaryIO, Iterator, TextIO, TypeAlias, cast
 
 import msgspec
 import zstandard
@@ -339,7 +339,7 @@ class _PenlogRecordV2(msgspec.Struct, omit_defaults=True, tag=2, tag_field="vers
     _python_func_name: str | None = None
 
 
-_PenlogRecord = _PenlogRecordV1 | _PenlogRecordV2
+_PenlogRecord: TypeAlias = _PenlogRecordV1 | _PenlogRecordV2
 
 
 def _colorize_msg(data: str, levelno: int) -> str:
@@ -444,7 +444,7 @@ class PenlogRecord:
 
         # PenlogRecordV1 has no version field, thus the tagged
         # union based approach does not work.
-        record = _PenlogRecord
+        record: _PenlogRecord
         try:
             record = msgspec.json.decode(data, type=_PenlogRecordV2)
         except msgspec.ValidationError:

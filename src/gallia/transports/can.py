@@ -9,7 +9,6 @@ import errno
 import socket as s
 import struct
 import time
-from typing import cast
 
 from can import Message  # type: ignore
 from pydantic import BaseModel, validator
@@ -209,7 +208,7 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
         pass
 
 
-class CANMessage(Message):  # type: ignore
+class CANMessage(Message):
 
     # https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/linux/can.h
     CAN_HEADER_FMT = struct.Struct("=IBB2x")
@@ -217,7 +216,7 @@ class CANMessage(Message):  # type: ignore
     CANFD_ESI = 0x02
 
     def _compose_arbitration_id(self) -> int:
-        can_id = cast(int, self.arbitration_id)
+        can_id = self.arbitration_id
         if self.is_extended_id:
             can_id |= s.CAN_EFF_FLAG
         if self.is_remote_frame:
