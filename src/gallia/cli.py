@@ -385,7 +385,7 @@ def main() -> None:
     try:
         config, config_path = load_config_file()
     except ValueError as e:
-        print(f"invalid config: {e}")
+        print(f"invalid config: {e}", file=sys.stderr)
         sys.exit(1)
 
     build_cli(parsers, config, registry)
