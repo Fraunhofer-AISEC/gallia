@@ -16,6 +16,7 @@ from pprint import pprint
 from typing import Any
 
 import argcomplete
+import exitcode
 
 from gallia.command.base import BaseCommand
 from gallia.commands import registry as cmd_registry
@@ -386,7 +387,7 @@ def main() -> None:
         config, config_path = load_config_file()
     except ValueError as e:
         print(f"invalid config: {e}", file=sys.stderr)
-        sys.exit(1)
+        sys.exit(exitcode.CONFIG)
 
     build_cli(parsers, config, registry)
 
@@ -396,27 +397,27 @@ def main() -> None:
 
     if args.show_config:
         cmd_show_config(args, config, config_path)
-        sys.exit(0)
+        sys.exit(exitcode.OK)
 
     if args.show_defaults:
         cmd_show_defaults(parser)
-        sys.exit(0)
+        sys.exit(exitcode.OK)
 
     if args.show_cli:
         cmd_show_cli(parser)
-        sys.exit(0)
+        sys.exit(exitcode.OK)
 
     if args.show_plugins:
         cmd_show_plugins()
-        sys.exit(0)
+        sys.exit(exitcode.OK)
 
     if args.template:
         cmd_template(args)
-        sys.exit(0)
+        sys.exit(exitcode.OK)
 
     if not hasattr(args, "run_func"):
         args.help_func()
-        parser.exit(1)
+        parser.exit(exitcode.USAGE)
 
     sys.exit(args.run_func(args))
 
