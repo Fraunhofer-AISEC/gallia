@@ -14,12 +14,13 @@ import traceback
 from abc import ABC, abstractmethod
 from argparse import ArgumentParser, Namespace
 from datetime import datetime, timezone
-from enum import Enum, IntEnum, unique
+from enum import Enum, unique
 from pathlib import Path
 from subprocess import CalledProcessError, run
 from tempfile import gettempdir
 from typing import cast
 
+import exitcode
 import msgspec
 
 from gallia.config import Config
@@ -31,13 +32,6 @@ from gallia.powersupply import PowerSupply, PowerSupplyURI
 from gallia.services.uds.core.exception import UDSException
 from gallia.transports import BaseTransport, TargetURI
 from gallia.utils import camel_to_snake
-
-
-@unique
-class ExitCodes(IntEnum):
-    SUCCESS = 0
-    GENERIC_ERROR = 1
-    UNHANDLED_EXCEPTION = 2
 
 
 @unique
@@ -341,7 +335,7 @@ class BaseCommand(ABC):
                 self._aquire_flock(p)
             except OSError as e:
                 self.logger.critical(f"Unable to lock {p}: {e}")
-                return ExitCodes.GENERIC_ERROR
+                return exitcode.OSFILE
 
         if self.HAS_ARTIFACTS_DIR:
             self.artifacts_dir = self.prepare_artifactsdir(
@@ -371,15 +365,16 @@ class BaseCommand(ABC):
                 case int():
                     exit_code = e.code
                 case _:
-                    exit_code = ExitCodes.GENERIC_ERROR
+                    exit_code = exitcode.SOFTWARE
         except Exception as e:
             for t in self.CATCHED_EXCEPTIONS:
                 if isinstance(e, t):
-                    exit_code = ExitCodes.GENERIC_ERROR
+                    # TODO: Map the exitcode to superclass of builtin exceptions.
+                    exit_code = exitcode.IOERR
                     self.logger.critical(repr(e))
                     break
             else:
-                exit_code = ExitCodes.UNHANDLED_EXCEPTION
+                exit_code = exitcode.SOFTWARE
                 traceback.print_exc()
         finally:
             if self.HAS_ARTIFACTS_DIR:
@@ -392,8 +387,7 @@ class BaseCommand(ABC):
                 self.logger.info(f"Stored artifacts at {self.artifacts_dir}")
 
         if args.hooks:
-            code = exit_code.value if isinstance(exit_code, ExitCodes) else exit_code
-            self.run_hook(HookVariant.POST, args, code)
+            self.run_hook(HookVariant.POST, args, exit_code)
 
         if self._lock_file_fd is not None:
             self._release_flock()
@@ -425,7 +419,7 @@ class Script(BaseCommand, ABC):
         finally:
             self.teardown(args)
 
-        return ExitCodes.SUCCESS
+        return exitcode.OK
 
 
 class AsyncScript(BaseCommand, ABC):
@@ -454,7 +448,7 @@ class AsyncScript(BaseCommand, ABC):
 
     def run(self, args: Namespace) -> int:
         asyncio.run(self._run(args))
-        return ExitCodes.SUCCESS
+        return exitcode.OK
 
 
 class Scanner(AsyncScript, ABC):
