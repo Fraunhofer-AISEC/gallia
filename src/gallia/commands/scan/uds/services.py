@@ -87,19 +87,19 @@ class ServicesScanner(UDSScanner):
         if args.sessions is None:
             self.logger.info("No sessions specified, starting with session scan")
             # Only until 0x80 because the eight bit is "SuppressResponse"
-            sessions = list(
+            sessions = [
                 s
                 for s in range(1, 0x80)
                 if s not in args.skip or args.skip[s] is not None
-            )
+            ]
             sessions = await self.ecu.find_sessions(sessions)
             self.logger.result(f"Found {len(sessions)} sessions: {g_repr(sessions)}")
         else:
-            sessions = list(
+            sessions = [
                 s
                 for s in args.sessions
                 if s not in args.skip or args.skip[s] is not None
-            )
+            ]
 
         self.logger.info(f"testing sessions {g_repr(sessions)}")
 

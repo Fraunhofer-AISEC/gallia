@@ -7,9 +7,8 @@ from pathlib import Path
 
 import platformdirs
 import pytest
-from pygit2 import init_repository
-
 from gallia.config import get_config_dirs, load_config_file
+from pygit2 import init_repository
 
 
 def test_config_discovery_git(tmp_path: Path) -> None:

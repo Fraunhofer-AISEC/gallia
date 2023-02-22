@@ -396,7 +396,7 @@ class RandomUDSServer(UDSServer):
                 {
                     int_repr(session): {
                         f"{int_repr(s.value)} ({service_repr(s)})": str(
-                            list(int_repr(sf) for sf in sfs)
+                            [int_repr(sf) for sf in sfs]
                         )
                         if sfs is not None
                         else None
@@ -415,23 +415,23 @@ class RandomUDSServer(UDSServer):
         level = 0
         default_session = 1
         level_sessions = {default_session}
-        session_transitions: list[set[int]] = list(set() for _ in range(0x7F))
+        session_transitions: list[set[int]] = [set() for _ in range(0x7F)]
         session_transitions[default_session] = {default_session}
         combined_sessions = self.mandatory_sessions + self.optional_sessions
 
         while len(level_sessions) > 0:
             p_transition = self.p_session / len(level_sessions) / 2 ** (level + 0.5)
             next_level_sessions = set()
-            available_sessions = list(
+            available_sessions = [
                 i for i, l in enumerate(session_transitions) if len(l) > 0
-            )
+            ]
 
             for session in level_sessions:
-                transitions = list(
+                transitions = [
                     session
                     for session in combined_sessions
                     if rng.random() < p_transition
-                )
+                ]
                 session_transitions[session].update(transitions)
                 next_level_sessions.update(transitions)
 
@@ -443,9 +443,9 @@ class RandomUDSServer(UDSServer):
 
         for session in self.mandatory_sessions:
             if len(session_transitions[session]) == 0:
-                available_sessions = list(
+                available_sessions = [
                     i for i, l in enumerate(session_transitions) if len(l) > 0
-                )
+                ]
                 session_transitions[rng.choice(available_sessions)].add(session)
                 session_transitions[session] = {default_session}
 
@@ -457,9 +457,9 @@ class RandomUDSServer(UDSServer):
 
             self.services[session] = {}
 
-            for supported_service in self.mandatory_services + list(
+            for supported_service in self.mandatory_services + [
                 s for s in self.optional_services if rng.random() < self.p_service
-            ):
+            ]:
                 supported_sub_functions: list[int] | None = None
 
                 if self._is_sub_function_service(supported_service):
@@ -470,27 +470,27 @@ class RandomUDSServer(UDSServer):
                     elif supported_service == UDSIsoServices.DiagnosticSessionControl:
                         supported_sub_functions = sorted(session_specific_transitions)
                     elif supported_service == UDSIsoServices.SecurityAccess:
-                        supported_sub_functions_tmp = list(
+                        supported_sub_functions_tmp = [
                             sf
                             for sf in range(1, 0x7E, 2)
                             if rng.random() < self.p_sub_function / 2
-                        )
+                        ]
                         supported_sub_functions = []
 
                         for sf in supported_sub_functions_tmp:
                             supported_sub_functions.append(sf)
                             supported_sub_functions.append(sf + 1)
                     elif supported_service == UDSIsoServices.RoutineControl:
-                        supported_sub_functions = list(sf.value for sf in RCSubFuncs)
+                        supported_sub_functions = [sf.value for sf in RCSubFuncs]
                     # Currently only this sub function is supported so it doesn't make sense to gamble a lot here
                     elif supported_service == UDSIsoServices.ReadDTCInformation:
                         supported_sub_functions = [RDTCISubFuncs.RDTCBSM]
                     else:
-                        supported_sub_functions = list(
+                        supported_sub_functions = [
                             sf
                             for sf in range(1, 0x80, 1)
                             if rng.random() < self.p_sub_function
-                        )
+                        ]
 
                 self.services[session][supported_service] = supported_sub_functions
 

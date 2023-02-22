@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import pytest
-
 from gallia.log import setup_logging
 from gallia.services.uds.core.utils import (
     address_and_size_length,

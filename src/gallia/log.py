@@ -15,6 +15,7 @@ import socket
 import sys
 import tempfile
 import traceback
+from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum, IntEnum, unique
@@ -22,7 +23,7 @@ from logging.handlers import QueueHandler, QueueListener
 from pathlib import Path
 from queue import Queue
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, BinaryIO, Iterator, TextIO, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, BinaryIO, TextIO, TypeAlias, cast
 
 import msgspec
 import zstandard

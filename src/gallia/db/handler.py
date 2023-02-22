@@ -320,7 +320,7 @@ class DBHandler:
                     and len(value) > 0
                     and isinstance(value[0], (bytes, bytearray))
                 ):
-                    request_attributes[attr] = list(bytes_repr(v) for v in value)
+                    request_attributes[attr] = [bytes_repr(v) for v in value]
 
         if response is not None:
             response_attributes = {"service_id": response.service_id}
@@ -342,7 +342,7 @@ class DBHandler:
                         and len(value) > 0
                         and isinstance(value[0], (bytes, bytearray))
                     ):
-                        response_attributes[attr] = list(bytes_repr(v) for v in value)
+                        response_attributes[attr] = [bytes_repr(v) for v in value]
 
         query = (
             "INSERT INTO scan_result(run, state, request_pdu, request_time, request_timezone, request_data, "
@@ -413,7 +413,7 @@ class DBHandler:
         parameters = (self.target,)
 
         cursor: aiosqlite.Cursor = await self.connection.execute(query, parameters)
-        return list(x[0] for x in await cursor.fetchall())
+        return [x[0] for x in await cursor.fetchall()]
 
     async def get_session_transition(self, destination: int) -> list[int] | None:
         assert self.connection is not None, "Not connected to the database"

@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import cast
 
 import msgspec
-
 from gallia.log import ColorMode, PenlogPriority, PenlogReader, set_color_mode
 
 
