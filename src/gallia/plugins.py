@@ -5,8 +5,9 @@
 from __future__ import annotations
 
 import argparse
+from collections.abc import Callable
 from importlib.metadata import EntryPoint, entry_points
-from typing import TYPE_CHECKING, Callable, TypedDict
+from typing import TYPE_CHECKING, TypedDict
 
 from gallia.services.uds.ecu import ECU
 from gallia.transports import BaseTransport, TargetURI, registry

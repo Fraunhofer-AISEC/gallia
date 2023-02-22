@@ -26,7 +26,6 @@ from pathlib import Path
 from typing import Any, BinaryIO, cast
 
 import zstandard as zstd
-
 from gallia.log import PenlogPriority, PenlogRecord
 from gallia.services.uds.core.service import NegativeResponse, UDSRequest, UDSResponse
 
@@ -174,7 +173,7 @@ class CursedHR:
         filters: list[str] | None = None,
     ):
         self.in_file = in_file
-        self.level_pointers: list[array[int]] = list(array("L") for _ in range(9))
+        self.level_pointers: list[array[int]] = [array("L") for _ in range(9)]
         self.entry_positions = array("L")
         self.configuration_history = [
             Configuration(
@@ -1145,9 +1144,9 @@ class CursedHR:
                     self.configuration.interpret = not self.configuration.interpret
                 case "f":
                     # fh is short for filter_history to reduce long unreadable lines
-                    fh_tmp = list(
+                    fh_tmp = [
                         "; ".join(filter_commands) for filter_commands in filter_history
-                    )
+                    ]
                     fh_tmp.append("")
                     fh_index = len(fh_tmp) - 1
 
@@ -1315,9 +1314,9 @@ def parse_filter(text: str) -> list[str]:
         tags=[],
     )
 
-    commands = list(
+    commands = [
         command.strip() for command in text.split(";") if len(command.strip()) > 0
-    )
+    ]
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", SyntaxWarning)

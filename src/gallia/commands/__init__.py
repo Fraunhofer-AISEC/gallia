@@ -56,4 +56,4 @@ registry: list[type[BaseCommand]] = [
     WriteByIdentifierPrimitive,
 ]
 
-__all__ = list(map(lambda x: x.__name__, registry))
+__all__ = [x.__name__ for x in registry]

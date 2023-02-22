@@ -7,10 +7,9 @@
 
 import asyncio
 import binascii
-from typing import AsyncIterator, Callable
+from collections.abc import AsyncIterator, Callable
 
 import pytest
-
 from gallia.log import setup_logging
 from gallia.transports import BaseTransport, TargetURI, TCPLinesTransport, TCPTransport
 
