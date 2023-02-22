@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# pylint: disable=eval-used
-
 import json
 import random
 import sys

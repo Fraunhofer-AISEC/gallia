@@ -71,11 +71,7 @@ class UDSServer(ABC):
 
     def _is_sub_function_service(self, service_id: int) -> bool:
         try:
-            service_class = (
-                service.UDSService._SERVICES[  # pylint: disable=protected-access
-                    UDSIsoServices(service_id)
-                ]
-            )
+            service_class = service.UDSService._SERVICES[UDSIsoServices(service_id)]
 
             return (
                 issubclass(service_class, service.SpecializedSubFunctionService)
@@ -233,7 +229,6 @@ class UDSServer(ABC):
     async def teardown(self) -> None:
         pass
 
-    # pylint: disable=too-many-return-statements
     async def respond_without_state_change(
         self, request: service.UDSRequest
     ) -> service.UDSResponse | None:
@@ -510,7 +505,6 @@ class RandomUDSServer(UDSServer):
             + "|".join(str(arg) for arg in args)
         )
 
-    # pylint: disable=too-many-return-statements
     async def respond_after_default(
         self, request: service.UDSRequest
     ) -> service.UDSResponse | None:
@@ -519,9 +513,7 @@ class RandomUDSServer(UDSServer):
         # Furthermore, it is assumed that the request is a valid request for that particular service and sub-function
         if isinstance(request, service.ECUResetRequest):
             return self.ecu_reset(request)
-        if isinstance(
-            request, service._SecurityAccessRequest  # pylint: disable=protected-access
-        ):
+        if isinstance(request, service._SecurityAccessRequest):
             return self.security_access(request)
         if isinstance(request, service.RoutineControlRequest):
             return self.routine_control(request)

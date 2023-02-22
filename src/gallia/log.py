@@ -58,7 +58,7 @@ def set_color_mode(mode: ColorMode, stream: TextIO = sys.stderr) -> None:
     :param mode: The available options are described in :class:`ColorMode`.
     :param stream: Used as a reference for :attr:`ColorMode.AUTO`.
     """
-    global _COLORS_ENABLED  # pylint: disable=global-statement
+    global _COLORS_ENABLED
     match mode:
         case ColorMode.ALWAYS:
             _COLORS_ENABLED = True
@@ -87,7 +87,7 @@ def _add_logging_level(level_name: str, level_num: int) -> None:
     # http://stackoverflow.com/a/13638084/2988730
     def for_level(self, message, *args, **kwargs):  # type: ignore
         if self.isEnabledFor(level_num):
-            self._log(  # pylint: disable=protected-access
+            self._log(
                 level_num,
                 message,
                 args,
@@ -489,9 +489,9 @@ class PenlogRecord:
                     tags=record.tags,
                     line=record.line,
                     stacktrace=record.stacktrace,
-                    _python_level_no=record._python_level_no,  # pylint: disable=protected-access
-                    _python_level_name=record._python_level_name,  # pylint: disable=protected-access
-                    _python_func_name=record._python_func_name,  # pylint: disable=protected-access
+                    _python_level_no=record._python_level_no,
+                    _python_level_name=record._python_level_name,
+                    _python_func_name=record._python_func_name,
                 )
         raise ValueError("unknown record version")
 

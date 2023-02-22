@@ -208,9 +208,9 @@ def _get_cli_defaults(parser: argparse.ArgumentParser, out: dict[str, Any]) -> N
         if isinstance(
             action,
             (
-                argparse._StoreAction,  # pylint: disable=protected-access
-                argparse._StoreTrueAction,  # pylint: disable=protected-access
-                argparse._StoreFalseAction,  # pylint: disable=protected-access
+                argparse._StoreAction,
+                argparse._StoreTrueAction,
+                argparse._StoreFalseAction,
                 argparse.BooleanOptionalAction,
             ),
         ):
@@ -241,9 +241,7 @@ def _get_cli_defaults(parser: argparse.ArgumentParser, out: dict[str, Any]) -> N
                     d[keys[-1]] = value
                     break
 
-        if isinstance(
-            action, argparse._SubParsersAction  # pylint: disable=protected-access
-        ):
+        if isinstance(action, argparse._SubParsersAction):
             for subparser in action.__dict__["choices"].values():
                 _get_cli_defaults(subparser, out)
 
@@ -256,9 +254,7 @@ def get_cli_defaults(parser: argparse.ArgumentParser) -> dict[str, Any]:
 
 def _get_command_tree(parser: argparse.ArgumentParser, out: dict[str, Any]) -> None:
     for action in parser.__dict__["_actions"]:
-        if isinstance(
-            action, argparse._SubParsersAction  # pylint: disable=protected-access
-        ):
+        if isinstance(action, argparse._SubParsersAction):
             for cmd, subparser in action.__dict__["choices"].items():
                 out[cmd] = {}
                 d = out[cmd]

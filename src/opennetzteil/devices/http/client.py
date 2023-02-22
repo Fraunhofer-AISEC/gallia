@@ -18,7 +18,7 @@ class HTTPNetzteil(BaseNetzteil):
     URL_PREFIX = "/_netzteil/api/"
     PRODUCT_ID = "opennetzteil"
 
-    def __init__(  # pylint: disable=super-init-not-called
+    def __init__(
         self,
         session: aiohttp.ClientSession,
         host: str,

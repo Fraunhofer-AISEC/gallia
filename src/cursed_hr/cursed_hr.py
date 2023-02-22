@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# pylint: disable=too-many-lines,eval-used
-
 from __future__ import annotations
 
 import curses
@@ -261,7 +259,7 @@ class CursedHR:
                 )
                 self.window.refresh()
 
-                file = tempfile.TemporaryFile()  # pylint: disable=consider-using-with
+                file = tempfile.TemporaryFile()
 
                 match self.in_file.suffix:
                     case ".zst":

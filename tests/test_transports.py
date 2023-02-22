@@ -2,9 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# pylint: disable=redefined-outer-name
-# pylint: disable=attribute-defined-outside-init
-
 import asyncio
 import binascii
 from collections.abc import AsyncIterator, Callable
