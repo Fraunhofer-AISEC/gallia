@@ -112,20 +112,19 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
     @staticmethod
     def _calc_flags(can_id: int, extended: bool = False) -> int:
         if extended:
-            can_id = can_id & s.CAN_EFF_MASK
-            return can_id | s.CAN_EFF_FLAG
+            return (can_id & s.CAN_EFF_MASK) | s.CAN_EFF_FLAG
         return can_id & s.CAN_SFF_MASK
 
     @staticmethod
-    def _setsockopts(
+    def _setsockopts(  # noqa: PLR0913
         sock: s.socket,
         frame_txtime: int,
         tx_padding: int | None = None,
         rx_padding: int | None = None,
         ext_address: int | None = None,
         rx_ext_address: int | None = None,
-        flags: int = 0,
     ) -> None:
+        flags = 0
         if ext_address is not None:
             flags |= CAN_ISOTP_EXTEND_ADDR
         else:
