@@ -64,7 +64,7 @@ class DoIPDiscoverer(UDSDiscoveryScanner):
             help="set end address",
         )
 
-    async def probe(
+    async def probe(  # noqa: PLR0913
         self,
         conn: DoIPConnection,
         host: str,

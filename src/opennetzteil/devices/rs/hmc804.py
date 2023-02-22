@@ -62,8 +62,7 @@ class HMC804(BaseNetzteil):
 
     async def get_ident(self) -> str:
         cmd = "*IDN?"
-        resp = await self._request(cmd)
-        return resp
+        return await self._request(cmd)
 
     async def get_master(self) -> bool:
         cmd = "OUTP:MAST:STAT?"

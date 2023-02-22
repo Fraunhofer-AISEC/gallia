@@ -423,7 +423,7 @@ class RandomUDSServer(UDSServer):
             p_transition = self.p_session / len(level_sessions) / 2 ** (level + 0.5)
             next_level_sessions = set()
             available_sessions = [
-                i for i, l in enumerate(session_transitions) if len(l) > 0
+                i for i, l in enumerate(session_transitions) if len(l) > 0  # noqa: E741
             ]
 
             for session in level_sessions:
@@ -444,7 +444,9 @@ class RandomUDSServer(UDSServer):
         for session in self.mandatory_sessions:
             if len(session_transitions[session]) == 0:
                 available_sessions = [
-                    i for i, l in enumerate(session_transitions) if len(l) > 0
+                    i
+                    for i, l in enumerate(session_transitions)  # noqa: E741
+                    if len(l) > 0
                 ]
                 session_transitions[rng.choice(available_sessions)].add(session)
                 session_transitions[session] = {default_session}

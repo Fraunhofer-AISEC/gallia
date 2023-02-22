@@ -25,7 +25,7 @@ from gallia.utils import auto_int, split_host_port
 class Dumpcap:
     BUFSIZE = io.DEFAULT_BUFFER_SIZE
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         proc: subprocess.Process,
         logger: Logger,

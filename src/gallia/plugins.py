@@ -124,7 +124,7 @@ def load_transport(target: TargetURI) -> type[BaseTransport]:
     raise ValueError(f"no transport for {target}")
 
 
-def add_cli_group(
+def add_cli_group(  # noqa: PLR0913
     parent: Parsers,
     group: str,
     help_: str,
