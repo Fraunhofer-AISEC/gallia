@@ -373,7 +373,7 @@ def _colorize_msg(data: str, levelno: int) -> str:
     return out
 
 
-def _format_record(
+def _format_record(  # noqa: PLR0913
     dt: datetime,
     name: str,
     data: str,

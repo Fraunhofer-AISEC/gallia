@@ -3102,7 +3102,7 @@ class _RequestUpOrDownloadRequest(
     minimal_length=4,
     maximal_length=None,
 ):
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         memory_address: int,
         memory_size: int,
@@ -3185,7 +3185,7 @@ class RequestDownloadRequest(
     minimal_length=4,
     maximal_length=None,
 ):
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         memory_address: int,
         memory_size: int,
@@ -3241,7 +3241,7 @@ class RequestUploadRequest(
     minimal_length=4,
     maximal_length=None,
 ):
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         memory_address: int,
         memory_size: int,

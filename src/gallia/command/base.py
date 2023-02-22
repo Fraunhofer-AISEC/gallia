@@ -103,7 +103,7 @@ class BaseCommand(ABC):
         self.logger = get_logger(self.LOGGER_NAME)
         self.parser = parser
         self.config = config
-        self.artifacts_dir = Path(".")
+        self.artifacts_dir = Path()
         self.run_meta = RunMeta(
             command=sys.argv,
             command_meta=CommandMeta(
@@ -149,7 +149,7 @@ class BaseCommand(ABC):
         hook_id = f"{variant.value}-hook"
 
         argv = sys.argv[:]
-        argv[0] = os.path.basename(argv[0])
+        argv[0] = Path(argv[0]).name
         env = {
             "GALLIA_ARTIFACTS_DIR": str(self.artifacts_dir),
             "GALLIA_HOOK": variant.value,

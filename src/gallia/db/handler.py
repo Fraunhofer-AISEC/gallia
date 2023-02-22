@@ -286,7 +286,7 @@ class DBHandler:
 
         await self.connection.execute(query, (target, self.discovery_run))
 
-    async def insert_scan_result(
+    async def insert_scan_result(  # noqa: PLR0913
         self,
         state: dict[str, Any],
         request: UDSRequest,
