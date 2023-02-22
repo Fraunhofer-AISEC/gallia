@@ -82,7 +82,7 @@ class ResetScanner(UDSScanner):
         # TODO: Unified shortened output necessary here
         self.logger.info(f"skipping identifiers {reprlib.repr(args.skip)}")
 
-        for session in sessions:  # pylint: disable=too-many-nested-blocks
+        for session in sessions:
             self.logger.notice(f"Switching to session {g_repr(session)}")
             resp: UDSResponse = await self.ecu.set_session(session)
             if isinstance(resp, NegativeResponse):

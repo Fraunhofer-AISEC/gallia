@@ -119,7 +119,6 @@ class SessionsScanner(UDSScanner):
         sessions = list(range(1, 0x80))
         depth = 0
 
-        # pylint: disable=too-many-nested-blocks
         while (args.depth is None or depth < args.depth) and len(found[depth]) > 0:
             depth += 1
 

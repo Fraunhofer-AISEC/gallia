@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# pylint: disable=too-many-lines, useless-super-delegation
-
 from __future__ import annotations
 
 import inspect
@@ -125,7 +123,6 @@ class UDSRequest(ABC):
         try:
             logger.trace("Dynamically parsing request")
             logger.trace(f" - Got PDU {pdu.hex()}")
-            # pylint: disable=protected-access
             request_service = UDSService._SERVICES[UDSIsoServices(pdu[0])]
 
             logger.trace(f" - Inferred service {request_service.__name__}")
@@ -135,7 +132,6 @@ class UDSRequest(ABC):
                 return request_type.from_pdu(pdu)
             if issubclass(request_service, SpecializedSubFunctionService):
                 logger.trace(" - Trying to infer subFunction")
-                # pylint: disable=protected-access
                 request_sub_function = request_service._sub_function_type(pdu)
                 logger.trace(f" - Inferred subFunction {request_sub_function.__name__}")
                 assert (request_type := request_sub_function.Request) is not None
@@ -227,7 +223,6 @@ class UDSResponse(ABC):
         logger.trace(f" - Got PDU {pdu.hex()}")
 
         try:
-            # pylint: disable=protected-access
             response_service = UDSService._SERVICES[UDSIsoServices(pdu[0] - 0x40)]
         except Exception:
             logger.trace(
@@ -247,7 +242,6 @@ class UDSResponse(ABC):
 
             logger.trace(" - Trying to infer subfunction")
             try:
-                # pylint: disable=protected-access
                 response_sub_function = response_service._sub_function_type(pdu)
             except ValueError as e:
                 logger.trace(f" - Falling back to raw response because {str(e)}")
@@ -506,9 +500,7 @@ class SpecializedSubFunctionResponse(
 ):
     SUB_FUNCTION_ID: int
 
-    def __init_subclass__(
-        cls, /, sub_function_id: int, **kwargs: Any  # pylint: disable=arguments-differ
-    ) -> None:
+    def __init_subclass__(cls, /, sub_function_id: int, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
 
         cls.SUB_FUNCTION_ID = sub_function_id
@@ -541,9 +533,7 @@ class SpecializedSubFunctionRequest(
 ):
     SUB_FUNCTION_ID: int
 
-    def __init_subclass__(
-        cls, /, sub_function_id: int, **kwargs: Any  # pylint: disable=arguments-differ
-    ) -> None:
+    def __init_subclass__(cls, /, sub_function_id: int, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
 
         cls.SUB_FUNCTION_ID = sub_function_id
