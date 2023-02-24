@@ -505,6 +505,7 @@ class Scanner(AsyncScript, ABC):
                     await self.db_handler.complete_run_meta(
                         datetime.now(timezone.utc).astimezone(),
                         exit_code,
+                        self.artifacts_dir,
                     )
                 except Exception as e:
                     self.logger.warning(
