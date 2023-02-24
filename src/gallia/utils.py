@@ -212,3 +212,13 @@ def lazy_import(name: str) -> ModuleType:
     sys.modules[name] = module
     loader.exec_module(module)
     return module
+
+
+def dump_args(args: Namespace) -> dict[str, str | int | float]:
+    settings = {}
+    for key, value in args.__dict__.items():
+        match value:
+            case str() | int() | float():
+                settings[key] = value
+
+    return settings

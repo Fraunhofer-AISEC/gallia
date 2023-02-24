@@ -31,7 +31,7 @@ from gallia.plugins import load_transport
 from gallia.powersupply import PowerSupply, PowerSupplyURI
 from gallia.services.uds.core.exception import UDSException
 from gallia.transports import BaseTransport, TargetURI
-from gallia.utils import camel_to_snake
+from gallia.utils import camel_to_snake, dump_args
 
 
 @unique
@@ -494,6 +494,8 @@ class Scanner(AsyncScript, ABC):
             await self.db_handler.insert_run_meta(
                 script=sys.argv[0].split()[-1],
                 arguments=sys.argv[1:],
+                command_meta=msgspec.json.encode(self.run_meta.command_meta),
+                settings=dump_args(args),
                 start_time=datetime.now(timezone.utc).astimezone(),
                 path=self.artifacts_dir,
             )
