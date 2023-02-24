@@ -27,7 +27,7 @@ def bytes_repr(data: bytes) -> str:
     return bytes_repr_(data, False, None)
 
 
-schema_version = "1.0"
+schema_version = "2.0"
 
 DB_SCHEMA = f"""
 CREATE TABLE IF NOT EXISTS version (
@@ -50,6 +50,8 @@ CREATE TABLE IF NOT EXISTS run_meta (
   id integer primary key,
   script text not null,
   arguments json not null check(json_valid(arguments)),
+  command_meta json not null check(json_valid(arguments)),
+  settings json not null check(json_valid(arguments)),
   start_time real not null,
   start_timezone text not null,
   end_time real,
@@ -191,20 +193,28 @@ class DBHandler:
                 f"The version of the database schema is not supported! ({version} != {schema_version})"
             )
 
-    async def insert_run_meta(
-        self, script: str, arguments: list[str], start_time: datetime, path: Path
+    async def insert_run_meta(  # noqa: CODE
+        self,
+        script: str,
+        arguments: list[str],
+        command_meta: bytes,
+        settings: dict[str, str | int | float],
+        start_time: datetime,
+        path: Path,
     ) -> None:
         assert self.connection is not None, "Not connected to the database"
 
         query = (
-            "INSERT INTO run_meta(script, arguments, start_time, start_timezone, path) VALUES "
-            "(?, ?, ?, ?, ?)"
+            "INSERT INTO run_meta(script, arguments, command_meta, settings, start_time, start_timezone, path) VALUES "
+            "(?, ?, ?, ?, ?, ?, ?)"
         )
         cursor = await self.connection.execute(
             query,
             (
                 script,
                 json.dumps(arguments),
+                command_meta,
+                json.dumps(settings),
                 start_time.timestamp(),
                 start_time.tzname(),
                 str(path),
