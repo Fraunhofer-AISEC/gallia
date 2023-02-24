@@ -27,7 +27,7 @@ def bytes_repr(data: bytes) -> str:
     return bytes_repr_(data, False, None)
 
 
-schema_version = "2.0"
+schema_version = "2"
 
 DB_SCHEMA = f"""
 CREATE TABLE IF NOT EXISTS version (
