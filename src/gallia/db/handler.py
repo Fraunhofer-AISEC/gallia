@@ -215,13 +215,16 @@ class DBHandler:
 
         await self.connection.commit()
 
-    async def complete_run_meta(self, end_time: datetime, exit_code: int) -> None:
+    async def complete_run_meta(
+        self, end_time: datetime, exit_code: int, path: Path
+    ) -> None:
         assert self.connection is not None, "Not connected to the database"
         assert self.meta is not None, "Run meta not yet created"
 
-        query = "UPDATE run_meta SET end_time = ?, end_timezone = ?, exit_code = ? WHERE id = ?"
+        query = "UPDATE run_meta SET end_time = ?, end_timezone = ?, exit_code = ?, path = ? WHERE id = ?"
         await self.connection.execute(
-            query, (end_time.timestamp(), end_time.tzname(), exit_code, self.meta)
+            query,
+            (end_time.timestamp(), end_time.tzname(), exit_code, str(path), self.meta),
         )
         await self.connection.commit()
 
