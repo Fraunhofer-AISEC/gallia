@@ -93,13 +93,13 @@ The DoIP gateway address is specified in the location.
 `src_addr` (required)
 : The source address as int.
 
-`dst_addr` (required)
-: The destination address as int.
+`target_addr` (required)
+: The target address as int.
 
 Example:
 
 ``` text
-doip://169.254.100.100:1234?src_addr=0xf4&dst_addr=0x1d
+doip://169.254.100.100:13400?src_addr=0x0e00&target_addr=0x1d
 ```
 
 ### tcp-lines
