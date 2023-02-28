@@ -1047,12 +1047,11 @@ class CursedHR:
                 case "KEY_DOWN":
                     if cursor[0] < max_lines - 1:
                         cursor = cursor[0] + 1, cursor[1]
+                    elif display_entries[0].last_line:
+                        entry_start = min(len(self.entries) - 1, entry_start + 1)
+                        line_start = 0
                     else:
-                        if display_entries[0].last_line:
-                            entry_start = min(len(self.entries) - 1, entry_start + 1)
-                            line_start = 0
-                        else:
-                            line_start += 1
+                        line_start += 1
                 case "KEY_PPAGE":
                     if cursor[0] > 0:
                         cursor = (0, cursor[1])

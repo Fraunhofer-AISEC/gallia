@@ -329,7 +329,7 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
         data = b""
         for can_id in can_ids:
             if inv_filter:
-                can_id |= self.CAN_INV_FILTER
+                can_id |= self.CAN_INV_FILTER  # noqa: PLW2901
             data += struct.pack("@II", can_id, filter_mask)
         self._sock.setsockopt(s.SOL_CAN_RAW, s.CAN_RAW_FILTER, data)
         if inv_filter:

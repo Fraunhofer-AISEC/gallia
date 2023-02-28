@@ -140,19 +140,20 @@ class ParseSkips(Action):
                         session_ids_tmp, identifier_ids_tmp = session_skips.split(":")
                         session_ids = _unravel(session_ids_tmp)
                         identifier_ids = _unravel(identifier_ids_tmp)
+                        skips = session_skips
 
                         for session_id in session_ids:
                             if session_id not in skip_sids:
                                 skip_sids[session_id] = []
 
-                            session_skips = skip_sids[session_id]
+                            skips = skip_sids[session_id]
 
-                            if session_skips is not None:
-                                session_skips += identifier_ids
+                            if skips is not None:
+                                skips += identifier_ids
 
             setattr(namespace, self.dest, skip_sids)
         except Exception as e:
-            raise ArgumentError(self, "The argument is malformed!") from e
+            raise ArgumentError(self, "malformed argument") from e
 
 
 T = TypeVar("T")
