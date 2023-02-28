@@ -62,6 +62,8 @@ class ISOTPConfig(BaseModel):
         "dst_addr",
         "ext_address",
         "rx_ext_address",
+        "tx_padding",
+        "rx_padding",
         pre=True,
         allow_reuse=True,
     )(auto_int)
