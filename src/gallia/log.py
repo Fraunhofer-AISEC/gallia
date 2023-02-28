@@ -58,15 +58,15 @@ def set_color_mode(mode: ColorMode, stream: TextIO = sys.stderr) -> None:
     :param mode: The available options are described in :class:`ColorMode`.
     :param stream: Used as a reference for :attr:`ColorMode.AUTO`.
     """
-    global _COLORS_ENABLED
+    global _COLORS_ENABLED  # noqa: PLW0603
     match mode:
         case ColorMode.ALWAYS:
-            _COLORS_ENABLED = True
+            _COLORS_ENABLED = True  # noqa: PLW0603
         case ColorMode.AUTO:
             if os.getenv("NO_COLOR") is not None:
-                _COLORS_ENABLED = False
+                _COLORS_ENABLED = False  # noqa: PLW0603
             else:
-                _COLORS_ENABLED = stream.isatty()
+                _COLORS_ENABLED = stream.isatty()  # noqa: PLW0603
         case ColorMode.NEVER:
             _COLORS_ENABLED = False
 

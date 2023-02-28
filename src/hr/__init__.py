@@ -61,14 +61,14 @@ def _main() -> int:
     args = parse_args()
 
     for file in args.FILE:
-        file = cast(Path, file)
-        if not (file.is_file() or file.is_fifo() or file != "-"):
-            print(f"not a regular file: {file}", file=sys.stderr)
+        path = cast(Path, file)
+        if not (path.is_file() or path.is_fifo() or path != "-"):
+            print(f"not a regular file: {path}", file=sys.stderr)
             return 1
 
         set_color_mode(ColorMode(args.color), stream=sys.stdout)
 
-        with PenlogReader(file) as reader:
+        with PenlogReader(path) as reader:
             record_generator = reader.records(args.priority, reverse=args.reverse)
             if args.head:
                 record_generator = islice(record_generator, args.lines)

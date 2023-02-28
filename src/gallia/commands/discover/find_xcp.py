@@ -110,7 +110,7 @@ class FindXCP(AsyncScript):
         data = bytes([0xFF, 0x00])
         endpoints = []
         for port in args.tcp_ports.split(","):
-            port = int(port, 0)
+            port = int(port, 0)  # noqa
             self.logger.info(f"Testing TCP port: {port}")
             server = (args.xcp_ip, port)
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -153,7 +153,7 @@ class FindXCP(AsyncScript):
         data = bytes([0xFF, 0x00])
         endpoints = []
         for port in args.udp_ports.split(","):
-            port = int(port, 0)
+            port = int(port, 0)  # noqa
             self.logger.info(f"Testing UDP port: {port}")
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self.socket.settimeout(0.5)
