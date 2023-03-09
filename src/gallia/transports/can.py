@@ -87,7 +87,7 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
         if t.hostname is None:
             raise ValueError("empty interface")
 
-        config = ISOTPConfig(**t.qs_flat)
+        config = ISOTPConfig(**t.qs_flat)  # type: ignore
         sock = s.socket(s.PF_CAN, s.SOCK_DGRAM, s.CAN_ISOTP)
         sock.setblocking(False)
 
@@ -313,7 +313,7 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
 
         sock = s.socket(s.PF_CAN, s.SOCK_RAW, s.CAN_RAW)
         sock.bind((t.hostname,))
-        config = RawCANConfig(**t.qs_flat)
+        config = RawCANConfig(**t.qs_flat)  # type: ignore
 
         if config.is_fd is True:
             sock.setsockopt(s.SOL_CAN_RAW, s.CAN_RAW_FD_FRAMES, 1)

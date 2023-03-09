@@ -17,8 +17,7 @@ from datetime import datetime, timezone
 from enum import Enum, unique
 from pathlib import Path
 from subprocess import CalledProcessError, run
-from tempfile import gettempdir
-from typing import cast
+from typing import Any, cast
 
 import exitcode
 import msgspec
@@ -98,7 +97,7 @@ class BaseCommand(ABC):
     #: a log message with level critical is logged.
     CATCHED_EXCEPTIONS: list[type[Exception]] = []
 
-    def __init__(self, parser: ArgumentParser, config: Config = Config()) -> None:
+    def __init__(self, parser: ArgumentParser, config: Config | None = None) -> None:
         self.id = camel_to_snake(self.__class__.__name__)
         self.logger = get_logger(self.LOGGER_NAME)
         self.parser = parser
@@ -122,6 +121,25 @@ class BaseCommand(ABC):
     @abstractmethod
     def run(self, args: Namespace) -> int:
         ...
+
+    def add_argument_with_config(
+        self,
+        parser: argparse._ActionsContainer,
+        *args: Any,
+        config_key: str,
+        **kwargs: Any,
+    ) -> None:
+        if self.config is None:
+            raise RuntimeError("no config set")
+
+        item = self.config.get_registry_item(config_key)
+
+        parser.add_argument(
+            *args,
+            **kwargs,
+            help=item.short_help,
+            default=item.default,
+        )
 
     def get_log_level(self, args: Namespace) -> Loglevel:
         level = Loglevel.INFO
@@ -190,63 +208,60 @@ class BaseCommand(ABC):
 
     def configure_class_parser(self) -> None:
         group = self.parser.add_argument_group("generic arguments")
-        group.add_argument(
+        self.add_argument_with_config(
+            group,
             "-v",
             "--verbose",
             action="count",
-            default=self.config.get_value("gallia.verbosity", 0),
-            help="increase verbosity on the console",
+            config_key="gallia.verbosity",
         )
-        group.add_argument(
+        self.add_argument_with_config(
+            group,
             "--trace-log",
             action=argparse.BooleanOptionalAction,
-            default=self.config.get_value("gallia.trace_log", False),
-            help="set the loglevel of the logfile to TRACE",
+            config_key="gallia.trace_log",
         )
-        group.add_argument(
+        self.add_argument_with_config(
+            group,
             "--pre-hook",
             metavar="SCRIPT",
-            default=self.config.get_value("gallia.hooks.pre", None),
-            help="shell script to run before the main entry_point",
+            config_key="gallia.hooks.pre",
         )
-        group.add_argument(
+        self.add_argument_with_config(
+            group,
             "--post-hook",
             metavar="SCRIPT",
-            default=self.config.get_value("gallia.hooks.post", None),
-            help="shell script to run after the main entry_point",
+            config_key="gallia.hooks.post",
         )
-        group.add_argument(
+        self.add_argument_with_config(
+            group,
             "--hooks",
             action=argparse.BooleanOptionalAction,
-            default=self.config.get_value("gallia.hooks.enable", True),
-            help="execute pre and post hooks",
+            config_key="gallia.hooks.enable",
         )
-        group.add_argument(
+        self.add_argument_with_config(
+            group,
             "--lock-file",
             type=Path,
             metavar="PATH",
-            default=self.config.get_value("gallia.lock_file", None),
-            help="path to file used for a posix lock",
+            config_key="gallia.lock_file",
         )
 
         if self.HAS_ARTIFACTS_DIR:
             mutex_group = group.add_mutually_exclusive_group()
-            mutex_group.add_argument(
+            self.add_argument_with_config(
+                mutex_group,
                 "--artifacts-dir",
-                default=self.config.get_value("gallia.scanner.artifacts_dir"),
                 type=Path,
                 metavar="DIR",
-                help="Folder for artifacts",
+                config_key="gallia.scanner.artifacts_dir",
             )
-            mutex_group.add_argument(
+            self.add_argument_with_config(
+                mutex_group,
                 "--artifacts-base",
-                default=self.config.get_value(
-                    "gallia.scanner.artifacts_base",
-                    Path(gettempdir()).joinpath("gallia"),
-                ),
                 type=Path,
                 metavar="DIR",
-                help="Base directory for artifacts",
+                config_key="gallia.scanner.artifacts_base",
             )
 
     def configure_parser(self) -> None:
@@ -475,7 +490,7 @@ class Scanner(AsyncScript, ABC):
         UDSException,
     ]
 
-    def __init__(self, parser: ArgumentParser, config: Config = Config()) -> None:
+    def __init__(self, parser: ArgumentParser, config: Config | None = None) -> None:
         super().__init__(parser, config)
         self.db_handler: DBHandler | None = None
         self.power_supply: PowerSupply | None = None
@@ -554,48 +569,48 @@ class Scanner(AsyncScript, ABC):
         super().configure_class_parser()
 
         group = self.parser.add_argument_group("scanner related arguments")
-        group.add_argument(
+        self.add_argument_with_config(
+            group,
             "--db",
-            default=self.config.get_value("gallia.scanner.db"),
             type=Path,
-            help="Path to sqlite3 database",
+            config_key="gallia.scanner.db",
         )
-        group.add_argument(
+        self.add_argument_with_config(
+            group,
             "--dumpcap",
             action=argparse.BooleanOptionalAction,
-            default=self.config.get_value("gallia.scanner.dumpcap", default=True),
-            help="Enable/Disable creating a pcap file",
+            config_key="gallia.scanner.dumpcap",
         )
 
         group = self.parser.add_argument_group("transport mode related arguments")
-        group.add_argument(
+        self.add_argument_with_config(
+            group,
             "--target",
             metavar="TARGET",
-            default=self.config.get_value("gallia.scanner.target"),
             type=TargetURI,
-            help="URI that describes the target",
+            config_key="gallia.scanner.target",
         )
 
         group = self.parser.add_argument_group("power supply related arguments")
-        group.add_argument(
+        self.add_argument_with_config(
+            group,
             "--power-supply",
             metavar="URI",
-            default=self.config.get_value("gallia.scanner.power_supply"),
             type=PowerSupplyURI,
-            help="URI specifying the location of the relevant opennetzteil server",
+            config_key="gallia.scanner.power_supply",
         )
-        group.add_argument(
+        self.add_argument_with_config(
+            group,
             "--power-cycle",
             action=argparse.BooleanOptionalAction,
-            default=self.config.get_value("gallia.scanner.power_cycle", False),
-            help="trigger a powercycle before starting the scan",
+            config_key="gallia.scanner.power_cycle",
         )
-        group.add_argument(
+        self.add_argument_with_config(
+            group,
             "--power-cycle-sleep",
             metavar="SECs",
             type=float,
-            default=self.config.get_value("gallia.scanner.power_cycle_sleep", 5.0),
-            help="time to sleep after the power-cycle",
+            config_key="gallia.scanner.power_cycle_sleep",
         )
 
     def entry_point(self, args: Namespace) -> int:

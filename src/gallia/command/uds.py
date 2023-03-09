@@ -26,7 +26,7 @@ class UDSScanner(Scanner):
     GROUP = "scan"
     SUBGROUP: str | None = "uds"
 
-    def __init__(self, parser: ArgumentParser, config: Config = Config()) -> None:
+    def __init__(self, parser: ArgumentParser, config: Config | None = None) -> None:
         super().__init__(parser, config)
         self.ecu: ECU
         self._implicit_logging = True
@@ -37,68 +37,86 @@ class UDSScanner(Scanner):
         group = self.parser.add_argument_group("UDS scanner related arguments")
 
         choices = ["default"] + [x.OEM for x in load_ecu_plugins()]
-        group.add_argument(
+        self.add_argument_with_config(
+            group,
             "--ecu-reset",
             const=0x01,
             nargs="?",
-            default=self.config.get_value("gallia.protocols.uds.ecu_reset"),
-            help="Trigger an initial ecu_reset via UDS; reset level is optional",
+            # default=self.config.get_value("gallia.protocols.uds.ecu_reset"),
+            # help="Trigger an initial ecu_reset via UDS; reset level is optional",
+            config_key="gallia.protocols.uds.ecu_reset",
         )
-        group.add_argument(
+        self.add_argument_with_config(
+            group,
             "--oem",
-            default=self.config.get_value("gallia.protocols.uds.oem", "default"),
             choices=choices,
             metavar="OEM",
-            help="The OEM of the ECU, used to choose a OEM specific ECU implementation",
+            # help="The OEM of the ECU, used to choose a OEM specific ECU implementation",
+            # default=self.config.get_value("gallia.protocols.uds.oem", "default"),
+            config_key="gallia.protocols.uds.oem",
         )
-        group.add_argument(
+        self.add_argument_with_config(
+            group,
             "--timeout",
-            default=self.config.get_value("gallia.protocols.uds.timeout", 2),
             type=float,
             metavar="SECONDS",
-            help="Timeout value to wait for a response from the ECU",
+            # help="Timeout value to wait for a response from the ECU",
+            # default=self.config.get_value("gallia.protocols.uds.timeout", 2),
+            config_key="gallia.protocols.uds.timeout",
         )
-        group.add_argument(
+        self.add_argument_with_config(
+            group,
             "--max-retries",
-            default=self.config.get_value("gallia.protocols.uds.max_retries", 3),
             type=int,
             metavar="INT",
-            help="Number of maximum retries while sending UDS requests",
+            # help="Number of maximum retries while sending UDS requests",
+            # default=self.config.get_value("gallia.protocols.uds.max_retries", 3),
+            config_key="gallia.protocols.uds.max_retries",
         )
-        group.add_argument(
+        self.add_argument_with_config(
+            group,
             "--ping",
             action=BooleanOptionalAction,
-            default=self.config.get_value("gallia.protocols.uds.ping", True),
-            help="Enable/Disable initial TesterPresent request",
+            # default=self.config.get_value("gallia.protocols.uds.ping", True),
+            # help="Enable/Disable initial TesterPresent request",
+            config_key="gallia.protocols.uds.ping",
         )
-        group.add_argument(
+        self.add_argument_with_config(
+            group,
             "--tester-present-interval",
-            default=self.config.get_value(
-                "gallia.protocols.uds.tester_present_interval", 0.5
-            ),
             type=float,
             metavar="SECONDS",
-            help="Modify the interval of the cyclic tester present packets",
+            # help="Modify the interval of the cyclic tester present packets",
+            # default=self.config.get_value(
+            #     "gallia.protocols.uds.tester_present_interval", 0.5
+            # ),
+            config_key="gallia.protocols.uds.tester_present_interval",
         )
-        group.add_argument(
+        self.add_argument_with_config(
+            group,
             "--tester-present",
             action=BooleanOptionalAction,
-            default=self.config.get_value("gallia.protocols.uds.tester_present", True),
-            help="Enable/Disable tester present background worker",
+            # default=self.config.get_value("gallia.protocols.uds.tester_present", True),
+            # help="Enable/Disable tester present background worker",
+            config_key="gallia.protocols.uds.tester_present",
         )
-        group.add_argument(
+        self.add_argument_with_config(
+            group,
             "--properties",
-            default=self.config.get_value("gallia.protocols.uds.properties", True),
             action=BooleanOptionalAction,
-            help="Read and store the ECU proporties prior and after scan",
+            # help="Read and store the ECU proporties prior and after scan",
+            # default=self.config.get_value("gallia.protocols.uds.properties", True),
+            config_key="gallia.protocols.uds.properties",
         )
-        group.add_argument(
+        self.add_argument_with_config(
+            group,
             "--compare-properties",
-            default=self.config.get_value(
-                "gallia.protocols.uds.compare_properties", True
-            ),
             action=BooleanOptionalAction,
-            help="Compare properties before and after the scan",
+            # help="Compare properties before and after the scan",
+            # default=self.config.get_value(
+            #     "gallia.protocols.uds.compare_properties", True
+            # ),
+            config_key="gallia.protocols.uds.compare_properties",
         )
 
     @property
@@ -212,11 +230,11 @@ class UDSDiscoveryScanner(Scanner):
     def configure_class_parser(self) -> None:
         super().configure_class_parser()
 
-        self.parser.add_argument(
+        self.add_argument_with_config(
+            self.parser,
             "--timeout",
             type=float,
-            default=self.config.get_value("gallia.scanner.timeout", 0.5),
-            help="timeout value for request",
+            config_key="gallia.scanner.timeout",
         )
 
     async def setup(self, args: Namespace) -> None:
