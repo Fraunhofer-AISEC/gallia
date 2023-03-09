@@ -40,9 +40,9 @@ def _test_uri(uri: str) -> None:
     parsed_uri = TargetURI(uri)
     match parsed_uri.scheme:
         case "doip":
-            DoIPConfig(**parsed_uri.qs_flat)
+            DoIPConfig(**parsed_uri.qs_flat)  # type: ignore
         case "isotp":
-            ISOTPConfig(**parsed_uri.qs_flat)
+            ISOTPConfig(**parsed_uri.qs_flat)  # type: ignore
         case _:
             raise ValueError(f"uncovered scheme: {parsed_uri.scheme}")
 

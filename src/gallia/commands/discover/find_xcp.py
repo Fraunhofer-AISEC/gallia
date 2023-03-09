@@ -22,7 +22,7 @@ class FindXCP(AsyncScript):
     SHORT_HELP = "XCP enumeration scanner"
     HAS_ARTIFACTS_DIR = True
 
-    def __init__(self, parser: ArgumentParser, config: Config = Config()) -> None:
+    def __init__(self, parser: ArgumentParser, config: Config | None = None) -> None:
         super().__init__(parser, config)
         self.socket: socket.socket
 

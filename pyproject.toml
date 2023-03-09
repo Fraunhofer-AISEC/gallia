@@ -48,6 +48,7 @@ pydantic = "^1.10"
 pygit2 = "^1.10"
 platformdirs = ">=2.6,<4.0"
 exitcode = "^0.1.0"
+tomlkit = "^0.11.6"
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.10"
@@ -76,6 +77,9 @@ python-lsp-ruff = "^1.1.0"
 "hr" = "hr:main"
 
 [tool.mypy]
+plugins = [
+    "pydantic.mypy"
+]
 strict = true
 
 [[tool.mypy.overrides]]

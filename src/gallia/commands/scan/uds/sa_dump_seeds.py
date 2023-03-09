@@ -25,7 +25,7 @@ class SASeedsDumper(UDSScanner):
     COMMAND = "dump-seeds"
     SHORT_HELP = "dump security access seeds"
 
-    def __init__(self, parser: ArgumentParser, config: Config = Config()) -> None:
+    def __init__(self, parser: ArgumentParser, config: Config | None = None) -> None:
         super().__init__(parser, config)
 
         self.implicit_logging = False

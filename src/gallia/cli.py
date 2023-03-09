@@ -20,7 +20,7 @@ import exitcode
 
 from gallia.command.base import BaseCommand
 from gallia.commands import registry as cmd_registry
-from gallia.config import Config, load_config_file
+from gallia.config import DEFAULT_CONFIG_PATH, Config
 from gallia.log import setup_logging
 from gallia.plugins import (
     Parsers,
@@ -32,6 +32,7 @@ from gallia.plugins import (
     load_ecu_plugin_eps,
     load_transport_plugin_eps,
 )
+from gallia.registry import REGISTRY
 
 
 def load_parsers() -> Parsers:
@@ -41,6 +42,7 @@ def load_parsers() -> Parsers:
         A few command line option can be set via a TOML config file. Check `gallia --template` for a starting point.
         """,
         epilog="""https://fraunhofer-aisec.github.io/gallia/index.html""",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.set_defaults(usage_func=parser.print_usage)
     parser.set_defaults(help_func=parser.print_help)
@@ -327,42 +329,6 @@ def cmd_show_plugins() -> None:
     _print_plugin("ecus (gallia_ecus)", load_ecu_plugin_eps())
 
 
-def cmd_template(args: argparse.Namespace) -> None:
-    template = """# [gallia]
-# verbosity = <int>
-# trace_log = <bool>
-# lock_file = <str>
-
-# [gallia.hooks]
-# enable = <bool>
-# pre = <str>
-# post = <str>
-
-# [gallia.scanner]
-# db = <string>
-# target = <string>
-# power_supply = <string>
-# power_cycle = <bool>
-# power_cycle_sleep = <float>
-# dumpcap = <bool>
-# artifacts_dir = <string>
-# artifacts_base = <string>
-
-# [gallia.protocols.uds]
-# dumpcap = <bool>
-# ecu_reset = <float>
-# oem = <string>
-# timeout = <float>
-# max_retries = <int>
-# ping = <bool>
-# tester_present_interval = <float>
-# tester_present = <bool>
-# properties = <bool>
-# compare_properties = <bool>
-"""
-    print(template.strip())
-
-
 def main() -> None:
     registry = cmd_registry[:]
 
@@ -380,9 +346,10 @@ def main() -> None:
         fn(parsers)
 
     try:
-        config, config_path = load_config_file()
+        config = Config(registry=REGISTRY)
+        config_path = config.load_file()
     except ValueError as e:
-        print(f"invalid config: {e}", file=sys.stderr)
+        print(f"invalid config '{DEFAULT_CONFIG_PATH}': {e}", file=sys.stderr)
         sys.exit(exitcode.CONFIG)
 
     build_cli(parsers, config, registry)
@@ -408,7 +375,7 @@ def main() -> None:
         sys.exit(exitcode.OK)
 
     if args.template:
-        cmd_template(args)
+        print(config.template)
         sys.exit(exitcode.OK)
 
     if not hasattr(args, "run_func"):
