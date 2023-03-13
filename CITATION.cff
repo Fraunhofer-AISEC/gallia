@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+title: gallia
+message: >-
+  If you use this software as part of a publication and wish to cite
+  it, please use the metadata from this file.
+type: software
+authors:
+  - name: AISEC Pentest Team
+    website: https://github.com/Fraunhofer-AISEC/gallia
+license: Apache-2.0
