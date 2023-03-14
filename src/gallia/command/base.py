@@ -54,6 +54,9 @@ class CommandMeta(msgspec.Struct):
     subgroup: str | None
     command: str
 
+    def json(self) -> str:
+        return msgspec.json.encode(self).decode()
+
 
 class RunMeta(msgspec.Struct):
     command: list[str]
@@ -61,6 +64,9 @@ class RunMeta(msgspec.Struct):
     start_time: str
     end_time: str
     exit_code: int
+
+    def json(self) -> str:
+        return msgspec.json.encode(self).decode()
 
 
 class BaseCommand(ABC):
@@ -156,14 +162,17 @@ class BaseCommand(ABC):
             "GALLIA_INVOCATION": " ".join(argv),
         } | os.environ
 
+        if variant == HookVariant.POST:
+            env["GALLIA_META"] = self.run_meta.json()
+
         if self.COMMAND is not None:
-            env |= {"GALLIA_COMMAND": self.COMMAND}
+            env["GALLIA_COMMAND"] = self.COMMAND
         if self.GROUP is not None:
-            env |= {"GALLIA_GROUP": self.GROUP}
+            env["GALLIA_GROUP"] = self.GROUP
         if self.SUBGROUP is not None:
-            env |= {"GALLIA_GROUP": self.SUBGROUP}
+            env["GALLIA_GROUP"] = self.SUBGROUP
         if exit_code is not None:
-            env |= {"GALLIA_EXIT_CODE": str(exit_code)}
+            env["GALLIA_EXIT_CODE"] = str(exit_code)
 
         try:
             p = run(
@@ -377,12 +386,12 @@ class BaseCommand(ABC):
                 exit_code = exitcode.SOFTWARE
                 traceback.print_exc()
         finally:
+            self.run_meta.exit_code = exit_code
+            self.run_meta.end_time = datetime.now(tz).isoformat()
+
             if self.HAS_ARTIFACTS_DIR:
-                self.run_meta.exit_code = exit_code
-                self.run_meta.end_time = datetime.now(tz).isoformat()
-                data = msgspec.json.encode(self.run_meta)
-                self.artifacts_dir.joinpath(FileNames.META.value).write_bytes(
-                    data + b"\n"
+                self.artifacts_dir.joinpath(FileNames.META.value).write_text(
+                    self.run_meta.json() + "\n"
                 )
                 self.logger.info(f"Stored artifacts at {self.artifacts_dir}")
 
