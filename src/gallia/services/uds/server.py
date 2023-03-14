@@ -764,7 +764,7 @@ class DBUDSServer(UDSServer):
             else:
                 query += f"json_extract(r.state, '$.{key}') = ? AND "
                 parameters.append(
-                    value if isinstance(value, (int, float)) else json.dumps(value)
+                    value if isinstance(value, int | float) else json.dumps(value)
                 )
 
         if self.properties is not None:
@@ -774,7 +774,7 @@ class DBUDSServer(UDSServer):
                 else:
                     query += f"json_extract(s.properties_pre, '$.{key}') = ? AND "
                     parameters.append(
-                        value if isinstance(value, (int, float)) else json.dumps(value)
+                        value if isinstance(value, int | float) else json.dumps(value)
                     )
 
         query += "r.request_pdu = ? "

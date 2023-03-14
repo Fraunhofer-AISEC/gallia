@@ -207,12 +207,10 @@ def _get_cli_defaults(parser: argparse.ArgumentParser, out: dict[str, Any]) -> N
     for action in parser.__dict__["_actions"]:
         if isinstance(
             action,
-            (
-                argparse._StoreAction,
-                argparse._StoreTrueAction,
-                argparse._StoreFalseAction,
-                argparse.BooleanOptionalAction,
-            ),
+            argparse._StoreAction
+            | argparse._StoreTrueAction
+            | argparse._StoreFalseAction
+            | argparse.BooleanOptionalAction,
         ):
             opts = action.__dict__["option_strings"]
             if len(opts) == 2:
