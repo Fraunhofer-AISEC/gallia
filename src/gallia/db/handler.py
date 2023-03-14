@@ -326,12 +326,12 @@ class DBHandler:
             if not attr.startswith("_"):
                 request_attributes[attr] = value
 
-                if isinstance(value, (bytes, bytearray)):
+                if isinstance(value, bytes | bytearray):
                     request_attributes[attr] = bytes_repr(value)
                 elif (
                     isinstance(value, list)
                     and len(value) > 0
-                    and isinstance(value[0], (bytes, bytearray))
+                    and isinstance(value[0], bytes | bytearray)
                 ):
                     request_attributes[attr] = [bytes_repr(v) for v in value]
 
@@ -348,12 +348,12 @@ class DBHandler:
                 if not attr.startswith("_") and attr not in ["trigger_request"]:
                     response_attributes[attr] = value
 
-                    if isinstance(value, (bytes, bytearray)):
+                    if isinstance(value, bytes | bytearray):
                         response_attributes[attr] = bytes_repr(value)
                     elif (
                         isinstance(value, list)
                         and len(value) > 0
-                        and isinstance(value[0], (bytes, bytearray))
+                        and isinstance(value[0], bytes | bytearray)
                     ):
                         response_attributes[attr] = [bytes_repr(v) for v in value]
 

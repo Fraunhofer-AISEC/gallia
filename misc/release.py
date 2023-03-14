@@ -6,10 +6,9 @@
 
 import sys
 from argparse import ArgumentParser, Namespace
-from enum import Enum, unique, auto
+from enum import Enum, auto, unique
 from subprocess import run
 from typing import Any, NoReturn
-
 
 DRY_RUN = False
 
