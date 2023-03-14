@@ -43,9 +43,12 @@ GALLIA_HOOK
 GALLIA_ARTIFACTS_DIR
 : Path to the artifactsdir for the current testrun.
 
-GALLIA_EXIT_CODE (optional)
-: Only set for post-hooks; is set to the exit_code which `gallia` will use after the hook terminates.
+GALLIA_EXIT_CODE (post)
+: Is set to the exit_code which `gallia` will use after the hook terminates.
   For instance GALLIA_EXIT_CODE different from zero means that the current testrun failed.
+
+GALLIA_META (post)
+: Contains the JSON encoded content of `META.json`.
 
 GALLIA_INVOCATION
 : The content os `sys.argv`, in other words the raw invocation of `gallia`.
@@ -61,4 +64,3 @@ GALLIA_SUBGROUP (optional)
 GALLIA_COMMAND (optional)
 : Usually the last part of the command on the cli. For instance, for `gallia scan uds identifiers` 
   `GALLIA_COMMAND` is `identifiers`.
-
