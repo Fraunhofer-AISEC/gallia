@@ -141,7 +141,7 @@ class GenericHeaderNegativeAcknowledge:
 @dataclass
 class RoutingActivationRequest:
     SourceAddress: int
-    ActivationType: RoutingActivationRequestTypes
+    ActivationType: int
     Reserved: int = 0x00000000  # Not used, default value.
     # OEMReserved uint32
 
@@ -473,7 +473,7 @@ class DoIPConnection:
 
     async def write_routing_activation_request(
         self,
-        activation_type: RoutingActivationRequestTypes,
+        activation_type: int,
     ) -> None:
         hdr = GenericHeader(
             ProtocolVersion=ProtocolVersions.ISO_13400_2_2012,
