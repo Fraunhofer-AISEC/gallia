@@ -382,30 +382,38 @@ class DoIPConnection:
         return payload.UserData
 
     async def _read_ack(self, prev_data: bytes) -> None:
-        hdr, payload = await self.read_frame_unsafe()
-        if isinstance(payload, DiagnosticMessageNegativeAcknowledgement):
-            raise BrokenPipeError(f"request denied: {hdr} {payload}")
-        if not isinstance(payload, DiagnosticMessagePositiveAcknowledgement):
-            raise BrokenPipeError(
-                f"unexpected DoIP message: {hdr} {payload}, expected positive ACK"
-            )
+        while True:
+            hdr, payload = await self.read_frame_unsafe()
+            if isinstance(payload, DiagnosticMessageNegativeAcknowledgement):
+                raise BrokenPipeError(
+                    f"request denied: {hdr} {payload} {payload.ACKCode.value}"
+                )
+            if not isinstance(payload, DiagnosticMessagePositiveAcknowledgement):
+                self.logger.warning(
+                    f"unexpected DoIP message: {hdr} {payload}, expected positive ACK"
+                )
+                continue
 
-        if payload.SourceAddress != self.target_addr:
-            self.logger.warning(
-                f"ack: unexpected src_addr: {payload.SourceAddress:#04x}"
-            )
-        if payload.TargetAddress != self.src_addr:
-            self.logger.warning(
-                f"ack: unexpected dst_addr: {payload.TargetAddress:#04x}"
-            )
-        if (
-            len(payload.PreviousDiagnosticMessageData) > 0
-            and prev_data != payload.PreviousDiagnosticMessageData
-        ):
-            self.logger.warning("ack: previous data differs from request")
-            self.logger.warning(
-                f"ack: got: {payload.PreviousDiagnosticMessageData.hex()} expected {prev_data.hex()}"
-            )
+            if payload.SourceAddress != self.target_addr:
+                self.logger.warning(
+                    f"ack: unexpected src_addr: {payload.SourceAddress:#04x}"
+                )
+                continue
+            if payload.TargetAddress != self.src_addr:
+                self.logger.warning(
+                    f"ack: unexpected dst_addr: {payload.TargetAddress:#04x}"
+                )
+                continue
+            if (
+                len(payload.PreviousDiagnosticMessageData) > 0
+                and prev_data != payload.PreviousDiagnosticMessageData
+            ):
+                self.logger.warning("ack: previous data differs from request")
+                self.logger.warning(
+                    f"ack: got: {payload.PreviousDiagnosticMessageData.hex()} expected {prev_data.hex()}"
+                )
+                continue
+            return
 
     async def _read_routing_activation_response(self) -> None:
         hdr, payload = await self.read_frame_unsafe()
