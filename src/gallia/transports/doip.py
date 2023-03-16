@@ -434,7 +434,7 @@ class DoIPConnection:
                 raise ConnectionAbortedError(
                     f"unknown routing_activation_response_code: {payload.RoutingActivationResponseCode}"
                 ) from e
-            raise ConnectionAbortedError(f"routing activation denied: {code}")
+            raise ConnectionAbortedError(f"routing activation denied: {code.name}")
 
     async def write_request_raw(self, hdr: GenericHeader, payload: DoIPOutData) -> None:
         async with self._mutex:
