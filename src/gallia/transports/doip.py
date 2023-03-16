@@ -89,13 +89,14 @@ class TimingAndCommunicationParameters(IntEnum):
     AnnounceWait = 500
     AnnounceInterval = 500
     AnnounceNum = 3
-    DiagnosticMessageMessageAckTimeout = 50
+    DiagnosticMessageMessageAckTimeout = 2000
+    RoutingActivationResponseTimeout = 2000
     DiagnosticMessageMessageTimeout = 2000
     TCPGeneralInactivityTimeout = 5000
-    TCPInitalInactivityTimeout = 2000
+    TCPInitialInactivityTimeout = 2000
     TCPAliveCheckTimeout = 500
     ProcessingTimeout = 2000
-    VecicleDiscoveryTimeout = 5000
+    VehicleDiscoveryTimeout = 5000
 
 
 @dataclass
@@ -449,7 +450,7 @@ class DoIPConnection:
                     case RoutingActivationRequest():
                         await asyncio.wait_for(
                             self._read_routing_activation_response(),
-                            TimingAndCommunicationParameters.DiagnosticMessageMessageAckTimeout
+                            TimingAndCommunicationParameters.RoutingActivationResponseTimeout
                             / 1000,
                         )
             except asyncio.TimeoutError as e:
