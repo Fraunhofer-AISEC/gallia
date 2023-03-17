@@ -594,6 +594,6 @@ class DoIPTransport(BaseTransport, scheme="doip"):
     ) -> int:
         await asyncio.wait_for(self._conn.write_diag_request(data), timeout)
 
-        t = tags + ["read"] if tags is not None else ["read"]
+        t = tags + ["write"] if tags is not None else ["read"]
         self.logger.trace(data.hex(), extra={"tags": t})
         return len(data)
