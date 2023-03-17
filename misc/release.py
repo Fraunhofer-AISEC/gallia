@@ -131,7 +131,7 @@ def parse_args() -> Namespace:
     )
     group.add_argument(
         "--rule",
-        choices=list(map(lambda x: x.value, list(BumpMode))),
+        choices=list(map(lambda x: x.value, list(BumpMode))),  # noqa: C417
         help="bumprule for the next version",
     )
     args = parser.parse_args()
@@ -141,7 +141,7 @@ def parse_args() -> Namespace:
 def main() -> None:
     args = parse_args()
     if args.dry_run:
-        global DRY_RUN
+        global DRY_RUN  # noqa: PLW0603
         DRY_RUN = True
 
     rule = BumpMode(args.rule) if args.rule else args.version
