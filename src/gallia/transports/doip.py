@@ -524,7 +524,11 @@ class DoIPConfig(BaseModel):
 
 class DoIPTransport(BaseTransport, scheme="doip"):
     def __init__(
-        self, target: TargetURI, port: int, config: DoIPConfig, conn: DoIPConnection,
+        self,
+        target: TargetURI,
+        port: int,
+        config: DoIPConfig,
+        conn: DoIPConnection,
     ):
         super().__init__(target)
         self.port = port
@@ -553,7 +557,9 @@ class DoIPTransport(BaseTransport, scheme="doip"):
 
     @classmethod
     async def connect(
-        cls, target: str | TargetURI, timeout: float | None = None,
+        cls,
+        target: str | TargetURI,
+        timeout: float | None = None,
     ) -> DoIPTransport:
         t = target if isinstance(target, TargetURI) else TargetURI(target)
         cls.check_scheme(t)
