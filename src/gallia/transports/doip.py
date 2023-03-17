@@ -297,7 +297,7 @@ class DoIPConnection:
         self.target_addr = target_addr
         self._read_queue: asyncio.Queue[DoIPFrame] = asyncio.Queue()
         self._read_task = asyncio.create_task(self._read_worker())
-        self._closed = False
+        self._is_closed = False
         self._mutex = asyncio.Lock()
 
     @classmethod
@@ -351,7 +351,7 @@ class DoIPConnection:
     async def read_frame_unsafe(self) -> DoIPFrame:
         # Avoid waiting on the queue forever when
         # the connection has been terminated.
-        if self._closed:
+        if self._is_closed:
             raise ConnectionError()
         return await self._read_queue.get()
 
@@ -500,6 +500,9 @@ class DoIPConnection:
         await self.write_request_raw(hdr, payload)
 
     async def close(self) -> None:
+        if self._is_closed:
+            return
+        self._is_closed = True
         self._read_task.cancel()
         self.writer.close()
         await self.writer.wait_closed()
@@ -521,12 +524,13 @@ class DoIPConfig(BaseModel):
 
 class DoIPTransport(BaseTransport, scheme="doip"):
     def __init__(
-        self, target: TargetURI, port: int, config: DoIPConfig, conn: DoIPConnection
+        self, target: TargetURI, port: int, config: DoIPConfig, conn: DoIPConnection,
     ):
         super().__init__(target)
         self.port = port
         self.config = config
         self._conn = conn
+        self._is_closed = False
 
     @staticmethod
     async def _connect(
@@ -549,7 +553,7 @@ class DoIPTransport(BaseTransport, scheme="doip"):
 
     @classmethod
     async def connect(
-        cls, target: str | TargetURI, timeout: float | None = None
+        cls, target: str | TargetURI, timeout: float | None = None,
     ) -> DoIPTransport:
         t = target if isinstance(target, TargetURI) else TargetURI(target)
         cls.check_scheme(t)
@@ -572,7 +576,9 @@ class DoIPTransport(BaseTransport, scheme="doip"):
         return cls(t, port, config, conn)
 
     async def close(self) -> None:
-        self.is_closed = True
+        if self._is_closed:
+            return
+        self._is_closed = True
         await self._conn.close()
 
     async def read(
