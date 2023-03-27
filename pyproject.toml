@@ -66,7 +66,7 @@ sphinx-rtd-theme = "^1.0"
 reuse = "^1.0.0"
 construct-typing = "^0.5.2"
 pytest-cov = "^4.0"
-ruff = "^0.0.256"
+ruff = "^0.0.259"
 python-lsp-ruff = "^1.1.0"
 
 [tool.poetry.scripts]
