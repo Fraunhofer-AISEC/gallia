@@ -579,7 +579,7 @@ class RandomUDSServer(UDSServer):
                 request.service_id, UDSErrorCodes.invalidKey
             )
 
-        assert False
+        raise AssertionError()
 
     def routine_control(
         self, request: service.RoutineControlRequest
