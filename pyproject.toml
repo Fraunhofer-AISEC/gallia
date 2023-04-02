@@ -50,7 +50,7 @@ platformdirs = ">=2.6,<4.0"
 exitcode = "^0.1.0"
 
 [tool.poetry.group.dev.dependencies]
-black = "^22.10"
+black = ">=22.10,<24.0"
 Sphinx = "^5.2"
 mypy = "^1.0"
 pylsp-mypy = "^0.6"
