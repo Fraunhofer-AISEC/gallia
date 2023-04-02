@@ -210,7 +210,6 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
 
 
 class CANMessage(Message):
-
     # https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/linux/can.h
     CAN_HEADER_FMT = struct.Struct("=IBB2x")
     CANFD_BRS = 0x01

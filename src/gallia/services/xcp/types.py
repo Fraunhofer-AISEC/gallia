@@ -48,7 +48,6 @@ class XcpGetIdType(enum.IntEnum):
 
 
 class Command(enum.IntEnum):
-
     # STD
 
     # Mandatory Commands
