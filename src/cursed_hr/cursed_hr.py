@@ -228,7 +228,7 @@ class CursedHR:
             PenlogPriority.TRACE: (108, curses.COLOR_BLUE),
         }
 
-        for (identifier, value) in prio_colors.values():
+        for identifier, value in prio_colors.values():
             curses.init_pair(identifier, value, -1)
 
         curses.init_pair(InterpretationColor.DEFAULT, 8, -1)

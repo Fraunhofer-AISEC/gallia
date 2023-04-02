@@ -61,7 +61,6 @@ class ECU(UDSClient):
         max_retry: int = 1,
         power_supply: PowerSupply | None = None,
     ) -> None:
-
         super().__init__(transport, timeout, max_retry)
         self.logger = get_logger("ecu")
         self.tester_present_task: Task[None] | None = None

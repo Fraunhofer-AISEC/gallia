@@ -152,7 +152,7 @@ class ScanIdentifiers(UDSScanner):
                     )
                     args.end = 0xFF
 
-            for (DID, sub_function) in product(
+            for DID, sub_function in product(
                 range(args.start, args.end + 1), sub_functions
             ):
                 if session in args.skip and DID in args.skip[session]:
