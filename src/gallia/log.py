@@ -23,7 +23,7 @@ from logging.handlers import QueueHandler, QueueListener
 from pathlib import Path
 from queue import Queue
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, BinaryIO, TextIO, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, BinaryIO, Self, TextIO, TypeAlias, cast
 
 import msgspec
 import zstandard
@@ -460,7 +460,7 @@ class PenlogRecord:
         return int(prio_str)
 
     @classmethod
-    def parse_json(cls, data: bytes) -> PenlogRecord:
+    def parse_json(cls, data: bytes) -> Self:
         if data.startswith(b"<"):
             data = data[data.index(b">") + 1 :]
 

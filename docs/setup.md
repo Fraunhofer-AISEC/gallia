@@ -10,7 +10,7 @@ SPDX-License-Identifier: CC0-1.0
 This project has the following system level dependencies:
 
 * [Linux](https://kernel.org) >= 5.10
-* [Python](https://python.org) >= 3.10
+* [Python](https://python.org) >= 3.11
 * [poetry](https://python-poetry.org) >= 1.2 (optional, for development)
 * [dumpcap](https://www.wireshark.org/docs/man-pages/dumpcap.html) (optional, part of [wireshark](https://www.wireshark.org/))
 
