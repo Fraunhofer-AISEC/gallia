@@ -9,7 +9,7 @@ import struct
 from dataclasses import dataclass
 from enum import IntEnum, unique
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, field_validator
 
 from gallia.log import get_logger
 from gallia.transports.base import BaseTransport, TargetURI
@@ -513,13 +513,14 @@ class DoIPConfig(BaseModel):
     target_addr: int
     activation_type: int = RoutingActivationRequestTypes.WWH_OBD.value
 
-    _auto_int = validator(
+    @field_validator(
         "src_addr",
         "target_addr",
         "activation_type",
-        pre=True,
-        allow_reuse=True,
-    )(auto_int)
+        mode="before",
+    )
+    def auto_int(cls, v: str) -> int:
+        return auto_int(v)
 
 
 class DoIPTransport(BaseTransport, scheme="doip"):

@@ -11,7 +11,7 @@ import struct
 import time
 
 from can import Message  # type: ignore
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, field_validator
 
 from gallia.transports.base import BaseTransport, TargetURI
 from gallia.utils import auto_int
@@ -57,16 +57,17 @@ class ISOTPConfig(BaseModel):
     rx_padding: int | None = None
     tx_dl: int = 64
 
-    _auto_int = validator(
+    @field_validator(
         "src_addr",
         "dst_addr",
         "ext_address",
         "rx_ext_address",
         "tx_padding",
         "rx_padding",
-        pre=True,
-        allow_reuse=True,
-    )(auto_int)
+        mode="before",
+    )
+    def auto_int(cls, v: str) -> int:
+        return auto_int(v)
 
 
 class ISOTPTransport(BaseTransport, scheme="isotp"):
@@ -283,11 +284,12 @@ class RawCANConfig(BaseModel):
     is_fd: bool = False
     dst_id: int | None = None
 
-    _auto_int = validator(
+    @field_validator(
         "dst_id",
-        pre=True,
-        allow_reuse=True,
-    )(auto_int)
+        mode="before",
+    )
+    def auto_int(cls, v: str) -> int:
+        return auto_int(v)
 
 
 class RawCANTransport(BaseTransport, scheme="can-raw"):
