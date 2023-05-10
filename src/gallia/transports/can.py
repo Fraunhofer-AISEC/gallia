@@ -10,7 +10,7 @@ import socket as s
 import struct
 import time
 
-from can import Message  # type: ignore
+from can import Message
 from pydantic import BaseModel, field_validator
 
 from gallia.transports.base import BaseTransport, TargetURI
