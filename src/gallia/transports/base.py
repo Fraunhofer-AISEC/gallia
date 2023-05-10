@@ -8,7 +8,7 @@ import asyncio
 import binascii
 import io
 from abc import ABC, abstractmethod
-from typing import Any, TypeVar
+from typing import Any, Self
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 from typing_extensions import Protocol
@@ -109,10 +109,6 @@ class TransportProtocol(Protocol):
         raise NotImplementedError
 
 
-# TODO: Replace this with Self type: Python 3.11
-TransportT = TypeVar("TransportT", bound="BaseTransport")
-
-
 class BaseTransport(ABC):
     """BaseTransport is the base class providing the required
     interface for all transports used by gallia.
@@ -161,10 +157,10 @@ class BaseTransport(ABC):
     @classmethod
     @abstractmethod
     async def connect(
-        cls: type[TransportT],
+        cls,
         target: str | TargetURI,
         timeout: float | None = None,
-    ) -> TransportT:
+    ) -> Self:
         """Classmethod to connect the transport to a relevant target.
         The target argument is a URI, such as `doip://192.0.2.2:13400?src_addr=0xf4&dst_addr=0x1d"`
         An instance of the relevant transport class is returned.
@@ -174,7 +170,7 @@ class BaseTransport(ABC):
     async def close(self) -> None:
         """Terminates the connection and clean up all allocated ressources."""
 
-    async def reconnect(self: TransportT, timeout: float | None = None) -> TransportT:
+    async def reconnect(self, timeout: float | None = None) -> Self:
         """Closes the connection to the target and reconnects. A new
         instance of this class is returned rendering the old one
         obsolete. This method is safe for concurrent use.

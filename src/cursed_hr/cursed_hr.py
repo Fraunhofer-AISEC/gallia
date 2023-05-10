@@ -21,7 +21,7 @@ from datetime import datetime
 from enum import IntEnum, unique
 from math import ceil
 from pathlib import Path
-from typing import Any, BinaryIO, cast
+from typing import Any, BinaryIO
 
 import zstandard as zstd
 from gallia.log import PenlogPriority, PenlogRecord
@@ -128,10 +128,7 @@ class EntryCache:
             self.entries[entry_number] = self.old_entries.pop(entry_number)
         except KeyError:
             try:
-                # TODO: Python 3.11: the cast can be dropped due to typing.Self.
-                self.entries[entry_number] = cast(
-                    PenlogEntry, PenlogEntry.parse_json(line)
-                )
+                self.entries[entry_number] = PenlogEntry.parse_json(line)
             except (json.decoder.JSONDecodeError, TypeError):
                 self.entries[entry_number] = PenlogEntry(
                     data=line.decode("utf-8"),
