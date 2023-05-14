@@ -184,7 +184,7 @@ def build_cli(
             epilog=cls.EPILOG,
         )
         cmd = cls(subparser, config)
-        subparser.set_defaults(run_func=cmd.entry_point)
+        subparser.set_defaults(cls_object=cmd)
 
 
 def cmd_show_config(
@@ -361,15 +361,12 @@ def cmd_template(args: argparse.Namespace) -> None:
     print(template.strip())
 
 
-def main() -> None:
+def build_parser() -> tuple[argparse.ArgumentParser, Config, Path | None]:
     registry = cmd_registry[:]
 
     plugin_cmds = load_command_plugins()
     if len(plugin_cmds) > 0:
         registry += plugin_cmds
-
-    # Will be set to the correct verbosity later.
-    setup_logging()
 
     parsers = load_parsers()
 
@@ -386,8 +383,16 @@ def main() -> None:
     build_cli(parsers, config, registry)
 
     parser = parsers["parser"]
+    return parser, config, config_path
+
+
+def main() -> None:
+    parser, config, config_path = build_parser()
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
+
+    # Will be set to the correct verbosity later.
+    setup_logging()
 
     if args.show_config:
         cmd_show_config(args, config, config_path)
@@ -409,11 +414,11 @@ def main() -> None:
         cmd_template(args)
         sys.exit(exitcode.OK)
 
-    if not hasattr(args, "run_func"):
+    if not hasattr(args, "cls_object"):
         args.help_func()
         parser.exit(exitcode.USAGE)
 
-    sys.exit(args.run_func(args))
+    sys.exit(args.cls_object.entry_point(args))
 
 
 if __name__ == "__main__":
