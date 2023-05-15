@@ -110,6 +110,7 @@ class SessionsScanner(UDSScanner):
         return True
 
     async def main(self, args: Namespace) -> None:
+        self.result: list[int] = []
         found: dict[int, list[list[int]]] = {0: [[0x01]]}
         positive_results: list[dict[str, Any]] = []
         negative_results: list[dict[str, Any]] = []
@@ -237,6 +238,7 @@ class SessionsScanner(UDSScanner):
 
             if session != previous_session:
                 previous_session = session
+                self.result.append(int(session))
                 self.logger.result(f"* Session {g_repr(session)} ")
 
                 if self.db_handler is not None:
