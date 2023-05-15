@@ -81,6 +81,7 @@ class ServicesScanner(UDSScanner):
         )
 
     async def main(self, args: Namespace) -> None:
+        self.result: list[tuple[int, int]] = []
         self.ecu.max_retry = 1
         found: dict[int, dict[int, Any]] = {}
 
@@ -170,6 +171,7 @@ class ServicesScanner(UDSScanner):
         for key, value in found.items():
             self.logger.result(f"findings in session 0x{key:02X}:")
             for sid, data in value.items():
+                self.result.append((key, sid))
                 try:
                     self.logger.result(
                         f"  [{g_repr(sid)}] {UDSIsoServices(sid).name}: {data}"
