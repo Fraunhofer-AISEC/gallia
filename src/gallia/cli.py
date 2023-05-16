@@ -328,6 +328,7 @@ def cmd_show_plugins() -> None:
 def cmd_template(args: argparse.Namespace) -> None:
     template = """# [gallia]
 # verbosity = <int>
+# no-volatile-info = <bool>
 # trace_log = <bool>
 # lock_file = <str>
 
@@ -392,7 +393,11 @@ def main() -> None:
     args = parser.parse_args()
 
     # Will be set to the correct verbosity later.
-    setup_logging()
+    setup_logging(
+        no_volatile_info=args.no_volatile_info
+        if hasattr(args, "no_volatile_info")
+        else True
+    )
 
     if args.show_config:
         cmd_show_config(args, config, config_path)

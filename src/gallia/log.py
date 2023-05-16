@@ -250,6 +250,7 @@ def setup_logging(
     file_level: Loglevel = Loglevel.DEBUG,
     path: Path | None = None,
     color_mode: ColorMode = ColorMode.AUTO,
+    no_volatile_info: bool = False,
 ) -> None:
     """Enable and configure gallia's logging system.
     If this fuction is not called as early as possible,
@@ -288,6 +289,10 @@ def setup_logging(
     console_formatter = _ConsoleFormatter()
 
     console_formatter.colored = colored
+    stderr_handler.terminator = ""  # We manually handle the terminator while formatting
+    if no_volatile_info is False:
+        console_formatter.volatile_info = True
+
     stderr_handler.setFormatter(console_formatter)
 
     handlers: list[logging.Handler] = [stderr_handler]
@@ -342,9 +347,9 @@ class _PenlogRecordV2(msgspec.Struct, omit_defaults=True, tag=2, tag_field="vers
 _PenlogRecord: TypeAlias = _PenlogRecordV1 | _PenlogRecordV2
 
 
-def _colorize_msg(data: str, levelno: int) -> str:
+def _colorize_msg(data: str, levelno: int) -> tuple[str, int]:
     if not sys.stderr.isatty():
-        return data
+        return data, 0
 
     out = ""
     match levelno:
@@ -369,7 +374,7 @@ def _colorize_msg(data: str, levelno: int) -> str:
     out += data
     out += _Color.RESET.value
 
-    return out
+    return out, len(style)
 
 
 def _format_record(  # noqa: PLR0913
@@ -380,8 +385,10 @@ def _format_record(  # noqa: PLR0913
     tags: list[str] | None,
     stacktrace: str | None,
     colored: bool = False,
+    volatile_info: bool = False,
 ) -> str:
-    msg = ""
+    msg = "\33[2K"
+    extra_len = 4
     msg += dt.strftime("%b %d %H:%M:%S.%f")[:-3]
     msg += " "
     msg += name
@@ -390,9 +397,21 @@ def _format_record(  # noqa: PLR0913
     msg += ": "
 
     if colored:
-        msg += _colorize_msg(data, levelno)
+        tmp_msg, extra_len_tmp = _colorize_msg(data, levelno)
+        msg += tmp_msg
+        extra_len += extra_len_tmp
     else:
         msg += data
+
+    if volatile_info and levelno <= Loglevel.INFO:
+        terminal_width, _ = shutil.get_terminal_size()
+        msg = msg[
+            : terminal_width + extra_len - 1
+        ]  # Adapt length to invisible ANSI colors
+        msg += _Color.RESET.value
+        msg += "\r"
+    else:
+        msg += "\n"
 
     if stacktrace is not None:
         msg += "\n"
@@ -719,6 +738,7 @@ class _JSONFormatter(logging.Formatter):
 
 class _ConsoleFormatter(logging.Formatter):
     colored: bool = False
+    volatile_info: bool = False
 
     def format(
         self,
@@ -745,6 +765,7 @@ class _ConsoleFormatter(logging.Formatter):
             tags=record.__dict__["tags"] if "tags" in record.__dict__ else None,
             stacktrace=stacktrace,
             colored=self.colored,
+            volatile_info=self.volatile_info,
         )
 
 
