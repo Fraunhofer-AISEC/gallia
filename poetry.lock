@@ -1609,14 +1609,14 @@ testing = ["fields", "hunter", "process-tests", "pytest-xdist", "six", "virtuale
 
 [[package]]
 name = "python-can"
-version = "4.2.0"
+version = "4.2.1"
 description = "Controller Area Network interface module for Python"
 category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "python-can-4.2.0.tar.gz", hash = "sha256:0fbda7217523b802f36a8d5a3cd26a35baad2795965f7f09bfa3dd1dfb6fbaf0"},
-    {file = "python_can-4.2.0-py3-none-any.whl", hash = "sha256:103eba20320d0c63c95f7b2075875dd6711162723f11f5cc814947570d5eb589"},
+    {file = "python-can-4.2.1.tar.gz", hash = "sha256:f1ace82545cb4c7edf92a5aa6024bbb8ad23331ee5b0a1f441e782bf680a67ac"},
+    {file = "python_can-4.2.1-py3-none-any.whl", hash = "sha256:68e06d9d44de95b7f73eaed09d5637eabef73443e023474a768f1b590aa0798e"},
 ]
 
 [package.dependencies]
@@ -2538,4 +2538,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.12"
-content-hash = "4a3b5ace98359442534fcf331fc0c0f3fd940a033a6524cfaedc693e227ff82c"
+content-hash = "5e247f97144f77da87f0c2f9d05ec2dbb4dbb12bce4c9203da0a493ae2e62cff"
