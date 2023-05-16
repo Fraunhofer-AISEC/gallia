@@ -214,7 +214,7 @@ class ScanIdentifiers(UDSScanner):
 
                     # RequestOutOfRange is a common reply for invalid DataIdentifiers
                     elif resp.response_code == UDSErrorCodes.requestOutOfRange:
-                        self.logger.debug(f"{g_repr(DID)}: {resp}")
+                        self.logger.info(f"{g_repr(DID)}: {resp}")
 
                     else:
                         self.logger.result(f"{g_repr(DID)}: {resp}")
