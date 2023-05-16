@@ -39,7 +39,7 @@ aiofiles = ">=22.1,<24.0"
 aiosqlite = ">=0.18"
 argcomplete = ">=2,<4"
 zstandard = ">=0.19"
-python-can = "^4.0"
+python-can = "^4.2"
 tabulate = ">=0.9"
 construct = "^2.10.67"
 tomli = { version = "^2.0", python = "<3.11" }
