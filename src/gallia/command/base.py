@@ -206,6 +206,12 @@ class BaseCommand(ABC):
             help="increase verbosity on the console",
         )
         group.add_argument(
+            "--no-volatile-info",
+            action="store_true",
+            default=self.config.get_value("gallia.no-volatile-info", False),
+            help="do not overwrite log lines with level info or lower in terminal output",
+        )
+        group.add_argument(
             "--trace-log",
             action=argparse.BooleanOptionalAction,
             default=self.config.get_value("gallia.trace_log", False),
@@ -354,9 +360,13 @@ class BaseCommand(ABC):
                 self.get_log_level(args),
                 self.get_file_log_level(args),
                 self.artifacts_dir.joinpath(FileNames.LOGFILE.value),
+                no_volatile_info=args.no_volatile_info,
             )
         else:
-            setup_logging(self.get_log_level(args))
+            setup_logging(
+                self.get_log_level(args),
+                no_volatile_info=args.no_volatile_info,
+            )
 
         if args.hooks:
             self.run_hook(HookVariant.PRE, args)

@@ -77,7 +77,7 @@ def _main() -> int:
 
             for record in record_generator:
                 record.colored = colored
-                print(record)
+                print(record, end="")
 
     return 0
 
