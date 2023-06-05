@@ -7,6 +7,7 @@ from typing import Any
 from gallia.log import get_logger
 from gallia.services.xcp import types
 from gallia.transports import BaseTransport
+from gallia.transports.can import RawCANTransport
 
 
 class XCPService:
@@ -74,3 +75,38 @@ class XCPService:
         resp = await self.request(bytes([0xF5, length]))
         self.logger.info(resp)
         self.logger.result(f"XCP GET_UPLOAD({length} -> OK")
+
+
+class CANXCPSerivce(XCPService):
+    def __init__(
+        self,
+        transport: RawCANTransport,
+        master_id: int,
+        slave_id: int,
+        timeout: float = 1.0,
+    ):
+        self.master_id = master_id
+        self.slave_id = slave_id
+
+        super().__init__(transport, timeout)
+
+    async def request(self, data: bytes, timeout: float | None = None) -> bytes:
+        t = timeout if timeout else self.timeout
+
+        assert isinstance(self.transport, RawCANTransport)
+
+        await self.transport.sendto(data, self.slave_id, t)
+        while True:
+            dst_, resp = await self.transport.recvfrom(t)
+
+            if dst_ == self.master_id:
+                break
+
+        header = types.Response.parse(resp)
+        self.logger.info(header)
+        if int(header.type) != 255:
+            raise ValueError(
+                f"Unknown response type: {header.type}, maybe no XCP packet?"
+            )
+        # strip header byte
+        return resp[1:]
