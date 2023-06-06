@@ -12,7 +12,7 @@ import mmap
 import shutil
 import tempfile
 import warnings
-from argparse import ArgumentParser
+from argparse import ArgumentParser, BooleanOptionalAction
 from array import array
 from binascii import unhexlify
 from copy import deepcopy
@@ -169,6 +169,7 @@ class CursedHR:
         in_file: Path,
         priority: PenlogPriority = PenlogPriority.DEBUG,
         filters: list[str] | None = None,
+        use_prefix: bool = True,
     ):
         self.in_file = in_file
         self.level_pointers: list[array[int]] = [array("L") for _ in range(9)]
@@ -181,6 +182,7 @@ class CursedHR:
             )
         ]
         self.configuration_index = 0
+        self.use_prefix = use_prefix
 
         try:
             self.window = self.init_curses()
@@ -482,12 +484,14 @@ class CursedHR:
         _, max_width = self.window.getmaxyx()
 
         prefix = ""
-        prefix += entry.datetime.strftime("%b %d %H:%M:%S.%f")[:-3]
-        prefix += " "
-        prefix += entry.module
-        if entry.tags is not None:
-            prefix += f" [{', '.join(entry.tags)}]"
-        prefix += ": "
+
+        if self.use_prefix:
+            prefix += entry.datetime.strftime("%b %d %H:%M:%S.%f")[:-3]
+            prefix += " "
+            prefix += entry.module
+            if entry.tags is not None:
+                prefix += f" [{', '.join(entry.tags)}]"
+            prefix += ": "
 
         residual_width = max_width - len(prefix) - 1
 
@@ -1214,6 +1218,8 @@ class CursedHR:
                         self.window.move(
                             max_lines, min(filter_cursor, len(fh_tmp[fh_index]))
                         )
+                case "x":
+                    self.use_prefix = not self.use_prefix
 
             display_entries = self.calculate_display_entries(entry_start, line_start)
 
@@ -1331,8 +1337,9 @@ def main() -> None:
         "--priority", "-p", type=PenlogPriority.from_str, default=PenlogPriority.DEBUG
     )
     parser.add_argument("--filter", "-f", type=parse_filter, default=None)
+    parser.add_argument("--prefix", action=BooleanOptionalAction, default=True)
     args = parser.parse_args()
-    CursedHR(args.file, args.priority, args.filter)
+    CursedHR(args.file, args.priority, args.filter, args.prefix)
 
 
 if __name__ == "__main__":
