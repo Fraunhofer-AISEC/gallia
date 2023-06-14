@@ -10,7 +10,6 @@ import os.path
 import shutil
 import signal
 import sys
-import traceback
 from abc import ABC, abstractmethod
 from argparse import ArgumentParser, Namespace
 from datetime import datetime, timezone
@@ -380,11 +379,12 @@ class BaseCommand(ABC):
                 if isinstance(e, t):
                     # TODO: Map the exitcode to superclass of builtin exceptions.
                     exit_code = exitcode.IOERR
-                    self.logger.critical(repr(e))
+                    self.logger.critical(f"catched by default handler: {e!r}")
+                    self.logger.debug(e, exc_info=True)
                     break
             else:
                 exit_code = exitcode.SOFTWARE
-                traceback.print_exc()
+                self.logger.critical(e, exc_info=True)
         finally:
             self.run_meta.exit_code = exit_code
             self.run_meta.end_time = datetime.now(tz).isoformat()
