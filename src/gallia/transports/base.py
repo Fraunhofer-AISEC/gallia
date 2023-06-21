@@ -83,6 +83,12 @@ class TargetURI:
             d[k] = v[0]
         return d
 
+    @property
+    def file_path(self) -> str:
+        """The file location in case of Unix domain sockets.
+        """
+        return self.raw.lstrip(self.scheme+"://")
+
     def __str__(self) -> str:
         return self.raw
 

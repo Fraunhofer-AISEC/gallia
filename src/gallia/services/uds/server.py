@@ -891,3 +891,25 @@ class ISOTPUDSServerTransport(UDSServerTransport):
                     await transport.write(uds_response_raw)
             except Exception:
                 traceback.print_exc()
+
+
+class UnixServerTransport(UDSServerTransport):
+    async def handle_client(
+        self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
+    ) -> None:
+        self.logger.info("New UNIX connection")
+        response_times = []
+
+        data = await reader.read()
+        writer.close()
+        self.logger.info("Server: received:",data)
+
+
+    async def run(self) -> None:
+        server_addr = self.target.file_path
+        server = await asyncio.start_unix_server(
+            self.handle_client, server_addr
+        )
+
+        async with server:
+            await server.serve_forever()
