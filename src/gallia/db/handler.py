@@ -27,7 +27,7 @@ def bytes_repr(data: bytes) -> str:
     return bytes_repr_(data, False, None)
 
 
-schema_version = "2"
+schema_version = "3"
 
 DB_SCHEMA = f"""
 CREATE TABLE IF NOT EXISTS version (
@@ -57,7 +57,8 @@ CREATE TABLE IF NOT EXISTS run_meta (
   end_time real,
   end_timezone text check((end_timezone is null) = (end_time is null)),
   exit_code int,
-  path text
+  path text,
+  exclude BOOLEAN
 );
 CREATE TABLE IF NOT EXISTS error_log (
   level int not null,
@@ -205,8 +206,9 @@ class DBHandler:
         assert self.connection is not None, "Not connected to the database"
 
         query = (
-            "INSERT INTO run_meta(script, arguments, command_meta, settings, start_time, start_timezone, path) VALUES "
-            "(?, ?, ?, ?, ?, ?, ?)"
+            "INSERT INTO "
+            "run_meta(script, arguments, command_meta, settings, start_time, start_timezone, path, exclude) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, FALSE)"
         )
         cursor = await self.connection.execute(
             query,
