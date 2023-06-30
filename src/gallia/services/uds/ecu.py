@@ -219,6 +219,7 @@ class ECU(UDSClient):
             await self.wait_for_ecu()
 
         await self.power_supply.power_cycle(sleep, callback)
+        self.state.reset()
         return True
 
     async def leave_session(
