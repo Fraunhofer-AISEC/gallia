@@ -1455,17 +1455,17 @@ plugins = ["importlib-metadata"]
 
 [[package]]
 name = "pylsp-mypy"
-version = "0.6.6"
+version = "0.6.7"
 description = "Mypy linter for the Python LSP Server"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "pylsp-mypy-0.6.6.tar.gz", hash = "sha256:aa5d547b25ca431b5b17689c495c55aa374b19b35c59746987e417044fb722ce"},
-    {file = "pylsp_mypy-0.6.6-py3-none-any.whl", hash = "sha256:46666ffa282e1b44b86b3b03f55b95ca12df82af77c88cf4b85fba3d532b7290"},
+    {file = "pylsp-mypy-0.6.7.tar.gz", hash = "sha256:06ba6d09bdd6ec29025ccc952dd66a849361a224a9f04cebd69b9f45f7d4a064"},
+    {file = "pylsp_mypy-0.6.7-py3-none-any.whl", hash = "sha256:7c50dc8bbfc45aee1efb9e7555d3bee7188c81a74098efd2e0e51ef574c8d277"},
 ]
 
 [package.dependencies]
-mypy = "*"
+mypy = ">=0.981"
 python-lsp-server = ">=1.7.0"
 tomli = {version = ">=1.1.0", markers = "python_version < \"3.11\""}
 
