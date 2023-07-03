@@ -232,7 +232,7 @@ class SessionsScanner(UDSScanner):
         self.logger.result("Scan finished; Found the following sessions:")
         previous_session = 0
 
-        for res in sorted(positive_results, key=lambda x: x["session"]):  # type: ignore
+        for res in sorted(positive_results, key=lambda x: x["session"]):
             session = res["session"]
 
             if session != previous_session:
@@ -253,7 +253,7 @@ class SessionsScanner(UDSScanner):
         )
         previous_session = 0
 
-        for res in sorted(negative_results, key=lambda x: x["session"]):  # type: ignore
+        for res in sorted(negative_results, key=lambda x: x["session"]):
             session = res["session"]
 
             if (

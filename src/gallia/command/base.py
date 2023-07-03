@@ -49,9 +49,9 @@ class HookVariant(Enum):
 
 
 class CommandMeta(msgspec.Struct):
-    group: str
+    command: str | None
+    group: str | None
     subgroup: str | None
-    command: str
 
     def json(self) -> str:
         return msgspec.json.encode(self).decode()
@@ -118,7 +118,7 @@ class BaseCommand(ABC):
             ),
             start_time=datetime.now(tz).isoformat(),
             exit_code=0,
-            end_time=0,
+            end_time="",
         )
         self._lock_file_fd: int | None = None
         self.configure_class_parser()
