@@ -17,9 +17,14 @@ from gallia.services.uds.server import (
     TCPUDSServerTransport,
     UDSServer,
     UDSServerTransport,
+    UnixUDSServerTransport,
 )
-from gallia.transports import ISOTPTransport, TargetURI
-from gallia.transports.tcp import TCPLinesTransport
+from gallia.transports import (
+    ISOTPTransport,
+    TargetURI,
+    TCPLinesTransport,
+    UnixLinesTransport,
+)
 
 dynamic_attr_prefix = "dynamic_attr_"
 
@@ -102,12 +107,13 @@ class VirtualECU(AsyncScript):
             transport = TCPUDSServerTransport(server, target)
         elif target.scheme == ISOTPTransport.SCHEME:
             transport = ISOTPUDSServerTransport(server, target)
+        elif target.scheme == UnixLinesTransport.SCHEME:
+            transport = UnixUDSServerTransport(server, target)
         else:
-            self.logger.error(
+            self.parser.error(
                 f"Unsupported transport scheme! Use any of ["
-                f"{TCPLinesTransport.SCHEME}, {ISOTPTransport.SCHEME}]"
+                f"{TCPLinesTransport.SCHEME}, {ISOTPTransport.SCHEME}, {UnixLinesTransport.SCHEME}]"
             )
-            sys.exit(1)
 
         try:
             await server.setup()
