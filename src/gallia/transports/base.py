@@ -5,12 +5,15 @@
 from __future__ import annotations
 
 import asyncio
+import binascii
 import io
 from abc import ABC, abstractmethod
 from typing import Any, TypeVar
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
-from gallia.log import get_logger
+from typing_extensions import Protocol
+
+from gallia.log import Logger, get_logger
 from gallia.utils import join_host_port
 
 
@@ -64,6 +67,11 @@ class TargetURI:
         return self.url.netloc
 
     @property
+    def path(self) -> str:
+        """The path property of the url."""
+        return self.url.path
+
+    @property
     def location(self) -> str:
         """A URI string which only consists of the relevant scheme,
         the host and the port.
@@ -83,8 +91,18 @@ class TargetURI:
             d[k] = v[0]
         return d
 
-    def __str__(self) -> str:
-        return self.raw
+
+class TransportProtocol(Protocol):
+    mutex: asyncio.Lock
+    logger: Logger
+    target: TargetURI
+    is_closed: bool
+
+    def get_writer(self) -> asyncio.StreamWriter:
+        raise NotImplementedError
+
+    def get_reader(self) -> asyncio.StreamReader:
+        raise NotImplementedError
 
 
 # TODO: Replace this with Self type: Python 3.11
@@ -207,3 +225,33 @@ class BaseTransport(ABC):
         """
         await self.write(data, timeout, tags)
         return await self.read(timeout, tags)
+
+
+class LinesTransportMixin:
+    async def write(
+        self: TransportProtocol,
+        data: bytes,
+        timeout: float | None = None,
+        tags: list[str] | None = None,
+    ) -> int:
+        t = tags + ["write"] if tags is not None else ["write"]
+
+        self.logger.trace(data.hex() + "0a", extra={"tags": t})
+
+        writer = self.get_writer()
+        writer.write(binascii.hexlify(data) + b"\n")
+        await asyncio.wait_for(writer.drain(), timeout)
+        return len(data)
+
+    async def read(
+        self: TransportProtocol,
+        timeout: float | None = None,
+        tags: list[str] | None = None,
+    ) -> bytes:
+        data = await asyncio.wait_for(self.get_reader().readline(), timeout)
+        d = data.decode().strip()
+
+        t = tags + ["read"] if tags is not None else ["read"]
+        self.logger.trace(d + "0a", extra={"tags": t})
+
+        return binascii.unhexlify(d)

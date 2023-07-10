@@ -6,6 +6,7 @@ from gallia.transports.base import BaseTransport, TargetURI
 from gallia.transports.can import ISOTPTransport, RawCANTransport
 from gallia.transports.doip import DoIPTransport
 from gallia.transports.tcp import TCPLinesTransport, TCPTransport
+from gallia.transports.unix import UnixLinesTransport, UnixTransport
 
 registry: list[type[BaseTransport]] = [
     DoIPTransport,
@@ -13,6 +14,8 @@ registry: list[type[BaseTransport]] = [
     RawCANTransport,
     TCPLinesTransport,
     TCPTransport,
+    UnixLinesTransport,
+    UnixTransport,
 ]
 
 __all__ = [
@@ -22,5 +25,7 @@ __all__ = [
     "RawCANTransport",
     "TCPLinesTransport",
     "TCPTransport",
+    "UnixLinesTransport",
+    "UnixTransport",
     "TargetURI",
 ]
