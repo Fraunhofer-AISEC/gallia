@@ -34,6 +34,8 @@ class TCPTransport(BaseTransport, scheme="tcp"):
         return cls(t, reader, writer)
 
     async def close(self) -> None:
+        if self.is_closed:
+            return
         self.is_closed = True
         self.writer.close()
         await self.writer.wait_closed()
