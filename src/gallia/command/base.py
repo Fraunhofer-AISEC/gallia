@@ -597,7 +597,10 @@ class Scanner(AsyncScript, ABC):
             "--power-cycle",
             action=argparse.BooleanOptionalAction,
             default=self.config.get_value("gallia.scanner.power_cycle", False),
-            help="trigger a powercycle before starting the scan",
+            help=(
+                "use the configured power supply to power-cycle the ECU when needed "
+                "(e.g. before starting the scan, or to recover bad state during scanning)"
+            ),
         )
         group.add_argument(
             "--power-cycle-sleep",

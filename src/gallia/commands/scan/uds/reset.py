@@ -142,10 +142,22 @@ class ResetScanner(UDSScanner):
                         await self.ecu.wait_for_ecu()
 
                 except asyncio.TimeoutError:
-                    self.logger.error(
-                        f"ECU did not respond after reset level {g_repr(sub_func)}; exiting…"
+                    l_timeout[session].append(sub_func)
+                    if not args.power_cycle:
+                        self.logger.error(
+                            f"ECU did not respond after reset level {g_repr(sub_func)}; exit"
+                        )
+                        sys.exit(1)
+
+                    self.logger.warning(
+                        f"ECU did not respond after reset level {g_repr(sub_func)}; try power cycle…"
                     )
-                    sys.exit(1)
+                    try:
+                        await self.ecu.power_cycle()
+                        await self.ecu.wait_for_ecu()
+                    except (ConnectionError, asyncio.TimeoutError) as e:
+                        self.logger.error(f"Failed to recover ECU: {g_repr(e)}; exit")
+                        sys.exit(1)
                 except ConnectionError:
                     msg = f"{g_repr(sub_func)}: lost connection to ECU (post), current session: {g_repr(session)}"
                     self.logger.warning(msg)
