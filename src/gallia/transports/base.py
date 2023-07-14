@@ -180,7 +180,7 @@ class BaseTransport(ABC):
             try:
                 await self.close()
             except ConnectionError as e:
-                self.logger.debug(f"Socket close failed during reconnect ({e}); ignore")
+                self.logger.warning(f"close() failed during reconnect ({e}); ignoring")
             return await self.connect(self.target)
 
     @abstractmethod
