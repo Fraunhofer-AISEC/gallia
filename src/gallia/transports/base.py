@@ -177,7 +177,10 @@ class BaseTransport(ABC):
         obsolete. This method is safe for concurrent use.
         """
         async with self.mutex:
-            await self.close()
+            try:
+                await self.close()
+            except ConnectionError as e:
+                self.logger.debug(f"Socket close failed during reconnect ({e}); ignore")
             return await self.connect(self.target)
 
     @abstractmethod
