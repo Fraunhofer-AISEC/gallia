@@ -8,9 +8,12 @@ from argparse import Namespace
 from pathlib import Path
 
 from gallia.command import UDSScanner
+from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse
 from gallia.services.uds.core.utils import g_repr
 from gallia.utils import auto_int
+
+logger = get_logger("gallia.primitive.wmba")
 
 
 class WMBAPrimitive(UDSScanner):
@@ -48,7 +51,7 @@ class WMBAPrimitive(UDSScanner):
         try:
             await self.ecu.check_and_set_session(args.session)
         except Exception as e:
-            self.logger.critical(
+            logger.critical(
                 f"Could not change to session: {g_repr(args.session)}: {e!r}"
             )
             sys.exit(1)
@@ -62,7 +65,7 @@ class WMBAPrimitive(UDSScanner):
         resp = await self.ecu.write_memory_by_address(args.address, data)
 
         if isinstance(resp, NegativeResponse):
-            self.logger.error(resp)
+            logger.error(resp)
         else:
             # There is not real data returned, only echos
-            self.logger.result("Success")
+            logger.result("Success")

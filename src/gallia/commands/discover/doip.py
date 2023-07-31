@@ -13,6 +13,7 @@ import aiofiles
 import psutil
 
 from gallia.command import AsyncScript
+from gallia.log import get_logger
 from gallia.services.uds.core.service import (
     TesterPresentRequest,
     TesterPresentResponse,
@@ -27,6 +28,8 @@ from gallia.transports.doip import (
     RoutingActivationResponseCodes,
     TimingAndCommunicationParameters,
 )
+
+logger = get_logger("gallia.discover.doip")
 
 
 class DoIPDiscoverer(AsyncScript):
@@ -78,11 +81,11 @@ class DoIPDiscoverer(AsyncScript):
         pass
 
     async def main2(self, args: Namespace) -> int:
-        self.logger.notice("[👋] Welcome to @realDoIP-Discovery powered by MoarMemes…")
+        logger.notice("[👋] Welcome to @realDoIP-Discovery powered by MoarMemes…")
 
         target = urlparse(args.target) if args.target is not None else None
         if target is not None and target.scheme != "doip":
-            self.logger.error("[🫣] --target must be doip://…")
+            logger.error("[🫣] --target must be doip://…")
             return 2
 
         # Discover Hostname and Port
@@ -93,18 +96,16 @@ class DoIPDiscoverer(AsyncScript):
             and target.hostname is not None
             and target.port is not None
         ):
-            self.logger.notice(
-                "[📋] Skipping host/port discovery because given by --target"
-            )
+            logger.notice("[📋] Skipping host/port discovery because given by --target")
             tgt_hostname = target.hostname
             tgt_port = target.port
         else:
-            self.logger.notice("[🔍] Discovering Host and Port via UDP Broadcast")
+            logger.notice("[🔍] Discovering Host and Port via UDP Broadcast")
 
             hosts = await self.run_udp_discovery()
 
             if len(hosts) != 1:
-                self.logger.error(
+                logger.error(
                     "[🍃] Can only continue with a single DoIP host! Give me a --target!"
                 )
                 return 11
@@ -115,12 +116,12 @@ class DoIPDiscoverer(AsyncScript):
         rat_success: list[int] = []
         rat_wrong_source: list[int] = []
         if target is not None and "activation_type" in parse_qs(target.query):
-            self.logger.notice(
+            logger.notice(
                 "[📋] Skipping RoutingActivationType discovery because given by --target"
             )
             rat_success = [int(parse_qs(target.query)["activation_type"][0], 0)]
         else:
-            self.logger.notice("[🔍] Enumerating all RoutingActivationTypes")
+            logger.notice("[🔍] Enumerating all RoutingActivationTypes")
 
             (
                 rat_success,
@@ -134,14 +135,14 @@ class DoIPDiscoverer(AsyncScript):
             )
 
         if len(rat_success) == 0 and len(rat_wrong_source) == 0:
-            self.logger.error(
+            logger.error(
                 "[🥾] Damn son, didn't find a single routing activation type with unknown source?! OUTTA HERE!"
             )
             return 10
 
         # Discovering correct source address for suitable RoutingActivationRequests
         if target is not None and "src_addr" in parse_qs(target.query):
-            self.logger.notice(
+            logger.notice(
                 "[📋] Skipping SourceAddress discovery because given by --target"
             )
             targets = [
@@ -150,7 +151,7 @@ class DoIPDiscoverer(AsyncScript):
             ]
 
         else:
-            self.logger.notice("[🔍] Enumerating all SourceAddresses")
+            logger.notice("[🔍] Enumerating all SourceAddresses")
             targets = await self.enumerate_source_addresses(
                 tgt_hostname,
                 tgt_port,
@@ -158,19 +159,19 @@ class DoIPDiscoverer(AsyncScript):
             )
 
         if len(targets) != 1:
-            self.logger.error(
+            logger.error(
                 f"[💣] I found {len(targets)} valid RoutingActivationType/SourceAddress combos, but can only continue with exactly one; choose your weapon with --target!"
             )
             return 20
 
         # Enumerate valid TargetAddresses
         if target is not None and "target_addr" in parse_qs(target.query):
-            self.logger.error(
+            logger.error(
                 "[😵] Why do you give me a target_addr in --target? Am I useless to you??? GOODBYE!"
             )
             return 3
 
-        self.logger.notice(
+        logger.notice(
             f"[🔍] Enumerating all TargetAddresses from {args.start:#x} to {args.stop:#x}"
         )
 
@@ -188,7 +189,7 @@ class DoIPDiscoverer(AsyncScript):
             args.timeout,
         )
 
-        self.logger.notice("[🛩️] All done, thanks for flying with us!")
+        logger.notice("[🛩️] All done, thanks for flying with us!")
         return 0
 
     async def enumerate_routing_activation_types(
@@ -209,17 +210,17 @@ class DoIPDiscoverer(AsyncScript):
                     0xAFFE,
                 )
             except OSError as e:
-                self.logger.error(f"[🚨] Mr. Stark I don't feel so good: {e}")
+                logger.error(f"[🚨] Mr. Stark I don't feel so good: {e}")
                 return rat_success, rat_wrong_source
 
             try:
                 await conn.write_routing_activation_request(routing_activation_type)
                 rat_success.append(routing_activation_type)
-                self.logger.info(
+                logger.info(
                     f"[🤯] Holy moly, it actually worked for activation_type {routing_activation_type:#x} and src_addr {src_addr:#x}!!!"
                 )
             except DoIPRoutingActivationDeniedError as e:
-                self.logger.info(
+                logger.info(
                     f"[🌟] splendid, {routing_activation_type:#x} yields {e.rac_code.name}"
                 )
 
@@ -235,7 +236,7 @@ class DoIPDiscoverer(AsyncScript):
             finally:
                 await conn.close()
 
-        self.logger.notice(
+        logger.notice(
             f"[💎] Look what RoutingActivationTypes I've found that are not 'unsupported': {', '.join([f'{x:#x}' for x in rat_not_unsupported])}"
         )
         return rat_success, rat_wrong_source
@@ -260,7 +261,7 @@ class DoIPDiscoverer(AsyncScript):
         )
 
         for target_addr in search_space:
-            self.logger.debug(f"[🚧] Attempting connection to {target_addr:#x}")
+            logger.debug(f"[🚧] Attempting connection to {target_addr:#x}")
 
             conn.target_addr = target_addr
 
@@ -272,7 +273,7 @@ class DoIPDiscoverer(AsyncScript):
                 known_targets.append(
                     f"doip://{tgt_hostname}:{tgt_port}?activation_type={correct_rat:#x}&src_addr={correct_src:#x}&target_addr={target_addr:#x}"
                 )
-                self.logger.notice(
+                logger.notice(
                     f"[🥇] HEUREKA: target address {target_addr:#x} is valid! "
                 )
                 async with aiofiles.open(
@@ -280,7 +281,7 @@ class DoIPDiscoverer(AsyncScript):
                 ) as f:
                     await f.write(f"{known_targets[-1]}\n")
 
-                self.logger.info(f"[⏳] Waiting for reply of target {target_addr:#x}")
+                logger.info(f"[⏳] Waiting for reply of target {target_addr:#x}")
                 # Hardcoded loop to detect potential broadcasts
                 while True:
                     pot_broadcast, data = await asyncio.wait_for(
@@ -293,7 +294,7 @@ class DoIPDiscoverer(AsyncScript):
                     if pot_broadcast is None:
                         break
 
-                    self.logger.notice(
+                    logger.notice(
                         f"[🤑] B-B-B-B-B-B-BROADCAST at TargetAddress {target_addr:#x}! Got reply from {pot_broadcast:#x}"
                     )
                     async with aiofiles.open(
@@ -304,7 +305,7 @@ class DoIPDiscoverer(AsyncScript):
                         )
 
                 resp = TesterPresentResponse.parse_static(data)
-                self.logger.notice(
+                logger.notice(
                     f"[🥳] It cannot get nicer: {target_addr:#x} responded: {resp}"
                 )
                 responsive_targets.append(known_targets[-1])
@@ -318,14 +319,10 @@ class DoIPDiscoverer(AsyncScript):
                     e.nack_code
                     == DiagnosticMessageNegativeAckCodes.UnknownTargetAddress
                 ):
-                    self.logger.info(
-                        f"[🫥] {target_addr:#x} is an unknown target address"
-                    )
+                    logger.info(f"[🫥] {target_addr:#x} is an unknown target address")
                     continue
                 elif e.nack_code == DiagnosticMessageNegativeAckCodes.TargetUnreachable:
-                    self.logger.info(
-                        f"[💤] {target_addr:#x} is (currently?) unreachable"
-                    )
+                    logger.info(f"[💤] {target_addr:#x} is (currently?) unreachable")
                     unreachable_targets.append(known_targets[-1])
                     async with aiofiles.open(
                         self.artifacts_dir.joinpath("5_unreachable_targets.txt"), "a"
@@ -333,7 +330,7 @@ class DoIPDiscoverer(AsyncScript):
                         await f.write(f"{known_targets[-1]}\n")
                     continue
                 else:
-                    self.logger.warning(
+                    logger.warning(
                         f"[🤷] {target_addr:#x} is behaving strangely: {e.nack_code.name}"
                     )
                     async with aiofiles.open(
@@ -343,7 +340,7 @@ class DoIPDiscoverer(AsyncScript):
                     continue
 
             except asyncio.TimeoutError:  # This triggers when DoIP ACK but no UDS reply
-                self.logger.info(
+                logger.info(
                     f"[🙊] Presumably no active ECU on target address {target_addr:#x}"
                 )
                 async with aiofiles.open(
@@ -354,9 +351,7 @@ class DoIPDiscoverer(AsyncScript):
 
             except (ConnectionError, ConnectionResetError) as e:
                 # Whenever this triggers, but sometimes connections are closed not by us
-                self.logger.warn(
-                    f"[🫦] Sexy, but unexpected: {target_addr:#x} triggered {e}"
-                )
+                logger.warn(f"[🫦] Sexy, but unexpected: {target_addr:#x} triggered {e}")
                 async with aiofiles.open(
                     self.artifacts_dir.joinpath("7_targets_with_errors.txt"), "a"
                 ) as f:
@@ -370,25 +365,25 @@ class DoIPDiscoverer(AsyncScript):
 
         await conn.close()
 
-        self.logger.notice(
+        logger.notice(
             f"[⚔️] It's dangerous to test alone, take one of these {len(known_targets)} known targets:"
         )
         for item in known_targets:
-            self.logger.notice(item)
+            logger.notice(item)
 
-        self.logger.notice(
+        logger.notice(
             f"[❓] Those {len(unreachable_targets)} targets were unreachable by the gateway (could be just temporary):"
         )
         for item in unreachable_targets:
-            self.logger.notice(item)
+            logger.notice(item)
 
-        self.logger.notice(
+        logger.notice(
             f"[💰] For even more profit, try one of the {len(responsive_targets)} targets that actually responded:"
         )
         for item in responsive_targets:
-            self.logger.notice(item)
+            logger.notice(item)
 
-        self.logger.notice(
+        logger.notice(
             f"[🧭] Check out the content of the log files at {self.artifacts_dir} as well!"
         )
 
@@ -408,12 +403,12 @@ class DoIPDiscoverer(AsyncScript):
                     src_addr,
                     target_addr,
                 )
-                self.logger.info("[📫] Sending RoutingActivationRequest")
+                logger.info("[📫] Sending RoutingActivationRequest")
                 await conn.write_routing_activation_request(
                     RoutingActivationRequestTypes(routing_activation_type)
                 )
             except Exception as e:  # TODO this probably is too broad
-                self.logger.warning(
+                logger.warning(
                     f"[🫨] Got me some good errors when it should be working (dis an infinite loop): {e}"
                 )
                 continue
@@ -425,12 +420,12 @@ class DoIPDiscoverer(AsyncScript):
         while True:
             hdr, payload = await conn.read_frame()
             if not isinstance(payload, DiagnosticMessage):
-                self.logger.warning(f"[🧨] Unexpected DoIP message: {hdr} {payload}")
+                logger.warning(f"[🧨] Unexpected DoIP message: {hdr} {payload}")
                 return None, b""
             if payload.SourceAddress != conn.target_addr:
                 return payload.SourceAddress, payload.UserData
             if payload.TargetAddress != conn.src_addr:
-                self.logger.warning(
+                logger.warning(
                     f"[🤌] You talking to me?! Unexpected DoIP target address: {payload.TargetAddress:#04x}"
                 )
                 continue
@@ -456,13 +451,13 @@ class DoIPDiscoverer(AsyncScript):
                     0xAFFE,
                 )
             except OSError as e:
-                self.logger.error(f"[🚨] Mr. Stark I don't feel so good: {e}")
+                logger.error(f"[🚨] Mr. Stark I don't feel so good: {e}")
                 return []
 
             try:
                 await conn.write_routing_activation_request(routing_activation_type)
             except DoIPRoutingActivationDeniedError as e:
-                self.logger.info(
+                logger.info(
                     f"[🌟] splendid, {source_address:#x} yields {e.rac_code.name}"
                 )
 
@@ -480,7 +475,7 @@ class DoIPDiscoverer(AsyncScript):
             finally:
                 await conn.close()
 
-            self.logger.info(
+            logger.info(
                 f"[🤯] Holy moly, it actually worked for activation_type {routing_activation_type:#x} and src_addr {source_address:#x}!!!"
             )
             known_sourceAddresses.append(source_address)
@@ -493,15 +488,15 @@ class DoIPDiscoverer(AsyncScript):
                 await f.write(f"{targets[-1]}\n")
 
         # Print valid SourceAddresses and suitable target string for config
-        self.logger.notice(
+        logger.notice(
             f"[💀] Look what SourceAddresses got denied: {', '.join([f'{x:#x}' for x in denied_sourceAddresses])}"
         )
-        self.logger.notice(
+        logger.notice(
             f"[💎] Look what valid SourceAddresses I've found: {', '.join([f'{x:#x}' for x in known_sourceAddresses])}"
         )
-        self.logger.notice("[⚔️] It's dangerous to test alone, take one of these:")
+        logger.notice("[⚔️] It's dangerous to test alone, take one of these:")
         for item in targets:
-            self.logger.notice(item)
+            logger.notice(item)
         return targets
 
     async def run_udp_discovery(self) -> list[tuple[str, int]]:
@@ -516,7 +511,7 @@ class DoIPDiscoverer(AsyncScript):
                 all_ips.append(ip)
 
         for ip in all_ips:
-            self.logger.info(
+            logger.info(
                 f"[💌] Sending DoIP VehicleIdentificationRequest to {ip.broadcast}"
             )
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
@@ -528,7 +523,7 @@ class DoIPDiscoverer(AsyncScript):
             try:
                 data, addr = sock.recvfrom(1024)
             except TimeoutError:
-                self.logger.info("[💔] no response")
+                logger.info("[💔] no response")
                 continue
             finally:
                 sock.close()
@@ -536,15 +531,15 @@ class DoIPDiscoverer(AsyncScript):
             # Hardcoded slices
             vin = data[8 : 8 + 17]
             target_addr = int.from_bytes(data[25:27], "big")
-            self.logger.notice(
+            logger.notice(
                 f"[💝]: {addr} responded with VIN {vin.decode('ascii')} and target_addr {target_addr:#x}"
             )
             found.append(addr)
 
-        self.logger.notice("[💎] Look what valid hosts I've found:")
+        logger.notice("[💎] Look what valid hosts I've found:")
         for item in found:
             url = f"doip://{item[0]}:{item[1]}"
-            self.logger.notice(url)
+            logger.notice(url)
             async with aiofiles.open(
                 self.artifacts_dir.joinpath("0_valid_hosts.txt"), "a"
             ) as f:

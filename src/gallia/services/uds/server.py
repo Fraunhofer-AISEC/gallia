@@ -29,11 +29,12 @@ from gallia.services.uds.core.utils import bytes_repr, int_repr, service_repr, t
 from gallia.services.uds.ecu import ECUState
 from gallia.transports import ISOTPTransport, TargetURI
 
+logger = get_logger("gallia.vecu.server")
+
 
 class UDSServer(ABC):
     def __init__(self) -> None:
         self.state = ECUState()
-        self.logger = get_logger("v-ecu")
 
         self.use_default_response_if_service_not_supported = True
         self.use_default_response_if_missing_sub_function = True
@@ -301,7 +302,7 @@ class UDSServer(ABC):
             await self.update_state(request, response)
 
             if self.state.__dict__ != old_state.__dict__:
-                self.logger.debug(f"Changed state to {self.state}")
+                logger.debug(f"Changed state to {self.state}")
 
             if self.use_default_response_if_suppress:
                 return self.default_response_if_suppress(request, response)
@@ -385,8 +386,8 @@ class RandomUDSServer(UDSServer):
     async def setup(self) -> None:
         self.randomize()
 
-        self.logger.notice(f"Initialized random UDS server with seed {self.seed}")
-        self.logger.info(
+        logger.notice(f"Initialized random UDS server with seed {self.seed}")
+        logger.info(
             json.dumps(
                 {
                     int_repr(session): {
@@ -804,7 +805,7 @@ class DBUDSServer(UDSServer):
                 response = service.UDSResponse.parse_dynamic(unhexlify(response_pdu))
                 return response
 
-            self.logger.info("Reset ECU due to missing response")
+            logger.info("Reset ECU due to missing response")
             self.state.reset()
 
         return None
@@ -814,7 +815,6 @@ class UDSServerTransport:
     def __init__(self, server: UDSServer, target: TargetURI):
         self.server = server
         self.target = target
-        self.logger = get_logger("v-ecu")
         self.last_time_active = time()
 
     async def run(self) -> None:
@@ -824,20 +824,20 @@ class UDSServerTransport:
         start = time()
 
         if start - self.last_time_active > 10:
-            self.logger.info("Server state reset due to inactivity")
+            logger.info("Server state reset due to inactivity")
             self.server.state.reset()
 
         request = service.UDSRequest.parse_dynamic(request_pdu)
-        self.logger.debug(f"---> {request}")
+        logger.debug(f"---> {request}")
         response = await self.server.respond(request)
         end = time()
         self.last_time_active = end
 
         if response is not None:
-            self.logger.debug(f"  <--- {response} after {(end - start) * 1000:.2f} ms")
+            logger.debug(f"  <--- {response} after {(end - start) * 1000:.2f} ms")
             return response.pdu, end - start
 
-        self.logger.debug(f"  x--- NO RESPONSE after {(end - start) * 1000:.2f} ms")
+        logger.debug(f"  x--- NO RESPONSE after {(end - start) * 1000:.2f} ms")
         return None, end - start
 
 
@@ -845,7 +845,7 @@ class TCPUDSServerTransport(UDSServerTransport):
     async def handle_client(
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
     ) -> None:
-        self.logger.info("New connection")
+        logger.info("New connection")
         response_times = []
 
         while True:
@@ -868,8 +868,8 @@ class TCPUDSServerTransport(UDSServerTransport):
             except Exception:
                 traceback.print_exc()
 
-        self.logger.info("Connection closed")
-        self.logger.info(
+        logger.info("Connection closed")
+        logger.info(
             f"Average response time: {sum(response_times) / len(response_times) * 1000:.2f}ms"
         )
 

@@ -9,6 +9,7 @@ from functools import partial
 from tabulate import tabulate
 
 from gallia.command import UDSScanner
+from gallia.log import get_logger
 from gallia.services.uds.core.constants import (
     CDTCSSubFuncs,
     DiagnosticSessionControlSubFuncs,
@@ -17,6 +18,8 @@ from gallia.services.uds.core.constants import (
 from gallia.services.uds.core.service import NegativeResponse
 from gallia.services.uds.core.utils import g_repr
 from gallia.utils import auto_int
+
+logger = get_logger("gallia.primitive.dtc")
 
 
 class DTCPrimitive(UDSScanner):
@@ -96,23 +99,21 @@ class DTCPrimitive(UDSScanner):
 
         if isinstance(ecu_response, NegativeResponse):
             if ecu_response.response_code == UDSErrorCodes.responseTooLong:
-                self.logger.error(
+                logger.error(
                     f"There are too many codes for (sub)mask {mask}. Consider setting --mask "
                     f"with a parameter that excludes one or more of the corresponding bits."
                 )
                 if split:
-                    self.logger.warning("Trying to fetch the error codes iteratively.")
+                    logger.warning("Trying to fetch the error codes iteratively.")
 
                     for i in range(8):
                         sub_mask = mask & 2**i
 
                         if sub_mask > 0:
-                            self.logger.info(
-                                f"Trying to fetch with mask {g_repr(sub_mask)}"
-                            )
+                            logger.info(f"Trying to fetch with mask {g_repr(sub_mask)}")
                             dtcs.update(await self.fetch_error_codes(sub_mask, False))
             else:
-                self.logger.critical(
+                logger.critical(
                     f"Could not fetch error codes: {ecu_response}; exiting…"
                 )
                 sys.exit(1)
@@ -138,25 +139,25 @@ class DTCPrimitive(UDSScanner):
 
             # if any kind of test failure
             if error_state & 0xAF:
-                self.logger.warning(raw_output)
+                logger.warning(raw_output)
                 failed_dtcs.append(table_output)
             # if not failed but also not completed yet (i.e. not yet in this cycle or since last clear)
             elif error_state & 0x50:
-                self.logger.result(raw_output)
+                logger.result(raw_output)
                 uncompleted_dtcs.append(table_output)
 
         if args.show_legend:
-            self.logger.result("")
+            logger.result("")
             self.show_bit_legend()
 
         if args.show_failed:
-            self.logger.result("")
-            self.logger.result("Failed codes:")
+            logger.result("")
+            logger.result("Failed codes:")
             self.show_summary(failed_dtcs)
 
         if args.show_uncompleted:
-            self.logger.result("")
-            self.logger.result("Uncompleted codes:")
+            logger.result("")
+            logger.result("Uncompleted codes:")
             self.show_summary(uncompleted_dtcs)
 
     def show_bit_legend(self) -> None:
@@ -174,7 +175,7 @@ class DTCPrimitive(UDSScanner):
         for line in (
             tabulate([[d] for d in bit_descriptions], headers=["bit descriptions"])
         ).splitlines():
-            self.logger.result(line)
+            logger.result(line)
 
     def show_summary(self, dtcs: list[list[str]]) -> None:
         dtcs.sort()
@@ -193,7 +194,7 @@ class DTCPrimitive(UDSScanner):
         ]
 
         for line in tabulate(dtcs, headers=header, tablefmt="fancy_grid").splitlines():
-            self.logger.result(line)
+            logger.result(line)
 
     async def clear(self, args: Namespace) -> None:
         group_of_dtc: int = args.group_of_dtc
@@ -202,16 +203,16 @@ class DTCPrimitive(UDSScanner):
         max_group_of_dtc = 0xFFFFFF
 
         if not min_group_of_dtc <= group_of_dtc <= max_group_of_dtc:
-            self.logger.error(
+            logger.error(
                 f"The parameter group_of_dtc must be in the range {g_repr(min_group_of_dtc)}-{g_repr(max_group_of_dtc)}"
             )
 
         resp = await self.ecu.clear_diagnostic_information(group_of_dtc)
 
         if isinstance(resp, NegativeResponse):
-            self.logger.error(resp)
+            logger.error(resp)
         else:
-            self.logger.result("Success")
+            logger.result("Success")
 
     async def control(self, args: Namespace) -> None:
         if args.stop:
@@ -229,5 +230,5 @@ class DTCPrimitive(UDSScanner):
         elif args.cmd == "read":
             await self.read(args)
         else:
-            self.logger.critical("Unhandled command")
+            logger.critical("Unhandled command")
             sys.exit(1)

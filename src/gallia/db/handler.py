@@ -131,6 +131,8 @@ GROUP BY ru.id;
 INSERT OR IGNORE INTO version VALUES('main', '{schema_version}');
 """
 
+logger = get_logger("gallia.db")
+
 
 class DBHandler:
     def __init__(self, database: Path):
@@ -141,7 +143,6 @@ class DBHandler:
         self.target: str | None = None
         self.discovery_run: int | None = None
         self.meta: int | None = None
-        self.logger = get_logger("db")
 
     async def connect(self) -> None:
         assert self.connection is None, "Already connected to the database"
@@ -167,7 +168,7 @@ class DBHandler:
             try:
                 await task
             except Exception as e:
-                self.logger.error(f"Inside task: {g_repr(e)}")
+                logger.error(f"Inside task: {g_repr(e)}")
 
         try:
             await self.connection.commit()
@@ -395,7 +396,7 @@ class DBHandler:
                     await self.connection.execute(query, query_parameter)
                     done = True
                 except aiosqlite.OperationalError:
-                    self.logger.warning(
+                    logger.warning(
                         f"Could not log message for {query_parameter[5]} to database. Retrying ..."
                     )
 

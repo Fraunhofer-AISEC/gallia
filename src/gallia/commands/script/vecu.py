@@ -9,6 +9,7 @@ from argparse import Namespace
 from pathlib import Path
 
 from gallia.command import AsyncScript
+from gallia.log import get_logger
 from gallia.services.uds.core.constants import UDSIsoServices
 from gallia.services.uds.server import (
     DBUDSServer,
@@ -27,6 +28,9 @@ from gallia.transports import (
 )
 
 dynamic_attr_prefix = "dynamic_attr_"
+
+
+logger = get_logger("gallia.vecu.main")
 
 
 class VirtualECU(AsyncScript):

@@ -5,7 +5,10 @@
 from argparse import Namespace
 
 from gallia.command import UDSScanner
+from gallia.log import get_logger
 from gallia.services.uds.core.service import NegativeResponse
+
+logger = get_logger("gallia.primitive.vin")
 
 
 class VINPrimitive(UDSScanner):
@@ -21,6 +24,6 @@ class VINPrimitive(UDSScanner):
     async def main(self, args: Namespace) -> None:
         resp = await self.ecu.read_vin()
         if isinstance(resp, NegativeResponse):
-            self.logger.warning(f"ECU said: {resp}")
+            logger.warning(f"ECU said: {resp}")
             return
-        self.logger.result(resp.data_record.hex())
+        logger.result(resp.data_record.hex())

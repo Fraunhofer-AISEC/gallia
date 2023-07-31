@@ -14,6 +14,8 @@ from opennetzteil.netzteil import BaseNetzteil
 from gallia.log import get_logger
 from gallia.transports import TargetURI
 
+logger = get_logger("gallia.power-supply")
+
 
 class PowerSupplyURI(TargetURI):
     @property
@@ -39,7 +41,6 @@ class PowerSupplyURI(TargetURI):
 
 class PowerSupply:
     def __init__(self, client: BaseNetzteil, channel_id: int | list[int]) -> None:
-        self.logger = get_logger("power_supply")
         self.channel_id = channel_id
         self.netzteil = client
         self.mutex = asyncio.Lock()
@@ -70,11 +71,11 @@ class PowerSupply:
                 await self.netzteil.set_output(self.channel_id, op)
 
     async def power_up(self) -> None:
-        self.logger.info("power up experiment")
+        logger.info("power up experiment")
         await self._power(True)
 
     async def power_down(self) -> None:
-        self.logger.info("power down experiment")
+        logger.info("power down experiment")
         await self._power(False)
 
     async def power_cycle(
