@@ -14,6 +14,7 @@ from gallia.services.uds import (
     UDSRequestConfig,
     UDSResponse,
 )
+from gallia.services.uds.core.constants import EcuResetSubFuncs
 from gallia.services.uds.core.service import DiagnosticSessionControlResponse
 from gallia.services.uds.core.utils import g_repr
 from gallia.utils import auto_int
@@ -50,7 +51,12 @@ class SessionsScanner(UDSScanner):
             help="Use hooks in case of a ConditionsNotCorrect error",
         )
         self.parser.add_argument(
-            "--reset", action="store_true", help="Reset the ECU after each iteration"
+            "--reset",
+            nargs="?",
+            default=None,
+            const=0x01,
+            type=lambda x: int(x, 0),
+            help="Reset the ECU after each iteration with the optionally given reset level",
         )
         self.parser.add_argument(
             "--fast",
@@ -145,12 +151,12 @@ class SessionsScanner(UDSScanner):
                     if args.reset:
                         try:
                             self.logger.info("Resetting the ECU")
-                            resp: UDSResponse = await self.ecu.ecu_reset(0x01)
+                            resp: UDSResponse = await self.ecu.ecu_reset(args.reset)
 
                             if isinstance(resp, NegativeResponse):
                                 self.logger.warning(
-                                    f"Could not reset ECU: {resp}; "
-                                    f"continue without reset"
+                                    f"Could not reset ECU with {EcuResetSubFuncs(args.reset).name if args.reset in iter(EcuResetSubFuncs) else args.reset}: {resp}; "
+                                    f"continuing without reset"
                                 )
                             else:
                                 self.logger.info("Waiting for the ECU to recover…")
