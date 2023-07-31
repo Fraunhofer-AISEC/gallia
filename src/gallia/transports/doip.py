@@ -16,6 +16,8 @@ from gallia.log import get_logger
 from gallia.transports.base import BaseTransport, TargetURI
 from gallia.utils import auto_int
 
+logger = get_logger("gallia.transport.doip")
+
 
 @unique
 class ProtocolVersions(IntEnum):
@@ -320,7 +322,6 @@ class DoIPConnection:
         src_addr: int,
         target_addr: int,
     ):
-        self.logger = get_logger("doip")
         self.reader = reader
         self.writer = writer
         self.src_addr = src_addr
@@ -376,11 +377,11 @@ class DoIPConnection:
                     continue
                 await self._read_queue.put((hdr, data))
         except asyncio.CancelledError:
-            self.logger.debug("read worker cancelled")
+            logger.debug("read worker cancelled")
         except asyncio.IncompleteReadError as e:
-            self.logger.debug(f"read worker received EOF: {e}")
+            logger.debug(f"read worker received EOF: {e}")
         except Exception as e:
-            self.logger.critical(f"read worker died with {type(e)}: {e}")
+            logger.critical(f"read worker died with {type(e)}: {e}")
 
     async def read_frame_unsafe(self) -> DoIPFrame:
         # Avoid waiting on the queue forever when
@@ -398,7 +399,7 @@ class DoIPConnection:
         while True:
             hdr, payload = await self.read_frame()
             if not isinstance(payload, DiagnosticMessage):
-                self.logger.warning(
+                logger.warning(
                     f"expected DoIP DiagnosticMessage, instead got: {hdr} {payload}"
                 )
                 unexpected_packets.append((hdr, payload))
@@ -407,7 +408,7 @@ class DoIPConnection:
                 payload.SourceAddress != self.target_addr
                 or payload.TargetAddress != self.src_addr
             ):
-                self.logger.warning(
+                logger.warning(
                     f"DoIP-DiagnosticMessage: unexpected addresses (src:dst); expected {self.src_addr}:{self.target_addr} but got: {payload.SourceAddress:#04x}:{payload.TargetAddress:#04x}"
                 )
                 unexpected_packets.append((hdr, payload))
@@ -430,7 +431,7 @@ class DoIPConnection:
             if not isinstance(
                 payload, DiagnosticMessagePositiveAcknowledgement
             ) and not isinstance(payload, DiagnosticMessageNegativeAcknowledgement):
-                self.logger.warning(
+                logger.warning(
                     f"expected DoIP positive/negative ACK, instead got: {hdr} {payload}"
                 )
                 unexpected_packets.append((hdr, payload))
@@ -440,7 +441,7 @@ class DoIPConnection:
                 payload.SourceAddress != self.target_addr
                 or payload.TargetAddress != self.src_addr
             ):
-                self.logger.warning(
+                logger.warning(
                     f"DoIP-ACK: unexpected addresses (src:dst); expected {self.src_addr}:{self.target_addr} but got: {payload.SourceAddress:#04x}:{payload.TargetAddress:#04x}"
                 )
                 unexpected_packets.append((hdr, payload))
@@ -449,8 +450,8 @@ class DoIPConnection:
                 len(payload.PreviousDiagnosticMessageData) > 0
                 and prev_data != payload.PreviousDiagnosticMessageData
             ):
-                self.logger.warning("ack: previous data differs from request")
-                self.logger.warning(
+                logger.warning("ack: previous data differs from request")
+                logger.warning(
                     f"DoIP-ACK: got: {payload.PreviousDiagnosticMessageData.hex()} expected {prev_data.hex()}"
                 )
                 unexpected_packets.append((hdr, payload))
@@ -469,7 +470,7 @@ class DoIPConnection:
         while True:
             hdr, payload = await self.read_frame_unsafe()
             if not isinstance(payload, RoutingActivationResponse):
-                self.logger.warning(
+                logger.warning(
                     f"expected DoIP RoutingActivationResponse, instead got: {hdr} {payload}"
                 )
                 unexpected_packets.append((hdr, payload))
@@ -496,7 +497,7 @@ class DoIPConnection:
             self.writer.write(buf)
             await self.writer.drain()
 
-            self.logger.trace(f"hdr: {hdr}, payload: {payload}")
+            logger.trace(f"hdr: {hdr}, payload: {payload}")
 
             try:
                 match payload:
@@ -656,7 +657,7 @@ class DoIPTransport(BaseTransport, scheme="doip"):
         data = await asyncio.wait_for(self._conn.read_diag_request(), timeout)
 
         t = tags + ["read"] if tags is not None else ["read"]
-        self.logger.trace(data.hex(), extra={"tags": t})
+        logger.trace(data.hex(), extra={"tags": t})
         return data
 
     async def write(
@@ -666,7 +667,7 @@ class DoIPTransport(BaseTransport, scheme="doip"):
         tags: list[str] | None = None,
     ) -> int:
         t = tags + ["write"] if tags is not None else ["write"]
-        self.logger.trace(data.hex(), extra={"tags": t})
+        logger.trace(data.hex(), extra={"tags": t})
 
         try:
             await asyncio.wait_for(self._conn.write_diag_request(data), timeout)
@@ -676,7 +677,7 @@ class DoIPTransport(BaseTransport, scheme="doip"):
             # TargetUnreachable can be just a temporary issue. Thus, we do not raise
             # BrokenPipeError but instead ignore it here and let upper layers handle
             # missing responses (i.e. raise a TimeoutError instead)
-            self.logger.debug("DoIP message was ACKed with TargetUnreachable")
+            logger.debug("DoIP message was ACKed with TargetUnreachable")
             raise asyncio.TimeoutError from e
 
         return len(data)

@@ -13,8 +13,10 @@ from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 from typing_extensions import Protocol
 
-from gallia.log import Logger, get_logger
+from gallia.log import get_logger
 from gallia.utils import join_host_port
+
+logger = get_logger("gallia.transport.base")
 
 
 class TargetURI:
@@ -94,7 +96,6 @@ class TargetURI:
 
 class TransportProtocol(Protocol):
     mutex: asyncio.Lock
-    logger: Logger
     target: TargetURI
     is_closed: bool
 
@@ -134,7 +135,6 @@ class BaseTransport(ABC):
 
     def __init__(self, target: TargetURI) -> None:
         self.mutex = asyncio.Lock()
-        self.logger = get_logger(self.SCHEME)
         self.target = target
         self.is_closed = False
 
@@ -180,7 +180,7 @@ class BaseTransport(ABC):
             try:
                 await self.close()
             except ConnectionError as e:
-                self.logger.warning(f"close() failed during reconnect ({e}); ignoring")
+                logger.warning(f"close() failed during reconnect ({e}); ignoring")
             return await self.connect(self.target)
 
     @abstractmethod
@@ -239,7 +239,7 @@ class LinesTransportMixin:
     ) -> int:
         t = tags + ["write"] if tags is not None else ["write"]
 
-        self.logger.trace(data.hex() + "0a", extra={"tags": t})
+        logger.trace(data.hex() + "0a", extra={"tags": t})
 
         writer = self.get_writer()
         writer.write(binascii.hexlify(data) + b"\n")
@@ -255,6 +255,6 @@ class LinesTransportMixin:
         d = data.decode().strip()
 
         t = tags + ["read"] if tags is not None else ["read"]
-        self.logger.trace(d + "0a", extra={"tags": t})
+        logger.trace(d + "0a", extra={"tags": t})
 
         return binascii.unhexlify(d)

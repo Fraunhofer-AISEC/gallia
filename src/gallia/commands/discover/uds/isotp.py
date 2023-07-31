@@ -7,10 +7,13 @@ from argparse import Namespace
 from binascii import unhexlify
 
 from gallia.command import UDSDiscoveryScanner
+from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse, UDSClient, UDSRequest
 from gallia.services.uds.core.utils import g_repr
 from gallia.transports import ISOTPTransport, RawCANTransport, TargetURI
 from gallia.utils import auto_int, can_id_repr, write_target_list
+
+logger = get_logger("gallia.discover.isotp")
 
 
 class IsotpDiscoverer(UDSDiscoveryScanner):
@@ -98,22 +101,22 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
         await super().setup(args)
 
     async def query_description(self, target_list: list[TargetURI], did: int) -> None:
-        self.logger.info("reading info DID from all discovered endpoints")
+        logger.info("reading info DID from all discovered endpoints")
         for target in target_list:
-            self.logger.result("----------------------------")
-            self.logger.result(f"Probing ECU: {target}")
+            logger.result("----------------------------")
+            logger.result(f"Probing ECU: {target}")
 
             transport = await ISOTPTransport.connect(target)
             uds_client = UDSClient(transport, timeout=2)
-            self.logger.result(f"reading device description at {g_repr(did)}")
+            logger.result(f"reading device description at {g_repr(did)}")
             try:
                 resp = await uds_client.read_data_by_identifier(did)
                 if isinstance(resp, NegativeResponse):
-                    self.logger.result(f"could not read did: {resp}")
+                    logger.result(f"could not read did: {resp}")
                 else:
-                    self.logger.result(f"response was: {resp}")
+                    logger.result(f"response was: {resp}")
             except Exception as e:
-                self.logger.result(f"reading description failed: {e!r}")
+                logger.result(f"reading description failed: {e!r}")
 
     def _build_isotp_frame_extended(
         self,
@@ -154,10 +157,10 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
         found = []
 
         sniff_time: int = args.sniff_time
-        self.logger.result(f"Recording idle bus communication for {sniff_time}s")
+        logger.result(f"Recording idle bus communication for {sniff_time}s")
         addr_idle = await transport.get_idle_traffic(sniff_time)
 
-        self.logger.result(f"Found {len(addr_idle)} CAN Addresses on idle Bus")
+        logger.result(f"Found {len(addr_idle)} CAN Addresses on idle Bus")
         transport.set_filter(addr_idle, inv_filter=True)
 
         req = UDSRequest.parse_dynamic(args.pdu)
@@ -170,14 +173,14 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
             if args.extended_addr:
                 pdu = self.build_isotp_frame(req, ID, padding=args.padding)
 
-            self.logger.info(f"Testing ID {can_id_repr(ID)}")
+            logger.info(f"Testing ID {can_id_repr(ID)}")
             is_broadcast = False
 
             await transport.sendto(pdu, timeout=0.1, dst=dst_addr)
             try:
                 addr, _ = await transport.recvfrom(timeout=0.1)
                 if addr == ID:
-                    self.logger.info(
+                    logger.info(
                         f"The same CAN ID {can_id_repr(ID)} answered. Skipping…"
                     )
                     continue
@@ -191,22 +194,22 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
                     new_addr, _ = await transport.recvfrom(timeout=0.1)
                     if new_addr != addr:
                         is_broadcast = True
-                        self.logger.result(
+                        logger.result(
                             f"seems that broadcast was triggered on CAN ID {can_id_repr(ID)}, "
                             f"got answer from {can_id_repr(new_addr)}"
                         )
                     else:
-                        self.logger.info(
+                        logger.info(
                             f"seems like a large ISO-TP packet was received on CAN ID {can_id_repr(ID)}"
                         )
                 except asyncio.TimeoutError:
                     if is_broadcast:
-                        self.logger.result(
+                        logger.result(
                             f"seems that broadcast was triggered on CAN ID {can_id_repr(ID)}, "
                             f"got answer from {can_id_repr(addr)}"
                         )
                     else:
-                        self.logger.result(
+                        logger.result(
                             f"found endpoint on CAN ID [src:dst]: {can_id_repr(ID)}:{can_id_repr(addr)}"
                         )
                         target_args = {}
@@ -238,9 +241,9 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
                         found.append(target)
                     break
 
-        self.logger.result(f"finished; found {len(found)} UDS endpoints")
+        logger.result(f"finished; found {len(found)} UDS endpoints")
         ecus_file = self.artifacts_dir.joinpath("ECUs.txt")
-        self.logger.result(f"Writing urls to file: {ecus_file}")
+        logger.result(f"Writing urls to file: {ecus_file}")
         await write_target_list(ecus_file, found, self.db_handler)
 
         if args.query:

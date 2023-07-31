@@ -12,8 +12,11 @@ import time
 from can import Message
 from pydantic import BaseModel, field_validator
 
+from gallia.log import get_logger
 from gallia.transports.base import BaseTransport, TargetURI
 from gallia.utils import auto_int
+
+logger = get_logger("gallia.transport.can-raw")
 
 CANFD_MTU = 72
 CAN_MTU = 16
@@ -178,9 +181,9 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
         )
         t = tags + ["write"] if tags is not None else ["write"]
         if self.config.is_extended:
-            self.logger.trace(f"{dst:08x}#{data.hex()}", extra={"tags": t})
+            logger.trace(f"{dst:08x}#{data.hex()}", extra={"tags": t})
         else:
-            self.logger.trace(f"{dst:03x}#{data.hex()}", extra={"tags": t})
+            logger.trace(f"{dst:03x}#{data.hex()}", extra={"tags": t})
 
         loop = asyncio.get_running_loop()
         await asyncio.wait_for(loop.sock_sendall(self._sock, msg.pack()), timeout)
@@ -197,11 +200,11 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
 
         t = tags + ["read"] if tags is not None else ["read"]
         if msg.is_extended_id:
-            self.logger.trace(
+            logger.trace(
                 f"{msg.arbitration_id:08x}#{msg.data.hex()}", extra={"tags": t}
             )
         else:
-            self.logger.trace(
+            logger.trace(
                 f"{msg.arbitration_id:03x}#{msg.data.hex()}", extra={"tags": t}
             )
         return msg.arbitration_id, msg.data
@@ -220,7 +223,7 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
             try:
                 addr, _ = await self.recvfrom(timeout=1)
                 if addr not in addr_idle:
-                    self.logger.info(f"Received a message from {addr:03x}")
+                    logger.info(f"Received a message from {addr:03x}")
                     addr_idle.append(addr)
             except asyncio.TimeoutError:
                 continue

@@ -8,6 +8,7 @@ from argparse import BooleanOptionalAction, Namespace
 from typing import Any
 
 from gallia.command import UDSScanner
+from gallia.log import get_logger
 from gallia.services.uds import (
     NegativeResponse,
     UDSErrorCodes,
@@ -18,6 +19,8 @@ from gallia.services.uds import (
 from gallia.services.uds.core.exception import MalformedResponse, UDSException
 from gallia.services.uds.core.utils import g_repr
 from gallia.utils import ParseSkips, auto_int
+
+logger = get_logger("gallia.scan.services")
 
 
 class ServicesScanner(UDSScanner):
@@ -79,7 +82,7 @@ class ServicesScanner(UDSScanner):
         found: dict[int, dict[int, Any]] = {}
 
         if args.sessions is None:
-            self.logger.info("No sessions specified, starting with session scan")
+            logger.info("No sessions specified, starting with session scan")
             # Only until 0x80 because the eight bit is "SuppressResponse"
             sessions = [
                 s
@@ -87,7 +90,7 @@ class ServicesScanner(UDSScanner):
                 if s not in args.skip or args.skip[s] is not None
             ]
             sessions = await self.ecu.find_sessions(sessions)
-            self.logger.result(f"Found {len(sessions)} sessions: {g_repr(sessions)}")
+            logger.result(f"Found {len(sessions)} sessions: {g_repr(sessions)}")
         else:
             sessions = [
                 s
@@ -95,30 +98,30 @@ class ServicesScanner(UDSScanner):
                 if s not in args.skip or args.skip[s] is not None
             ]
 
-        self.logger.info(f"testing sessions {g_repr(sessions)}")
+        logger.info(f"testing sessions {g_repr(sessions)}")
 
         # TODO: Unified shortened output necessary here
-        self.logger.info(f"skipping identifiers {reprlib.repr(args.skip)}")
+        logger.info(f"skipping identifiers {reprlib.repr(args.skip)}")
 
         for session in sessions:
-            self.logger.info(f"Changing to session {g_repr(session)}")
+            logger.info(f"Changing to session {g_repr(session)}")
             try:
                 resp: UDSResponse = await self.ecu.set_session(
                     session, UDSRequestConfig(tags=["preparation"])
                 )
             except (UDSException, RuntimeError) as e:  # FIXME why catch RuntimeError?
-                self.logger.warning(
+                logger.warning(
                     f"Could not complete session change to {g_repr(session)}: {g_repr(e)}; skipping session"
                 )
                 continue
             if isinstance(resp, NegativeResponse):
-                self.logger.warning(
+                logger.warning(
                     f"Could not complete session change to {g_repr(session)}: {resp}; skipping session"
                 )
                 continue
 
             found[session] = {}
-            self.logger.result(f"scanning in session {g_repr(session)}")
+            logger.result(f"scanning in session {g_repr(session)}")
 
             # Starts at 0x00, see first loop iteration.
             sid = -1
@@ -128,12 +131,12 @@ class ServicesScanner(UDSScanner):
                     continue
 
                 if session in args.skip and sid in args.skip[session]:
-                    self.logger.info(f"{g_repr(sid)}: skipped")
+                    logger.info(f"{g_repr(sid)}: skipped")
                     continue
 
                 if args.check_session:
                     if not await self.ecu.check_and_set_session(session):
-                        self.logger.error(
+                        logger.error(
                             f"Aborting scan on session {g_repr(session)}; current SID was {g_repr(sid)}"
                         )
                         break
@@ -145,15 +148,15 @@ class ServicesScanner(UDSScanner):
                             pdu, config=UDSRequestConfig(tags=["ANALYZE"])
                         )
                     except asyncio.TimeoutError:
-                        self.logger.info(f"{g_repr(sid)}: timeout")
+                        logger.info(f"{g_repr(sid)}: timeout")
                         continue
                     except MalformedResponse as e:
-                        self.logger.warning(
+                        logger.warning(
                             f"{g_repr(sid)}: {e!r} occurred, this needs to be investigated!"
                         )
                         continue
                     except Exception as e:
-                        self.logger.info(f"{g_repr(sid)}: {e!r} occurred")
+                        logger.info(f"{g_repr(sid)}: {e!r} occurred")
                         await self.ecu.reconnect()
                         continue
 
@@ -161,7 +164,7 @@ class ServicesScanner(UDSScanner):
                         UDSErrorCodes.serviceNotSupported,
                         UDSErrorCodes.serviceNotSupportedInActiveSession,
                     ]:
-                        self.logger.info(f"{g_repr(sid)}: not supported [{resp}]")
+                        logger.info(f"{g_repr(sid)}: not supported [{resp}]")
                         break
 
                     if isinstance(resp, NegativeResponse) and resp.response_code in [
@@ -169,7 +172,7 @@ class ServicesScanner(UDSScanner):
                     ]:
                         continue
 
-                    self.logger.result(
+                    logger.result(
                         f"{g_repr(sid)}: available in session {g_repr(session)}: {resp}"
                     )
                     found[session][sid] = resp
@@ -178,12 +181,12 @@ class ServicesScanner(UDSScanner):
             await self.ecu.leave_session(session)
 
         for key, value in found.items():
-            self.logger.result(f"findings in session 0x{key:02X}:")
+            logger.result(f"findings in session 0x{key:02X}:")
             for sid, data in value.items():
                 self.result.append((key, sid))
                 try:
-                    self.logger.result(
+                    logger.result(
                         f"  [{g_repr(sid)}] {UDSIsoServices(sid).name}: {data}"
                     )
                 except Exception:
-                    self.logger.result(f"  [{g_repr(sid)}] vendor specific sid: {data}")
+                    logger.result(f"  [{g_repr(sid)}] vendor specific sid: {data}")

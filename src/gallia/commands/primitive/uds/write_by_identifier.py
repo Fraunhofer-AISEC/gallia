@@ -7,8 +7,11 @@ import sys
 from argparse import Namespace
 
 from gallia.command import UDSScanner
+from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse, UDSResponse
 from gallia.utils import auto_int
+
+logger = get_logger("gallia.primitive.wdbi")
 
 
 class WriteByIdentifierPrimitive(UDSScanner):
@@ -45,14 +48,14 @@ class WriteByIdentifierPrimitive(UDSScanner):
             if args.session != 0x01:
                 resp: UDSResponse = await self.ecu.set_session(args.session)
                 if isinstance(resp, NegativeResponse):
-                    self.logger.critical(f"could not change to session: {resp}")
+                    logger.critical(f"could not change to session: {resp}")
                     sys.exit(1)
         except Exception as e:
-            self.logger.critical(f"fatal error: {e!r}")
+            logger.critical(f"fatal error: {e!r}")
             sys.exit(1)
 
         resp = await self.ecu.write_data_by_identifier(args.data_id, args.data)
         if isinstance(resp, NegativeResponse):
-            self.logger.error(resp)
+            logger.error(resp)
         else:
-            self.logger.info("Positive response")
+            logger.info("Positive response")

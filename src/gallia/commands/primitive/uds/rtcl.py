@@ -8,10 +8,13 @@ import sys
 from argparse import Namespace
 
 from gallia.command import UDSScanner
+from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse
 from gallia.services.uds.core.service import RoutineControlResponse
 from gallia.services.uds.core.utils import g_repr
 from gallia.utils import auto_int
+
+logger = get_logger("gallia.primitive.rtcl")
 
 
 class RTCLPrimitive(UDSScanner):
@@ -91,13 +94,13 @@ class RTCLPrimitive(UDSScanner):
         try:
             await self.ecu.check_and_set_session(args.session)
         except Exception as e:
-            self.logger.critical(
+            logger.critical(
                 f"Could not change to session: {g_repr(args.session)}: {e!r}"
             )
             sys.exit(1)
 
         if args.start is False and args.stop is False and args.results is False:
-            self.logger.warning("No instructions were given (start/stop/results)")
+            logger.warning("No instructions were given (start/stop/results)")
 
         if args.start:
             resp: (
@@ -107,17 +110,17 @@ class RTCLPrimitive(UDSScanner):
             )
 
             if isinstance(resp, NegativeResponse):
-                self.logger.error(f"start_routine: {resp}")
+                logger.error(f"start_routine: {resp}")
             else:
-                self.logger.result("[start] Positive response:")
-                self.logger.result(f"hex: {resp.routine_status_record.hex()}")
-                self.logger.result(f"raw: {resp.routine_status_record!r}")
+                logger.result("[start] Positive response:")
+                logger.result(f"hex: {resp.routine_status_record.hex()}")
+                logger.result(f"raw: {resp.routine_status_record!r}")
 
         if args.stop:
             delay = args.stop_delay
 
             if delay > 0:
-                self.logger.info(
+                logger.info(
                     f"Delaying the request for stopping the routine by {delay} seconds"
                 )
                 await asyncio.sleep(delay)
@@ -127,17 +130,17 @@ class RTCLPrimitive(UDSScanner):
             )
 
             if isinstance(resp, NegativeResponse):
-                self.logger.error(f"stop routine: {resp}")
+                logger.error(f"stop routine: {resp}")
             else:
-                self.logger.result("[stop] Positive response:")
-                self.logger.result(f"hex: {resp.routine_status_record.hex()}")
-                self.logger.result(f"raw: {resp.routine_status_record!r}")
+                logger.result("[stop] Positive response:")
+                logger.result(f"hex: {resp.routine_status_record.hex()}")
+                logger.result(f"raw: {resp.routine_status_record!r}")
 
         if args.results:
             delay = args.results_delay
 
             if delay > 0:
-                self.logger.info(
+                logger.info(
                     f"Delaying the request for the routine results by {delay} seconds"
                 )
                 await asyncio.sleep(delay)
@@ -147,8 +150,8 @@ class RTCLPrimitive(UDSScanner):
             )
 
             if isinstance(resp, NegativeResponse):
-                self.logger.error(f"request_routine_results: {resp}")
+                logger.error(f"request_routine_results: {resp}")
             else:
-                self.logger.result("[get result] Positive response:")
-                self.logger.result(f"hex: {resp.routine_status_record.hex()}")
-                self.logger.result(f"raw: {resp.routine_status_record!r}")
+                logger.result("[get result] Positive response:")
+                logger.result(f"hex: {resp.routine_status_record.hex()}")
+                logger.result(f"raw: {resp.routine_status_record!r}")

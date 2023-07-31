@@ -7,6 +7,7 @@ import sys
 from argparse import Namespace
 
 from gallia.command import UDSScanner
+from gallia.log import get_logger
 from gallia.services.uds import (
     NegativeResponse,
     UDSRequest,
@@ -17,6 +18,8 @@ from gallia.services.uds.core.exception import UDSException
 from gallia.services.uds.core.service import RawRequest, RawResponse
 from gallia.services.uds.helpers import raise_for_error
 from gallia.utils import auto_int
+
+logger = get_logger("gallia.primitive.pdu")
 
 
 class SendPDUPrimitive(UDSScanner):
@@ -57,9 +60,9 @@ class SendPDUPrimitive(UDSScanner):
         parsed_request = UDSRequest.parse_dynamic(pdu)
 
         if isinstance(parsed_request, RawRequest):
-            self.logger.warning("Could not parse the request pdu")
+            logger.warning("Could not parse the request pdu")
 
-        self.logger.info(f"Sending {parsed_request}")
+        logger.info(f"Sending {parsed_request}")
 
         try:
             response = await self.ecu.send_raw(
@@ -67,13 +70,13 @@ class SendPDUPrimitive(UDSScanner):
                 config=UDSRequestConfig(max_retry=args.max_retry),
             )
         except UDSException as e:
-            self.logger.error(repr(e))
+            logger.error(repr(e))
             sys.exit(1)
 
         if isinstance(response, NegativeResponse):
-            self.logger.warning(f"Received {response}")
+            logger.warning(f"Received {response}")
         else:
             if isinstance(response, RawResponse):
-                self.logger.warning("Could not parse the response pdu")
+                logger.warning("Could not parse the response pdu")
 
-            self.logger.notice(f"Received {response}")
+            logger.notice(f"Received {response}")

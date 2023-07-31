@@ -11,8 +11,11 @@ import struct
 
 from pydantic import BaseModel, field_validator
 
+from gallia.log import get_logger
 from gallia.transports.base import BaseTransport, TargetURI
 from gallia.utils import auto_int
+
+logger = get_logger("gallia.transport.isotp")
 
 # Socket Constants not available in the socket module,
 # see linux/can/isotp.h
@@ -178,7 +181,7 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
         tags: list[str] | None = None,
     ) -> int:
         t = tags + ["write"] if tags is not None else ["write"]
-        self.logger.trace(data.hex(), extra={"tags": t})
+        logger.trace(data.hex(), extra={"tags": t})
 
         loop = asyncio.get_running_loop()
         await asyncio.wait_for(loop.sock_sendall(self._sock, data), timeout)
@@ -198,7 +201,7 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
             if e.errno == errno.EILSEQ:
                 raise BrokenPipeError(f"invalid consecutive frame numbers: {e}") from e
             raise e
-        self.logger.trace(data.hex(), extra={"tags": tags})
+        logger.trace(data.hex(), extra={"tags": tags})
         return data
 
     async def close(self) -> None:

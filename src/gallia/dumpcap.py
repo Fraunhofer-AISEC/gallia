@@ -17,9 +17,11 @@ from socket import SocketKind
 from typing import cast
 from urllib.parse import urlparse
 
-from gallia.log import Logger, get_logger
+from gallia.log import get_logger
 from gallia.transports import ISOTPTransport, RawCANTransport, TargetURI
 from gallia.utils import auto_int, split_host_port
+
+logger = get_logger("gallia.dumpcap")
 
 
 class Dumpcap:
@@ -28,13 +30,11 @@ class Dumpcap:
     def __init__(  # noqa: PLR0913
         self,
         proc: subprocess.Process,
-        logger: Logger,
         artifacts_dir: Path,
         outfile: Path,
         cleanup: int = 2,
     ) -> None:
         self.proc = proc
-        self.logger = logger
         self.artifacts_dir = artifacts_dir
         self.outfile = outfile
         self.cleanup = cleanup
@@ -47,8 +47,6 @@ class Dumpcap:
         target: TargetURI,
         artifacts_dir: Path,
     ) -> Dumpcap:
-        logger = get_logger("dumpcap")
-
         ts = int(datetime.now().timestamp())
         if target.scheme in [ISOTPTransport.SCHEME, RawCANTransport.SCHEME]:
             outfile = artifacts_dir.joinpath(f"candump-{ts}.pcap.gz")
@@ -86,7 +84,7 @@ class Dumpcap:
 
         logger.info(f'Started "dumpcap": {cmd_str}')
 
-        return cls(proc, logger, artifacts_dir, outfile)
+        return cls(proc, artifacts_dir, outfile)
 
     async def sync(self, timeout: float = 1) -> None:
         await asyncio.wait_for(self.ready_event.wait(), timeout)
@@ -96,7 +94,7 @@ class Dumpcap:
         try:
             self.proc.terminate()
         except ProcessLookupError:
-            self.logger.warning("dumpcap terminated before gallia")
+            logger.warning("dumpcap terminated before gallia")
         await self.proc.wait()
         await self.compressor
 

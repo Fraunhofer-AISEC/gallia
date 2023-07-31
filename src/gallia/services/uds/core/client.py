@@ -30,6 +30,9 @@ class UDSRequestConfig:
     tags: list[str] | None = None
 
 
+logger = get_logger("gallia.uds.client")
+
+
 class UDSClient:
     def __init__(
         self,
@@ -43,7 +46,6 @@ class UDSClient:
         self.retry_wait = 0.2
         self.pending_timeout = 5
         self.mutex = asyncio.Lock()
-        self.logger = get_logger("uds")
 
     async def reconnect(self, timeout: int | None = None) -> None:
         """Calls the underlying transport to trigger a reconnect"""
@@ -75,23 +77,21 @@ class UDSClient:
 
             # Avoid pasting this very line in every error branch.
             if i > 0:
-                self.logger.debug(f"retrying {i} from {max_retry}…")
+                logger.debug(f"retrying {i} from {max_retry}…")
             try:
-                self.logger.debug(
-                    request.pdu.hex(), extra={"tags": ["write", "uds"] + tags}
-                )
+                logger.debug(request.pdu.hex(), extra={"tags": ["write", "uds"] + tags})
                 raw_resp = await self.transport.request_unsafe(
                     request.pdu, timeout, config.tags
                 )
                 if raw_resp == b"":
                     raise BrokenPipeError("connection to target lost")
             except asyncio.TimeoutError as e:
-                self.logger.debug(f"{request} failed with: {repr(e)}")
+                logger.debug(f"{request} failed with: {repr(e)}")
                 last_exception = MissingResponse(request, str(e))
                 await asyncio.sleep(wait_time)
                 continue
 
-            self.logger.debug(raw_resp.hex(), extra={"tags": ["read", "uds"] + tags})
+            logger.debug(raw_resp.hex(), extra={"tags": ["read", "uds"] + tags})
             resp = parse_pdu(raw_resp, request)
 
             if isinstance(resp, service.NegativeResponse):
@@ -113,21 +113,17 @@ class UDSClient:
                 and resp.response_code
                 == UDSErrorCodes.requestCorrectlyReceivedResponsePending
             ):
-                self.logger.info(
-                    f"Received ResponsePending: {n_pending}/{MAX_N_PENDING}"
-                )
+                logger.info(f"Received ResponsePending: {n_pending}/{MAX_N_PENDING}")
                 try:
                     raw_resp = await self._read(timeout=waiting_time, tags=config.tags)
                     if raw_resp == b"":
                         raise BrokenPipeError("connection to target lost")
-                    self.logger.debug(
-                        raw_resp.hex(), extra={"tags": ["read", "uds"] + tags}
-                    )
+                    logger.debug(raw_resp.hex(), extra={"tags": ["read", "uds"] + tags})
                 except asyncio.TimeoutError as e:
                     # Send a tester present to indicate that
                     # we are still there.
                     await self._tester_present(suppress_resp=True)
-                    self.logger.debug(
+                    logger.debug(
                         "Waiting for next message after ResponsePending: "
                         f"{n_timeout}/{max_n_timeout}"
                     )
@@ -148,7 +144,7 @@ class UDSClient:
                 # and similar busy stuff is resolved.
                 return resp
 
-        self.logger.debug(f"{request} failed after retry loop")
+        logger.debug(f"{request} failed after retry loop")
         raise last_exception
 
     async def _tester_present(
@@ -159,7 +155,7 @@ class UDSClient:
         if suppress_resp:
             pdu = service.TesterPresentRequest(suppress_response=True).pdu
             tags = config.tags if config.tags is not None else []
-            self.logger.debug(pdu.hex(), extra={"tags": ["write", "uds"] + tags})
+            logger.debug(pdu.hex(), extra={"tags": ["write", "uds"] + tags})
             await self.transport.write(pdu, timeout, config.tags)
             return None
         return await self.tester_present(False, config)

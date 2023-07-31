@@ -7,8 +7,11 @@ import sys
 from argparse import Namespace
 
 from gallia.command import UDSScanner
+from gallia.log import get_logger
 from gallia.services.uds.core.service import NegativeResponse
 from gallia.utils import auto_int
+
+logger = get_logger("gallia.primitive.ping")
 
 
 class PingPrimitive(UDSScanner):
@@ -41,7 +44,7 @@ class PingPrimitive(UDSScanner):
     async def main(self, args: Namespace) -> None:
         resp = await self.ecu.set_session(args.session)
         if isinstance(resp, NegativeResponse):
-            self.logger.error(f"Could not change to requested session: {resp}")
+            logger.error(f"Could not change to requested session: {resp}")
             sys.exit(1)
 
         i = 1
@@ -50,7 +53,7 @@ class PingPrimitive(UDSScanner):
                 break
             ret = await self.ecu.ping()
             if isinstance(ret, NegativeResponse):
-                self.logger.warning(ret)
-            self.logger.result("ECU is alive!")
+                logger.warning(ret)
+            logger.result("ECU is alive!")
             await asyncio.sleep(args.interval)
             i += 1

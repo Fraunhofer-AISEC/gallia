@@ -37,7 +37,7 @@ from gallia.services.uds.core.utils import (
     uds_memory_parameters,
 )
 
-logger = get_logger("uds")
+logger = get_logger("gallia.uds.service")
 
 # ****************
 # * Base classes *
