@@ -87,12 +87,16 @@ class SessionsScanner(UDSScanner):
                 session, config=UDSRequestConfig(skip_hooks=False), use_db=False
             )
 
-            if isinstance(resp, NegativeResponse):
+            if not isinstance(resp_, NegativeResponse):
                 self.logger.notice(
                     f"Received conditionsNotCorrect for session {g_repr(session)}. "
                     f"Successfully changed to the session with hooks."
                 )
                 resp = resp_
+            else:
+                self.logger.notice(
+                    f"Could not successfully change to session {g_repr(session)} even with hooks"
+                )
 
         return resp
 
