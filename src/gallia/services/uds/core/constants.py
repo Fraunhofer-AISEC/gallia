@@ -126,37 +126,26 @@ class UDSErrorCodes(IntEnum):
 
 
 @unique
-class DSCSubFuncs(IntEnum):
-    # defaultSession
-    DS = 0x01
-    # programmingSession
-    PRGS = 0x02
-    # extendedDiagnosticSession
-    EXTDS = 0x03
-    # safetySystemDiagnosticSession
-    SSDS = 0x04
+class DiagnosticSessionControlSubFuncs(IntEnum):
+    defaultSession = 0x01
+    programmingSession = 0x02
+    extendedDiagnosticSession = 0x03
+    safetySystemDiagnosticSession = 0x04
 
 
 @unique
-class RCSubFuncs(IntEnum):
-    # start routine
-    STR = 0x01
-    # stop routine
-    STPR = 0x02
-    # request routine results
-    RRR = 0x03
+class RoutineControlSubFuncs(IntEnum):
+    startRoutine = 0x01
+    stopRoutine = 0x02
+    requestRoutineResults = 0x03
 
 
 @unique
 class CCSubFuncs(IntEnum):
-    # enableRxAndTx
-    ERXTX = 0x00
-    # enableRxAndDisableTx
-    ERXDTX = 0x01
-    # disableRxAndEnableTx
-    DRXETX = 0x02
-    # disableRxAndTx
-    DRXTX = 0x03
+    enableRxAndTx = 0x00
+    enableRxAndDisableTx = 0x01
+    disableRxAndEnableTx = 0x02
+    disableRxAndTx = 0x03
     # Plus vendor specific stuff...
 
 
@@ -168,59 +157,37 @@ class CDTCSSubFuncs(IntEnum):
 
 
 @unique
-class RDTCISubFuncs(IntEnum):
-    # reportNumberOfDTCByStatusMask
-    RNODTCBSM = 0x01
-    # reportDTCByStatusMask
-    RDTCBSM = 0x02
-    # reportSupportedDTC
-    RSUPDTC = 0x0A
-    # reportFirstTestFailedDTC
-    RFTFDTC = 0x0B
-    # reportFirstConfirmedDTC
-    RFCDTC = 0x0C
-    # reportMostRecentTestFailedDTC
-    RMRTFDTC = 0x0D
-    # reportMostRecentConfirmedDTC
-    RMRCDTC = 0x0E
-    # reportMirrorMemoryDTCByStatusMask
-    RMMDTCBSM = 0x0F
-    # reportNumberOfMirrorMemoryDTCByStatusMask
-    RNOMMDTCBSM = 0x11
-    # reportNumberOfEmissionsRelatedOBDDTCByStatusMask
-    RNOOBDDTCBSM = 0x12
-    # reportEmissionsRelatedOBDDTCByStatusMask
-    ROBDDTCBSM = 0x13
-    # reportDTCFaultDetectionCounter
-    RDTCFDC = 0x14
-    # reportDTCWithPermanentStatus
-    RDTCWPS = 0x15
+class ReadDTCInformationSubFuncs(IntEnum):
+    reportNumberOfDTCByStatusMask = 0x01
+    reportDTCByStatusMask = 0x02
+    reportSupportedDTC = 0x0A
+    reportFirstTestFailedDTC = 0x0B
+    reportFirstConfirmedDTC = 0x0C
+    reportMostRecentTestFailedDTC = 0x0D
+    reportMostRecentConfirmedDTC = 0x0E
+    reportMirrorMemoryDTCByStatusMask = 0x0F
+    reportNumberOfMirrorMemoryDTCByStatusMask = 0x11
+    reportNumberOfEmissionsRelatedOBDDTCByStatusMask = 0x12
+    reportEmissionsRelatedOBDDTCByStatusMask = 0x13
+    reportDTCFaultDetectionCounter = 0x14
+    reportDTCWithPermanentStatus = 0x15
 
 
 @unique
-class ERSubFuncs(IntEnum):
-    # hardReset
-    HR = 0x01
-    # keyOffOnReset
-    KOFFONR = 0x02
-    # softReset
-    SR = 0x03
-    # enableRapidPowerShutDown
-    ERPSD = 0x04
-    # disableRapidPowerShutDown
-    DRPSD = 0x05
+class EcuResetSubFuncs(IntEnum):
+    hardReset = 0x01
+    keyOffOnReset = 0x02
+    softReset = 0x03
+    enableRapidPowerShutDown = 0x04
+    disableRapidPowerShutDown = 0x05
 
 
 @unique
 class InputOutputControlParameter(IntEnum):
-    # returnControlToECU
-    RCTECU = 0x00
-    # resetToDefault
-    RTD = 0x01
-    # freezeCurrentState
-    FCS = 0x02
-    # shortTermAdjustment
-    STA = 0x03
+    returnControlToECU = 0x00
+    resetToDefault = 0x01
+    freezeCurrentState = 0x02
+    shortTermAdjustment = 0x03
 
 
 @unique

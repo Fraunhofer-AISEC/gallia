@@ -10,7 +10,11 @@ from itertools import product
 
 from gallia.command import UDSScanner
 from gallia.services.uds.core.client import UDSRequestConfig
-from gallia.services.uds.core.constants import RCSubFuncs, UDSErrorCodes, UDSIsoServices
+from gallia.services.uds.core.constants import (
+    RoutineControlSubFuncs,
+    UDSErrorCodes,
+    UDSIsoServices,
+)
 from gallia.services.uds.core.exception import IllegalResponse
 from gallia.services.uds.core.service import NegativeResponse, UDSResponse
 from gallia.services.uds.core.utils import g_repr, service_repr
@@ -142,7 +146,7 @@ class ScanIdentifiers(UDSScanner):
                     )
 
                 # Scan all three subfunctions (startRoutine, stopRoutine, requestRoutineResults)
-                sub_functions = list(map(int, RCSubFuncs))
+                sub_functions = list(map(int, RoutineControlSubFuncs))
 
             if args.sid == UDSIsoServices.SecurityAccess:
                 if args.end > 0xFF:

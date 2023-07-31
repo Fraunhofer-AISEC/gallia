@@ -9,7 +9,11 @@ from functools import partial
 from tabulate import tabulate
 
 from gallia.command import UDSScanner
-from gallia.services.uds.core.constants import CDTCSSubFuncs, DSCSubFuncs, UDSErrorCodes
+from gallia.services.uds.core.constants import (
+    CDTCSSubFuncs,
+    DiagnosticSessionControlSubFuncs,
+    UDSErrorCodes,
+)
 from gallia.services.uds.core.service import NegativeResponse
 from gallia.services.uds.core.utils import g_repr
 from gallia.utils import auto_int
@@ -27,7 +31,7 @@ class DTCPrimitive(UDSScanner):
 
         self.parser.add_argument(
             "--session",
-            default=DSCSubFuncs.DS.value,
+            default=DiagnosticSessionControlSubFuncs.defaultSession.value,
             type=auto_int,
             help="Session to perform test in",
         )

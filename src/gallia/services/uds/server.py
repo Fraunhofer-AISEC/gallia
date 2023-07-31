@@ -19,9 +19,9 @@ from gallia.log import get_logger
 from gallia.services.uds.core import service
 from gallia.services.uds.core.constants import (
     DataIdentifier,
-    ERSubFuncs,
-    RCSubFuncs,
-    RDTCISubFuncs,
+    EcuResetSubFuncs,
+    ReadDTCInformationSubFuncs,
+    RoutineControlSubFuncs,
     UDSErrorCodes,
     UDSIsoServices,
 )
@@ -478,10 +478,14 @@ class RandomUDSServer(UDSServer):
                             supported_sub_functions.append(sf)
                             supported_sub_functions.append(sf + 1)
                     elif supported_service == UDSIsoServices.RoutineControl:
-                        supported_sub_functions = [sf.value for sf in RCSubFuncs]
+                        supported_sub_functions = [
+                            sf.value for sf in RoutineControlSubFuncs
+                        ]
                     # Currently only this sub function is supported so it doesn't make sense to gamble a lot here
                     elif supported_service == UDSIsoServices.ReadDTCInformation:
-                        supported_sub_functions = [RDTCISubFuncs.RDTCBSM]
+                        supported_sub_functions = [
+                            ReadDTCInformationSubFuncs.reportDTCByStatusMask
+                        ]
                     else:
                         supported_sub_functions = [
                             sf
@@ -545,7 +549,7 @@ class RandomUDSServer(UDSServer):
     def ecu_reset(self, request: service.ECUResetRequest) -> service.UDSResponse:
         rng = self.stateful_rng(request.pdu)
 
-        if request.reset_type == ERSubFuncs.ERPSD:
+        if request.reset_type == EcuResetSubFuncs.enableRapidPowerShutDown:
             return service.ECUResetResponse(request.reset_type, rng.randint(0, 255))
 
         return service.ECUResetResponse(request.reset_type)
