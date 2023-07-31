@@ -49,3 +49,7 @@ class ReadByIdentifierPrimitive(UDSScanner):
             data = resp.data_record
             self.logger.info(f"hex: {data.hex()}")
             self.logger.info(f"raw: {repr(data)}")
+            self.logger.result(
+                f"{self.ecu.transport.target} responds to {args.data_id:#06x} with {data.hex()}"
+            )
+            self.result = data
