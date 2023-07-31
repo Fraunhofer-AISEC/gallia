@@ -212,7 +212,7 @@ class SessionsScanner(UDSScanner):
                             )
                             continue
 
-                        self.logger.info(
+                        self.logger.notice(
                             f"Found session: {g_repr(session)} via stack: {g_repr(stack)}; {resp}"
                         )
 
