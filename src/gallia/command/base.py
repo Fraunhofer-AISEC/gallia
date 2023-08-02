@@ -379,7 +379,9 @@ class BaseCommand(ABC):
                 if isinstance(e, t):
                     # TODO: Map the exitcode to superclass of builtin exceptions.
                     exit_code = exitcode.IOERR
-                    self.logger.critical(f"catched by default handler: {e!r}")
+                    self.logger.critical(
+                        f"Caught expected exception, stack trace on debug level: {e!r}"
+                    )
                     self.logger.debug(e, exc_info=True)
                     break
             else:
@@ -393,7 +395,7 @@ class BaseCommand(ABC):
                 self.artifacts_dir.joinpath(FileNames.META.value).write_text(
                     self.run_meta.json() + "\n"
                 )
-                self.logger.info(f"Stored artifacts at {self.artifacts_dir}")
+                self.logger.notice(f"Stored artifacts at {self.artifacts_dir}")
 
         if args.hooks:
             self.run_hook(HookVariant.POST, args, exit_code)
