@@ -49,26 +49,22 @@ class ColorMode(Enum):
     NEVER = "never"
 
 
-_COLORS_ENABLED = False
-
-
-def set_color_mode(mode: ColorMode, stream: TextIO = sys.stderr) -> None:
+def resolve_color_mode(mode: ColorMode, stream: TextIO = sys.stderr) -> bool:
     """Sets the color mode of the console log handler.
 
     :param mode: The available options are described in :class:`ColorMode`.
     :param stream: Used as a reference for :attr:`ColorMode.AUTO`.
     """
-    global _COLORS_ENABLED  # noqa: PLW0603
     match mode:
         case ColorMode.ALWAYS:
-            _COLORS_ENABLED = True  # noqa: PLW0603
+            return True
         case ColorMode.AUTO:
             if os.getenv("NO_COLOR") is not None:
-                _COLORS_ENABLED = False  # noqa: PLW0603
+                return False
             else:
-                _COLORS_ENABLED = stream.isatty()  # noqa: PLW0603
+                return stream.isatty()
         case ColorMode.NEVER:
-            _COLORS_ENABLED = False
+            return False
 
 
 # https://stackoverflow.com/a/35804945
@@ -270,7 +266,7 @@ def setup_logging(
     :param path: The path to the logfile containing json records.
     :param color_mode: The color mode to use for the console.
     """
-    set_color_mode(color_mode)
+    colored = resolve_color_mode(color_mode)
 
     if level is None:
         if (raw := os.getenv("GALLIA_LOGLEVEL")) is not None:
@@ -289,7 +285,10 @@ def setup_logging(
 
     stderr_handler = logging.StreamHandler(sys.stderr)
     stderr_handler.setLevel(level)
-    stderr_handler.setFormatter(_ConsoleFormatter())
+    console_formatter = _ConsoleFormatter()
+
+    console_formatter.colored = colored
+    stderr_handler.setFormatter(console_formatter)
 
     handlers: list[logging.Handler] = [stderr_handler]
 
@@ -411,6 +410,7 @@ class PenlogRecord:
     # FIXME: Enums are slow.
     priority: PenlogPriority
     tags: list[str] | None = None
+    colored: bool = False
     line: str | None = None
     stacktrace: str | None = None
     _python_level_no: int | None = None
@@ -427,7 +427,7 @@ class PenlogRecord:
             else self.priority.to_level(),
             tags=self.tags,
             stacktrace=self.stacktrace,
-            colored=_COLORS_ENABLED,
+            colored=self.colored,
         )
 
     @classmethod
@@ -718,6 +718,8 @@ class _JSONFormatter(logging.Formatter):
 
 
 class _ConsoleFormatter(logging.Formatter):
+    colored: bool = False
+
     def format(
         self,
         record: logging.LogRecord,
@@ -742,7 +744,7 @@ class _ConsoleFormatter(logging.Formatter):
             levelno=record.levelno,
             tags=record.__dict__["tags"] if "tags" in record.__dict__ else None,
             stacktrace=stacktrace,
-            colored=_COLORS_ENABLED,
+            colored=self.colored,
         )
 
 
