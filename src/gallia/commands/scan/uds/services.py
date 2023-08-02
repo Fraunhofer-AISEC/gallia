@@ -108,18 +108,20 @@ class ServicesScanner(UDSScanner):
         self.logger.info(f"skipping identifiers {reprlib.repr(args.skip)}")
 
         for session in sessions:
-            self.logger.info(f"Switching to session {g_repr(session)}")
+            self.logger.info(f"Changing to session {g_repr(session)}")
             try:
                 resp: UDSResponse = await self.ecu.set_session(
                     session, UDSRequestConfig(tags=["preparation"])
                 )
             except (UDSException, RuntimeError) as e:
                 self.logger.warning(
-                    f"session change: {g_repr(session)} reason: {g_repr(e)}"
+                    f"Could not complete session change to {g_repr(session)}: {g_repr(e)}; skipping session"
                 )
                 continue
             if isinstance(resp, NegativeResponse):
-                self.logger.warning(f"session change: {g_repr(session)} reason: {resp}")
+                self.logger.warning(
+                    f"Could not complete session change to {g_repr(session)}: {resp}; skipping session"
+                )
                 continue
 
             found[session] = {}

@@ -75,6 +75,9 @@ class SessionsScanner(UDSScanner):
             isinstance(resp, NegativeResponse)
             and resp.response_code == UDSErrorCodes.conditionsNotCorrect
         ):
+            self.logger.notice(
+                f"Received conditionsNotCorrect for session {g_repr(session)}"
+            )
             if not use_hooks:
                 self.logger.warning(
                     f"Session {g_repr(session)} is potentially available but could not be entered. "
@@ -89,8 +92,7 @@ class SessionsScanner(UDSScanner):
 
             if not isinstance(resp_, NegativeResponse):
                 self.logger.notice(
-                    f"Received conditionsNotCorrect for session {g_repr(session)}. "
-                    f"Successfully changed to the session with hooks."
+                    f"Successfully changed to session {g_repr(session)} with hooks"
                 )
                 resp = resp_
             else:
@@ -159,8 +161,8 @@ class SessionsScanner(UDSScanner):
 
                             if isinstance(resp, NegativeResponse):
                                 self.logger.warning(
-                                    f"Could not reset ECU with {EcuResetSubFuncs(args.reset).name if args.reset in iter(EcuResetSubFuncs) else args.reset}: {resp}; "
-                                    f"continuing without reset"
+                                    f"Could not reset ECU with {EcuResetSubFuncs(args.reset).name if args.reset in iter(EcuResetSubFuncs) else args.reset}: {resp}"
+                                    f"; continuing without reset"
                                 )
                             else:
                                 self.logger.info("Waiting for the ECU to recover…")
@@ -173,6 +175,7 @@ class SessionsScanner(UDSScanner):
                             await self.ecu.reconnect()
 
                     try:
+                        self.logger.debug("Changing session to DefaultSession")
                         resp = await self.ecu.set_session(0x01, use_db=False)
                         if isinstance(resp, NegativeResponse):
                             self.logger.error(
@@ -188,10 +191,14 @@ class SessionsScanner(UDSScanner):
                     )
                     await asyncio.sleep(args.sleep)
 
+                    self.logger.debug("Recovering the current session stack")
                     if not await self.recover_stack(stack, args.with_hooks):
                         sys.exit(1)
 
                     try:
+                        self.logger.info(
+                            f"Attempting to change to session {session:#04x}"
+                        )
                         resp = await self.set_session_with_hooks_handling(
                             session, args.with_hooks
                         )
@@ -202,7 +209,7 @@ class SessionsScanner(UDSScanner):
                             and resp.response_code
                             == UDSErrorCodes.subFunctionNotSupported
                         ):
-                            self.logger.debug(
+                            self.logger.info(
                                 f"Could not change to session {g_repr(session)}: {resp}"
                             )
                             continue
