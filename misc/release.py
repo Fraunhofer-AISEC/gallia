@@ -37,7 +37,7 @@ def die(msg: str) -> NoReturn:
 def run_wrapper(*args: Any, **kwargs: Any) -> Any:
     if DRY_RUN:
         return print(f"would run: {args} {kwargs}")
-    return run(*args, **kwargs)
+    return run(*args, **kwargs, check=True)
 
 
 def git_pull() -> None:
@@ -60,6 +60,7 @@ def check_project(rule: BumpMode | str) -> None:
                 die("major releases must be cut from master branch!")
     p = run(
         ["git", "diff", "--no-ext-diff", "--quiet", "--exit-code"],
+        check=True,
     )
     if p.returncode != 0:
         die("commit your changes first!")
@@ -73,9 +74,9 @@ def get_current_version() -> str:
 
 def bump_version(rule: BumpMode | str) -> None:
     if isinstance(rule, BumpMode):
-        run(["poetry", "version", rule.value])
+        run(["poetry", "version", rule.value], check=True)
     elif isinstance(rule, str):
-        run(["poetry", "version", rule])
+        run(["poetry", "version", rule], check=True)
     else:
         raise ValueError("BUG: wrong type")
 
@@ -106,7 +107,7 @@ def github_release(version: str, rule: BumpMode | str, notes: ReleaseNotes) -> N
 
     cmd += [f"v{version}"]
 
-    run_wrapper(cmd, check=True)
+    run_wrapper(cmd)
 
 
 def parse_args() -> Namespace:

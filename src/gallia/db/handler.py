@@ -194,7 +194,7 @@ class DBHandler:
                 f"The version of the database schema is not supported! ({version} != {schema_version})"
             )
 
-    async def insert_run_meta(  # noqa: CODE
+    async def insert_run_meta(  # noqa: PLR0913
         self,
         script: str,
         arguments: list[str],

@@ -4,7 +4,6 @@
 
 import asyncio
 import binascii
-import os
 import sys
 import time
 from argparse import ArgumentParser, Namespace
@@ -105,8 +104,8 @@ class SASeedsDumper(UDSScanner):
         )
         return True
 
-    def log_size(self, path: os.PathLike[str], time_delta: float) -> None:
-        size = os.path.getsize(path) / 1024
+    def log_size(self, path: Path, time_delta: float) -> None:
+        size = path.stat().st_size / 1024
         size_unit = "KiB"
         rate = size / time_delta * 3600 if time_delta != 0 else 0
         rate_unit = "KiB"
