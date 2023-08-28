@@ -11,7 +11,7 @@ from gallia.command import AsyncScript
 from gallia.config import Config
 from gallia.services.uds.core.utils import bytes_repr, g_repr
 from gallia.transports import RawCANTransport, TargetURI
-from gallia.utils import can_id_repr
+from gallia.utils import auto_int, can_id_repr
 
 
 class FindXCP(AsyncScript):
@@ -43,11 +43,31 @@ class FindXCP(AsyncScript):
             "--can-fd", action="store_true", default=False, help="use can FD"
         )
         sp.add_argument(
+            "--extended",
+            action="store_true",
+            default=False,
+            help="use extended CAN address space",
+        )
+        sp.add_argument(
             "--sniff-time",
             default=60,
             type=int,
             metavar="SECONDS",
             help="Time in seconds to sniff on bus for current traffic",
+        )
+        sp.add_argument(
+            "--can-id-start",
+            type=auto_int,
+            default="",
+            required=True,
+            help="First CAN id to test",
+        )
+        sp.add_argument(
+            "--can-id-end",
+            type=auto_int,
+            default="",
+            required=True,
+            help="Last CAN id to test",
         )
 
         sp = subparsers.add_parser("tcp")
@@ -179,8 +199,8 @@ class FindXCP(AsyncScript):
 
     async def test_can(self, args: Namespace) -> None:
         target = TargetURI(
-            f"{RawCANTransport.SCHEME}://{args.xcp_can_iface}"
-            + ("?is_fd=true" if args.can_fd else "")
+            f"{RawCANTransport.SCHEME}://{args.xcp_can_iface}?is_extended={str(args.extended).lower()}"
+            + ("&is_fd=true" if args.can_fd else "")
         )
         transport = await RawCANTransport.connect(target)
         endpoints = []
@@ -193,7 +213,7 @@ class FindXCP(AsyncScript):
         # flush receive queue
         await transport.get_idle_traffic(2)
 
-        for can_id in range(0x800):
+        for can_id in range(args.can_id_start, args.can_id_end + 1):
             self.logger.info(f"Testing CAN ID: {can_id_repr(can_id)}")
             pdu = bytes([0xFF, 0x00])
             await transport.sendto(pdu, can_id, timeout=0.1)
