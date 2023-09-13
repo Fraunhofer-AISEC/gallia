@@ -11,6 +11,8 @@ from datetime import datetime
 from enum import Enum, unique
 from typing import cast
 import signal
+import subprocess
+import zstandard
 
 import exitcode
 import msgspec
@@ -22,21 +24,11 @@ class FileNames(Enum):
     PROPERTIES_POST = "PROPERTIES_POST.json"
     META = "META.json"
     ENV = "ENV"
-    LOGFILE = "log.json.zst"
-
-
-class CommandMeta(msgspec.Struct):
-    command: str | None
-    group: str | None
-    subgroup: str | None
-
-    def json(self) -> str:
-        return msgspec.json.encode(self).decode()
+    LOGFILE = "log.zst"
 
 
 class RunMeta(msgspec.Struct):
     command: list[str]
-    command_meta: CommandMeta
     start_time: str
     end_time: str
     exit_code: int
@@ -52,30 +44,30 @@ def load_parser():
     )
     parser.add_argument(
         'command',
-        help='Subcommand to run'
+        nargs='+',
+        help='command to run'
     )
     parser.add_argument(
         "-d",
         "--dir",
         help="artifacts DIR",
     )
+    parser.add_argument(
+        "-c",
+        "--createdir",
+        help="create dir structure",
+        action='store_true',
+    )
 
     return parser
 
 
 class PenRunCommands:
-    def __init__(self):
+    def __init__(self, command):
         # TODO take command from args
-        self.GROUP = 'echo'
-        self.SUBGROUP = 'abc'
-        self.COMMAND = 'to'
+        self.COMMAND = command
         self.run_meta = RunMeta(
-            command=sys.argv,
-            command_meta=CommandMeta(
-                command=self.COMMAND,
-                group=self.GROUP,
-                subgroup=self.SUBGROUP,
-            ),
+            command=command,
             # TODO reformat date, too long, this from gallia.log, check if same as date in prepare_artifactsdir()
             start_time=datetime.now(datetime.utcnow().astimezone().tzinfo).isoformat(),
             exit_code=0,
@@ -111,13 +103,10 @@ class PenRunCommands:
             return force_path
 
         if base_dir is not None:
+            # TODO check if this flow is correct
             _command_dir = ""
-            if self.GROUP is not None:
-                _command_dir += self.GROUP
-            if self.SUBGROUP is not None:
-                _command_dir += f"_{self.SUBGROUP}"
             if self.COMMAND is not None:
-                _command_dir += f"_{self.COMMAND}"
+                _command_dir += f"_{self.COMMAND[0]}"
 
             # When self.GROUP is None, then
             # _command_dir starts with "_"; remove it.
@@ -147,8 +136,11 @@ class PenRunCommands:
     def run(self, base_dir):
         self.artifacts_dir = self.prepare_artifactsdir(base_dir = base_dir)
         try:
-            # TODO check commands actually being run
-            os.system('{} {} {}'.format(self.GROUP, self.SUBGROUP, self.COMMAND))
+            p = subprocess.Popen(self.COMMAND, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+            output, errors = p.communicate()
+
+            print(output)
         except KeyboardInterrupt:
             # TODO set up more exit codes
             exit_code = 128 + signal.SIGINT
@@ -157,18 +149,40 @@ class PenRunCommands:
             self.artifacts_dir.joinpath(FileNames.META.value).write_text(
                 self.run_meta.json() + "\n"
             )
+            self.write_log_file(self.artifacts_dir.joinpath(FileNames.LOGFILE.value), output)
+
+    def write_log_file(self, path, data):
+        self.file = zstandard.open(
+            filename=path,
+            mode="wb",
+            cctx=zstandard.ZstdCompressor(
+                write_checksum=True,
+                write_content_size=True,
+                threads=-1,
+            ),
+        )
+
+        self.file.write(data.encode())
+
+        self.file.flush()
+        self.file.close()
 
 
 def main() -> None:
     parser = load_parser()
     args = parser.parse_args()
-
-    pen_run_commands = PenRunCommands()
+    print("Command is",args.command[0])
+    pen_run_commands = PenRunCommands(args.command)
 
     # TODO rethink arg structure for create dir
     # TODO take folder path from env variables
-    if args.command == 'createdir':
-        path = Path(str(args.dir))
+    if args.createdir:
+        # if args.dir is not None:
+        #     dir = str(args.dir)
+        # else:
+        #     dir = os.environ.get('GALLIA_ARTIFACTS_DIR')
+        dir = str(args.dir) if args.dir is not None else os.environ.get('GALLIA_ARTIFACTS_DIR')
+        path = Path(dir)
         pen_run_commands.run(path)
 
 
