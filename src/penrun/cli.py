@@ -2,10 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# from gallia.commands import BaseClass
 import argparse
 import os
-import sys
+import re
 from pathlib import Path
 from datetime import datetime
 from enum import Enum, unique
@@ -26,6 +25,7 @@ class FileNames(Enum):
     ENV = "ENV"
     LOGFILE = "log.zst"
 
+tz = datetime.utcnow().astimezone().tzinfo
 
 class RunMeta(msgspec.Struct):
     command: list[str]
@@ -36,40 +36,25 @@ class RunMeta(msgspec.Struct):
     def json(self) -> str:
         return msgspec.json.encode(self).decode()
 
-def load_parser():
-    parser = argparse.ArgumentParser(
-        description="""This service can be used to run pentest functions.
-        Use -h to see help.
-        """,
-    )
-    parser.add_argument(
-        'command',
-        nargs='+',
-        help='command to run'
-    )
-    parser.add_argument(
-        "-d",
-        "--dir",
-        help="artifacts DIR",
-    )
-    parser.add_argument(
-        "-c",
-        "--createdir",
-        help="create dir structure",
-        action='store_true',
-    )
-
-    return parser
-
 
 class PenRunCommands:
+    """
+    Class to create artifacts directory structure for the command to be run
+    and to execute the command.
+    """
+    #: The command to be run.
+    COMMAND: str | None = None
+    #: A list of exception types for which tracebacks are
+    #: suppressed at the top level. For these exceptions
+    #: a log message with level critical is logged.
+    CATCHED_EXCEPTIONS: list[type[Exception]] = []
+
     def __init__(self, command):
-        # TODO take command from args
+        self.id = self.camel_to_snake(self.__class__.__name__)
         self.COMMAND = command
         self.run_meta = RunMeta(
             command=command,
-            # TODO reformat date, too long, this from gallia.log, check if same as date in prepare_artifactsdir()
-            start_time=datetime.now(datetime.utcnow().astimezone().tzinfo).isoformat(),
+            start_time=datetime.now(tz).isoformat(),
             exit_code=0,
             end_time="",
         )
@@ -94,7 +79,6 @@ class PenRunCommands:
             base_dir: Path | None = None,
             force_path: Path | None = None,
     ) -> Path:
-        # TODO check functionality of force_path
         if force_path is not None:
             if force_path.is_dir():
                 return force_path
@@ -103,18 +87,11 @@ class PenRunCommands:
             return force_path
 
         if base_dir is not None:
-            # TODO check if this flow is correct
             _command_dir = ""
             if self.COMMAND is not None:
-                _command_dir += f"_{self.COMMAND[0]}"
+                _command_dir += f"{self.COMMAND[0]}"
 
-            # When self.GROUP is None, then
-            # _command_dir starts with "_"; remove it.
-            if _command_dir.startswith("_"):
-                _command_dir = _command_dir.removeprefix("_")
-
-            # If self.GROUP, self.SUBGROUP, and
-            # self.COMMAND are None, then fallback to self.id.
+            # If self.COMMAND is None, then fallback to self.id.
             if _command_dir == "":
                 _command_dir = self.id
 
@@ -129,23 +106,42 @@ class PenRunCommands:
 
             return artifacts_dir.absolute()
 
-        # TODO uncomment this and check
-        # raise ValueError("base_dir or force_path must be different from None")
+        raise ValueError("base_dir or force_path must be different from None")
 
-    # TODO rename this function?
     def run(self, base_dir):
         self.artifacts_dir = self.prepare_artifactsdir(base_dir = base_dir)
+        exit_code = 0
         try:
             p = subprocess.Popen(self.COMMAND, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
             output, errors = p.communicate()
-
-            print(output)
+            exit_code = p.returncode
+            print(output, exit_code)
         except KeyboardInterrupt:
-            # TODO set up more exit codes
             exit_code = 128 + signal.SIGINT
+        # Ensure that META.json gets written in the case a
+        # command calls sys.exit().
+        except SystemExit as e:
+            match e.code:
+                case int():
+                    exit_code = e.code
+                case _:
+                    exit_code = exitcode.SOFTWARE
+        except Exception as e:
+            for t in self.CATCHED_EXCEPTIONS:
+                if isinstance(e, t):
+                    # TODO: Map the exitcode to superclass of builtin exceptions.
+                    exit_code = exitcode.IOERR
+                    # TODO: uncomment this after setting up logger
+                    # self.logger.critical(f"catched by default handler: {e!r}")
+                    # self.logger.debug(e, exc_info=True)
+                    break
+            else:
+                exit_code = exitcode.SOFTWARE
+                # self.logger.critical(e, exc_info=True)
         finally:
-            self.run_meta.end_time = datetime.now(datetime.utcnow().astimezone().tzinfo).isoformat()
+            self.run_meta.exit_code = exit_code
+            self.run_meta.end_time = datetime.now(tz).isoformat()
             self.artifacts_dir.joinpath(FileNames.META.value).write_text(
                 self.run_meta.json() + "\n"
             )
@@ -167,20 +163,49 @@ class PenRunCommands:
         self.file.flush()
         self.file.close()
 
+    def camel_to_snake(self, s: str) -> str:
+        """Convert a CamelCase string to a snake_case string."""
+        # https://stackoverflow.com/a/1176023
+        s = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", s)
+        return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s).lower()
+
+
+def load_parser():
+    """
+    Function to load command line arguments and further information about the commands.
+    """
+    parser = argparse.ArgumentParser(
+        description="""This service can be used to run commands.
+        Use -h to see help.
+        """,
+    )
+    parser.add_argument(
+        'command',
+        nargs='+',
+        help='command to run'
+    )
+    parser.add_argument(
+        "-d",
+        "--dir",
+        help="artifacts DIR",
+    )
+    parser.add_argument(
+        "-c",
+        "--createdir",
+        help="create dir structure",
+        action='store_true',
+    )
+
+    return parser
+
 
 def main() -> None:
     parser = load_parser()
     args = parser.parse_args()
-    print("Command is",args.command[0])
+
     pen_run_commands = PenRunCommands(args.command)
 
-    # TODO rethink arg structure for create dir
-    # TODO take folder path from env variables
     if args.createdir:
-        # if args.dir is not None:
-        #     dir = str(args.dir)
-        # else:
-        #     dir = os.environ.get('GALLIA_ARTIFACTS_DIR')
         dir = str(args.dir) if args.dir is not None else os.environ.get('GALLIA_ARTIFACTS_DIR')
         path = Path(dir)
         pen_run_commands.run(path)
