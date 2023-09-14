@@ -5,19 +5,18 @@
 import asyncio
 import reprlib
 from argparse import BooleanOptionalAction, Namespace
-from binascii import unhexlify
 from typing import Any
 
 from gallia.command import UDSScanner
 from gallia.services.uds import (
     NegativeResponse,
+    UDSErrorCodes,
     UDSIsoServices,
     UDSRequestConfig,
     UDSResponse,
 )
-from gallia.services.uds.core.exception import UDSException
+from gallia.services.uds.core.exception import MalformedResponse, UDSException
 from gallia.services.uds.core.utils import g_repr
-from gallia.services.uds.helpers import suggests_service_not_supported
 from gallia.utils import ParseSkips, auto_int
 
 
@@ -48,19 +47,13 @@ class ServicesScanner(UDSScanner):
             "--scan-response-ids",
             default=False,
             action=BooleanOptionalAction,
-            help="Do not scan reply flag in SID",
+            help="Include IDs in scan with reply flag set",
         )
         self.parser.add_argument(
             "--auto-reset",
             action="store_true",
             default=False,
             help="Reset ECU with UDS ECU Reset before every request",
-        )
-        self.parser.add_argument(
-            "--payload",
-            default=None,
-            type=unhexlify,
-            help="Payload which will be appended for each request as hex string",
         )
         self.parser.add_argument(
             "--skip",
@@ -113,7 +106,7 @@ class ServicesScanner(UDSScanner):
                 resp: UDSResponse = await self.ecu.set_session(
                     session, UDSRequestConfig(tags=["preparation"])
                 )
-            except (UDSException, RuntimeError) as e:
+            except (UDSException, RuntimeError) as e:  # FIXME why catch RuntimeError?
                 self.logger.warning(
                     f"session change: {g_repr(session)} reason: {g_repr(e)}"
                 )
@@ -143,28 +136,42 @@ class ServicesScanner(UDSScanner):
                         )
                         break
 
-                pdu = bytes([sid]) + args.payload if args.payload else bytes([sid])
+                for length_payload in [1, 2, 3, 5]:
+                    pdu = bytes([sid]) + bytes(length_payload)
+                    try:
+                        resp = await self.ecu.send_raw(
+                            pdu, config=UDSRequestConfig(tags=["ANALYZE"])
+                        )
+                    except asyncio.TimeoutError:
+                        self.logger.info(f"{g_repr(sid)}: timeout")
+                        continue
+                    except MalformedResponse as e:
+                        self.logger.warning(
+                            f"{g_repr(sid)}: {e!r} occurred, this needs to be investigated!"
+                        )
+                        continue
+                    except Exception as e:
+                        self.logger.info(f"{g_repr(sid)}: {e!r} occurred")
+                        await self.ecu.reconnect()
+                        continue
 
-                try:
-                    resp = await self.ecu.send_raw(
-                        pdu, config=UDSRequestConfig(tags=["ANALYZE"])
+                    if isinstance(resp, NegativeResponse) and resp.response_code in [
+                        UDSErrorCodes.serviceNotSupported,
+                        UDSErrorCodes.serviceNotSupportedInActiveSession,
+                    ]:
+                        self.logger.info(f"{g_repr(sid)}: not supported [{resp}]")
+                        break
+
+                    if isinstance(resp, NegativeResponse) and resp.response_code in [
+                        UDSErrorCodes.incorrectMessageLengthOrInvalidFormat,
+                    ]:
+                        continue
+
+                    self.logger.result(
+                        f"{g_repr(sid)}: available in session {g_repr(session)}: {resp}"
                     )
-                except asyncio.TimeoutError:
-                    self.logger.info(f"{g_repr(sid)}: timeout")
-                    continue
-                except Exception as e:
-                    self.logger.info(f"{g_repr(sid)}: {e!r} occurred")
-                    await self.ecu.reconnect()
-                    continue
-
-                if suggests_service_not_supported(resp):
-                    self.logger.info(f"{g_repr(sid)}: not supported [{resp}]")
-                    continue
-
-                self.logger.result(
-                    f"{g_repr(sid)}: available in session {g_repr(session)}: {resp}"
-                )
-                found[session][sid] = resp
+                    found[session][sid] = resp
+                    break
 
             await self.ecu.leave_session(session)
 
