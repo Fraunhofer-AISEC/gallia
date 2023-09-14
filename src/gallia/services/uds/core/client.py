@@ -103,15 +103,19 @@ class UDSClient:
             # We already had ECUs which thought an infinite
             # response_pending loop is a good idea…
             # Let's limit this.
-            n_pending = 0
+            n_pending = 1
+            MAX_N_PENDING = 120
             n_timeout = 0
             waiting_time = 0.5
-            max_n_timeout = max(timeout if timeout else 0, 10) / waiting_time
+            max_n_timeout = max(timeout if timeout else 0, 20) / waiting_time
             while (
                 isinstance(resp, service.NegativeResponse)
                 and resp.response_code
                 == UDSErrorCodes.requestCorrectlyReceivedResponsePending
             ):
+                self.logger.info(
+                    f"Received ResponsePending: {n_pending}/{MAX_N_PENDING}"
+                )
                 try:
                     raw_resp = await self._read(timeout=waiting_time, tags=config.tags)
                     if raw_resp == b"":
@@ -122,7 +126,11 @@ class UDSClient:
                 except asyncio.TimeoutError as e:
                     # Send a tester present to indicate that
                     # we are still there.
-                    await self._tester_present(supress_resp=True)
+                    await self._tester_present(suppress_resp=True)
+                    self.logger.debug(
+                        "Waiting for next message after ResponsePending: "
+                        f"{n_timeout}/{max_n_timeout}"
+                    )
                     n_timeout += 1
                     if n_timeout >= max_n_timeout:
                         last_exception = MissingResponse(request, str(e))
@@ -131,7 +139,7 @@ class UDSClient:
                 resp = parse_pdu(raw_resp, request)
                 n_timeout = 0  # Only raise errors for consecutive timeouts
                 n_pending += 1
-                if n_pending >= 120:
+                if n_pending >= MAX_N_PENDING:
                     raise RuntimeError(
                         "ECU appears to be stuck in ResponsePending loop"
                     )
@@ -144,12 +152,14 @@ class UDSClient:
         raise last_exception
 
     async def _tester_present(
-        self, supress_resp: bool = False, config: UDSRequestConfig | None = None
+        self, suppress_resp: bool = False, config: UDSRequestConfig | None = None
     ) -> service.UDSResponse | None:
         config = config if config is not None else UDSRequestConfig()
         timeout = config.timeout if config.timeout else self.timeout
-        if supress_resp:
+        if suppress_resp:
             pdu = service.TesterPresentRequest(suppress_response=True).pdu
+            tags = config.tags if config.tags is not None else []
+            self.logger.debug(pdu.hex(), extra={"tags": ["write", "uds"] + tags})
             await self.transport.write(pdu, timeout, config.tags)
             return None
         return await self.tester_present(False, config)
