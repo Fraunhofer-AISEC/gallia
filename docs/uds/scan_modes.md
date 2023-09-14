@@ -122,14 +122,12 @@ The scan is finished, if no new session transition is found.
 
 The service scan operates at the UDS protocol level.
 UDS provides several endpoints called *services*.
-Each service has an identifier and a specific list of arguments.
-The scanning procedure is requesting all possible services with a fixed payload.
-The payload does not have to be specific; it can be empty, it can be all zeroes, …
-A few ECUs behave unstable when they receive an invalid payload.
+Each service has an identifier and a specific list of arguments or sub-functions.
 
 In order to identify available services, a reverse matching is applied.
 According to the UDS standard, ECUs reply with the error codes `serviceNotSupported` or `serviceNotSupportedInActiveSession` when an unimplemented service is requested.
 Therefore, each service which responds with a different error code is considered available.
+To address the different services and their varying length of arguments and sub-functions the scanner automatically appends `\x00` bytes if the received response was `incorrectMessageLengthOrInvalidFormat`.
 
 ## Identifier Scan
 
