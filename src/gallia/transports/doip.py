@@ -472,7 +472,9 @@ class DoIPConnection:
                         )
             except asyncio.TimeoutError as e:
                 await self.close()
-                raise BrokenPipeError() from e
+                raise BrokenPipeError(
+                    "Timeout while waiting for DoIP ACK message"
+                ) from e
 
     async def write_diag_request(self, data: bytes) -> None:
         hdr = GenericHeader(
