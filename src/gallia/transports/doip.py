@@ -385,10 +385,19 @@ class DoIPConnection:
         while True:
             hdr, payload = await self.read_frame_unsafe()
             if isinstance(payload, DiagnosticMessageNegativeAcknowledgement):
-                raise BrokenPipeError(
-                    f"request denied: {hdr} {payload} {payload.ACKCode.value}"
-                )
-            if not isinstance(payload, DiagnosticMessagePositiveAcknowledgement):
+                if (
+                    payload.ACKCode
+                    == DiagnosticMessageNegativeAckCodes.TargetUnreachable
+                ):
+                    # TargetUnreachable can be just a temporary issue. Thus, we do not raise
+                    # BrokenPipeError but instead ignore it here and let upper layers handle
+                    # missing responses
+                    self.logger.warning("DoIP message was ACKed with TargetUnreachable")
+                else:
+                    raise BrokenPipeError(
+                        f"request denied: {hdr} {payload} {payload.ACKCode.value}"
+                    )
+            elif not isinstance(payload, DiagnosticMessagePositiveAcknowledgement):
                 self.logger.warning(
                     f"unexpected DoIP message: {hdr} {payload}, expected positive ACK"
                 )
