@@ -18,6 +18,8 @@ from urllib.parse import urlparse
 
 import aiofiles
 
+from gallia.log import Loglevel
+
 if TYPE_CHECKING:
     from gallia.db.handler import DBHandler
     from gallia.transports import TargetURI
@@ -223,3 +225,24 @@ def dump_args(args: Namespace) -> dict[str, str | int | float]:
                 settings[key] = value
 
     return settings
+
+
+def get_log_level(args: Namespace) -> Loglevel:
+    level = Loglevel.INFO
+    if hasattr(args, "verbose"):
+        if args.verbose == 1:
+            level = Loglevel.DEBUG
+        elif args.verbose >= 2:
+            level = Loglevel.TRACE
+    return level
+
+
+def get_file_log_level(args: Namespace) -> Loglevel:
+    level = Loglevel.DEBUG
+    if hasattr(args, "trace_log"):
+        if args.trace_log:
+            level = Loglevel.TRACE
+    elif hasattr(args, "verbose"):
+        if args.verbose >= 2:
+            level = Loglevel.TRACE
+    return level
