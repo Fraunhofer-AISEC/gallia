@@ -223,34 +223,11 @@ class PenlogPriority(IntEnum):
                 raise ValueError("invalid value")
 
 
-def _setup_queue() -> QueueListener:
-    queue: Queue[Any] = Queue()
-    root = logging.getLogger()
-
-    handlers: list[logging.Handler] = []
-
-    handler = QueueHandler(queue)
-    root.addHandler(handler)
-    for h in root.handlers[:]:
-        if h is not handler:
-            root.removeHandler(h)
-            handlers.append(h)
-
-    listener = QueueListener(
-        queue,
-        *handlers,
-        respect_handler_level=True,
-    )
-    listener.start()
-    return listener
-
-
 def setup_logging(
     level: Loglevel | None = None,
-    file_level: Loglevel = Loglevel.DEBUG,
-    path: Path | None = None,
     color_mode: ColorMode = ColorMode.AUTO,
     no_volatile_info: bool = False,
+    logger_name: str = "gallia",
 ) -> None:
     """Enable and configure gallia's logging system.
     If this fuction is not called as early as possible,
@@ -270,6 +247,7 @@ def setup_logging(
     colored = resolve_color_mode(color_mode)
 
     if level is None:
+        # FIXME why is this here and not in config?
         if (raw := os.getenv("GALLIA_LOGLEVEL")) is not None:
             level = PenlogPriority.from_str(raw).to_level()
         else:
@@ -280,9 +258,24 @@ def setup_logging(
     logging.logThreads = False
     logging.logProcesses = False
 
-    # TODO: Do we want to have this configurable?
-    logging.getLogger("asyncio").setLevel(logging.CRITICAL)
-    logging.getLogger("aiosqlite").setLevel(logging.CRITICAL)
+    logger = logging.getLogger(logger_name)
+    # LogLevel cannot be 0 (NOTSET), because only the root logger sends it to its handlers then
+    logger.setLevel(1)
+
+    # Clean up potentially existing handlers and create a new async QueueHandler for stderr output
+    while len(logger.handlers) > 0:
+        logger.handlers[0].close()
+        logger.removeHandler(logger.handlers[0])
+    colored = resolve_color_mode(color_mode)
+    add_stderr_log_handler(logger_name, level, no_volatile_info, colored)
+
+
+def add_stderr_log_handler(
+    logger_name: str, level: Loglevel, no_volatile_info: bool, colored: bool
+) -> None:
+    queue: Queue[Any] = Queue()
+    logger = logging.getLogger(logger_name)
+    logger.addHandler(QueueHandler(queue))
 
     stderr_handler = logging.StreamHandler(sys.stderr)
     stderr_handler.setLevel(level)
@@ -295,27 +288,36 @@ def setup_logging(
 
     stderr_handler.setFormatter(console_formatter)
 
-    handlers: list[logging.Handler] = [stderr_handler]
-
-    if path is not None:
-        zstd_handler = _ZstdFileHandler(path, level=file_level)
-        zstd_handler.setFormatter(_JSONFormatter())
-        zstd_handler.setLevel(file_level)
-        handlers.append(zstd_handler)
-
-    logging.basicConfig(
-        handlers=handlers,
-        # Enable all log messages at the root logger.
-        # The stderr_handler and the zstd_handler have
-        # individual loglevels for appropriate filtering.
-        level=logging.NOTSET,
-        force=True,
+    queue_listener = QueueListener(
+        queue,
+        *[stderr_handler],
+        respect_handler_level=True,
     )
+    queue_listener.start()
+    atexit.register(queue_listener.stop)
 
-    # Replace handlers on the root logger with a LocalQueueHandler, and start a
-    # logging.QueueListener holding the original handlers.
-    queue = _setup_queue()
-    atexit.register(queue.stop)
+
+def add_zst_log_handler(
+    logger_name: str, filepath: Path, file_log_level: Loglevel
+) -> None:
+    queue: Queue[Any] = Queue()
+    logger = get_logger(logger_name)
+    logger.addHandler(QueueHandler(queue))
+
+    zstd_handler = _ZstdFileHandler(
+        filepath,
+        level=file_log_level,
+    )
+    zstd_handler.setLevel(file_log_level)
+    zstd_handler.setFormatter(_JSONFormatter())
+
+    queue_listener = QueueListener(
+        queue,
+        *[zstd_handler],
+        respect_handler_level=True,
+    )
+    queue_listener.start()
+    atexit.register(queue_listener.stop)
 
 
 class _PenlogRecordV1(msgspec.Struct, omit_defaults=True):

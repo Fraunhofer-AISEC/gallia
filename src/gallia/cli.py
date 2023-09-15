@@ -32,6 +32,7 @@ from gallia.plugins import (
     load_ecu_plugin_eps,
     load_transport_plugin_eps,
 )
+from gallia.utils import get_log_level
 
 
 def load_parsers() -> Parsers:
@@ -392,13 +393,6 @@ def main() -> None:
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
 
-    # Will be set to the correct verbosity later.
-    setup_logging(
-        no_volatile_info=args.no_volatile_info
-        if hasattr(args, "no_volatile_info")
-        else True
-    )
-
     if args.show_config:
         cmd_show_config(args, config, config_path)
         sys.exit(exitcode.OK)
@@ -422,6 +416,13 @@ def main() -> None:
     if not hasattr(args, "cls_object"):
         args.help_func()
         parser.exit(exitcode.USAGE)
+
+    setup_logging(
+        level=get_log_level(args),
+        no_volatile_info=args.no_volatile_info
+        if hasattr(args, "no_volatile_info")
+        else True,
+    )
 
     sys.exit(args.cls_object.entry_point(args))
 

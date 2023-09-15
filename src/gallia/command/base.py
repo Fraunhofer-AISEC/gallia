@@ -25,12 +25,12 @@ import msgspec
 from gallia.config import Config
 from gallia.db.handler import DBHandler
 from gallia.dumpcap import Dumpcap
-from gallia.log import Loglevel, get_logger, setup_logging, tz
+from gallia.log import add_zst_log_handler, get_logger, tz
 from gallia.plugins import load_transport
 from gallia.powersupply import PowerSupply, PowerSupplyURI
 from gallia.services.uds.core.exception import UDSException
 from gallia.transports import BaseTransport, TargetURI
-from gallia.utils import camel_to_snake, dump_args
+from gallia.utils import camel_to_snake, dump_args, get_file_log_level
 
 
 @unique
@@ -127,19 +127,6 @@ class BaseCommand(ABC):
     @abstractmethod
     def run(self, args: Namespace) -> int:
         ...
-
-    def get_log_level(self, args: Namespace) -> Loglevel:
-        level = Loglevel.INFO
-        if args.verbose == 1:
-            level = Loglevel.DEBUG
-        elif args.verbose >= 2:
-            level = Loglevel.TRACE
-        return level
-
-    def get_file_log_level(self, args: Namespace) -> Loglevel:
-        if args.trace_log:
-            return Loglevel.TRACE
-        return Loglevel.TRACE if args.verbose >= 2 else Loglevel.DEBUG
 
     def run_hook(
         self,
@@ -356,16 +343,10 @@ class BaseCommand(ABC):
                 args.artifacts_base,
                 args.artifacts_dir,
             )
-            setup_logging(
-                self.get_log_level(args),
-                self.get_file_log_level(args),
-                self.artifacts_dir.joinpath(FileNames.LOGFILE.value),
-                no_volatile_info=args.no_volatile_info,
-            )
-        else:
-            setup_logging(
-                self.get_log_level(args),
-                no_volatile_info=args.no_volatile_info,
+            add_zst_log_handler(
+                logger_name="gallia",
+                filepath=self.artifacts_dir.joinpath(FileNames.LOGFILE.value),
+                file_log_level=get_file_log_level(args),
             )
 
         if args.hooks:
