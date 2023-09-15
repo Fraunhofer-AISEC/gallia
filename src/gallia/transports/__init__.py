@@ -3,8 +3,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from gallia.transports.base import BaseTransport, TargetURI
-from gallia.transports.can import ISOTPTransport, RawCANTransport
+from gallia.transports.can import RawCANTransport
 from gallia.transports.doip import DoIPTransport
+from gallia.transports.isotp import ISOTPTransport
 from gallia.transports.tcp import TCPLinesTransport, TCPTransport
 from gallia.transports.unix import UnixLinesTransport, UnixTransport
 
