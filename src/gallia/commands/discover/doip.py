@@ -230,11 +230,7 @@ class DoIPDiscoverer(AsyncScript):
                     rat_wrong_source.append(routing_activation_type)
 
             finally:
-                try:
-                    await conn.close()
-                except ConnectionResetError as e:
-                    # This triggers when the connection is closed already, as conn.close() is not handling this
-                    self.logger.warn(f"[⛔] Could not close connection: {e}")
+                await conn.close()
 
         self.logger.notice(
             f"[💎] Look what RoutingActivationTypes I've found that are not 'unsupported': {', '.join([f'{x:#x}' for x in rat_not_unsupported])}"
@@ -359,11 +355,7 @@ class DoIPDiscoverer(AsyncScript):
                 )
                 continue
 
-        try:
-            await conn.close()
-        except ConnectionResetError as e:
-            # This triggers when the connection is closed already, as conn.close() is not handling this
-            self.logger.warn(f"[⛔] could not close connection: {e}")
+        await conn.close()
 
         self.logger.notice(
             "[⚔️] It's dangerous to test alone, take one of these known targets:"
@@ -468,11 +460,7 @@ class DoIPDiscoverer(AsyncScript):
                 continue
 
             finally:
-                try:
-                    await conn.close()
-                except ConnectionResetError as e:
-                    # This triggers when the connection is closed already, as conn.close() is not handling this
-                    self.logger.warn(f"[⛔] could not close connection: {e}")
+                await conn.close()
 
             self.logger.info(
                 f"[🤯] Holy moly, it actually worked for activation_type {routing_activation_type:#x} and src_addr {source_address:#x}!!!"
