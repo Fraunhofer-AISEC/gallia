@@ -417,22 +417,20 @@ class DoIPConnection:
     async def _read_ack(self, prev_data: bytes) -> None:
         while True:
             hdr, payload = await self.read_frame_unsafe()
-            if isinstance(payload, DiagnosticMessageNegativeAcknowledgement):
-                raise DoIPNegativeAckError(payload.ACKCode)
-            elif not isinstance(payload, DiagnosticMessagePositiveAcknowledgement):
+            if not isinstance(
+                payload, DiagnosticMessagePositiveAcknowledgement
+            ) and not isinstance(payload, DiagnosticMessageNegativeAcknowledgement):
                 self.logger.warning(
-                    f"unexpected DoIP message: {hdr} {payload}, expected positive ACK"
+                    f"unexpected DoIP message: {hdr} {payload}, expected positive/negative ACK"
                 )
                 continue
 
-            if payload.SourceAddress != self.target_addr:
+            if (
+                payload.SourceAddress != self.target_addr
+                or payload.TargetAddress != self.src_addr
+            ):
                 self.logger.warning(
-                    f"ack: unexpected src_addr: {payload.SourceAddress:#04x}"
-                )
-                continue
-            if payload.TargetAddress != self.src_addr:
-                self.logger.warning(
-                    f"ack: unexpected dst_addr: {payload.TargetAddress:#04x}"
+                    f"ack: unexpected addresses (src:dst); expected {self.src_addr}:{self.target_addr} but got: {payload.SourceAddress:#04x}:{payload.TargetAddress:#04x}"
                 )
                 continue
             if (
@@ -444,6 +442,8 @@ class DoIPConnection:
                     f"ack: got: {payload.PreviousDiagnosticMessageData.hex()} expected {prev_data.hex()}"
                 )
                 continue
+            if isinstance(payload, DiagnosticMessageNegativeAcknowledgement):
+                raise DoIPNegativeAckError(payload.ACKCode)
             return
 
     async def _read_routing_activation_response(self) -> None:
