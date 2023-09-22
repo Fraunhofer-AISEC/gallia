@@ -418,16 +418,7 @@ class DoIPConnection:
         while True:
             hdr, payload = await self.read_frame_unsafe()
             if isinstance(payload, DiagnosticMessageNegativeAcknowledgement):
-                if (
-                    payload.ACKCode
-                    == DiagnosticMessageNegativeAckCodes.TargetUnreachable
-                ):
-                    # TargetUnreachable can be just a temporary issue. Thus, we do not raise
-                    # BrokenPipeError but instead ignore it here and let upper layers handle
-                    # missing responses
-                    self.logger.warning("DoIP message was ACKed with TargetUnreachable")
-                else:
-                    raise DoIPNegativeAckError(payload.ACKCode)
+                raise DoIPNegativeAckError(payload.ACKCode)
             elif not isinstance(payload, DiagnosticMessagePositiveAcknowledgement):
                 self.logger.warning(
                     f"unexpected DoIP message: {hdr} {payload}, expected positive ACK"
@@ -647,7 +638,16 @@ class DoIPTransport(BaseTransport, scheme="doip"):
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> int:
-        await asyncio.wait_for(self._conn.write_diag_request(data), timeout)
+        try:
+            await asyncio.wait_for(self._conn.write_diag_request(data), timeout)
+        except DoIPNegativeAckError as e:
+            if e.nack_code != DiagnosticMessageNegativeAckCodes.TargetUnreachable:
+                raise e
+            # TargetUnreachable can be just a temporary issue. Thus, we do not raise
+            # BrokenPipeError but instead ignore it here and let upper layers handle
+            # missing responses (i.e. raise a TimeoutError instead)
+            self.logger.debug("DoIP message was ACKed with TargetUnreachable")
+            raise asyncio.TimeoutError from e
 
         t = tags + ["write"] if tags is not None else ["write"]
         self.logger.trace(data.hex(), extra={"tags": t})
