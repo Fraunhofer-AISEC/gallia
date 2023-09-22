@@ -101,10 +101,9 @@ class TimingAndCommunicationParameters(IntEnum):
 
 @dataclass
 class GenericHeader:
-    ProtocolVersion: ProtocolVersions
-    PayloadType: PayloadTypes
+    ProtocolVersion: int
+    PayloadType: int
     PayloadLength: int
-    PayloadTypeSpecificMessageContent: bytes
 
     def pack(self) -> bytes:
         return struct.pack(
@@ -127,9 +126,8 @@ class GenericHeader:
             raise ValueError("inverse protocol_version is invalid")
         return cls(
             protocol_version,
-            PayloadTypes(payload_type),
+            payload_type,
             payload_length,
-            b"",
         )
 
 
@@ -155,7 +153,7 @@ class RoutingActivationRequest:
 class RoutingActivationResponse:
     SourceAddress: int
     TargetAddress: int
-    RoutingActivationResponseCode: RoutingActivationResponseCodes
+    RoutingActivationResponseCode: int
     Reserved: int = 0x00000000  # Not used, default value.
     # OEMReserved uint32
 
@@ -348,6 +346,10 @@ class DoIPConnection:
                 await self._read_queue.put((hdr, data))
         except asyncio.CancelledError:
             self.logger.debug("read worker cancelled")
+        except asyncio.IncompleteReadError as e:
+            self.logger.debug(f"read worker received EOF: {e}")
+        except Exception as e:
+            self.logger.critical(f"read worker died with {type(e)}: {e}")
 
     async def read_frame_unsafe(self) -> DoIPFrame:
         # Avoid waiting on the queue forever when
@@ -481,7 +483,6 @@ class DoIPConnection:
             ProtocolVersion=ProtocolVersions.ISO_13400_2_2012,
             PayloadType=PayloadTypes.DiagnosticMessage,
             PayloadLength=len(data) + 4,
-            PayloadTypeSpecificMessageContent=b"",
         )
         payload = DiagnosticMessage(
             SourceAddress=self.src_addr,
@@ -498,7 +499,6 @@ class DoIPConnection:
             ProtocolVersion=ProtocolVersions.ISO_13400_2_2012,
             PayloadType=PayloadTypes.RoutingActivationRequest,
             PayloadLength=7,
-            PayloadTypeSpecificMessageContent=b"",
         )
         payload = RoutingActivationRequest(
             SourceAddress=self.src_addr,
@@ -512,7 +512,6 @@ class DoIPConnection:
             ProtocolVersion=ProtocolVersions.ISO_13400_2_2012,
             PayloadType=PayloadTypes.AliveCheckResponse,
             PayloadLength=2,
-            PayloadTypeSpecificMessageContent=b"",
         )
         payload = AliveCheckResponse(
             SourceAddress=self.src_addr,
