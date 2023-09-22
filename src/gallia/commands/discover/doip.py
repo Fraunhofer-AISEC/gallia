@@ -321,6 +321,11 @@ class DoIPDiscoverer(AsyncScript):
                         f"[🫥] {target_addr:#x} is an unknown target address"
                     )
                     continue
+                elif e.nack_code == DiagnosticMessageNegativeAckCodes.TargetUnreachable:
+                    self.logger.info(
+                        f"[💤] {target_addr:#x} is (currently?) unreachable"
+                    )
+                    continue
                 else:
                     self.logger.warning(
                         f"[🤷] {target_addr:#x} is behaving strangely: {e.nack_code.name}"
