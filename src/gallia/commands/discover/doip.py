@@ -256,7 +256,7 @@ class DoIPDiscoverer(AsyncScript):
         )
 
         for target_addr in search_space:
-            self.logger.info(f"[🚧] Attempting connection to {target_addr:#02x}")
+            self.logger.debug(f"[🚧] Attempting connection to {target_addr:#x}")
 
             conn.target_addr = target_addr
 
@@ -276,6 +276,7 @@ class DoIPDiscoverer(AsyncScript):
                 ) as f:
                     await f.write(f"{known_targets[-1]}\n")
 
+                self.logger.info(f"[⏳] Waiting for reply of target {target_addr:#x}")
                 # Hardcoded loop to detect potential broadcasts
                 while True:
                     pot_broadcast, data = await asyncio.wait_for(
@@ -342,7 +343,7 @@ class DoIPDiscoverer(AsyncScript):
             except (ConnectionError, ConnectionResetError) as e:
                 # Whenever this triggers, but sometimes connections are closed not by us
                 self.logger.warn(
-                    f"[🫦] Sexy, but unexpected: {target_addr:#} triggered {e}"
+                    f"[🫦] Sexy, but unexpected: {target_addr:#x} triggered {e}"
                 )
                 async with aiofiles.open(
                     self.artifacts_dir.joinpath("7_targets_with_errors.txt"), "a"
@@ -476,7 +477,7 @@ class DoIPDiscoverer(AsyncScript):
 
         # Print valid SourceAddresses and suitable target string for config
         self.logger.notice(
-            f"[💀] Look what SourceAddresses got denied: {', '.join([f'{x:#x}' for x in known_sourceAddresses])}"
+            f"[💀] Look what SourceAddresses got denied: {', '.join([f'{x:#x}' for x in denied_sourceAddresses])}"
         )
         self.logger.notice(
             f"[💎] Look what valid SourceAddresses I've found: {', '.join([f'{x:#x}' for x in known_sourceAddresses])}"
