@@ -21,6 +21,8 @@ from gallia.transports.doip import (
     DiagnosticMessage,
     DiagnosticMessageNegativeAckCodes,
     DoIPConnection,
+    DoIPNegativeAckError,
+    DoIPRoutingActivationDeniedError,
     RoutingActivationRequestTypes,
     RoutingActivationResponseCodes,
     TimingAndCommunicationParameters,
@@ -216,17 +218,18 @@ class DoIPDiscoverer(AsyncScript):
                 self.logger.info(
                     f"[🤯] Holy moly, it actually worked for activation_type {routing_activation_type:#x} and src_addr {src_addr:#x}!!!"
                 )
-            except ConnectionAbortedError as e:
-                # Let's utilize Gallia's excellent error handling
-                error = RoutingActivationResponseCodes[str(e).split(" ")[-1]]
+            except DoIPRoutingActivationDeniedError as e:
                 self.logger.info(
-                    f"[🌟] splendid, {routing_activation_type:#x} yields a {error.name}"
+                    f"[🌟] splendid, {routing_activation_type:#x} yields {e.rac_code.name}"
                 )
 
-                if error != RoutingActivationResponseCodes.UnsupportedActivationType:
+                if (
+                    e.rac_code
+                    != RoutingActivationResponseCodes.UnsupportedActivationType
+                ):
                     rat_not_unsupported.append(routing_activation_type)
 
-                if error == RoutingActivationResponseCodes.UnknownSourceAddress:
+                if e.rac_code == RoutingActivationResponseCodes.UnknownSourceAddress:
                     rat_wrong_source.append(routing_activation_type)
 
             finally:
@@ -309,28 +312,26 @@ class DoIPDiscoverer(AsyncScript):
                 ) as f:
                     await f.write(f"{known_targets[-1]}\n")
 
-            except (
-                BrokenPipeError
-            ) as e:  # Though it's obvious: this error is raised when a DoIP NACK is received
-                error = DiagnosticMessageNegativeAckCodes(int(str(e).split(" ")[-1], 0))
-                if error == DiagnosticMessageNegativeAckCodes.UnknownTargetAddress:
+            except DoIPNegativeAckError as e:
+                if (
+                    e.nack_code
+                    == DiagnosticMessageNegativeAckCodes.UnknownTargetAddress
+                ):
                     self.logger.info(
                         f"[🫥] {target_addr:#x} is an unknown target address"
                     )
                     continue
                 else:
                     self.logger.warning(
-                        f"[🤷] {target_addr:#x} is behaving strangely: {error.name}"
+                        f"[🤷] {target_addr:#x} is behaving strangely: {e.nack_code.name}"
                     )
                     async with aiofiles.open(
                         self.artifacts_dir.joinpath("7_targets_with_errors.txt"), "a"
                     ) as f:
-                        await f.write(f"{target_addr:#x}: {error.name}\n")
+                        await f.write(f"{target_addr:#x}: {e.nack_code.name}\n")
                     continue
 
-            except (
-                asyncio.TimeoutError
-            ):  # This triggers when no ACK is received, or ACK but no UDS reply
+            except asyncio.TimeoutError:  # This triggers when ACK but no UDS reply
                 self.logger.info(
                     f"[🙊] Presumably no active ECU on target address {target_addr:#x}"
                 )
@@ -442,20 +443,18 @@ class DoIPDiscoverer(AsyncScript):
 
             try:
                 await conn.write_routing_activation_request(routing_activation_type)
-            except ConnectionAbortedError as e:
-                # Let's utilize Gallia's excellent error handling
-                error = RoutingActivationResponseCodes[str(e).split(" ")[-1]]
+            except DoIPRoutingActivationDeniedError as e:
                 self.logger.info(
-                    f"[🌟] splendid, {source_address:#x} yields a {error.name}"
+                    f"[🌟] splendid, {source_address:#x} yields {e.rac_code.name}"
                 )
 
-                if error != RoutingActivationResponseCodes.UnknownSourceAddress:
+                if e.rac_code != RoutingActivationResponseCodes.UnknownSourceAddress:
                     denied_sourceAddresses.append(source_address)
                     async with aiofiles.open(
                         self.artifacts_dir.joinpath("2_denied_src_addresses.txt"), "a"
                     ) as f:
                         await f.write(
-                            f"activation_type={routing_activation_type:#x},src_addr={source_address:#x}: {error.name}\n"
+                            f"activation_type={routing_activation_type:#x},src_addr={source_address:#x}: {e.rac_code.name}\n"
                         )
 
                 continue
