@@ -8,6 +8,7 @@ import asyncio
 import struct
 from dataclasses import dataclass
 from enum import IntEnum, unique
+from typing import Any
 
 from pydantic import BaseModel, field_validator
 
@@ -31,15 +32,30 @@ class RoutingActivationRequestTypes(IntEnum):
 
 @unique
 class RoutingActivationResponseCodes(IntEnum):
+    UNDEFINED = -0x01
     UnknownSourceAddress = 0x00
-    NoRessources = 0x01
+    NoResources = 0x01
     InvalidConnectionEntry = 0x02
-    AlreadyActived = 0x03
+    AlreadyActive = 0x03
     AuthenticationMissing = 0x04
     ConfirmationRejected = 0x05
     UnsupportedActivationType = 0x06
     Success = 0x10
     SuccessConfirmationRequired = 0x11
+
+    @classmethod
+    def _missing_(cls, value: Any) -> RoutingActivationResponseCodes:
+        return cls.UNDEFINED
+
+
+class DoIPRoutingActivationDeniedError(ConnectionAbortedError):
+    rac_code: RoutingActivationResponseCodes
+
+    def __init__(self, rac_code: int):
+        self.rac_code = RoutingActivationResponseCodes(rac_code)
+        super().__init__(
+            f"DoIP routing activation denied: {self.rac_code.name} ({rac_code})"
+        )
 
 
 @unique
@@ -66,6 +82,7 @@ class DiagnosticMessagePositiveAckCodes(IntEnum):
 
 @unique
 class DiagnosticMessageNegativeAckCodes(IntEnum):
+    UNDEFINED = -0x01
     InvalidSourceAddress = 0x02
     UnknownTargetAddress = 0x03
     DiagnosticMessageTooLarge = 0x04
@@ -73,6 +90,20 @@ class DiagnosticMessageNegativeAckCodes(IntEnum):
     TargetUnreachable = 0x06
     UnknownNetwork = 0x07
     TransportProtocolError = 0x08
+
+    @classmethod
+    def _missing_(cls, value: Any) -> DiagnosticMessageNegativeAckCodes:
+        return cls.UNDEFINED
+
+
+class DoIPNegativeAckError(BrokenPipeError):
+    nack_code: DiagnosticMessageNegativeAckCodes
+
+    def __init__(self, negative_ack_code: int):
+        self.nack_code = DiagnosticMessageNegativeAckCodes(negative_ack_code)
+        super().__init__(
+            f"DoIP negative ACK received: {self.nack_code.name} ({negative_ack_code})"
+        )
 
 
 @unique
@@ -396,9 +427,7 @@ class DoIPConnection:
                     # missing responses
                     self.logger.warning("DoIP message was ACKed with TargetUnreachable")
                 else:
-                    raise BrokenPipeError(
-                        f"request denied: {hdr} {payload} {payload.ACKCode.value}"
-                    )
+                    raise DoIPNegativeAckError(payload.ACKCode)
             elif not isinstance(payload, DiagnosticMessagePositiveAcknowledgement):
                 self.logger.warning(
                     f"unexpected DoIP message: {hdr} {payload}, expected positive ACK"
@@ -437,15 +466,9 @@ class DoIPConnection:
             payload.RoutingActivationResponseCode
             != RoutingActivationResponseCodes.Success
         ):
-            try:
-                code = RoutingActivationResponseCodes(
-                    payload.RoutingActivationResponseCode
-                )
-            except ValueError as e:
-                raise ConnectionAbortedError(
-                    f"unknown routing_activation_response_code: {payload.RoutingActivationResponseCode}"
-                ) from e
-            raise ConnectionAbortedError(f"routing activation denied: {code.name}")
+            raise DoIPRoutingActivationDeniedError(
+                payload.RoutingActivationResponseCode
+            )
 
     async def write_request_raw(self, hdr: GenericHeader, payload: DoIPOutData) -> None:
         async with self._mutex:
