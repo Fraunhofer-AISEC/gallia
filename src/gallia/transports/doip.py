@@ -638,6 +638,9 @@ class DoIPTransport(BaseTransport, scheme="doip"):
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> int:
+        t = tags + ["write"] if tags is not None else ["write"]
+        self.logger.trace(data.hex(), extra={"tags": t})
+
         try:
             await asyncio.wait_for(self._conn.write_diag_request(data), timeout)
         except DoIPNegativeAckError as e:
@@ -649,6 +652,4 @@ class DoIPTransport(BaseTransport, scheme="doip"):
             self.logger.debug("DoIP message was ACKed with TargetUnreachable")
             raise asyncio.TimeoutError from e
 
-        t = tags + ["write"] if tags is not None else ["write"]
-        self.logger.trace(data.hex(), extra={"tags": t})
         return len(data)
