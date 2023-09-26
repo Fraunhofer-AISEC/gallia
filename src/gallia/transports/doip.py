@@ -397,15 +397,16 @@ class DoIPConnection:
         while True:
             hdr, payload = await self.read_frame()
             if not isinstance(payload, DiagnosticMessage):
-                raise BrokenPipeError(f"unexpected DoIP message: {hdr} {payload}")
-            if payload.SourceAddress != self.target_addr:
                 self.logger.warning(
-                    f"unexpected DoIP src address: {payload.SourceAddress:#04x}"
+                    f"expected DoIP DiagnosticMessage, instead got: {hdr} {payload}"
                 )
                 continue
-            if payload.TargetAddress != self.src_addr:
+            if (
+                payload.SourceAddress != self.target_addr
+                or payload.TargetAddress != self.src_addr
+            ):
                 self.logger.warning(
-                    f"unexpected DoIP target address: {payload.TargetAddress:#04x}"
+                    f"DoIP-DiagnosticMessage: unexpected addresses (src:dst); expected {self.src_addr}:{self.target_addr} but got: {payload.SourceAddress:#04x}:{payload.TargetAddress:#04x}"
                 )
                 continue
             return hdr, payload
@@ -430,7 +431,7 @@ class DoIPConnection:
                 or payload.TargetAddress != self.src_addr
             ):
                 self.logger.warning(
-                    f"ack: unexpected addresses (src:dst); expected {self.src_addr}:{self.target_addr} but got: {payload.SourceAddress:#04x}:{payload.TargetAddress:#04x}"
+                    f"DoIP-ACK: unexpected addresses (src:dst); expected {self.src_addr}:{self.target_addr} but got: {payload.SourceAddress:#04x}:{payload.TargetAddress:#04x}"
                 )
                 continue
             if (
@@ -439,7 +440,7 @@ class DoIPConnection:
             ):
                 self.logger.warning("ack: previous data differs from request")
                 self.logger.warning(
-                    f"ack: got: {payload.PreviousDiagnosticMessageData.hex()} expected {prev_data.hex()}"
+                    f"DoIP-ACK: got: {payload.PreviousDiagnosticMessageData.hex()} expected {prev_data.hex()}"
                 )
                 continue
             if isinstance(payload, DiagnosticMessageNegativeAcknowledgement):
