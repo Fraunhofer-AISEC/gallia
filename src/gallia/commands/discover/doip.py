@@ -251,6 +251,7 @@ class DoIPDiscoverer(AsyncScript):
         timeout: None | float = None,
     ) -> None:
         known_targets = []
+        unreachable_targets = []
         responsive_targets = []
         search_space = range(start, stop + 1)
 
@@ -325,6 +326,11 @@ class DoIPDiscoverer(AsyncScript):
                     self.logger.info(
                         f"[💤] {target_addr:#x} is (currently?) unreachable"
                     )
+                    unreachable_targets.append(known_targets[-1])
+                    async with aiofiles.open(
+                        self.artifacts_dir.joinpath("5_unreachable_targets.txt"), "a"
+                    ) as f:
+                        await f.write(f"{known_targets[-1]}\n")
                     continue
                 else:
                     self.logger.warning(
@@ -336,7 +342,7 @@ class DoIPDiscoverer(AsyncScript):
                         await f.write(f"{target_addr:#x}: {e.nack_code.name}\n")
                     continue
 
-            except asyncio.TimeoutError:  # This triggers when ACK but no UDS reply
+            except asyncio.TimeoutError:  # This triggers when DoIP ACK but no UDS reply
                 self.logger.info(
                     f"[🙊] Presumably no active ECU on target address {target_addr:#x}"
                 )
@@ -365,13 +371,19 @@ class DoIPDiscoverer(AsyncScript):
         await conn.close()
 
         self.logger.notice(
-            "[⚔️] It's dangerous to test alone, take one of these known targets:"
+            f"[⚔️] It's dangerous to test alone, take one of these {len(known_targets)} known targets:"
         )
         for item in known_targets:
             self.logger.notice(item)
 
         self.logger.notice(
-            "[💰] For even more profit, try targets that actually responded:"
+            f"[❓] Those {len(unreachable_targets)} targets were unreachable by the gateway (could be just temporary):"
+        )
+        for item in unreachable_targets:
+            self.logger.notice(item)
+
+        self.logger.notice(
+            f"[💰] For even more profit, try one of the {len(responsive_targets)} targets that actually responded:"
         )
         for item in responsive_targets:
             self.logger.notice(item)
