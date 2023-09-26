@@ -14,8 +14,8 @@ import psutil
 
 from gallia.command import AsyncScript
 from gallia.services.uds.core.service import (
-    DiagnosticSessionControlRequest,
-    DiagnosticSessionControlResponse,
+    TesterPresentRequest,
+    TesterPresentResponse,
 )
 from gallia.transports.doip import (
     DiagnosticMessage,
@@ -264,7 +264,7 @@ class DoIPDiscoverer(AsyncScript):
             conn.target_addr = target_addr
 
             try:
-                req = DiagnosticSessionControlRequest(0x01)
+                req = TesterPresentRequest(suppress_response=False)
                 await conn.write_diag_request(req.pdu)
 
                 # If we reach this, the request was not denied due to unknown TargetAddress
@@ -302,7 +302,7 @@ class DoIPDiscoverer(AsyncScript):
                             f"target_addr={target_addr:#x} yielded reply from {pot_broadcast:#x}; could also be late answer triggered by previous address!\n"
                         )
 
-                resp = DiagnosticSessionControlResponse.parse_static(data)
+                resp = TesterPresentResponse.parse_static(data)
                 self.logger.notice(
                     f"[🥳] It cannot get nicer: {target_addr:#x} responded: {resp}"
                 )
