@@ -425,7 +425,8 @@ class DoIPDiscoverer(AsyncScript):
         while True:
             hdr, payload = await conn.read_frame()
             if not isinstance(payload, DiagnosticMessage):
-                raise BrokenPipeError(f"[🧨] Unexpected DoIP message: {hdr} {payload}")
+                self.logger.warning(f"[🧨] Unexpected DoIP message: {hdr} {payload}")
+                return None, b""
             if payload.SourceAddress != conn.target_addr:
                 return payload.SourceAddress, payload.UserData
             if payload.TargetAddress != conn.src_addr:
