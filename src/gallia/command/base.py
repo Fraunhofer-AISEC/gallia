@@ -25,12 +25,12 @@ import msgspec
 from gallia.config import Config
 from gallia.db.handler import DBHandler
 from gallia.dumpcap import Dumpcap
-from gallia.log import Loglevel, get_logger, setup_logging, tz
+from gallia.log import add_zst_log_handler, get_logger, tz
 from gallia.plugins import load_transport
 from gallia.powersupply import PowerSupply, PowerSupplyURI
 from gallia.services.uds.core.exception import UDSException
 from gallia.transports import BaseTransport, TargetURI
-from gallia.utils import camel_to_snake, dump_args
+from gallia.utils import camel_to_snake, dump_args, get_file_log_level
 
 
 @unique
@@ -68,6 +68,9 @@ class RunMeta(msgspec.Struct):
         return msgspec.json.encode(self).decode()
 
 
+logger = get_logger("gallia.base")
+
+
 class BaseCommand(ABC):
     """BaseCommand is the baseclass for all gallia commands.
     This class can be used in standalone scripts via the
@@ -93,8 +96,6 @@ class BaseCommand(ABC):
     #: The string which is shown at the bottom of --help.
     EPILOG: str | None = None
 
-    #: The name of the logger when this command is run.
-    LOGGER_NAME = "gallia"
     #: Enable a artifacts_dir. Setting this property to
     #: True enables the creation of a logfile.
     HAS_ARTIFACTS_DIR: bool = False
@@ -105,7 +106,6 @@ class BaseCommand(ABC):
 
     def __init__(self, parser: ArgumentParser, config: Config = Config()) -> None:
         self.id = camel_to_snake(self.__class__.__name__)
-        self.logger = get_logger(self.LOGGER_NAME)
         self.parser = parser
         self.config = config
         self.artifacts_dir = Path()
@@ -127,19 +127,6 @@ class BaseCommand(ABC):
     @abstractmethod
     def run(self, args: Namespace) -> int:
         ...
-
-    def get_log_level(self, args: Namespace) -> Loglevel:
-        level = Loglevel.INFO
-        if args.verbose == 1:
-            level = Loglevel.DEBUG
-        elif args.verbose >= 2:
-            level = Loglevel.TRACE
-        return level
-
-    def get_file_log_level(self, args: Namespace) -> Loglevel:
-        if args.trace_log:
-            return Loglevel.TRACE
-        return Loglevel.TRACE if args.verbose >= 2 else Loglevel.DEBUG
 
     def run_hook(
         self,
@@ -185,16 +172,14 @@ class BaseCommand(ABC):
             stdout = p.stdout
             stderr = p.stderr
         except CalledProcessError as e:
-            self.logger.warning(
-                f"{variant.value}-hook failed (exit code: {p.returncode})"
-            )
+            logger.warning(f"{variant.value}-hook failed (exit code: {p.returncode})")
             stdout = e.stdout
             stderr = e.stderr
 
         if stdout:
-            self.logger.info(p.stdout.strip(), extra={"tags": [hook_id, "stdout"]})
+            logger.info(p.stdout.strip(), extra={"tags": [hook_id, "stdout"]})
         if stderr:
-            self.logger.info(p.stderr.strip(), extra={"tags": [hook_id, "stderr"]})
+            logger.info(p.stderr.strip(), extra={"tags": [hook_id, "stderr"]})
 
     def configure_class_parser(self) -> None:
         group = self.parser.add_argument_group("generic arguments")
@@ -204,6 +189,12 @@ class BaseCommand(ABC):
             action="count",
             default=self.config.get_value("gallia.verbosity", 0),
             help="increase verbosity on the console",
+        )
+        group.add_argument(
+            "--no-volatile-info",
+            action="store_true",
+            default=self.config.get_value("gallia.no-volatile-info", False),
+            help="do not overwrite log lines with level info or lower in terminal output",
         )
         group.add_argument(
             "--trace-log",
@@ -328,9 +319,9 @@ class BaseCommand(ABC):
             # log a message and do a blocking wait afterwards.
             fcntl.flock(self._lock_file_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
-            self.logger.notice(f"Waiting for flock: {path}")
+            logger.notice(f"Waiting for flock: {path}")
             fcntl.flock(self._lock_file_fd, fcntl.LOCK_EX)
-        self.logger.info("Acquired lock. Continuing.")
+        logger.info("Acquired lock. Continuing.")
 
     def _release_flock(self) -> None:
         assert self._lock_file_fd
@@ -342,7 +333,7 @@ class BaseCommand(ABC):
             try:
                 self._aquire_flock(p)
             except OSError as e:
-                self.logger.critical(f"Unable to lock {p}: {e}")
+                logger.critical(f"Unable to lock {p}: {e}")
                 return exitcode.OSFILE
 
         if self.HAS_ARTIFACTS_DIR:
@@ -350,13 +341,11 @@ class BaseCommand(ABC):
                 args.artifacts_base,
                 args.artifacts_dir,
             )
-            setup_logging(
-                self.get_log_level(args),
-                self.get_file_log_level(args),
-                self.artifacts_dir.joinpath(FileNames.LOGFILE.value),
+            add_zst_log_handler(
+                logger_name="gallia",
+                filepath=self.artifacts_dir.joinpath(FileNames.LOGFILE.value),
+                file_log_level=get_file_log_level(args),
             )
-        else:
-            setup_logging(self.get_log_level(args))
 
         if args.hooks:
             self.run_hook(HookVariant.PRE, args)
@@ -379,12 +368,14 @@ class BaseCommand(ABC):
                 if isinstance(e, t):
                     # TODO: Map the exitcode to superclass of builtin exceptions.
                     exit_code = exitcode.IOERR
-                    self.logger.critical(f"catched by default handler: {e!r}")
-                    self.logger.debug(e, exc_info=True)
+                    logger.critical(
+                        f"Caught expected exception, stack trace on debug level: {e!r}"
+                    )
+                    logger.debug(e, exc_info=True)
                     break
             else:
                 exit_code = exitcode.SOFTWARE
-                self.logger.critical(e, exc_info=True)
+                logger.critical(e, exc_info=True)
         finally:
             self.run_meta.exit_code = exit_code
             self.run_meta.end_time = datetime.now(tz).isoformat()
@@ -393,7 +384,7 @@ class BaseCommand(ABC):
                 self.artifacts_dir.joinpath(FileNames.META.value).write_text(
                     self.run_meta.json() + "\n"
                 )
-                self.logger.info(f"Stored artifacts at {self.artifacts_dir}")
+                logger.notice(f"Stored artifacts at {self.artifacts_dir}")
 
         if args.hooks:
             self.run_hook(HookVariant.POST, args, exit_code)
@@ -519,16 +510,14 @@ class Scanner(AsyncScript, ABC):
                         self.artifacts_dir,
                     )
                 except Exception as e:
-                    self.logger.warning(
+                    logger.warning(
                         f"Could not write the run meta to the database: {e!r}"
                     )
 
             try:
                 await self.db_handler.disconnect()
             except Exception as e:
-                self.logger.error(
-                    f"Could not close the database connection properly: {e!r}"
-                )
+                logger.error(f"Could not close the database connection properly: {e!r}")
 
     async def setup(self, args: Namespace) -> None:
         if args.target is None:

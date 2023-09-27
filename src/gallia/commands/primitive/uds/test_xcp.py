@@ -8,7 +8,7 @@ from gallia.command import Scanner
 from gallia.config import Config
 from gallia.plugins import load_transport
 from gallia.services.xcp import CANXCPSerivce, XCPService
-from gallia.transports.can import ISOTPTransport, RawCANTransport
+from gallia.transports import ISOTPTransport, RawCANTransport
 from gallia.utils import auto_int, catch_and_log_exception
 
 

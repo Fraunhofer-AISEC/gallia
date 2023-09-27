@@ -41,7 +41,7 @@ def run_wrapper(*args: Any, **kwargs: Any) -> Any:
 
 
 def git_pull() -> None:
-    run_wrapper(["git", "pull"], check=True)
+    run_wrapper(["git", "pull"])
 
 
 def check_project(rule: BumpMode | str) -> None:
@@ -84,16 +84,14 @@ def bump_version(rule: BumpMode | str) -> None:
 def commit_bump(version: str) -> None:
     run_wrapper(
         ["git", "commit", "-a", "-m", f"chore: Bump v{version} release"],
-        check=True,
     )
     run_wrapper(
         ["git", "tag", "-a", "-m", f"gallia v{version}", f"v{version}"],
-        check=True,
     )
 
 
 def github_release(version: str, rule: BumpMode | str, notes: ReleaseNotes) -> None:
-    run_wrapper(["git", "push", "--follow-tags"], check=True)
+    run_wrapper(["git", "push", "--follow-tags"])
 
     cmd = ["gh", "release", "create"]
     match rule:

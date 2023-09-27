@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from gallia.command.base import BaseCommand
+from gallia.commands.discover.doip import DoIPDiscoverer
 from gallia.commands.discover.find_xcp import FindXCP
-from gallia.commands.discover.uds.doip import DoIPDiscoverer
 from gallia.commands.discover.uds.isotp import IsotpDiscoverer
 from gallia.commands.fuzz.uds.pdu import PDUFuzzer
 from gallia.commands.primitive.generic.pdu import GenericPDUPrimitive
@@ -13,7 +13,6 @@ from gallia.commands.primitive.uds.ecu_reset import ECUResetPrimitive
 from gallia.commands.primitive.uds.iocbi import IOCBIPrimitive
 from gallia.commands.primitive.uds.ping import PingPrimitive
 from gallia.commands.primitive.uds.read_by_identifier import ReadByIdentifierPrimitive
-from gallia.commands.primitive.uds.read_error_log import ReadErrorLogPrimitive
 from gallia.commands.primitive.uds.rmba import RMBAPrimitive
 from gallia.commands.primitive.uds.rtcl import RTCLPrimitive
 from gallia.commands.primitive.uds.send_pdu import SendPDUPrimitive
@@ -49,7 +48,6 @@ registry: list[type[BaseCommand]] = [
     PingPrimitive,
     RMBAPrimitive,
     RTCLPrimitive,
-    ReadErrorLogPrimitive,
     GenericPDUPrimitive,
     SendPDUPrimitive,
     WMBAPrimitive,

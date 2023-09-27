@@ -45,6 +45,9 @@ class ECUState:
         return f'{type(self).__name__}({", ".join(f"{key}={g_repr(value)}" for key, value in self.__dict__.items())})'
 
 
+logger = get_logger("gallia.uds.ecu")
+
+
 class ECU(UDSClient):
     """ECU is a high level interface wrapping a UDSClient class. It provides
     semantically correct higher level interfaces such as read_session()
@@ -62,7 +65,6 @@ class ECU(UDSClient):
         power_supply: PowerSupply | None = None,
     ) -> None:
         super().__init__(transport, timeout, max_retry)
-        self.logger = get_logger("ecu")
         self.tester_present_task: Task[None] | None = None
         self.tester_present_interval: float | None = None
         self.power_supply = power_supply
@@ -145,9 +147,7 @@ class ECU(UDSClient):
         Returns True if the current session matches the expected session,
         or if read_session is not supported by the ECU or in the current session."""
 
-        self.logger.debug(
-            f"Checking current session, expecting {g_repr(expected_session)}"
-        )
+        logger.debug(f"Checking current session, expecting {g_repr(expected_session)}")
 
         try:
             current_session = await self.read_session(
@@ -155,33 +155,31 @@ class ECU(UDSClient):
             )
         except UnexpectedNegativeResponse as e:
             if suggests_identifier_not_supported(e.RESPONSE_CODE):
-                self.logger.info(
+                logger.info(
                     f"Read current session not supported: {e.RESPONSE_CODE.name}, skipping check_session"
                 )
                 return True
             raise e
         except asyncio.TimeoutError:
-            self.logger.warning(
-                "Reading current session timed out, skipping check_session"
-            )
+            logger.warning("Reading current session timed out, skipping check_session")
             return True
 
-        self.logger.debug(f"Current session is {g_repr(current_session)}")
+        logger.debug(f"Current session is {g_repr(current_session)}")
         if current_session == expected_session:
             return True
 
         for i in range(retries):
-            self.logger.warning(
+            logger.warning(
                 f"Not in session {g_repr(expected_session)}, ECU replied with {g_repr(current_session)}"
             )
 
-            self.logger.info(
+            logger.info(
                 f"Switching to session {g_repr(expected_session)}; attempt {i + 1} of {retries}"
             )
             resp = await self.set_session(expected_session)
 
             if isinstance(resp, service.NegativeResponse):
-                self.logger.warning(
+                logger.warning(
                     f"Switching to session {g_repr(expected_session)} failed: {resp}"
                 )
 
@@ -189,30 +187,30 @@ class ECU(UDSClient):
                 current_session = await self.read_session(
                     config=UDSRequestConfig(max_retry=retries)
                 )
-                self.logger.debug(f"Current session is {g_repr(current_session)}")
+                logger.debug(f"Current session is {g_repr(current_session)}")
                 if current_session == expected_session:
                     return True
             except UnexpectedNegativeResponse as e:
                 if suggests_identifier_not_supported(e.RESPONSE_CODE):
-                    self.logger.info(
+                    logger.info(
                         f"Read current session not supported: {e.RESPONSE_CODE.name}, skipping check_session"
                     )
                     return True
                 raise e
             except asyncio.TimeoutError:
-                self.logger.warning(
+                logger.warning(
                     "Reading current session timed out, skipping check_session"
                 )
                 return True
 
-        self.logger.warning(
+        logger.warning(
             f"Failed to switch to session {g_repr(expected_session)} after {retries} attempts"
         )
         return False
 
     async def power_cycle(self, sleep: int = 5) -> bool:
         if self.power_supply is None:
-            self.logger.debug("no power_supply available")
+            logger.debug("no power_supply available")
             return False
 
         async def callback() -> None:
@@ -281,14 +279,14 @@ class ECU(UDSClient):
             and self.db_handler is not None
             and use_db
         ):
-            self.logger.debug(
+            logger.debug(
                 "Could not switch to session. Trying with database transitions ..."
             )
 
             if self.db_handler is not None:
                 steps = await self.db_handler.get_session_transition(level)
 
-                self.logger.debug(f"Found the following steps in database: {steps}")
+                logger.debug(f"Found the following steps in database: {steps}")
 
                 if steps is not None:
                     for step in steps:
@@ -331,7 +329,7 @@ class ECU(UDSClient):
         """transmit_data splits the data to be sent in several blocks of size block_length,
         transfers all of them and concludes the transmission with RequestTransferExit"""
         if block_length > max_block_length:
-            self.logger.warning(f"Limiting block size to {g_repr(max_block_length)}")
+            logger.warning(f"Limiting block size to {g_repr(max_block_length)}")
             block_length = max_block_length
         # block_length includes the service identifier and block counter; payload must be smaller
         payload_size = block_length - 2
@@ -339,7 +337,7 @@ class ECU(UDSClient):
         for i in range(0, len(data), payload_size):
             counter += 1
             payload = data[i : i + payload_size]
-            self.logger.debug(
+            logger.debug(
                 f"Transferring block {g_repr(counter)} "
                 f"with payload size {g_repr(len(payload))}"
             )
@@ -351,34 +349,34 @@ class ECU(UDSClient):
         raise_for_error(resp)
 
     async def _wait_for_ecu(self, sleep_time: float) -> None:
-        """wait for ecu to be alive again (eg. after reset)
-        Internal method without timeout"""
-        self.logger.info("waiting for ECU…")
+        """Internal method with endless loop in case of no answer from ECU"""
+        config = UDSRequestConfig(timeout=0.5, max_retry=1, skip_hooks=True)
+        logger.info("waiting for ECU…")
         while True:
             try:
                 await asyncio.sleep(sleep_time)
-                await self.ping()
+                await self.ping(config=config)
                 break
             except (ConnectionError, UDSException) as e:
-                self.logger.debug(f"ECU not ready: {e!r}")
+                logger.debug(f"ECU not ready: {e!r}")
                 await self.reconnect()
-        self.logger.info("ECU ready")
+        logger.info("ECU ready")
 
     async def wait_for_ecu(
         self,
         timeout: float | None = None,
     ) -> bool:
-        """wait for ecu to be alive again (eg. after reset)
-        Wait at most timeout"""
+        """Wait for ecu to be alive again (e.g. after reset).
+        Sends a ping every 0.5s and waits at most timeout"""
         if self.tester_present_task and self.tester_present_interval:
             await self.stop_cyclic_tester_present()
 
         t = timeout if timeout is not None else self.timeout
         try:
-            await asyncio.wait_for(self._wait_for_ecu(t * 0.8), timeout=t)
+            await asyncio.wait_for(self._wait_for_ecu(0.5), timeout=t)
             return True
         except asyncio.TimeoutError:
-            self.logger.critical("Timeout while waiting for ECU!")
+            logger.critical("Timeout while waiting for ECU!")
             return False
         finally:
             if self.tester_present_task and self.tester_present_interval:
@@ -386,13 +384,13 @@ class ECU(UDSClient):
 
     async def _tester_present_worker(self, interval: float) -> None:
         assert self.transport
-        self.logger.debug("tester present worker started")
+        logger.debug("tester present worker started")
         while True:
             try:
                 async with self.mutex:
                     payload = bytes([0x3E, 0x80])
                     await self.transport.write(payload)
-                    self.logger.debug(payload.hex(), extra={"tags": ["write", "uds"]})
+                    logger.debug(payload.hex(), extra={"tags": ["write", "uds"]})
 
                     # Hold the mutex for 10 ms to synchronize this background
                     # worker with the main sender task.
@@ -409,13 +407,13 @@ class ECU(UDSClient):
                         pass
                 await asyncio.sleep(interval)
             except asyncio.CancelledError:
-                self.logger.debug("tester present worker terminated")
+                logger.debug("tester present worker terminated")
                 break
             except ConnectionError:
-                self.logger.info("connection lost; reconnecting")
+                logger.info("connection lost; reconnecting")
                 await self.reconnect()
             except Exception as e:
-                self.logger.debug(f"tester present got {e!r}")
+                logger.debug(f"tester present got {e!r}")
 
     async def start_cyclic_tester_present(self, interval: float) -> None:
         self.tester_present_interval = interval
@@ -429,7 +427,7 @@ class ECU(UDSClient):
 
     async def stop_cyclic_tester_present(self) -> None:
         if self.tester_present_task is None:
-            self.logger.warning(
+            logger.warning(
                 "BUG: stop_cyclic_tester_present() called but no task running"
             )
             return
@@ -527,7 +525,7 @@ class ECU(UDSClient):
                         mode,
                     )
             except Exception as e:
-                self.logger.warning(f"Could not log messages to database: {g_repr(e)}")
+                logger.warning(f"Could not log messages to database: {g_repr(e)}")
 
             if response is not None:
                 await self.update_state(request, response)

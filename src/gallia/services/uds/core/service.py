@@ -15,8 +15,8 @@ from gallia.log import get_logger
 from gallia.services.uds.core.constants import (
     DTCFormatIdentifier,
     InputOutputControlParameter,
-    RCSubFuncs,
-    RDTCISubFuncs,
+    ReadDTCInformationSubFuncs,
+    RoutineControlSubFuncs,
     UDSErrorCodes,
     UDSIsoServices,
     UDSIsoServicesEchoLength,
@@ -37,7 +37,7 @@ from gallia.services.uds.core.utils import (
     uds_memory_parameters,
 )
 
-logger = get_logger("uds")
+logger = get_logger("gallia.uds.service")
 
 # ****************
 # * Base classes *
@@ -2025,7 +2025,7 @@ class _ReadDTCType6Request(
 class ReportNumberOfDTCByStatusMaskResponse(
     _ReadDTCType0Response,
     service_id=UDSIsoServices.ReadDTCInformation,
-    sub_function_id=RDTCISubFuncs.RNODTCBSM,
+    sub_function_id=ReadDTCInformationSubFuncs.reportNumberOfDTCByStatusMask,
     minimal_length=6,
     maximal_length=6,
 ):
@@ -2037,7 +2037,7 @@ class ReportNumberOfDTCByStatusMaskRequest(
     minimal_length=3,
     maximal_length=3,
     service_id=UDSIsoServices.ReadDTCInformation,
-    sub_function_id=RDTCISubFuncs.RNODTCBSM,
+    sub_function_id=ReadDTCInformationSubFuncs.reportNumberOfDTCByStatusMask,
     response_type=ReportNumberOfDTCByStatusMaskResponse,
 ):
     def __init__(self, dtc_status_mask: int, suppress_response: bool = False) -> None:
@@ -2057,7 +2057,7 @@ class ReportDTCByStatusMaskResponse(
     minimal_length=3,
     maximal_length=None,
     service_id=UDSIsoServices.ReadDTCInformation,
-    sub_function_id=RDTCISubFuncs.RDTCBSM,
+    sub_function_id=ReadDTCInformationSubFuncs.reportDTCByStatusMask,
 ):
     pass
 
@@ -2067,7 +2067,7 @@ class ReportDTCByStatusMaskRequest(
     minimal_length=3,
     maximal_length=3,
     service_id=UDSIsoServices.ReadDTCInformation,
-    sub_function_id=RDTCISubFuncs.RDTCBSM,
+    sub_function_id=ReadDTCInformationSubFuncs.reportDTCByStatusMask,
     response_type=ReportDTCByStatusMaskResponse,
 ):
     def __init__(self, dtc_status_mask: int, suppress_response: bool = False) -> None:
@@ -2087,7 +2087,7 @@ class ReportMirrorMemoryDTCByStatusMaskResponse(
     minimal_length=3,
     maximal_length=None,
     service_id=UDSIsoServices.ReadDTCInformation,
-    sub_function_id=RDTCISubFuncs.RMMDTCBSM,
+    sub_function_id=ReadDTCInformationSubFuncs.reportMirrorMemoryDTCByStatusMask,
 ):
     pass
 
@@ -2095,7 +2095,7 @@ class ReportMirrorMemoryDTCByStatusMaskResponse(
 class ReportMirrorMemoryDTCByStatusMaskRequest(
     _ReadDTCType0Request,
     service_id=UDSIsoServices.ReadDTCInformation,
-    sub_function_id=RDTCISubFuncs.RMMDTCBSM,
+    sub_function_id=ReadDTCInformationSubFuncs.reportMirrorMemoryDTCByStatusMask,
     response_type=ReportMirrorMemoryDTCByStatusMaskResponse,
     minimal_length=3,
     maximal_length=3,
@@ -2115,7 +2115,7 @@ class ReportMirrorMemoryDTCByStatusMaskRequest(
 class ReportNumberOfMirrorMemoryDTCByStatusMaskResponse(
     _ReadDTCType0Response,
     service_id=UDSIsoServices.ReadDTCInformation,
-    sub_function_id=RDTCISubFuncs.RNOMMDTCBSM,
+    sub_function_id=ReadDTCInformationSubFuncs.reportNumberOfMirrorMemoryDTCByStatusMask,
     minimal_length=6,
     maximal_length=6,
 ):
@@ -2125,7 +2125,7 @@ class ReportNumberOfMirrorMemoryDTCByStatusMaskResponse(
 class ReportNumberOfMirrorMemoryDTCByStatusMaskRequest(
     _ReadDTCType0Request,
     service_id=UDSIsoServices.ReadDTCInformation,
-    sub_function_id=RDTCISubFuncs.RNOMMDTCBSM,
+    sub_function_id=ReadDTCInformationSubFuncs.reportNumberOfMirrorMemoryDTCByStatusMask,
     response_type=ReportNumberOfMirrorMemoryDTCByStatusMaskResponse,
     minimal_length=3,
     maximal_length=3,
@@ -2146,7 +2146,7 @@ class ReportNumberOfMirrorMemoryDTCByStatusMaskRequest(
 class ReportNumberOfEmissionsRelatedOBDDTCByStatusMaskResponse(
     _ReadDTCType0Response,
     service_id=UDSIsoServices.ReadDTCInformation,
-    sub_function_id=RDTCISubFuncs.RNOOBDDTCBSM,
+    sub_function_id=ReadDTCInformationSubFuncs.reportNumberOfEmissionsRelatedOBDDTCByStatusMask,
     minimal_length=6,
     maximal_length=6,
 ):
@@ -2156,7 +2156,7 @@ class ReportNumberOfEmissionsRelatedOBDDTCByStatusMaskResponse(
 class ReportNumberOfEmissionsRelatedOBDDTCByStatusMaskRequest(
     _ReadDTCType0Request,
     service_id=UDSIsoServices.ReadDTCInformation,
-    sub_function_id=RDTCISubFuncs.RNOOBDDTCBSM,
+    sub_function_id=ReadDTCInformationSubFuncs.reportNumberOfEmissionsRelatedOBDDTCByStatusMask,
     response_type=ReportNumberOfEmissionsRelatedOBDDTCByStatusMaskResponse,
     minimal_length=3,
     maximal_length=3,
@@ -2179,7 +2179,7 @@ class ReportEmissionsRelatedOBDDTCByStatusMaskResponse(
     minimal_length=3,
     maximal_length=None,
     service_id=UDSIsoServices.ReadDTCInformation,
-    sub_function_id=RDTCISubFuncs.ROBDDTCBSM,
+    sub_function_id=ReadDTCInformationSubFuncs.reportEmissionsRelatedOBDDTCByStatusMask,
 ):
     pass
 
@@ -2187,7 +2187,7 @@ class ReportEmissionsRelatedOBDDTCByStatusMaskResponse(
 class ReportEmissionsRelatedOBDDTCByStatusMaskRequest(
     _ReadDTCType0Request,
     service_id=UDSIsoServices.ReadDTCInformation,
-    sub_function_id=RDTCISubFuncs.ROBDDTCBSM,
+    sub_function_id=ReadDTCInformationSubFuncs.reportEmissionsRelatedOBDDTCByStatusMask,
     response_type=ReportEmissionsRelatedOBDDTCByStatusMaskResponse,
     minimal_length=3,
     maximal_length=3,
@@ -2210,7 +2210,7 @@ class ReportSupportedDTCResponse(
     minimal_length=3,
     maximal_length=None,
     service_id=UDSIsoServices.ReadDTCInformation,
-    sub_function_id=RDTCISubFuncs.RSUPDTC,
+    sub_function_id=ReadDTCInformationSubFuncs.reportSupportedDTC,
 ):
     pass
 
@@ -2218,7 +2218,7 @@ class ReportSupportedDTCResponse(
 class ReportSupportedDTCRequest(
     _ReadDTCType6Request,
     service_id=UDSIsoServices.ReadDTCInformation,
-    sub_function_id=RDTCISubFuncs.RSUPDTC,
+    sub_function_id=ReadDTCInformationSubFuncs.reportSupportedDTC,
     response_type=ReportSupportedDTCResponse,
     minimal_length=2,
     maximal_length=2,
@@ -2239,7 +2239,7 @@ class ReportFirstTestFailedDTCResponse(
     minimal_length=3,
     maximal_length=7,
     service_id=UDSIsoServices.ReadDTCInformation,
-    sub_function_id=RDTCISubFuncs.RFTFDTC,
+    sub_function_id=ReadDTCInformationSubFuncs.reportFirstTestFailedDTC,
 ):
     pass
 
@@ -2247,7 +2247,7 @@ class ReportFirstTestFailedDTCResponse(
 class ReportFirstTestFailedDTCRequest(
     _ReadDTCType6Request,
     service_id=UDSIsoServices.ReadDTCInformation,
-    sub_function_id=RDTCISubFuncs.RFTFDTC,
+    sub_function_id=ReadDTCInformationSubFuncs.reportFirstTestFailedDTC,
     response_type=ReportFirstTestFailedDTCResponse,
     minimal_length=2,
     maximal_length=2,
@@ -2268,7 +2268,7 @@ class ReportFirstConfirmedDTCResponse(
     minimal_length=3,
     maximal_length=7,
     service_id=UDSIsoServices.ReadDTCInformation,
-    sub_function_id=RDTCISubFuncs.RFCDTC,
+    sub_function_id=ReadDTCInformationSubFuncs.reportFirstConfirmedDTC,
 ):
     pass
 
@@ -2276,7 +2276,7 @@ class ReportFirstConfirmedDTCResponse(
 class ReportFirstConfirmedDTCRequest(
     _ReadDTCType6Request,
     service_id=UDSIsoServices.ReadDTCInformation,
-    sub_function_id=RDTCISubFuncs.RFCDTC,
+    sub_function_id=ReadDTCInformationSubFuncs.reportFirstConfirmedDTC,
     response_type=ReportFirstConfirmedDTCResponse,
     minimal_length=2,
     maximal_length=2,
@@ -2297,7 +2297,7 @@ class ReportMostRecentTestFailedDTCResponse(
     minimal_length=3,
     maximal_length=7,
     service_id=UDSIsoServices.ReadDTCInformation,
-    sub_function_id=RDTCISubFuncs.RMRTFDTC,
+    sub_function_id=ReadDTCInformationSubFuncs.reportMostRecentTestFailedDTC,
 ):
     pass
 
@@ -2305,7 +2305,7 @@ class ReportMostRecentTestFailedDTCResponse(
 class ReportMostRecentFirstTestFailedDTCRequest(
     _ReadDTCType6Request,
     service_id=UDSIsoServices.ReadDTCInformation,
-    sub_function_id=RDTCISubFuncs.RMRTFDTC,
+    sub_function_id=ReadDTCInformationSubFuncs.reportMostRecentTestFailedDTC,
     response_type=ReportMostRecentTestFailedDTCResponse,
     minimal_length=2,
     maximal_length=2,
@@ -2326,7 +2326,7 @@ class ReportMostrecentConfirmedDTCResponse(
     minimal_length=3,
     maximal_length=7,
     service_id=UDSIsoServices.ReadDTCInformation,
-    sub_function_id=RDTCISubFuncs.RMRCDTC,
+    sub_function_id=ReadDTCInformationSubFuncs.reportMostRecentConfirmedDTC,
 ):
     pass
 
@@ -2334,7 +2334,7 @@ class ReportMostrecentConfirmedDTCResponse(
 class ReportMostRecentConfirmedDTCRequest(
     _ReadDTCType6Request,
     service_id=UDSIsoServices.ReadDTCInformation,
-    sub_function_id=RDTCISubFuncs.RMRCDTC,
+    sub_function_id=ReadDTCInformationSubFuncs.reportMostRecentConfirmedDTC,
     response_type=ReportMostrecentConfirmedDTCResponse,
     minimal_length=2,
     maximal_length=2,
@@ -2355,7 +2355,7 @@ class ReportDTCWithPermanentStatusResponse(
     minimal_length=3,
     maximal_length=None,
     service_id=UDSIsoServices.ReadDTCInformation,
-    sub_function_id=RDTCISubFuncs.RDTCWPS,
+    sub_function_id=ReadDTCInformationSubFuncs.reportDTCWithPermanentStatus,
 ):
     pass
 
@@ -2363,7 +2363,7 @@ class ReportDTCWithPermanentStatusResponse(
 class ReportDTCWithPermanentStatusRequest(
     _ReadDTCType6Request,
     service_id=UDSIsoServices.ReadDTCInformation,
-    sub_function_id=RDTCISubFuncs.RDTCWPS,
+    sub_function_id=ReadDTCInformationSubFuncs.reportDTCWithPermanentStatus,
     response_type=ReportDTCWithPermanentStatusResponse,
     minimal_length=2,
     maximal_length=2,
@@ -2383,65 +2383,81 @@ class ReadDTCInformation(
     SpecializedSubFunctionService, service_id=UDSIsoServices.ReadDTCInformation
 ):
     class ReportNumberOfDTCByStatusMask(
-        SubFunction, sub_function_id=RDTCISubFuncs.RNODTCBSM
+        SubFunction,
+        sub_function_id=ReadDTCInformationSubFuncs.reportNumberOfDTCByStatusMask,
     ):
         Response = ReportNumberOfDTCByStatusMaskResponse
         Request = ReportNumberOfDTCByStatusMaskRequest
 
-    class ReportDTCByStatusMask(SubFunction, sub_function_id=RDTCISubFuncs.RDTCBSM):
+    class ReportDTCByStatusMask(
+        SubFunction, sub_function_id=ReadDTCInformationSubFuncs.reportDTCByStatusMask
+    ):
         Response = ReportDTCByStatusMaskResponse
         Request = ReportDTCByStatusMaskRequest
 
     class ReportMirrorMemoryDTCByStatusMask(
-        SubFunction, sub_function_id=RDTCISubFuncs.RMMDTCBSM
+        SubFunction,
+        sub_function_id=ReadDTCInformationSubFuncs.reportMirrorMemoryDTCByStatusMask,
     ):
         Response = ReportMirrorMemoryDTCByStatusMaskResponse
         Request = ReportMirrorMemoryDTCByStatusMaskRequest
 
     class ReportNumberOfMirrorMemoryDTCByStatusMask(
-        SubFunction, sub_function_id=RDTCISubFuncs.RNOMMDTCBSM
+        SubFunction,
+        sub_function_id=ReadDTCInformationSubFuncs.reportNumberOfMirrorMemoryDTCByStatusMask,
     ):
         Response = ReportNumberOfMirrorMemoryDTCByStatusMaskResponse
         Request = ReportNumberOfMirrorMemoryDTCByStatusMaskRequest
 
     class ReportNumberOfEmissionsRelatedOBDDTCByStatusMask(
-        SubFunction, sub_function_id=RDTCISubFuncs.RNOOBDDTCBSM
+        SubFunction,
+        sub_function_id=ReadDTCInformationSubFuncs.reportNumberOfEmissionsRelatedOBDDTCByStatusMask,
     ):
         Response = ReportNumberOfEmissionsRelatedOBDDTCByStatusMaskResponse
         Request = ReportNumberOfEmissionsRelatedOBDDTCByStatusMaskRequest
 
     class ReportEmissionsRelatedOBDDTCByStatusMask(
-        SubFunction, sub_function_id=RDTCISubFuncs.ROBDDTCBSM
+        SubFunction,
+        sub_function_id=ReadDTCInformationSubFuncs.reportEmissionsRelatedOBDDTCByStatusMask,
     ):
         Response = ReportEmissionsRelatedOBDDTCByStatusMaskResponse
         Request = ReportEmissionsRelatedOBDDTCByStatusMaskRequest
 
-    class ReportSupportedDTC(SubFunction, sub_function_id=RDTCISubFuncs.RSUPDTC):
+    class ReportSupportedDTC(
+        SubFunction, sub_function_id=ReadDTCInformationSubFuncs.reportSupportedDTC
+    ):
         Response = ReportSupportedDTCResponse
         Request = ReportSupportedDTCRequest
 
-    class ReportFirstTestFailedDTC(SubFunction, sub_function_id=RDTCISubFuncs.RFTFDTC):
+    class ReportFirstTestFailedDTC(
+        SubFunction, sub_function_id=ReadDTCInformationSubFuncs.reportFirstTestFailedDTC
+    ):
         Response = ReportFirstTestFailedDTCResponse
         Request = ReportFirstTestFailedDTCRequest
 
-    class ReportFirstConfirmedDTC(SubFunction, sub_function_id=RDTCISubFuncs.RFCDTC):
+    class ReportFirstConfirmedDTC(
+        SubFunction, sub_function_id=ReadDTCInformationSubFuncs.reportFirstConfirmedDTC
+    ):
         Response = ReportFirstConfirmedDTCResponse
         Request = ReportFirstConfirmedDTCRequest
 
     class ReportMostRecentTestFailedDTC(
-        SubFunction, sub_function_id=RDTCISubFuncs.RMRTFDTC
+        SubFunction,
+        sub_function_id=ReadDTCInformationSubFuncs.reportMostRecentTestFailedDTC,
     ):
         Response = ReportMostRecentTestFailedDTCResponse
         Request = ReportMostRecentFirstTestFailedDTCRequest
 
     class ReportMostRecentConfirmedDTC(
-        SubFunction, sub_function_id=RDTCISubFuncs.RMRCDTC
+        SubFunction,
+        sub_function_id=ReadDTCInformationSubFuncs.reportMostRecentConfirmedDTC,
     ):
         Response = ReportMostrecentConfirmedDTCResponse
         Request = ReportMostRecentConfirmedDTCRequest
 
     class ReportDTCWithPermanentStatus(
-        SubFunction, sub_function_id=RDTCISubFuncs.RDTCWPS
+        SubFunction,
+        sub_function_id=ReadDTCInformationSubFuncs.reportDTCWithPermanentStatus,
     ):
         Response = ReportDTCWithPermanentStatusResponse
         Request = ReportDTCWithPermanentStatusRequest
@@ -2563,7 +2579,7 @@ class ReturnControlToECUResponse(
     def __init__(self, data_identifier: int, control_states: bytes = b"") -> None:
         super().__init__(
             data_identifier,
-            bytes([InputOutputControlParameter.RCTECU]) + control_states,
+            bytes([InputOutputControlParameter.returnControlToECU]) + control_states,
         )
 
     def matches(self, request: UDSRequest) -> bool:
@@ -2595,7 +2611,7 @@ class ReturnControlToECURequest(
         """
         super().__init__(
             data_identifier,
-            bytes([InputOutputControlParameter.RCTECU]),
+            bytes([InputOutputControlParameter.returnControlToECU]),
             control_enable_mask_record,
         )
 
@@ -2614,7 +2630,8 @@ class ResetToDefaultResponse(
 ):
     def __init__(self, data_identifier: int, control_states: bytes = b"") -> None:
         super().__init__(
-            data_identifier, bytes([InputOutputControlParameter.RTD]) + control_states
+            data_identifier,
+            bytes([InputOutputControlParameter.resetToDefault]) + control_states,
         )
 
     def matches(self, request: UDSRequest) -> bool:
@@ -2644,7 +2661,7 @@ class ResetToDefaultRequest(
         """
         super().__init__(
             data_identifier,
-            bytes([InputOutputControlParameter.RTD]),
+            bytes([InputOutputControlParameter.resetToDefault]),
             control_enable_mask_record,
         )
 
@@ -2663,7 +2680,8 @@ class FreezeCurrentStateResponse(
 ):
     def __init__(self, data_identifier: int, control_states: bytes = b"") -> None:
         super().__init__(
-            data_identifier, bytes([InputOutputControlParameter.FCS]) + control_states
+            data_identifier,
+            bytes([InputOutputControlParameter.freezeCurrentState]) + control_states,
         )
 
     def matches(self, request: UDSRequest) -> bool:
@@ -2694,7 +2712,7 @@ class FreezeCurrentStateRequest(
         """
         super().__init__(
             data_identifier,
-            bytes([InputOutputControlParameter.FCS]),
+            bytes([InputOutputControlParameter.freezeCurrentState]),
             control_enable_mask_record,
         )
 
@@ -2713,7 +2731,8 @@ class ShortTermAdjustmentResponse(
 ):
     def __init__(self, data_identifier: int, control_states: bytes = b"") -> None:
         super().__init__(
-            data_identifier, bytes([InputOutputControlParameter.STA]) + control_states
+            data_identifier,
+            bytes([InputOutputControlParameter.shortTermAdjustment]) + control_states,
         )
 
 
@@ -2743,7 +2762,7 @@ class ShortTermAdjustmentRequest(
                                            should be affected by this request.
         """
         control_option_record = (
-            bytes([InputOutputControlParameter.STA]) + control_states
+            bytes([InputOutputControlParameter.shortTermAdjustment]) + control_states
         )
         super().__init__(
             data_identifier, control_option_record, control_enable_mask_record
@@ -2885,7 +2904,7 @@ class RoutineControlRequest(
 class StartRoutineResponse(
     RoutineControlResponse,
     service_id=UDSIsoServices.RoutineControl,
-    sub_function_id=RCSubFuncs.STR,
+    sub_function_id=RoutineControlSubFuncs.startRoutine,
     minimal_length=4,
     maximal_length=None,
 ):
@@ -2895,7 +2914,7 @@ class StartRoutineResponse(
 class StartRoutineRequest(
     RoutineControlRequest,
     service_id=UDSIsoServices.RoutineControl,
-    sub_function_id=RCSubFuncs.STR,
+    sub_function_id=RoutineControlSubFuncs.startRoutine,
     response_type=StartRoutineResponse,
     minimal_length=4,
     maximal_length=None,
@@ -2923,7 +2942,7 @@ class StartRoutineRequest(
 class StopRoutineResponse(
     RoutineControlResponse,
     service_id=UDSIsoServices.RoutineControl,
-    sub_function_id=RCSubFuncs.STPR,
+    sub_function_id=RoutineControlSubFuncs.stopRoutine,
     minimal_length=4,
     maximal_length=None,
 ):
@@ -2933,7 +2952,7 @@ class StopRoutineResponse(
 class StopRoutineRequest(
     RoutineControlRequest,
     service_id=UDSIsoServices.RoutineControl,
-    sub_function_id=RCSubFuncs.STPR,
+    sub_function_id=RoutineControlSubFuncs.stopRoutine,
     response_type=StopRoutineResponse,
     minimal_length=4,
     maximal_length=None,
@@ -2963,7 +2982,7 @@ class RequestRoutineResultsResponse(
     minimal_length=4,
     maximal_length=None,
     service_id=UDSIsoServices.RoutineControl,
-    sub_function_id=RCSubFuncs.RRR,
+    sub_function_id=RoutineControlSubFuncs.requestRoutineResults,
 ):
     pass
 
@@ -2971,7 +2990,7 @@ class RequestRoutineResultsResponse(
 class RequestRoutineResultsRequest(
     RoutineControlRequest,
     service_id=UDSIsoServices.RoutineControl,
-    sub_function_id=RCSubFuncs.RRR,
+    sub_function_id=RoutineControlSubFuncs.requestRoutineResults,
     response_type=RequestRoutineResultsResponse,
     minimal_length=4,
     maximal_length=None,
@@ -2999,15 +3018,19 @@ class RequestRoutineResultsRequest(
 class RoutineControl(
     SpecializedSubFunctionService, service_id=UDSIsoServices.RoutineControl
 ):
-    class StartRoutine(SubFunction, sub_function_id=RCSubFuncs.STR):
+    class StartRoutine(
+        SubFunction, sub_function_id=RoutineControlSubFuncs.startRoutine
+    ):
         Request = StartRoutineRequest
         Response = StartRoutineResponse
 
-    class StopRoutine(SubFunction, sub_function_id=RCSubFuncs.STPR):
+    class StopRoutine(SubFunction, sub_function_id=RoutineControlSubFuncs.stopRoutine):
         Request = StopRoutineRequest
         Response = StopRoutineResponse
 
-    class RequestRoutineResults(SubFunction, sub_function_id=RCSubFuncs.RRR):
+    class RequestRoutineResults(
+        SubFunction, sub_function_id=RoutineControlSubFuncs.requestRoutineResults
+    ):
         Request = RequestRoutineResultsRequest
         Response = RequestRoutineResultsResponse
 

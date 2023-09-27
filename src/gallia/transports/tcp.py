@@ -6,7 +6,10 @@ from __future__ import annotations
 
 import asyncio
 
+from gallia.log import get_logger
 from gallia.transports.base import BaseTransport, LinesTransportMixin, TargetURI
+
+logger = get_logger("gallia.transport.tcp")
 
 
 class TCPTransport(BaseTransport, scheme="tcp"):
@@ -46,7 +49,7 @@ class TCPTransport(BaseTransport, scheme="tcp"):
         tags: list[str] | None = None,
     ) -> int:
         t = tags + ["write"] if tags is not None else ["write"]
-        self.logger.trace(data.hex(), extra={"tags": t})
+        logger.trace(data.hex(), extra={"tags": t})
 
         self.writer.write(data)
         await asyncio.wait_for(self.writer.drain(), timeout)
@@ -60,7 +63,7 @@ class TCPTransport(BaseTransport, scheme="tcp"):
         data = await asyncio.wait_for(self.reader.read(self.BUFSIZE), timeout)
 
         t = tags + ["read"] if tags is not None else ["read"]
-        self.logger.trace(data.hex(), extra={"tags": t})
+        logger.trace(data.hex(), extra={"tags": t})
         return data
 
 

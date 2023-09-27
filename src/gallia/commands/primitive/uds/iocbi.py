@@ -7,9 +7,12 @@ import sys
 from argparse import Namespace
 
 from gallia.command import UDSScanner
+from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse
 from gallia.services.uds.core.utils import g_repr
 from gallia.utils import auto_int
+
+logger = get_logger("gallia.primitive.iocbi")
 
 
 class IOCBIPrimitive(UDSScanner):
@@ -68,7 +71,7 @@ class IOCBIPrimitive(UDSScanner):
         try:
             await self.ecu.check_and_set_session(args.session)
         except Exception as e:
-            self.logger.critical(
+            logger.critical(
                 f"Could not change to session: {g_repr(args.session)}: {e!r}"
             )
             sys.exit(1)
@@ -105,17 +108,17 @@ class IOCBIPrimitive(UDSScanner):
             )
             uses_control_parameter = False
         else:
-            self.logger.critical("Unhandled control parameter")
+            logger.critical("Unhandled control parameter")
             sys.exit(1)
 
         if isinstance(resp, NegativeResponse):
-            self.logger.error(resp)
+            logger.error(resp)
         else:
-            self.logger.result("Positive response:")
+            logger.result("Positive response:")
             data = (
                 resp.control_status_record[1:]
                 if uses_control_parameter
                 else resp.control_status_record
             )
-            self.logger.result(f"hex: {data.hex()}")
-            self.logger.result(f"raw: {repr(data)}")
+            logger.result(f"hex: {data.hex()}")
+            logger.result(f"raw: {repr(data)}")

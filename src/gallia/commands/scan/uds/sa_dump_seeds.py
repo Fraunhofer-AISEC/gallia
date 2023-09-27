@@ -13,9 +13,12 @@ import aiofiles
 
 from gallia.command import UDSScanner
 from gallia.config import Config
+from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse, UDSRequestConfig
 from gallia.services.uds.core.utils import g_repr
 from gallia.utils import auto_int
+
+logger = get_logger("gallia.scan.dump-seeds")
 
 
 class SASeedsDumper(UDSScanner):
@@ -88,7 +91,7 @@ class SASeedsDumper(UDSScanner):
             level, data, config=UDSRequestConfig(tags=["ANALYZE"])
         )
         if isinstance(resp, NegativeResponse):
-            self.logger.warning(f"ECU replied with an error: {resp}")
+            logger.warning(f"ECU replied with an error: {resp}")
             return None
         return resp.security_seed
 
@@ -97,9 +100,9 @@ class SASeedsDumper(UDSScanner):
             level + 1, key, config=UDSRequestConfig(tags=["ANALYZE"])
         )
         if isinstance(resp, NegativeResponse):
-            self.logger.debug(f"Key was rejected: {resp}")
+            logger.debug(f"Key was rejected: {resp}")
             return False
-        self.logger.result(
+        logger.result(
             f'Unlocked SA level {g_repr(level)} with key "{key.hex()}"! resp: {resp}'
         )
         return True
@@ -115,17 +118,17 @@ class SASeedsDumper(UDSScanner):
         if size > 1024:
             size = size / 1024
             size_unit = "MiB"
-        self.logger.notice(
+        logger.notice(
             f"Dumping seeds with {rate:.2f}{rate_unit}/h: {size:.2f}{size_unit}"
         )
 
     async def main(self, args: Namespace) -> None:
         session = args.session
-        self.logger.info(f"scanning in session: {g_repr(session)}")
+        logger.info(f"scanning in session: {g_repr(session)}")
 
         resp = await self.ecu.set_session(session)
         if isinstance(resp, NegativeResponse):
-            self.logger.critical(f"could not change to session: {resp}")
+            logger.critical(f"could not change to session: {resp}")
             return
 
         i = -1
@@ -152,7 +155,7 @@ class SASeedsDumper(UDSScanner):
 
             if args.check_session or reset:
                 if not await self.ecu.check_and_set_session(args.session):
-                    self.logger.error(
+                    logger.error(
                         f"ECU persistently lost session {g_repr(args.session)}"
                     )
                     sys.exit(1)
@@ -162,10 +165,10 @@ class SASeedsDumper(UDSScanner):
             try:
                 seed = await self.request_seed(args.level, args.data_record)
             except asyncio.TimeoutError:
-                self.logger.error("Timeout while requesting seed")
+                logger.error("Timeout while requesting seed")
                 continue
             except Exception as e:
-                self.logger.critical(f"Error while requesting seed: {g_repr(e)}")
+                logger.critical(f"Error while requesting seed: {g_repr(e)}")
                 sys.exit(1)
 
             if seed is None:
@@ -174,7 +177,7 @@ class SASeedsDumper(UDSScanner):
 
             await file.write(seed)
             if last_seed == seed:
-                self.logger.warning("Received the same seed as before")
+                logger.warning("Received the same seed as before")
 
             last_seed = seed
 
@@ -183,10 +186,10 @@ class SASeedsDumper(UDSScanner):
                     if await self.send_key(args.level, bytes(args.send_zero_key)):
                         break
                 except asyncio.TimeoutError:
-                    self.logger.warning("Timeout while sending key")
+                    logger.warning("Timeout while sending key")
                     continue
                 except Exception as e:
-                    self.logger.critical(f"Error while sending key: {g_repr(e)}")
+                    logger.critical(f"Error while sending key: {g_repr(e)}")
                     sys.exit(1)
 
             runs_since_last_reset += 1
@@ -196,15 +199,15 @@ class SASeedsDumper(UDSScanner):
                 runs_since_last_reset = 0
 
                 try:
-                    self.logger.info("Resetting the ECU")
+                    logger.info("Resetting the ECU")
                     await self.ecu.ecu_reset(0x01)
-                    self.logger.info("Waiting for the ECU to recover…")
+                    logger.info("Waiting for the ECU to recover…")
                     await self.ecu.wait_for_ecu()
                 except asyncio.TimeoutError:
-                    self.logger.error("ECU did not respond after reset; exiting…")
+                    logger.error("ECU did not respond after reset; exiting…")
                     sys.exit(1)
                 except ConnectionError:
-                    self.logger.warning(
+                    logger.warning(
                         "Lost connection to the ECU after performing a reset. "
                         "Attempting to reconnect…"
                     )

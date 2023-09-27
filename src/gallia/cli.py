@@ -32,6 +32,7 @@ from gallia.plugins import (
     load_ecu_plugin_eps,
     load_transport_plugin_eps,
 )
+from gallia.utils import get_log_level
 
 
 def load_parsers() -> Parsers:
@@ -184,7 +185,7 @@ def build_cli(
             epilog=cls.EPILOG,
         )
         cmd = cls(subparser, config)
-        subparser.set_defaults(run_func=cmd.entry_point)
+        subparser.set_defaults(cls_object=cmd)
 
 
 def cmd_show_config(
@@ -328,6 +329,7 @@ def cmd_show_plugins() -> None:
 def cmd_template(args: argparse.Namespace) -> None:
     template = """# [gallia]
 # verbosity = <int>
+# no-volatile-info = <bool>
 # trace_log = <bool>
 # lock_file = <str>
 
@@ -361,15 +363,12 @@ def cmd_template(args: argparse.Namespace) -> None:
     print(template.strip())
 
 
-def main() -> None:
+def build_parser() -> tuple[argparse.ArgumentParser, Config, Path | None]:
     registry = cmd_registry[:]
 
     plugin_cmds = load_command_plugins()
     if len(plugin_cmds) > 0:
         registry += plugin_cmds
-
-    # Will be set to the correct verbosity later.
-    setup_logging()
 
     parsers = load_parsers()
 
@@ -386,6 +385,11 @@ def main() -> None:
     build_cli(parsers, config, registry)
 
     parser = parsers["parser"]
+    return parser, config, config_path
+
+
+def main() -> None:
+    parser, config, config_path = build_parser()
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
 
@@ -409,11 +413,18 @@ def main() -> None:
         cmd_template(args)
         sys.exit(exitcode.OK)
 
-    if not hasattr(args, "run_func"):
+    if not hasattr(args, "cls_object"):
         args.help_func()
         parser.exit(exitcode.USAGE)
 
-    sys.exit(args.run_func(args))
+    setup_logging(
+        level=get_log_level(args),
+        no_volatile_info=args.no_volatile_info
+        if hasattr(args, "no_volatile_info")
+        else True,
+    )
+
+    sys.exit(args.cls_object.entry_point(args))
 
 
 if __name__ == "__main__":

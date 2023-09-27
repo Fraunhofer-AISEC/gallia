@@ -49,26 +49,22 @@ class ColorMode(Enum):
     NEVER = "never"
 
 
-_COLORS_ENABLED = False
-
-
-def set_color_mode(mode: ColorMode, stream: TextIO = sys.stderr) -> None:
+def resolve_color_mode(mode: ColorMode, stream: TextIO = sys.stderr) -> bool:
     """Sets the color mode of the console log handler.
 
     :param mode: The available options are described in :class:`ColorMode`.
     :param stream: Used as a reference for :attr:`ColorMode.AUTO`.
     """
-    global _COLORS_ENABLED  # noqa: PLW0603
     match mode:
         case ColorMode.ALWAYS:
-            _COLORS_ENABLED = True  # noqa: PLW0603
+            return True
         case ColorMode.AUTO:
             if os.getenv("NO_COLOR") is not None:
-                _COLORS_ENABLED = False  # noqa: PLW0603
+                return False
             else:
-                _COLORS_ENABLED = stream.isatty()  # noqa: PLW0603
+                return stream.isatty()
         case ColorMode.NEVER:
-            _COLORS_ENABLED = False
+            return False
 
 
 # https://stackoverflow.com/a/35804945
@@ -227,33 +223,11 @@ class PenlogPriority(IntEnum):
                 raise ValueError("invalid value")
 
 
-def _setup_queue() -> QueueListener:
-    queue: Queue[Any] = Queue()
-    root = logging.getLogger()
-
-    handlers: list[logging.Handler] = []
-
-    handler = QueueHandler(queue)
-    root.addHandler(handler)
-    for h in root.handlers[:]:
-        if h is not handler:
-            root.removeHandler(h)
-            handlers.append(h)
-
-    listener = QueueListener(
-        queue,
-        *handlers,
-        respect_handler_level=True,
-    )
-    listener.start()
-    return listener
-
-
 def setup_logging(
     level: Loglevel | None = None,
-    file_level: Loglevel = Loglevel.DEBUG,
-    path: Path | None = None,
     color_mode: ColorMode = ColorMode.AUTO,
+    no_volatile_info: bool = False,
+    logger_name: str = "gallia",
 ) -> None:
     """Enable and configure gallia's logging system.
     If this fuction is not called as early as possible,
@@ -270,9 +244,10 @@ def setup_logging(
     :param path: The path to the logfile containing json records.
     :param color_mode: The color mode to use for the console.
     """
-    set_color_mode(color_mode)
+    colored = resolve_color_mode(color_mode)
 
     if level is None:
+        # FIXME why is this here and not in config?
         if (raw := os.getenv("GALLIA_LOGLEVEL")) is not None:
             level = PenlogPriority.from_str(raw).to_level()
         else:
@@ -283,35 +258,66 @@ def setup_logging(
     logging.logThreads = False
     logging.logProcesses = False
 
-    # TODO: Do we want to have this configurable?
-    logging.getLogger("asyncio").setLevel(logging.CRITICAL)
-    logging.getLogger("aiosqlite").setLevel(logging.CRITICAL)
+    logger = logging.getLogger(logger_name)
+    # LogLevel cannot be 0 (NOTSET), because only the root logger sends it to its handlers then
+    logger.setLevel(1)
+
+    # Clean up potentially existing handlers and create a new async QueueHandler for stderr output
+    while len(logger.handlers) > 0:
+        logger.handlers[0].close()
+        logger.removeHandler(logger.handlers[0])
+    colored = resolve_color_mode(color_mode)
+    add_stderr_log_handler(logger_name, level, no_volatile_info, colored)
+
+
+def add_stderr_log_handler(
+    logger_name: str, level: Loglevel, no_volatile_info: bool, colored: bool
+) -> None:
+    queue: Queue[Any] = Queue()
+    logger = logging.getLogger(logger_name)
+    logger.addHandler(QueueHandler(queue))
 
     stderr_handler = logging.StreamHandler(sys.stderr)
     stderr_handler.setLevel(level)
-    stderr_handler.setFormatter(_ConsoleFormatter())
+    console_formatter = _ConsoleFormatter()
 
-    handlers: list[logging.Handler] = [stderr_handler]
+    console_formatter.colored = colored
+    stderr_handler.terminator = ""  # We manually handle the terminator while formatting
+    if no_volatile_info is False:
+        console_formatter.volatile_info = True
 
-    if path is not None:
-        zstd_handler = _ZstdFileHandler(path, level=file_level)
-        zstd_handler.setFormatter(_JSONFormatter())
-        zstd_handler.setLevel(file_level)
-        handlers.append(zstd_handler)
+    stderr_handler.setFormatter(console_formatter)
 
-    logging.basicConfig(
-        handlers=handlers,
-        # Enable all log messages at the root logger.
-        # The stderr_handler and the zstd_handler have
-        # individual loglevels for appropriate filtering.
-        level=logging.NOTSET,
-        force=True,
+    queue_listener = QueueListener(
+        queue,
+        *[stderr_handler],
+        respect_handler_level=True,
     )
+    queue_listener.start()
+    atexit.register(queue_listener.stop)
 
-    # Replace handlers on the root logger with a LocalQueueHandler, and start a
-    # logging.QueueListener holding the original handlers.
-    queue = _setup_queue()
-    atexit.register(queue.stop)
+
+def add_zst_log_handler(
+    logger_name: str, filepath: Path, file_log_level: Loglevel
+) -> None:
+    queue: Queue[Any] = Queue()
+    logger = get_logger(logger_name)
+    logger.addHandler(QueueHandler(queue))
+
+    zstd_handler = _ZstdFileHandler(
+        filepath,
+        level=file_log_level,
+    )
+    zstd_handler.setLevel(file_log_level)
+    zstd_handler.setFormatter(_JSONFormatter())
+
+    queue_listener = QueueListener(
+        queue,
+        *[zstd_handler],
+        respect_handler_level=True,
+    )
+    queue_listener.start()
+    atexit.register(queue_listener.stop)
 
 
 class _PenlogRecordV1(msgspec.Struct, omit_defaults=True):
@@ -343,9 +349,9 @@ class _PenlogRecordV2(msgspec.Struct, omit_defaults=True, tag=2, tag_field="vers
 _PenlogRecord: TypeAlias = _PenlogRecordV1 | _PenlogRecordV2
 
 
-def _colorize_msg(data: str, levelno: int) -> str:
+def _colorize_msg(data: str, levelno: int) -> tuple[str, int]:
     if not sys.stderr.isatty():
-        return data
+        return data, 0
 
     out = ""
     match levelno:
@@ -370,7 +376,7 @@ def _colorize_msg(data: str, levelno: int) -> str:
     out += data
     out += _Color.RESET.value
 
-    return out
+    return out, len(style)
 
 
 def _format_record(  # noqa: PLR0913
@@ -381,8 +387,10 @@ def _format_record(  # noqa: PLR0913
     tags: list[str] | None,
     stacktrace: str | None,
     colored: bool = False,
+    volatile_info: bool = False,
 ) -> str:
-    msg = ""
+    msg = "\33[2K"
+    extra_len = 4
     msg += dt.strftime("%b %d %H:%M:%S.%f")[:-3]
     msg += " "
     msg += name
@@ -391,9 +399,21 @@ def _format_record(  # noqa: PLR0913
     msg += ": "
 
     if colored:
-        msg += _colorize_msg(data, levelno)
+        tmp_msg, extra_len_tmp = _colorize_msg(data, levelno)
+        msg += tmp_msg
+        extra_len += extra_len_tmp
     else:
         msg += data
+
+    if volatile_info and levelno <= Loglevel.INFO:
+        terminal_width, _ = shutil.get_terminal_size()
+        msg = msg[
+            : terminal_width + extra_len - 1
+        ]  # Adapt length to invisible ANSI colors
+        msg += _Color.RESET.value
+        msg += "\r"
+    else:
+        msg += "\n"
 
     if stacktrace is not None:
         msg += "\n"
@@ -411,6 +431,7 @@ class PenlogRecord:
     # FIXME: Enums are slow.
     priority: PenlogPriority
     tags: list[str] | None = None
+    colored: bool = False
     line: str | None = None
     stacktrace: str | None = None
     _python_level_no: int | None = None
@@ -427,7 +448,7 @@ class PenlogRecord:
             else self.priority.to_level(),
             tags=self.tags,
             stacktrace=self.stacktrace,
-            colored=_COLORS_ENABLED,
+            colored=self.colored,
         )
 
     @classmethod
@@ -718,6 +739,9 @@ class _JSONFormatter(logging.Formatter):
 
 
 class _ConsoleFormatter(logging.Formatter):
+    colored: bool = False
+    volatile_info: bool = False
+
     def format(
         self,
         record: logging.LogRecord,
@@ -742,7 +766,8 @@ class _ConsoleFormatter(logging.Formatter):
             levelno=record.levelno,
             tags=record.__dict__["tags"] if "tags" in record.__dict__ else None,
             stacktrace=stacktrace,
-            colored=_COLORS_ENABLED,
+            colored=self.colored,
+            volatile_info=self.volatile_info,
         )
 
 

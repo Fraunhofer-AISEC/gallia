@@ -4,8 +4,8 @@
 
 import pytest
 from gallia.transports import TargetURI
-from gallia.transports.can import ISOTPConfig
 from gallia.transports.doip import DoIPConfig
+from gallia.transports.isotp import ISOTPConfig
 from pydantic import ValidationError
 
 uris = [

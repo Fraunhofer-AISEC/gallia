@@ -8,9 +8,12 @@ from argparse import Namespace
 from binascii import unhexlify
 
 from gallia.command import UDSScanner
+from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse, UDSErrorCodes, UDSRequestConfig
 from gallia.services.uds.core.utils import g_repr, uds_memory_parameters
 from gallia.utils import auto_int
+
+logger = get_logger("gallia.scan.memory")
 
 
 class MemoryFunctionsScanner(UDSScanner):
@@ -55,7 +58,7 @@ class MemoryFunctionsScanner(UDSScanner):
     async def main(self, args: Namespace) -> None:
         resp = await self.ecu.set_session(args.session)
         if isinstance(resp, NegativeResponse):
-            self.logger.critical(f"could not change to session: {resp}")
+            logger.critical(f"could not change to session: {resp}")
             sys.exit(1)
 
         for i in range(5):
@@ -87,7 +90,7 @@ class MemoryFunctionsScanner(UDSScanner):
             if args.check_session and i % args.check_session == 0:
                 # Check session and try to recover from wrong session (max 3 times), else skip session
                 if not await self.ecu.check_and_set_session(args.session):
-                    self.logger.error(
+                    logger.error(
                         f"Aborting scan on session {g_repr(args.session)}; "
                         + f"current memory address was {g_repr(addr)}"
                     )
@@ -98,13 +101,13 @@ class MemoryFunctionsScanner(UDSScanner):
                     pdu, config=UDSRequestConfig(tags=["ANALYZE"])
                 )
             except asyncio.TimeoutError:
-                self.logger.result(f"Address {g_repr(addr)}: timeout")
+                logger.result(f"Address {g_repr(addr)}: timeout")
                 continue
 
             if isinstance(resp, NegativeResponse):
                 if resp.response_code is UDSErrorCodes.requestOutOfRange:
-                    self.logger.info(f"Address {g_repr(addr)}: {resp}")
+                    logger.info(f"Address {g_repr(addr)}: {resp}")
                 else:
-                    self.logger.result(f"Address {g_repr(addr)}: {resp}")
+                    logger.result(f"Address {g_repr(addr)}: {resp}")
             else:
-                self.logger.result(f"Address {g_repr(addr)}: {resp}")
+                logger.result(f"Address {g_repr(addr)}: {resp}")

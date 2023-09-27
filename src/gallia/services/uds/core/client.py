@@ -30,6 +30,9 @@ class UDSRequestConfig:
     tags: list[str] | None = None
 
 
+logger = get_logger("gallia.uds.client")
+
+
 class UDSClient:
     def __init__(
         self,
@@ -43,7 +46,6 @@ class UDSClient:
         self.retry_wait = 0.2
         self.pending_timeout = 5
         self.mutex = asyncio.Lock()
-        self.logger = get_logger("uds")
 
     async def reconnect(self, timeout: int | None = None) -> None:
         """Calls the underlying transport to trigger a reconnect"""
@@ -75,23 +77,21 @@ class UDSClient:
 
             # Avoid pasting this very line in every error branch.
             if i > 0:
-                self.logger.debug(f"retrying {i} from {max_retry}…")
+                logger.debug(f"retrying {i} from {max_retry}…")
             try:
-                self.logger.debug(
-                    request.pdu.hex(), extra={"tags": ["write", "uds"] + tags}
-                )
+                logger.debug(request.pdu.hex(), extra={"tags": ["write", "uds"] + tags})
                 raw_resp = await self.transport.request_unsafe(
                     request.pdu, timeout, config.tags
                 )
                 if raw_resp == b"":
                     raise BrokenPipeError("connection to target lost")
             except asyncio.TimeoutError as e:
-                self.logger.debug(f"{request} failed with: {repr(e)}")
+                logger.debug(f"{request} failed with: {repr(e)}")
                 last_exception = MissingResponse(request, str(e))
                 await asyncio.sleep(wait_time)
                 continue
 
-            self.logger.debug(raw_resp.hex(), extra={"tags": ["read", "uds"] + tags})
+            logger.debug(raw_resp.hex(), extra={"tags": ["read", "uds"] + tags})
             resp = parse_pdu(raw_resp, request)
 
             if isinstance(resp, service.NegativeResponse):
@@ -103,26 +103,30 @@ class UDSClient:
             # We already had ECUs which thought an infinite
             # response_pending loop is a good idea…
             # Let's limit this.
-            n_pending = 0
+            n_pending = 1
+            MAX_N_PENDING = 120
             n_timeout = 0
             waiting_time = 0.5
-            max_n_timeout = max(timeout if timeout else 0, 10) / waiting_time
+            max_n_timeout = max(timeout if timeout else 0, 20) / waiting_time
             while (
                 isinstance(resp, service.NegativeResponse)
                 and resp.response_code
                 == UDSErrorCodes.requestCorrectlyReceivedResponsePending
             ):
+                logger.info(f"Received ResponsePending: {n_pending}/{MAX_N_PENDING}")
                 try:
                     raw_resp = await self._read(timeout=waiting_time, tags=config.tags)
                     if raw_resp == b"":
                         raise BrokenPipeError("connection to target lost")
-                    self.logger.debug(
-                        raw_resp.hex(), extra={"tags": ["read", "uds"] + tags}
-                    )
+                    logger.debug(raw_resp.hex(), extra={"tags": ["read", "uds"] + tags})
                 except asyncio.TimeoutError as e:
                     # Send a tester present to indicate that
                     # we are still there.
-                    await self._tester_present(supress_resp=True)
+                    await self._tester_present(suppress_resp=True)
+                    logger.debug(
+                        "Waiting for next message after ResponsePending: "
+                        f"{n_timeout}/{max_n_timeout}"
+                    )
                     n_timeout += 1
                     if n_timeout >= max_n_timeout:
                         last_exception = MissingResponse(request, str(e))
@@ -131,7 +135,7 @@ class UDSClient:
                 resp = parse_pdu(raw_resp, request)
                 n_timeout = 0  # Only raise errors for consecutive timeouts
                 n_pending += 1
-                if n_pending >= 120:
+                if n_pending >= MAX_N_PENDING:
                     raise RuntimeError(
                         "ECU appears to be stuck in ResponsePending loop"
                     )
@@ -140,16 +144,18 @@ class UDSClient:
                 # and similar busy stuff is resolved.
                 return resp
 
-        self.logger.debug(f"{request} failed after retry loop")
+        logger.debug(f"{request} failed after retry loop")
         raise last_exception
 
     async def _tester_present(
-        self, supress_resp: bool = False, config: UDSRequestConfig | None = None
+        self, suppress_resp: bool = False, config: UDSRequestConfig | None = None
     ) -> service.UDSResponse | None:
         config = config if config is not None else UDSRequestConfig()
         timeout = config.timeout if config.timeout else self.timeout
-        if supress_resp:
+        if suppress_resp:
             pdu = service.TesterPresentRequest(suppress_response=True).pdu
+            tags = config.tags if config.tags is not None else []
+            logger.debug(pdu.hex(), extra={"tags": ["write", "uds"] + tags})
             await self.transport.write(pdu, timeout, config.tags)
             return None
         return await self.tester_present(False, config)

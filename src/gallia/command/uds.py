@@ -9,10 +9,13 @@ import aiofiles
 
 from gallia.command.base import FileNames, Scanner
 from gallia.config import Config
+from gallia.log import get_logger
 from gallia.plugins import load_ecu, load_ecu_plugins
 from gallia.services.uds.core.service import NegativeResponse, UDSResponse
 from gallia.services.uds.ecu import ECU
 from gallia.services.uds.helpers import raise_for_error
+
+logger = get_logger("gallia.base.udsscan")
 
 
 class UDSScanner(Scanner):
@@ -134,19 +137,17 @@ class UDSScanner(Scanner):
                 await self.db_handler.insert_scan_run(args.target.raw)
                 self._apply_implicit_logging_setting()
             except Exception as e:
-                self.logger.warning(
-                    f"Could not write the scan run to the database: {e:!r}"
-                )
+                logger.warning(f"Could not write the scan run to the database: {e:!r}")
 
         if args.ecu_reset is not None:
             resp: UDSResponse = await self.ecu.ecu_reset(args.ecu_reset)
             if isinstance(resp, NegativeResponse):
-                self.logger.warning(f"ECUReset failed: {resp}")
-                self.logger.warning("Switching to default session")
+                logger.warning(f"ECUReset failed: {resp}")
+                logger.warning("Switching to default session")
                 raise_for_error(await self.ecu.set_session(0x01))
                 resp = await self.ecu.ecu_reset(args.ecu_reset)
                 if isinstance(resp, NegativeResponse):
-                    self.logger.warning(f"ECUReset in session 0x01 failed: {resp}")
+                    logger.warning(f"ECUReset in session 0x01 failed: {resp}")
 
         # Handles connecting to the target and waits
         # until it is ready.
@@ -171,7 +172,7 @@ class UDSScanner(Scanner):
                 )
                 self._apply_implicit_logging_setting()
             except Exception as e:
-                self.logger.warning(
+                logger.warning(
                     f"Could not write the properties_pre to the database: {e!r}"
                 )
 
@@ -187,7 +188,7 @@ class UDSScanner(Scanner):
                 prop_pre = json.loads(await file.read())
 
             if args.compare_properties and await self.ecu.properties(False) != prop_pre:
-                self.logger.warning("ecu properties differ, please investigate!")
+                logger.warning("ecu properties differ, please investigate!")
 
         if self.db_handler is not None:
             try:
@@ -195,9 +196,7 @@ class UDSScanner(Scanner):
                     await self.ecu.properties(False)
                 )
             except Exception as e:
-                self.logger.warning(
-                    f"Could not write the scan run to the database: {e!r}"
-                )
+                logger.warning(f"Could not write the scan run to the database: {e!r}")
 
         if args.tester_present:
             await self.ecu.stop_cyclic_tester_present()
@@ -226,6 +225,6 @@ class UDSDiscoveryScanner(Scanner):
             try:
                 await self.db_handler.insert_discovery_run(args.target.url.scheme)
             except Exception as e:
-                self.logger.warning(
+                logger.warning(
                     f"Could not write the discovery run to the database: {e!r}"
                 )

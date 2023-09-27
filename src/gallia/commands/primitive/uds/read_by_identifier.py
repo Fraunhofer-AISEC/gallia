@@ -6,8 +6,11 @@ import sys
 from argparse import Namespace
 
 from gallia.command import UDSScanner
+from gallia.log import get_logger
 from gallia.services.uds.core.service import NegativeResponse
 from gallia.utils import auto_int
+
+logger = get_logger("gallia.primitive.rdbi")
 
 
 class ReadByIdentifierPrimitive(UDSScanner):
@@ -38,14 +41,18 @@ class ReadByIdentifierPrimitive(UDSScanner):
             if args.session != 0x01:
                 await self.ecu.set_session(args.session)
         except Exception as e:
-            self.logger.critical(f"fatal error: {e!r}")
+            logger.critical(f"fatal error: {e!r}")
             sys.exit(1)
 
         resp = await self.ecu.read_data_by_identifier(args.data_id)
         if isinstance(resp, NegativeResponse):
-            self.logger.error(resp)
+            logger.error(resp)
         else:
-            self.logger.info("Positive response:")
+            logger.info("Positive response:")
             data = resp.data_record
-            self.logger.info(f"hex: {data.hex()}")
-            self.logger.info(f"raw: {repr(data)}")
+            logger.info(f"hex: {data.hex()}")
+            logger.info(f"raw: {repr(data)}")
+            logger.result(
+                f"{self.ecu.transport.target.raw} responds to {args.data_id:#06x} with {data.hex()}"
+            )
+            self.result = data

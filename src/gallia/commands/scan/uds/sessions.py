@@ -8,15 +8,19 @@ from argparse import Namespace
 from typing import Any
 
 from gallia.command import UDSScanner
+from gallia.log import get_logger
 from gallia.services.uds import (
     NegativeResponse,
     UDSErrorCodes,
     UDSRequestConfig,
     UDSResponse,
 )
+from gallia.services.uds.core.constants import EcuResetSubFuncs
 from gallia.services.uds.core.service import DiagnosticSessionControlResponse
 from gallia.services.uds.core.utils import g_repr
 from gallia.utils import auto_int
+
+logger = get_logger("gallia.scan.sessions")
 
 
 class SessionsScanner(UDSScanner):
@@ -50,7 +54,12 @@ class SessionsScanner(UDSScanner):
             help="Use hooks in case of a ConditionsNotCorrect error",
         )
         self.parser.add_argument(
-            "--reset", action="store_true", help="Reset the ECU after each iteration"
+            "--reset",
+            nargs="?",
+            default=None,
+            const=0x01,
+            type=lambda x: int(x, 0),
+            help="Reset the ECU after each iteration with the optionally given reset level",
         )
         self.parser.add_argument(
             "--fast",
@@ -69,8 +78,11 @@ class SessionsScanner(UDSScanner):
             isinstance(resp, NegativeResponse)
             and resp.response_code == UDSErrorCodes.conditionsNotCorrect
         ):
+            logger.notice(
+                f"Received conditionsNotCorrect for session {g_repr(session)}"
+            )
             if not use_hooks:
-                self.logger.warning(
+                logger.warning(
                     f"Session {g_repr(session)} is potentially available but could not be entered. "
                     f"Use --with-hooks to try to enter the session using hooks to scan for "
                     f"transitions available from that session."
@@ -81,12 +93,15 @@ class SessionsScanner(UDSScanner):
                 session, config=UDSRequestConfig(skip_hooks=False), use_db=False
             )
 
-            if isinstance(resp, NegativeResponse):
-                self.logger.notice(
-                    f"Received conditionsNotCorrect for session {g_repr(session)}. "
-                    f"Successfully changed to the session with hooks."
+            if not isinstance(resp_, NegativeResponse):
+                logger.notice(
+                    f"Successfully changed to session {g_repr(session)} with hooks"
                 )
                 resp = resp_
+            else:
+                logger.notice(
+                    f"Could not successfully change to session {g_repr(session)} even with hooks"
+                )
 
         return resp
 
@@ -96,13 +111,13 @@ class SessionsScanner(UDSScanner):
                 resp = await self.set_session_with_hooks_handling(session, use_hooks)
 
                 if isinstance(resp, NegativeResponse):
-                    self.logger.error(
+                    logger.error(
                         f"Could not change to session {g_repr(session)} as part of stack: {resp}. "
                         f"Try with --reset to reset between each iteration."
                     )
                     return False
             except Exception as e:
-                self.logger.error(
+                logger.error(
                     f"Could not change to session {g_repr(session)} as part of stack: {g_repr(e)}. "
                     f"Try with --reset to reset between each iteration."
                 )
@@ -110,6 +125,7 @@ class SessionsScanner(UDSScanner):
         return True
 
     async def main(self, args: Namespace) -> None:
+        self.result: list[int] = []
         found: dict[int, list[list[int]]] = {0: [[0x01]]}
         positive_results: list[dict[str, Any]] = []
         negative_results: list[dict[str, Any]] = []
@@ -123,7 +139,7 @@ class SessionsScanner(UDSScanner):
             depth += 1
 
             found[depth] = []
-            self.logger.info(f"Depth: {depth}")
+            logger.info(f"Depth: {depth}")
 
             for stack in found[depth - 1]:
                 if args.fast and stack[-1] in search_sessions:
@@ -132,60 +148,54 @@ class SessionsScanner(UDSScanner):
                 search_sessions.append(stack[-1])
 
                 if stack:
-                    self.logger.info(f"Starting from session: {g_repr(stack[-1])}")
+                    logger.info(f"Starting from session: {g_repr(stack[-1])}")
 
                 for session in sessions:
                     if session in args.skip:
-                        self.logger.info(
-                            f"Skipping session {g_repr(session)} as requested"
-                        )
+                        logger.info(f"Skipping session {g_repr(session)} as requested")
                         continue
 
                     if args.reset:
                         try:
-                            self.logger.info("Resetting the ECU")
-                            resp: UDSResponse = await self.ecu.ecu_reset(0x01)
+                            logger.info("Resetting the ECU")
+                            resp: UDSResponse = await self.ecu.ecu_reset(args.reset)
 
                             if isinstance(resp, NegativeResponse):
-                                self.logger.warning(
-                                    f"Could not reset ECU: {resp}; "
-                                    f"continue without reset"
+                                logger.warning(
+                                    f"Could not reset ECU with {EcuResetSubFuncs(args.reset).name if args.reset in iter(EcuResetSubFuncs) else args.reset}: {resp}"
+                                    f"; continuing without reset"
                                 )
                             else:
-                                self.logger.info("Waiting for the ECU to recover…")
-                                await self.ecu.wait_for_ecu()
-                        except asyncio.TimeoutError:
-                            self.logger.error(
-                                "ECU did not respond after reset; exiting…"
-                            )
-                            sys.exit(1)
-                        except ConnectionError:
-                            self.logger.warning(
+                                logger.info("Waiting for the ECU to recover…")
+                                await self.ecu.wait_for_ecu(timeout=5)
+                        except (asyncio.TimeoutError, ConnectionError):
+                            logger.warning(
                                 "Lost connection to the ECU after performing a reset. "
                                 "Attempting to reconnect…"
                             )
                             await self.ecu.reconnect()
 
                     try:
+                        logger.debug("Changing session to DefaultSession")
                         resp = await self.ecu.set_session(0x01, use_db=False)
                         if isinstance(resp, NegativeResponse):
-                            self.logger.error(
-                                f"Could not change to default session: {resp}"
-                            )
+                            logger.error(f"Could not change to default session: {resp}")
                             sys.exit(1)
                     except Exception as e:
-                        self.logger.error(f"Could not change to default session: {e!r}")
+                        logger.error(f"Could not change to default session: {e!r}")
                         sys.exit(1)
 
-                    self.logger.debug(
+                    logger.debug(
                         f"Sleeping for {args.sleep}s after changing to DefaultSession"
                     )
                     await asyncio.sleep(args.sleep)
 
+                    logger.debug("Recovering the current session stack")
                     if not await self.recover_stack(stack, args.with_hooks):
                         sys.exit(1)
 
                     try:
+                        logger.info(f"Attempting to change to session {session:#04x}")
                         resp = await self.set_session_with_hooks_handling(
                             session, args.with_hooks
                         )
@@ -196,12 +206,12 @@ class SessionsScanner(UDSScanner):
                             and resp.response_code
                             == UDSErrorCodes.subFunctionNotSupported
                         ):
-                            self.logger.debug(
+                            logger.info(
                                 f"Could not change to session {g_repr(session)}: {resp}"
                             )
                             continue
 
-                        self.logger.info(
+                        logger.notice(
                             f"Found session: {g_repr(session)} via stack: {g_repr(stack)}; {resp}"
                         )
 
@@ -224,12 +234,14 @@ class SessionsScanner(UDSScanner):
                             )
 
                     except asyncio.TimeoutError:
-                        self.logger.warning(
+                        logger.warning(
                             f"Could not change to session {g_repr(session)}: Timeout"
                         )
                         continue
+                    except Exception as e:
+                        logger.warning(f"Mamma mia: {repr(e)}")
 
-        self.logger.result("Scan finished; Found the following sessions:")
+        logger.result("Scan finished; Found the following sessions:")
         previous_session = 0
 
         for res in sorted(positive_results, key=lambda x: x["session"]):
@@ -237,18 +249,19 @@ class SessionsScanner(UDSScanner):
 
             if session != previous_session:
                 previous_session = session
-                self.logger.result(f"* Session {g_repr(session)} ")
+                self.result.append(int(session))
+                logger.result(f"* Session {g_repr(session)} ")
 
                 if self.db_handler is not None:
                     await self.db_handler.insert_session_transition(
                         session, res["stack"]
                     )
 
-            self.logger.result(
+            logger.result(
                 f"\tvia stack: {'->'.join([f'{g_repr(i)}' for i in res['stack']])}"
             )
 
-        self.logger.result(
+        logger.result(
             "The following sessions were identified but could not be activated:"
         )
         previous_session = 0
@@ -262,14 +275,14 @@ class SessionsScanner(UDSScanner):
             ):
                 if session != previous_session:
                     previous_session = session
-                    self.logger.result(f"* Session {g_repr(session)} ")
+                    logger.result(f"* Session {g_repr(session)} ")
 
                     if self.db_handler is not None:
                         await self.db_handler.insert_session_transition(
                             session, res["stack"]
                         )
 
-                self.logger.result(
+                logger.result(
                     f"\tvia stack: {'->'.join([f'{g_repr(i)}' for i in res['stack']])} "
                     f"(NRC: {res['error']})"
                 )
