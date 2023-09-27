@@ -29,7 +29,7 @@ from gallia.log import get_logger, setup_logging, Loglevel
 
 # The logfile's loglevel is Loglevel.DEBUG.
 # It can be set with the keyword argument file_level.
-setup_logging(level=Loglevel.INFO, path="log.json.zst")
+setup_logging(level=Loglevel.INFO)
 logger = get_logger("test")
 logger.info("hello world")
 logger.debug("hello debug")
