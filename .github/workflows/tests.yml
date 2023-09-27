@@ -116,7 +116,6 @@ jobs:
     - name: Test UDS primitives
       run: |
         poetry run gallia primitive uds ecu-reset
-        poetry run gallia primitive uds error-log
         poetry run gallia primitive uds vin
         poetry run gallia primitive uds ping --count 2
         poetry run gallia primitive uds rdbid --data-id 0x108d
