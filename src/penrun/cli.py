@@ -4,17 +4,23 @@
 
 import argparse
 import os
-import re
 from pathlib import Path
 from datetime import datetime
 from enum import Enum, unique
 from typing import cast
 import signal
 import subprocess
+import asyncio
 import zstandard
+from urllib.parse import parse_qs, urlparse
+import shutil
+import time
+from penrun.dumpcap import Dumpcap
 
 import exitcode
 import msgspec
+
+from penrun.utils import camel_to_snake, auto_int, split_host_port, swap_bytes_16
 
 
 @unique
@@ -37,6 +43,23 @@ class RunMeta(msgspec.Struct):
         return msgspec.json.encode(self).decode()
 
 
+class TargetURI:
+    def __init__(self, raw: str) -> None:
+        self.raw = raw
+        self.url = urlparse(raw)
+        self.qs = parse_qs(self.url.query)
+
+    @property
+    def scheme(self) -> str:
+        """The URI scheme"""
+        return self.url.scheme
+
+    @property
+    def netloc(self) -> str:
+        """The hostname and the portnumber, separated by a colon."""
+        return self.url.netloc
+
+
 class PenRunCommands:
     """
     Class to create artifacts directory structure for the command to be run
@@ -49,8 +72,10 @@ class PenRunCommands:
     #: a log message with level critical is logged.
     CATCHED_EXCEPTIONS: list[type[Exception]] = []
 
+    # TODO implement logger?
+    
     def __init__(self, command):
-        self.id = self.camel_to_snake(self.__class__.__name__)
+        self.id = camel_to_snake(self.__class__.__name__)
         self.COMMAND = command
         self.run_meta = RunMeta(
             command=command,
@@ -163,12 +188,6 @@ class PenRunCommands:
         self.file.flush()
         self.file.close()
 
-    def camel_to_snake(self, s: str) -> str:
-        """Convert a CamelCase string to a snake_case string."""
-        # https://stackoverflow.com/a/1176023
-        s = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", s)
-        return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s).lower()
-
 
 def load_parser():
     """
@@ -195,8 +214,38 @@ def load_parser():
         help="create dir structure",
         action='store_true',
     )
+    parser.add_argument(
+        "-dc",
+        "--dumpcap",
+        help="start dumpcap",
+        action='store_true',
+    )
+    parser.add_argument(
+        "-t",
+        "--target",
+        help="target address",
+    )
 
     return parser
+
+
+class AsyncDumpcap:
+    def __init__(self):
+        self.dumpcap: Dumpcap | None = None
+
+    async def setup(self, target, artifacts_dir):
+        if shutil.which("dumpcap") is None:
+            print("--dumpcap specified but `dumpcap` is not available")
+        self.dumpcap = await Dumpcap.start(target, artifacts_dir)
+
+        # sample run - Starts dumpcap and listens for 10 s before terminating
+        # Sleep and stop methods need to be removed for proper usage
+        await self.dumpcap.sync()
+        time.sleep(10)
+        await self.dumpcap.stop()
+
+    async def teardown(self) -> None:
+        await self.dumpcap.stop()
 
 
 def main() -> None:
@@ -209,6 +258,12 @@ def main() -> None:
         dir = str(args.dir) if args.dir is not None else os.environ.get('GALLIA_ARTIFACTS_DIR')
         path = Path(dir)
         pen_run_commands.run(path)
+
+    if args.dumpcap:
+        target = TargetURI(args.target)
+
+        dc = AsyncDumpcap()
+        asyncio.run(dc.setup(target, pen_run_commands.artifacts_dir))
 
 
 if __name__ == "__main__":
