@@ -53,6 +53,6 @@ class ReadByIdentifierPrimitive(UDSScanner):
             logger.info(f"hex: {data.hex()}")
             logger.info(f"raw: {repr(data)}")
             logger.result(
-                f"{self.ecu.transport.target} responds to {args.data_id:#06x} with {data.hex()}"
+                f"{self.ecu.transport.target.raw} responds to {args.data_id:#06x} with {data.hex()}"
             )
             self.result = data
