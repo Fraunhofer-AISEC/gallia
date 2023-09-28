@@ -192,10 +192,8 @@ async def write_target_list(
     :params db_handler: if given, urls are also written to the database as discovery results
     :return: None
     """
-    urls = []
     async with aiofiles.open(path, "w") as f:
         for target in targets:
-            urls.append(str(target))
             await f.write(f"{target}\n")
 
             if db_handler is not None:
