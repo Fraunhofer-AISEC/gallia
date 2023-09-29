@@ -93,6 +93,9 @@ class TargetURI:
             d[k] = v[0]
         return d
 
+    def __str__(self) -> str:
+        return self.raw
+
 
 class TransportProtocol(Protocol):
     mutex: asyncio.Lock
