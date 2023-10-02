@@ -573,7 +573,7 @@ class PenlogReader:
                         decomp.copy_stream(f, tmpfile)
                 case ".gz":
                     with gzip.open(self.path, "rb") as f:
-                        shutil.copyfileobj(f, tmpfile)  # type: ignore
+                        shutil.copyfileobj(f, tmpfile)
 
             tmpfile.flush()
             return cast(BinaryIO, tmpfile)
@@ -581,7 +581,7 @@ class PenlogReader:
         if path.is_fifo() or self._test_mmap(path) is False:
             tmpfile = tempfile.TemporaryFile()
             with path.open("rb") as f:
-                shutil.copyfileobj(f, tmpfile)  # type: ignore
+                shutil.copyfileobj(f, tmpfile)
             tmpfile.flush()
             return cast(BinaryIO, tmpfile)
 

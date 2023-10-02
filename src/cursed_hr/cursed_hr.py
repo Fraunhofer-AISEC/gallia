@@ -270,13 +270,13 @@ class CursedHR:
                             decomp.copy_stream(in_file, file)
                     case ".gz":
                         with gzip.open(self.in_file, "rb") as in_file:
-                            shutil.copyfileobj(in_file, file)  # type: ignore
+                            shutil.copyfileobj(in_file, file)
             else:
-                file = self.in_file.open("rb")
+                file = self.in_file.open("rb")  # type: ignore
 
             file.flush()
 
-            return file  # type: ignore
+            return file
         except Exception as e:
             raise ValueError("Unsupported file format") from e
 
