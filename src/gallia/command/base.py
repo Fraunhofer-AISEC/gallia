@@ -121,6 +121,7 @@ class BaseCommand(ABC):
             end_time="",
         )
         self._lock_file_fd: int | None = None
+        self.db_handler: DBHandler | None = None
         self.configure_class_parser()
         self.configure_parser()
 
@@ -227,6 +228,12 @@ class BaseCommand(ABC):
             default=self.config.get_value("gallia.lock_file", None),
             help="path to file used for a posix lock",
         )
+        group.add_argument(
+            "--db",
+            default=self.config.get_value("gallia.db"),
+            type=Path,
+            help="Path to sqlite3 database",
+        )
 
         if self.HAS_ARTIFACTS_DIR:
             mutex_group = group.add_mutually_exclusive_group()
@@ -250,6 +257,39 @@ class BaseCommand(ABC):
 
     def configure_parser(self) -> None:
         ...
+
+    async def _db_insert_run_meta(self, args: Namespace) -> None:
+        if args.db is not None:
+            self.db_handler = DBHandler(args.db)
+            await self.db_handler.connect()
+
+            await self.db_handler.insert_run_meta(
+                script=sys.argv[0].split()[-1],
+                arguments=sys.argv[1:],
+                command_meta=msgspec.json.encode(self.run_meta.command_meta),
+                settings=dump_args(args),
+                start_time=datetime.now(timezone.utc).astimezone(),
+                path=self.artifacts_dir,
+            )
+
+    async def _db_finish_run_meta(self) -> None:
+        if self.db_handler is not None and self.db_handler.connection is not None:
+            if self.db_handler.meta is not None:
+                try:
+                    await self.db_handler.complete_run_meta(
+                        datetime.now(timezone.utc).astimezone(),
+                        self.run_meta.exit_code,
+                        self.artifacts_dir,
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"Could not write the run meta to the database: {e!r}"
+                    )
+
+            try:
+                await self.db_handler.disconnect()
+            except Exception as e:
+                logger.error(f"Could not close the database connection properly: {e!r}")
 
     def _dump_environment(self, path: Path) -> None:
         environ = cast(dict[str, str], os.environ)
@@ -350,6 +390,8 @@ class BaseCommand(ABC):
         if args.hooks:
             self.run_hook(HookVariant.PRE, args)
 
+        asyncio.run(self._db_insert_run_meta(args))
+
         exit_code = 0
         try:
             exit_code = self.run(args)
@@ -380,6 +422,8 @@ class BaseCommand(ABC):
             self.run_meta.exit_code = exit_code
             self.run_meta.end_time = datetime.now(tz).isoformat()
 
+            asyncio.run(self._db_finish_run_meta())
+
             if self.HAS_ARTIFACTS_DIR:
                 self.artifacts_dir.joinpath(FileNames.META.value).write_text(
                     self.run_meta.json() + "\n"
@@ -396,7 +440,7 @@ class BaseCommand(ABC):
 
 
 class Script(BaseCommand, ABC):
-    """Script is a base class for a syncronous gallia command.
+    """Script is a base class for a synchronous gallia command.
     To implement a script, create a subclass and implement the
     .main() method."""
 
@@ -423,7 +467,7 @@ class Script(BaseCommand, ABC):
 
 
 class AsyncScript(BaseCommand, ABC):
-    """AsyncScript is a base class for a asyncronous gallia command.
+    """AsyncScript is a base class for a asynchronous gallia command.
     To implement an async script, create a subclass and implement
     the .main() method."""
 
@@ -459,7 +503,7 @@ class Scanner(AsyncScript, ABC):
     - It loads transports via TargetURIs; available via `self.transport`.
     - Controlling PowerSupplies via the opennetzteil API is supported.
     - `setup()` can be overwritten (do not forget to call `super().setup()`)
-      for preparation tasks, such as estabshling a network connection or
+      for preparation tasks, such as establishing a network connection or
       starting background tasks.
     - pcap logfiles can be recorded via a Dumpcap background task.
     - `teardown()` can be overwritten (do not forget to call `super().teardown()`)
@@ -477,7 +521,6 @@ class Scanner(AsyncScript, ABC):
 
     def __init__(self, parser: ArgumentParser, config: Config = Config()) -> None:
         super().__init__(parser, config)
-        self.db_handler: DBHandler | None = None
         self.power_supply: PowerSupply | None = None
         self.transport: BaseTransport
         self.dumpcap: Dumpcap | None = None
@@ -485,39 +528,6 @@ class Scanner(AsyncScript, ABC):
     @abstractmethod
     async def main(self, args: Namespace) -> None:
         ...
-
-    async def _db_insert_run_meta(self, args: Namespace) -> None:
-        if args.db is not None:
-            self.db_handler = DBHandler(args.db)
-            await self.db_handler.connect()
-
-            await self.db_handler.insert_run_meta(
-                script=sys.argv[0].split()[-1],
-                arguments=sys.argv[1:],
-                command_meta=msgspec.json.encode(self.run_meta.command_meta),
-                settings=dump_args(args),
-                start_time=datetime.now(timezone.utc).astimezone(),
-                path=self.artifacts_dir,
-            )
-
-    async def _db_finish_run_meta(self, args: Namespace, exit_code: int) -> None:
-        if self.db_handler is not None and self.db_handler.connection is not None:
-            if self.db_handler.meta is not None:
-                try:
-                    await self.db_handler.complete_run_meta(
-                        datetime.now(timezone.utc).astimezone(),
-                        exit_code,
-                        self.artifacts_dir,
-                    )
-                except Exception as e:
-                    logger.warning(
-                        f"Could not write the run meta to the database: {e!r}"
-                    )
-
-            try:
-                await self.db_handler.disconnect()
-            except Exception as e:
-                logger.error(f"Could not close the database connection properly: {e!r}")
 
     async def setup(self, args: Namespace) -> None:
         if args.target is None:
@@ -552,12 +562,6 @@ class Scanner(AsyncScript, ABC):
         super().configure_class_parser()
 
         group = self.parser.add_argument_group("scanner related arguments")
-        group.add_argument(
-            "--db",
-            default=self.config.get_value("gallia.scanner.db"),
-            type=Path,
-            help="Path to sqlite3 database",
-        )
         group.add_argument(
             "--dumpcap",
             action=argparse.BooleanOptionalAction,
@@ -598,9 +602,3 @@ class Scanner(AsyncScript, ABC):
             default=self.config.get_value("gallia.scanner.power_cycle_sleep", 5.0),
             help="time to sleep after the power-cycle",
         )
-
-    def entry_point(self, args: Namespace) -> int:
-        asyncio.run(self._db_insert_run_meta(args))
-        exit_code = super().entry_point(args)
-        asyncio.run(self._db_finish_run_meta(args, exit_code))
-        return exit_code
