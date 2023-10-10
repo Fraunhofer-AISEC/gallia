@@ -88,6 +88,14 @@ class DoIPDiscoverer(AsyncScript):
             logger.error("[🫣] --target must be doip://…")
             return 2
 
+        if self.db_handler is not None:
+            try:
+                await self.db_handler.insert_discovery_run("doip")
+            except Exception as e:
+                logger.warning(
+                    f"Could not write the discovery run to the database: {e!r}"
+                )
+
         # Discover Hostname and Port
         tgt_hostname: str
         tgt_port: int
@@ -313,6 +321,8 @@ class DoIPDiscoverer(AsyncScript):
                     self.artifacts_dir.joinpath("4_responsive_targets.txt"), "a"
                 ) as f:
                     await f.write(f"{known_targets[-1]}\n")
+                if self.db_handler is not None:
+                    await self.db_handler.insert_discovery_result(known_targets[-1])
 
             except DoIPNegativeAckError as e:
                 if (
