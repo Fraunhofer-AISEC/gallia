@@ -332,6 +332,7 @@ def cmd_template(args: argparse.Namespace) -> None:
 # no-volatile-info = <bool>
 # trace_log = <bool>
 # lock_file = <str>
+# db = <string>
 
 # [gallia.hooks]
 # enable = <bool>
@@ -339,7 +340,6 @@ def cmd_template(args: argparse.Namespace) -> None:
 # post = <str>
 
 # [gallia.scanner]
-# db = <string>
 # target = <string>
 # power_supply = <string>
 # power_cycle = <bool>
