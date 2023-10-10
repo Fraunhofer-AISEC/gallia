@@ -301,6 +301,7 @@ class DBHandler:
         query = "INSERT INTO discovery_result(address, run) VALUES ((SELECT id FROM address WHERE url = ?), ?)"
 
         await self.connection.execute(query, (target, self.discovery_run))
+        await self.connection.commit()
 
     async def insert_scan_result(  # noqa: PLR0913
         self,
