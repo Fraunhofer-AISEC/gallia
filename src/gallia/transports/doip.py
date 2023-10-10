@@ -409,7 +409,8 @@ class DoIPConnection:
                 or payload.TargetAddress != self.src_addr
             ):
                 logger.warning(
-                    f"DoIP-DiagnosticMessage: unexpected addresses (src:dst); expected {self.src_addr}:{self.target_addr} but got: {payload.SourceAddress:#04x}:{payload.TargetAddress:#04x}"
+                    f"DoIP-DiagnosticMessage: unexpected addresses (src:dst); expected {self.src_addr:#04x}:"
+                    + f"{self.target_addr:#04x} but got: {payload.SourceAddress:#04x}:{payload.TargetAddress:#04x}"
                 )
                 unexpected_packets.append((hdr, payload))
                 continue
@@ -442,7 +443,8 @@ class DoIPConnection:
                 or payload.TargetAddress != self.src_addr
             ):
                 logger.warning(
-                    f"DoIP-ACK: unexpected addresses (src:dst); expected {self.src_addr}:{self.target_addr} but got: {payload.SourceAddress:#04x}:{payload.TargetAddress:#04x}"
+                    f"DoIP-ACK: unexpected addresses (src:dst); expected {self.src_addr:#04x}:{self.target_addr:#04x} "
+                    + f"but got: {payload.SourceAddress:#04x}:{payload.TargetAddress:#04x}"
                 )
                 unexpected_packets.append((hdr, payload))
                 continue
