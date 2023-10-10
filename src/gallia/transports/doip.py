@@ -678,8 +678,7 @@ class DoIPTransport(BaseTransport, scheme="doip"):
                 raise e
             # TargetUnreachable can be just a temporary issue. Thus, we do not raise
             # BrokenPipeError but instead ignore it here and let upper layers handle
-            # missing responses (i.e. raise a TimeoutError instead)
+            # missing responses
             logger.debug("DoIP message was ACKed with TargetUnreachable")
-            raise asyncio.TimeoutError from e
 
         return len(data)
