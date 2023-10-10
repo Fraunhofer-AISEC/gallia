@@ -113,7 +113,10 @@ class UDSClient:
                 and resp.response_code
                 == UDSErrorCodes.requestCorrectlyReceivedResponsePending
             ):
-                logger.info(f"Received ResponsePending: {n_pending}/{MAX_N_PENDING}")
+                logger.info(
+                    f"Received ResponsePending: {n_pending}/{MAX_N_PENDING}; "
+                    + f"waiting for next message: {n_timeout}/{int(max_n_timeout)}s"
+                )
                 try:
                     raw_resp = await self._read(timeout=waiting_time, tags=config.tags)
                     if raw_resp == b"":
@@ -123,10 +126,6 @@ class UDSClient:
                     # Send a tester present to indicate that
                     # we are still there.
                     await self._tester_present(suppress_resp=True)
-                    logger.debug(
-                        "Waiting for next message after ResponsePending: "
-                        f"{n_timeout}/{max_n_timeout}"
-                    )
                     n_timeout += 1
                     if n_timeout >= max_n_timeout:
                         last_exception = MissingResponse(request, str(e))
