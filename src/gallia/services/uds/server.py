@@ -387,7 +387,7 @@ class RandomUDSServer(UDSServer):
         self.randomize()
 
         logger.notice(f"Initialized random UDS server with seed {self.seed}")
-        logger.info(
+        logger.notice(
             json.dumps(
                 {
                     int_repr(session): {

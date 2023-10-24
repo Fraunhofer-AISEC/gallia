@@ -90,6 +90,7 @@ class Dumpcap:
         await asyncio.wait_for(self.ready_event.wait(), timeout)
 
     async def stop(self) -> None:
+        logger.info(f"Waiting {self.cleanup}s for dumpcap to receive all packets")
         await asyncio.sleep(self.cleanup)
         try:
             self.proc.terminate()

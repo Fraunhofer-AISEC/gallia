@@ -195,7 +195,7 @@ class SessionsScanner(UDSScanner):
                         sys.exit(1)
 
                     try:
-                        logger.info(f"Attempting to change to session {session:#04x}")
+                        logger.debug(f"Attempting to change to session {session:#04x}")
                         resp = await self.set_session_with_hooks_handling(
                             session, args.with_hooks
                         )
