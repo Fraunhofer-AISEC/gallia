@@ -548,7 +548,10 @@ class Scanner(AsyncScript, ABC):
             if shutil.which("dumpcap") is None:
                 self.parser.error("--dumpcap specified but `dumpcap` is not available")
             self.dumpcap = await Dumpcap.start(args.target, self.artifacts_dir)
-            await self.dumpcap.sync()
+            if self.dumpcap is None:
+                logger.error("Dumpcap could not be started!")
+            else:
+                await self.dumpcap.sync()
 
         self.transport = await load_transport(args.target).connect(args.target)
 

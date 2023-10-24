@@ -46,7 +46,7 @@ class Dumpcap:
         cls,
         target: TargetURI,
         artifacts_dir: Path,
-    ) -> Dumpcap:
+    ) -> Dumpcap | None:
         ts = int(datetime.now().timestamp())
         if target.scheme in [ISOTPTransport.SCHEME, RawCANTransport.SCHEME]:
             outfile = artifacts_dir.joinpath(f"candump-{ts}.pcap.gz")
@@ -65,6 +65,8 @@ class Dumpcap:
             outfile = artifacts_dir.joinpath(f"eth-{ts}.pcap.gz")
             cmd = await cls._eth_cmd(target.netloc)
 
+        if cmd is None:
+            return None
         cmd_str = shlex.join(cmd)
         try:
             proc = await asyncio.create_subprocess_exec(
@@ -75,12 +77,11 @@ class Dumpcap:
             await asyncio.sleep(0.2)
         except Exception as e:
             logger.error(f"Could not start dumpcap: ({e!r})")
-            raise
+            return None
 
         if proc.returncode:
-            raise RuntimeError(
-                f"dumpcap terminated with exit code: [{proc.returncode}]"
-            )
+            logger.error(f"dumpcap terminated with exit code: [{proc.returncode}]")
+            return None
 
         logger.info(f'Started "dumpcap": {cmd_str}')
 
@@ -122,7 +123,9 @@ class Dumpcap:
         return cast(int, struct.unpack(">H", struct.pack("<H", x))[0])
 
     @staticmethod
-    def _can_cmd(iface: str, src_addr: int | None, dst_addr: int | None) -> list[str]:
+    def _can_cmd(
+        iface: str, src_addr: int | None, dst_addr: int | None
+    ) -> list[str] | None:
         args = ["dumpcap", "-q", "-i", iface, "-w", "-"]
         # Debug this with `dumpcap -d` or `tshark -x` to inspect the captured buffer.
         filter_ = "link[1] == 0x01"  # broadcast flag; ignore "sent by us" frames
@@ -130,7 +133,8 @@ class Dumpcap:
         if src_addr is not None and dst_addr is not None:
             # TODO: Support extended CAN IDs
             if src_addr > 0x800 or dst_addr > 0x800:
-                raise ValueError("Extended CAN IDs are currently not supported!")
+                logger.error("Extended CAN Ids are currently not supported!")
+                return None
 
             # Debug this with `dumpcap -d` or `tshark -x` to inspect the captured buffer.
             filter_ += (
