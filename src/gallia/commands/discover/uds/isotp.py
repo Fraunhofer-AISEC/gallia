@@ -51,7 +51,7 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
         self.parser.add_argument(
             "--pdu",
             type=unhexlify,
-            default=bytes([0x10, 0x01]),
+            default=bytes([0x3E, 0x00]),
             help="set pdu used for discovery",
         )
         self.parser.add_argument(
@@ -178,7 +178,7 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
 
             await transport.sendto(pdu, timeout=0.1, dst=dst_addr)
             try:
-                addr, _ = await transport.recvfrom(timeout=0.1)
+                addr, payload = await transport.recvfrom(timeout=0.1)
                 if addr == ID:
                     logger.info(
                         f"The same CAN ID {can_id_repr(ID)} answered. Skipping…"
@@ -210,7 +210,7 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
                         )
                     else:
                         logger.result(
-                            f"found endpoint on CAN ID [src:dst]: {can_id_repr(ID)}:{can_id_repr(addr)}"
+                            f"found endpoint on CAN ID [src:dst]: {can_id_repr(ID)}:{can_id_repr(addr)}: {payload.hex()}"
                         )
                         target_args = {}
                         target_args["is_fd"] = str(transport.config.is_fd).lower()
