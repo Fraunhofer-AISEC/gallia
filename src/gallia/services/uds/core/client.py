@@ -77,7 +77,9 @@ class UDSClient:
 
             # Avoid pasting this very line in every error branch.
             if i > 0:
-                logger.debug(f"retrying {i} from {max_retry}…")
+                logger.info(
+                    f"Requesting UDS PDU failed; retrying: {i} from {max_retry}…"
+                )
             try:
                 logger.debug(request.pdu.hex(), extra={"tags": ["write", "uds"] + tags})
                 raw_resp = await self.transport.request_unsafe(
