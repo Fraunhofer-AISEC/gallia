@@ -272,22 +272,21 @@ class DoIPDiscoverer(AsyncScript):
             logger.debug(f"[🚧] Attempting connection to {target_addr:#x}")
 
             conn.target_addr = target_addr
+            current_target = f"doip://{tgt_hostname}:{tgt_port}?activation_type={correct_rat:#x}&src_addr={correct_src:#x}&target_addr={target_addr:#x}"
 
             try:
                 req = TesterPresentRequest(suppress_response=False)
                 await conn.write_diag_request(req.pdu)
 
                 # If we reach this, the request was not denied due to unknown TargetAddress
-                known_targets.append(
-                    f"doip://{tgt_hostname}:{tgt_port}?activation_type={correct_rat:#x}&src_addr={correct_src:#x}&target_addr={target_addr:#x}"
-                )
+                known_targets.append(current_target)
                 logger.notice(
                     f"[🥇] HEUREKA: target address {target_addr:#x} is valid! "
                 )
                 async with aiofiles.open(
                     self.artifacts_dir.joinpath("3_valid_targets.txt"), "a"
                 ) as f:
-                    await f.write(f"{known_targets[-1]}\n")
+                    await f.write(f"{current_target}\n")
 
                 logger.info(f"[⏳] Waiting for reply of target {target_addr:#x}")
                 # Hardcoded loop to detect potential broadcasts
@@ -316,13 +315,13 @@ class DoIPDiscoverer(AsyncScript):
                 logger.notice(
                     f"[🥳] It cannot get nicer: {target_addr:#x} responded: {resp}"
                 )
-                responsive_targets.append(known_targets[-1])
+                responsive_targets.append(current_target)
                 async with aiofiles.open(
                     self.artifacts_dir.joinpath("4_responsive_targets.txt"), "a"
                 ) as f:
-                    await f.write(f"{known_targets[-1]}\n")
+                    await f.write(f"{current_target}\n")
                 if self.db_handler is not None:
-                    await self.db_handler.insert_discovery_result(known_targets[-1])
+                    await self.db_handler.insert_discovery_result(current_target)
 
             except DoIPNegativeAckError as e:
                 if (
@@ -333,11 +332,11 @@ class DoIPDiscoverer(AsyncScript):
                     continue
                 elif e.nack_code == DiagnosticMessageNegativeAckCodes.TargetUnreachable:
                     logger.info(f"[💤] {target_addr:#x} is (currently?) unreachable")
-                    unreachable_targets.append(known_targets[-1])
+                    unreachable_targets.append(current_target)
                     async with aiofiles.open(
                         self.artifacts_dir.joinpath("5_unreachable_targets.txt"), "a"
                     ) as f:
-                        await f.write(f"{known_targets[-1]}\n")
+                        await f.write(f"{current_target}\n")
                     continue
                 else:
                     logger.warning(
@@ -356,7 +355,7 @@ class DoIPDiscoverer(AsyncScript):
                 async with aiofiles.open(
                     self.artifacts_dir.joinpath("5_unresponsive_targets.txt"), "a"
                 ) as f:
-                    await f.write(f"{known_targets[-1]}\n")
+                    await f.write(f"{current_target}\n")
                 continue
 
             except (ConnectionError, ConnectionResetError) as e:
