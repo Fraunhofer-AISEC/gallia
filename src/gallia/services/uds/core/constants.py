@@ -9,7 +9,7 @@ from enum import IntEnum, unique
 class UDSIsoServices(IntEnum):
     ShowCurrentData = 0x01
     ShowFreezeFrameData = 0x02
-    ShowstoredDiagnosticTroubleCodes = 0x03
+    ShowStoredDiagnosticTroubleCodes = 0x03
     ClearDiagnosticTroubleCodesAndStoredValues = 0x04
     TestResultsOxygenSensorMonitoring = 0x05
     TestResultsOtherComponentSystemMonitoring = 0x06
