@@ -167,7 +167,7 @@ class SessionsScanner(UDSScanner):
                                 )
                             else:
                                 logger.info("Waiting for the ECU to recover…")
-                                await self.ecu.wait_for_ecu(timeout=5)
+                                await self.ecu.wait_for_ecu(timeout=args.timeout)
                         except (asyncio.TimeoutError, ConnectionError):
                             logger.warning(
                                 "Lost connection to the ECU after performing a reset. "
