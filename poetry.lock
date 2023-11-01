@@ -1736,13 +1736,13 @@ dev = ["pre-commit", "pytest"]
 
 [[package]]
 name = "python-lsp-server"
-version = "1.8.0"
+version = "1.8.2"
 description = "Python Language Server for the Language Server Protocol"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "python-lsp-server-1.8.0.tar.gz", hash = "sha256:807b0347cf83f02cbd9113a68624ac5dbf8b01854a3b11dd03c3bbbdff4e5d89"},
-    {file = "python_lsp_server-1.8.0-py3-none-any.whl", hash = "sha256:c261ee8038073a6618a08f958faf88b9552a1094440513565e140d7f417249c9"},
+    {file = "python-lsp-server-1.8.2.tar.gz", hash = "sha256:fd85e1c6ad95c1d276c82a33c2c85898f110afc3c7bfeaced79c0df095076fd1"},
+    {file = "python_lsp_server-1.8.2-py3-none-any.whl", hash = "sha256:65cfb20c8945bdb7b6bf7577207004e05e2550dac867339ef2e3605a0eeca9ca"},
 ]
 
 [package.dependencies]
@@ -1753,7 +1753,7 @@ python-lsp-jsonrpc = ">=1.1.0,<2.0.0"
 ujson = ">=3.0.0"
 
 [package.extras]
-all = ["autopep8 (>=1.6.0,<2.1.0)", "flake8 (>=6.1.0,<7)", "mccabe (>=0.7.0,<0.8.0)", "pycodestyle (>=2.11.0,<2.12.0)", "pydocstyle (>=6.3.0,<6.4.0)", "pyflakes (>=3.1.0,<3.2.0)", "pylint (>=2.5.0,<3)", "rope (>1.2.0)", "whatthepatch (>=1.0.2,<2.0.0)", "yapf (>=0.33.0)"]
+all = ["autopep8 (>=2.0.4,<2.1.0)", "flake8 (>=6.1.0,<7)", "mccabe (>=0.7.0,<0.8.0)", "pycodestyle (>=2.11.0,<2.12.0)", "pydocstyle (>=6.3.0,<6.4.0)", "pyflakes (>=3.1.0,<3.2.0)", "pylint (>=2.5.0,<3)", "rope (>1.2.0)", "whatthepatch (>=1.0.2,<2.0.0)", "yapf (>=0.33.0)"]
 autopep8 = ["autopep8 (>=1.6.0,<2.1.0)"]
 flake8 = ["flake8 (>=6.1.0,<7)"]
 mccabe = ["mccabe (>=0.7.0,<0.8.0)"]
