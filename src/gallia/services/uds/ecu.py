@@ -237,8 +237,8 @@ class ECU(UDSClient):
         resp: service.UDSResponse = await self.ecu_reset(0x01)
         if isinstance(resp, service.NegativeResponse):
             await self.power_cycle()
-        else:
-            await self.wait_for_ecu()
+            await self.reconnect()
+        await self.wait_for_ecu()
 
         resp = await self.set_session(0x01, config=config)
         if isinstance(resp, service.NegativeResponse):
