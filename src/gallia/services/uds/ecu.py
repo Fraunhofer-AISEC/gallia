@@ -373,32 +373,35 @@ class ECU(UDSClient):
         while True:
             try:
                 async with self.mutex:
-                    payload = bytes([0x3E, 0x80])
-                    await self.transport.write(payload)
-                    logger.debug(payload.hex(), extra={"tags": ["write", "uds"]})
-
-                    # Hold the mutex for 10 ms to synchronize this background
-                    # worker with the main sender task.
-                    await asyncio.sleep(0.01)
-
-                    # The BCP might send us an error. Everything
-                    # will break if we do not read it back. Since
-                    # this read() call is only intended to flush
-                    # errors caused by the previous write(), it is
-                    # sane to ignore the error here.
                     try:
-                        await self.transport.read(timeout=0.01)
-                    except asyncio.TimeoutError:
-                        pass
-                await asyncio.sleep(interval)
+                        payload = bytes([0x3E, 0x80])
+                        await self.transport.write(payload)
+                        logger.debug(payload.hex(), extra={"tags": ["write", "uds"]})
+
+                        # Hold the mutex for 10 ms to synchronize this background
+                        # worker with the main sender task.
+                        await asyncio.sleep(0.01)
+
+                        # The BCP might send us an error. Everything
+                        # will break if we do not read it back. Since
+                        # this read() call is only intended to flush
+                        # errors caused by the previous write(), it is
+                        # sane to ignore the error here.
+                        try:
+                            await self.transport.read(timeout=0.01)
+                        except asyncio.TimeoutError:
+                            pass
+                        await asyncio.sleep(interval)
+                    except asyncio.CancelledError:
+                        raise
+                    except ConnectionError:
+                        logger.info("connection lost; tester present waiting…")
+                        await asyncio.sleep(1)
+                    except Exception as e:
+                        logger.debug(f"tester present got {e!r}")
             except asyncio.CancelledError:
                 logger.debug("tester present worker terminated")
                 break
-            except ConnectionError:
-                logger.info("connection lost; reconnecting")
-                await self.reconnect()
-            except Exception as e:
-                logger.debug(f"tester present got {e!r}")
 
     async def start_cyclic_tester_present(self, interval: float) -> None:
         self.tester_present_interval = interval
