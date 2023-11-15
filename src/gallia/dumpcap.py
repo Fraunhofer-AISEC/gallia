@@ -105,7 +105,7 @@ class Dumpcap:
         # https://github.com/Tinche/aiofiles/issues/46
         ready = False
         assert self.proc.stdout
-        with await asyncio.to_thread(gzip.open, self.outfile, "wb") as f:  # type: ignore
+        with await asyncio.to_thread(gzip.open, self.outfile, "wb") as f:
             while True:
                 chunk = await self.proc.stdout.read(64 * 1024)
                 if chunk == b"":

@@ -62,7 +62,7 @@ def _main() -> int:
 
     for file in args.FILE:
         path = cast(Path, file)
-        if not (path.is_file() or path.is_fifo() or path != "-"):
+        if not (path.is_file() or path.is_fifo() or str(path) != "-"):
             print(f"not a regular file: {path}", file=sys.stderr)
             return 1
 
