@@ -391,7 +391,6 @@ class ECU(UDSClient):
                             await self.transport.read(timeout=0.01)
                         except asyncio.TimeoutError:
                             pass
-                        await asyncio.sleep(interval)
                     except asyncio.CancelledError:
                         raise
                     except ConnectionError:
@@ -399,6 +398,9 @@ class ECU(UDSClient):
                         await asyncio.sleep(1)
                     except Exception as e:
                         logger.debug(f"tester present got {e!r}")
+
+                # Release the mutex while sleeping.
+                await asyncio.sleep(interval)
             except asyncio.CancelledError:
                 logger.debug("tester present worker terminated")
                 break
