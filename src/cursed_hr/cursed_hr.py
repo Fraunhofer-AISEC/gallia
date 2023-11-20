@@ -184,6 +184,18 @@ class CursedHR:
         self.configuration_index = 0
         self.use_prefix = use_prefix
 
+        self.priority_keys = {
+            "m": PenlogPriority.EMERGENCY,
+            "a": PenlogPriority.ALERT,
+            "c": PenlogPriority.CRITICAL,
+            "e": PenlogPriority.ERROR,
+            "w": PenlogPriority.WARNING,
+            "n": PenlogPriority.NOTICE,
+            "i": PenlogPriority.INFO,
+            "d": PenlogPriority.DEBUG,
+            "t": PenlogPriority.TRACE,
+        }
+
         try:
             self.window = self.init_curses()
             self.color_ids = self.define_colors()
@@ -472,27 +484,19 @@ class CursedHR:
         """
         return FormattedText(text, curses.color_pair(0))
 
-    def formatted_entry(self, entry_id: int) -> list[DisplayEntry]:
+    def formatted_entry_simple(
+        self, entry: PenlogEntry, entry_id: int, prefix: str
+    ) -> list[DisplayEntry]:
         """
         Returns a list of formatted entries, each corresponding to a single line of the entry referred to by the
-        given entry id, as displayed in the console.
+        given entry, as displayed in the console.
+        This is a helper function to avoid code duplication.
 
-        :param entry_id: The index of the entry.
+        :param entry: The entry.
+        :param entry_id: The id of the entry.
         :return: The formatted display entries for the given entry.
         """
-        entry = self.entries[entry_id]
         _, max_width = self.window.getmaxyx()
-
-        prefix = ""
-
-        if self.use_prefix:
-            prefix += entry.datetime.strftime("%b %d %H:%M:%S.%f")[:-3]
-            prefix += " "
-            prefix += entry.module
-            if entry.tags is not None:
-                prefix += f" [{', '.join(entry.tags)}]"
-            prefix += ": "
-
         residual_width = max_width - len(prefix) - 1
 
         user_defined_lines = entry.data.splitlines()
@@ -533,6 +537,31 @@ class CursedHR:
                     i + 1,
                 )
             )
+
+        return result
+
+    def formatted_entry(self, entry_id: int) -> list[DisplayEntry]:
+        """
+        Returns a list of formatted entries, each corresponding to a single line of the entry referred to by the
+        given entry id, as displayed in the console.
+
+        :param entry_id: The id of the entry.
+        :return: The formatted display entries for the given entry.
+        """
+        entry = self.entries[entry_id]
+        _, max_width = self.window.getmaxyx()
+
+        prefix = ""
+
+        if self.use_prefix:
+            prefix += entry.datetime.strftime("%b %d %H:%M:%S.%f")[:-3]
+            prefix += " "
+            prefix += entry.module
+            if entry.tags is not None:
+                prefix += f" [{', '.join(entry.tags)}]"
+            prefix += ": "
+
+        result = self.formatted_entry_simple(entry, entry_id, prefix)
 
         if self.configuration.interpret:
             if entry.interpretation is None:
@@ -954,6 +983,11 @@ class CursedHR:
 
     def handle_io(self) -> None:
         start_entry: int | None = None
+        display_help = False
+        entry_start_saved = 0
+        line_start_saved = 0
+        cursor_saved = (0, 0)
+        start_entry_saved = None
         max_lines, max_columns = self.window.getmaxyx()
         max_lines -= 1
         filter_history = [self.configuration.filter]
@@ -1088,140 +1122,150 @@ class CursedHR:
                     if cursor[1] < max_columns - 1:
                         self.window.move(cursor[0], cursor[1] + 1)
                         continue
-                case "v" | "V":
-                    if cursor[0] < len(display_entries):
-                        start_entry = display_entries[cursor[0]].penlog_entry_number
                 # TODO: this is chr(curses.ascii.ESC); but that's no pattern.
                 case "\x1b":
                     start_entry = None
-                case "p" | "P":
-                    function_key = key
 
-                    while (key := self.window.getkey()) != "q":
-                        if key == chr(curses.ascii.ESC):
-                            start_entry = None
-                            break
+                    if display_help:
+                        display_help = False
+                        entry_start = entry_start_saved
+                        line_start = line_start_saved
+                        cursor = cursor_saved
+                        start_entry = start_entry_saved
 
-                        match key:
-                            case "m":
-                                prio = PenlogPriority.EMERGENCY
-                            case "a":
-                                prio = PenlogPriority.ALERT
-                            case "c":
-                                prio = PenlogPriority.CRITICAL
-                            case "e":
-                                prio = PenlogPriority.ERROR
-                            case "w":
-                                prio = PenlogPriority.WARNING
-                            case "n":
-                                prio = PenlogPriority.NOTICE
-                            case "i":
-                                prio = PenlogPriority.INFO
-                            case "d":
-                                prio = PenlogPriority.DEBUG
-                            case "t":
-                                prio = PenlogPriority.TRACE
-                            case _:
+            if not display_help:
+                match key:
+                    case "v":
+                        if cursor[0] < len(display_entries):
+                            start_entry = display_entries[cursor[0]].penlog_entry_number
+                    case "p" | "P":
+                        function_key = key
+
+                        while (key := self.window.getkey()) != "q":
+                            if key == chr(curses.ascii.ESC):
+                                start_entry = None
+                                break
+
+                            try:
+                                prio = self.priority_keys[key]
+                            except KeyError:
                                 continue
 
-                        if function_key == "p":
-                            update_selected_zones(prio)
-                        else:
-                            self.new_configuration()
-                            self.configuration.priority_zones = [
-                                PriorityZone(0, None, prio)
-                            ]
+                            if function_key == "p":
+                                update_selected_zones(prio)
+                            else:
+                                self.new_configuration()
+                                self.configuration.priority_zones = [
+                                    PriorityZone(0, None, prio)
+                                ]
 
-                        break
-                case "u":
-                    self.configuration_index = max(0, self.configuration_index - 1)
-                case "r":
-                    self.configuration_index = min(
-                        len(self.configuration_history) - 1,
-                        self.configuration_index + 1,
-                    )
-                case "i":
-                    self.new_configuration()
-                    self.configuration.interpret = not self.configuration.interpret
-                case "f":
-                    # fh is short for filter_history to reduce long unreadable lines
-                    fh_tmp = [
-                        "; ".join(filter_commands) for filter_commands in filter_history
-                    ]
-                    fh_tmp.append("")
-                    fh_index = len(fh_tmp) - 1
+                            break
+                    case "u":
+                        self.configuration_index = max(0, self.configuration_index - 1)
+                    case "r":
+                        self.configuration_index = min(
+                            len(self.configuration_history) - 1,
+                            self.configuration_index + 1,
+                        )
+                    case "i":
+                        self.new_configuration()
+                        self.configuration.interpret = not self.configuration.interpret
+                    case "f":
+                        # fh is short for filter_history to reduce long unreadable lines
+                        fh_tmp = [
+                            "; ".join(filter_commands)
+                            for filter_commands in filter_history
+                        ]
+                        fh_tmp.append("")
+                        fh_index = len(fh_tmp) - 1
 
-                    filter_cursor = len(fh_tmp[fh_index])
-                    input_format = curses.color_pair(0)
-
-                    self.display(
-                        display_entries, [FormattedText(fh_tmp[fh_index], input_format)]
-                    )
-                    self.window.move(max_lines, filter_cursor)
-
-                    while (key := self.window.getkey()) != chr(curses.ascii.ESC):
-                        match key:
-                            case "\n":
-                                try:
-                                    filter_tmp = parse_filter(fh_tmp[fh_index])
-                                    self.debug_log(filter_tmp)
-                                    filter_history.append(filter_tmp)
-                                    self.new_configuration()
-                                    self.configuration.filter = filter_tmp
-                                    break
-                                except Exception:
-                                    pass
-
-                            case "KEY_BACKSPACE":
-                                if filter_cursor > 0:
-                                    fh_tmp[fh_index] = (
-                                        fh_tmp[fh_index][: filter_cursor - 1]
-                                        + fh_tmp[fh_index][filter_cursor:]
-                                    )
-                                    filter_cursor -= 1
-                            case "KEY_DC":
-                                if filter_cursor < len(fh_tmp[fh_index]):
-                                    fh_tmp[fh_index] = (
-                                        fh_tmp[fh_index][:filter_cursor]
-                                        + fh_tmp[fh_index][filter_cursor + 1 :]
-                                    )
-                            case "KEY_LEFT":
-                                if filter_cursor > 0:
-                                    filter_cursor -= 1
-                            case "KEY_RIGHT":
-                                if filter_cursor < len(fh_tmp[fh_index]):
-                                    filter_cursor += 1
-                            case "KEY_UP":
-                                fh_index = max(0, fh_index - 1)
-                            case "KEY_DOWN":
-                                fh_index = min(len(fh_tmp) - 1, fh_index + 1)
-                            case _:
-                                fh_tmp[fh_index] = (
-                                    fh_tmp[fh_index][:filter_cursor]
-                                    + key
-                                    + fh_tmp[fh_index][filter_cursor:]
-                                )
-                                filter_cursor += 1
-
-                        try:
-                            parse_filter(fh_tmp[fh_index])
-                            input_format = curses.color_pair(0)
-                        except Exception:
-                            input_format = curses.color_pair(
-                                self.color_ids[PenlogPriority.WARNING]
-                            )
+                        filter_cursor = len(fh_tmp[fh_index])
+                        input_format = curses.color_pair(0)
 
                         self.display(
                             display_entries,
                             [FormattedText(fh_tmp[fh_index], input_format)],
                         )
-                        self.window.move(
-                            max_lines, min(filter_cursor, len(fh_tmp[fh_index]))
-                        )
-                case "x":
-                    self.use_prefix = not self.use_prefix
+                        self.window.move(max_lines, filter_cursor)
 
-            display_entries = self.calculate_display_entries(entry_start, line_start)
+                        while (key := self.window.getkey()) != chr(curses.ascii.ESC):
+                            match key:
+                                case "\n":
+                                    try:
+                                        filter_tmp = parse_filter(fh_tmp[fh_index])
+                                        self.debug_log(filter_tmp)
+                                        filter_history.append(filter_tmp)
+                                        self.new_configuration()
+                                        self.configuration.filter = filter_tmp
+                                        break
+                                    except Exception:
+                                        pass
+
+                                case "KEY_BACKSPACE":
+                                    if filter_cursor > 0:
+                                        fh_tmp[fh_index] = (
+                                            fh_tmp[fh_index][: filter_cursor - 1]
+                                            + fh_tmp[fh_index][filter_cursor:]
+                                        )
+                                        filter_cursor -= 1
+                                case "KEY_DC":
+                                    if filter_cursor < len(fh_tmp[fh_index]):
+                                        fh_tmp[fh_index] = (
+                                            fh_tmp[fh_index][:filter_cursor]
+                                            + fh_tmp[fh_index][filter_cursor + 1 :]
+                                        )
+                                case "KEY_LEFT":
+                                    if filter_cursor > 0:
+                                        filter_cursor -= 1
+                                case "KEY_RIGHT":
+                                    if filter_cursor < len(fh_tmp[fh_index]):
+                                        filter_cursor += 1
+                                case "KEY_UP":
+                                    fh_index = max(0, fh_index - 1)
+                                case "KEY_DOWN":
+                                    fh_index = min(len(fh_tmp) - 1, fh_index + 1)
+                                case _:
+                                    fh_tmp[fh_index] = (
+                                        fh_tmp[fh_index][:filter_cursor]
+                                        + key
+                                        + fh_tmp[fh_index][filter_cursor:]
+                                    )
+                                    filter_cursor += 1
+
+                            try:
+                                parse_filter(fh_tmp[fh_index])
+                                input_format = curses.color_pair(0)
+                            except Exception:
+                                input_format = curses.color_pair(
+                                    self.color_ids[PenlogPriority.WARNING]
+                                )
+
+                            self.display(
+                                display_entries,
+                                [FormattedText(fh_tmp[fh_index], input_format)],
+                            )
+                            self.window.move(
+                                max_lines, min(filter_cursor, len(fh_tmp[fh_index]))
+                            )
+                    case "x":
+                        self.use_prefix = not self.use_prefix
+                    case "?":
+                        display_help = True
+                        entry_start_saved = entry_start
+                        line_start_saved = line_start
+                        cursor_saved = cursor
+                        start_entry_saved = start_entry
+                        entry_start = 0
+                        line_start = 0
+                        cursor = (0, 0)
+                        start_entry = None
+
+            if display_help:
+                display_entries = self.help_message(line_start)
+            else:
+                display_entries = self.calculate_display_entries(
+                    entry_start, line_start
+                )
 
             previous_entry_start = 0
             previous_line_start = 0
@@ -1234,9 +1278,13 @@ class CursedHR:
                 entry_start = display_entries[0].penlog_entry_number
                 line_start = display_entries[0].entry_line_number
                 line_up()
-                display_entries = self.calculate_display_entries(
-                    entry_start, line_start
-                )
+
+                if display_help:
+                    display_entries = self.help_message(line_start)
+                else:
+                    display_entries = self.calculate_display_entries(
+                        entry_start, line_start
+                    )
 
             if start_entry is not None:
                 stop_entry = display_entries[
@@ -1252,8 +1300,82 @@ class CursedHR:
                         for text in entry.texts:
                             text.format = text.format | curses.A_REVERSE
 
-            self.display(display_entries, self.status(display_entries, cursor))
+            status = [] if display_help else self.status(display_entries, cursor)
+            self.display(display_entries, status)
             self.window.move(min(cursor[0], len(display_entries) - 1), cursor[1])
+
+    def help_message(self, line_start: int) -> list[DisplayEntry]:
+        options = {
+            "f": "Enter filter input mode (beware!, this is executed with eval on each line)",
+            "g": "Jump to the start of the file",
+            "G": "Jump to the end of the file",
+            "i": "Interpret UDS messages (they appear as comments next to the original message)",
+            "p": "Change the log level (priority) for the selected range, followed by the corresponding log level key",
+            "P": "Change the log level (priority) for the entire file, followed by the corresponding log level key",
+            "q": "Quit the application",
+            "r": "Redo the last undone action (as long as no new action has been done)",
+            "u": "Undo the last action",
+            "v": "Start marking ranges (for further actions)",
+            "x": "Toggle prefix displaying",
+            "?": "Show this help message",
+        }
+
+        display_entries: list[DisplayEntry] = []
+
+        def add_entries(message: str, prefix: str = "") -> None:
+            nonlocal display_entries
+
+            entry = PenlogEntry(
+                data=message,
+                datetime=datetime.now(),
+                host="",
+                module="",
+                priority=PenlogPriority.INFO,
+            )
+            display_entries += self.formatted_entry_simple(entry, 0, "    " + prefix)
+
+        add_entries("")
+        add_entries("HELP")
+        add_entries("")
+        add_entries("Move cursor with arrow keys or Page Up / Page Down")
+        add_entries("Press ESC to cancel an action or go back to the main view")
+        add_entries("")
+        add_entries("Action keys:")
+
+        for option in options:
+            add_entries(f"{options[option]}", f"    {option}: ")
+
+        add_entries("")
+        add_entries("Log level keys (ordered from highest to lowest):")
+
+        for level in self.priority_keys:
+            add_entries(
+                f"{PenlogPriority(self.priority_keys[level]).name}", f"    {level}: "
+            )
+
+        add_entries("")
+        add_entries("Filtering information:")
+        add_entries(
+            "Beware that filters are arbitrary Python statements executed with eval on each line!"
+        )
+        add_entries(
+            "This can lead to poor performance on large files as well as side effects!"
+        )
+        add_entries(
+            "Existing filters can be traversed using the up and down arrow keys"
+        )
+        add_entries("The following attributes of each line are exposed as a variable:")
+
+        for attr in self.entries[0].__dict__:
+            if not attr.startswith("_"):
+                add_entries(f"{attr}", "    ")
+
+        max_lines, _ = self.window.getmaxyx()
+
+        for n, entry in enumerate(display_entries):
+            entry.entry_line_number = n
+
+        return display_entries[line_start : max_lines + line_start]
 
     def status(
         self, display_entries: list[DisplayEntry], cursor: tuple[int, int]
