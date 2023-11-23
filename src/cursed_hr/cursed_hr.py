@@ -1033,7 +1033,7 @@ class CursedHR:
             )
             start_entry = None
 
-        while (key := self.window.getkey()) != "q":
+        while (key := self.window.getkey()) != "q" or display_help:
             entry_start = display_entries[0].penlog_entry_number
             line_start = display_entries[0].entry_line_number
             cursor = curses.getsyx()
@@ -1123,7 +1123,7 @@ class CursedHR:
                         self.window.move(cursor[0], cursor[1] + 1)
                         continue
                 # TODO: this is chr(curses.ascii.ESC); but that's no pattern.
-                case "\x1b":
+                case "\x1b" | "q":
                     start_entry = None
 
                     if display_help:
@@ -1312,7 +1312,7 @@ class CursedHR:
             "i": "Interpret UDS messages (they appear as comments next to the original message)",
             "p": "Change the log level (priority) for the selected range, followed by the corresponding log level key",
             "P": "Change the log level (priority) for the entire file, followed by the corresponding log level key",
-            "q": "Quit the application",
+            "q": "Quit the application or this very help message",
             "r": "Redo the last undone action (as long as no new action has been done)",
             "u": "Undo the last action",
             "v": "Start marking ranges (for further actions)",
