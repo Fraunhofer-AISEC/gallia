@@ -79,4 +79,4 @@ class SendPDUPrimitive(UDSScanner):
             if isinstance(response, RawResponse):
                 logger.warning("Could not parse the response pdu")
 
-            logger.notice(f"Received {response}")
+            logger.result(f"Received {response}")

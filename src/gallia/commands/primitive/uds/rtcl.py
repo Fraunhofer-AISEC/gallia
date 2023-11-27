@@ -152,6 +152,6 @@ class RTCLPrimitive(UDSScanner):
             if isinstance(resp, NegativeResponse):
                 logger.error(f"request_routine_results: {resp}")
             else:
-                logger.result("[get result] Positive response:")
+                logger.result("[results] Positive response:")
                 logger.result(f"hex: {resp.routine_status_record.hex()}")
                 logger.result(f"raw: {resp.routine_status_record!r}")
