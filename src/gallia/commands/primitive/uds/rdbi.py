@@ -17,7 +17,7 @@ class ReadByIdentifierPrimitive(UDSScanner):
     """Read data via the ReadDataByIdentifier service"""
 
     GROUP = "primitive"
-    COMMAND = "rdbid"
+    COMMAND = "rdbi"
     SHORT_HELP = "ReadDataByIdentifier"
 
     def configure_parser(self) -> None:
