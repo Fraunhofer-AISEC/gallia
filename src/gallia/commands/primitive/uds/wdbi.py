@@ -19,7 +19,7 @@ class WriteByIdentifierPrimitive(UDSScanner):
     """A simple scanner to talk to the write by identifier service"""
 
     GROUP = "primitive"
-    COMMAND = "wdbid"
+    COMMAND = "wdbi"
     SHORT_HELP = "WriteDataByIdentifier"
 
     def configure_parser(self) -> None:
