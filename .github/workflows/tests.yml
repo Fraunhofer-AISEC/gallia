@@ -118,9 +118,9 @@ jobs:
         poetry run gallia primitive uds ecu-reset
         poetry run gallia primitive uds vin
         poetry run gallia primitive uds ping --count 2
-        poetry run gallia primitive uds rdbid --data-id 0x108d
+        poetry run gallia primitive uds rdbi 0x108d
         poetry run gallia primitive uds pdu 1001
-        poetry run gallia primitive uds rdbid --data-id 0x2266 --data 00
+        poetry run gallia primitive uds wdbi 0x2266 --data 00
         poetry run gallia primitive uds dtc read
         poetry run gallia primitive uds dtc clear
         poetry run gallia primitive uds dtc control --stop
