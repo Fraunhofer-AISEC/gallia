@@ -117,7 +117,7 @@ class ServicesScanner(UDSScanner):
 
                 logger.result(f"scanning in session {g_repr(session)}")
 
-                found[session] = await self.perform_scan(args)
+                found[session] = await self.perform_scan(args, session)
 
                 await self.ecu.leave_session(session)
 
