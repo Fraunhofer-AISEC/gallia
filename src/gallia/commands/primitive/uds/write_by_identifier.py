@@ -5,6 +5,7 @@
 import binascii
 import sys
 from argparse import Namespace
+from pathlib import Path
 
 from gallia.command import UDSScanner
 from gallia.log import get_logger
@@ -25,22 +26,26 @@ class WriteByIdentifierPrimitive(UDSScanner):
         self.parser.set_defaults(properties=False)
 
         self.parser.add_argument(
+            "data_identifier",
+            type=auto_int,
+            help="The data identifier",
+        )
+        self.parser.add_argument(
             "--session",
             type=auto_int,
             default=0x01,
             help="set session perform test in",
         )
-        self.parser.add_argument(
-            "--data-id",
-            type=auto_int,
-            required=True,
-            help="which data identifier to write to",
-        )
-        self.parser.add_argument(
+        data_group = self.parser.add_mutually_exclusive_group(required=True)
+        data_group.add_argument(
             "--data",
-            required=True,
             type=binascii.unhexlify,
-            help="data to write as hex",
+            help="The data which should be written",
+        )
+        data_group.add_argument(
+            "--data-file",
+            type=Path,
+            help="The path to a file with the binary data which should be written",
         )
 
     async def main(self, args: Namespace) -> None:
@@ -54,7 +59,13 @@ class WriteByIdentifierPrimitive(UDSScanner):
             logger.critical(f"fatal error: {e!r}")
             sys.exit(1)
 
-        resp = await self.ecu.write_data_by_identifier(args.data_id, args.data)
+        if args.data is not None:
+            data = args.data
+        else:
+            with args.data_file.open("rb") as file:
+                data = file.read()
+
+        resp = await self.ecu.write_data_by_identifier(args.data_identifier, data)
         if isinstance(resp, NegativeResponse):
             logger.error(resp)
         else:

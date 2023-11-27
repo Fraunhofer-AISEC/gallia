@@ -24,27 +24,26 @@ class ReadByIdentifierPrimitive(UDSScanner):
         self.parser.set_defaults(properties=False)
 
         self.parser.add_argument(
+            "data_identifier",
+            type=auto_int,
+            help="The data identifier",
+        )
+        self.parser.add_argument(
             "--session",
             type=auto_int,
             default=0x01,
             help="set session perform test in",
         )
-        self.parser.add_argument(
-            "--data-id",
-            type=auto_int,
-            default=0x1001,
-            help="data Identified to read",
-        )
 
     async def main(self, args: Namespace) -> None:
         try:
             if args.session != 0x01:
-                await self.ecu.set_session(args.session)
+                await self.ecu.set_session(args.data_identifier)
         except Exception as e:
             logger.critical(f"fatal error: {e!r}")
             sys.exit(1)
 
-        resp = await self.ecu.read_data_by_identifier(args.data_id)
+        resp = await self.ecu.read_data_by_identifier(args.data_identifier)
         if isinstance(resp, NegativeResponse):
             logger.error(resp)
         else:
@@ -53,6 +52,6 @@ class ReadByIdentifierPrimitive(UDSScanner):
             logger.info(f"hex: {data.hex()}")
             logger.info(f"raw: {repr(data)}")
             logger.result(
-                f"{self.ecu.transport.target.raw} responds to {args.data_id:#06x} with {data.hex()}"
+                f"{self.ecu.transport.target.raw} responds to {args.DID:#06x} with {data.hex()}"
             )
             self.result = data
