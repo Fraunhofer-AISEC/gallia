@@ -69,4 +69,4 @@ class WriteByIdentifierPrimitive(UDSScanner):
         if isinstance(resp, NegativeResponse):
             logger.error(resp)
         else:
-            logger.info("Positive response")
+            logger.result("Success")

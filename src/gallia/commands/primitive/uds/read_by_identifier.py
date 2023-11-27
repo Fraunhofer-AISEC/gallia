@@ -47,11 +47,8 @@ class ReadByIdentifierPrimitive(UDSScanner):
         if isinstance(resp, NegativeResponse):
             logger.error(resp)
         else:
-            logger.info("Positive response:")
+            logger.result("Positive response:")
             data = resp.data_record
-            logger.info(f"hex: {data.hex()}")
-            logger.info(f"raw: {repr(data)}")
-            logger.result(
-                f"{self.ecu.transport.target.raw} responds to {args.DID:#06x} with {data.hex()}"
-            )
+            logger.result(f"hex: {data.hex()}")
+            logger.result(f"raw: {repr(data)}")
             self.result = data
