@@ -175,14 +175,8 @@ class SessionsScanner(UDSScanner):
                             )
                             await self.ecu.reconnect()
 
-                    try:
-                        logger.debug("Changing session to DefaultSession")
-                        resp = await self.ecu.set_session(0x01, use_db=False)
-                        if isinstance(resp, NegativeResponse):
-                            logger.error(f"Could not change to default session: {resp}")
-                            sys.exit(1)
-                    except Exception as e:
-                        logger.error(f"Could not change to default session: {e!r}")
+                    if not (await self.ecu.leave_session(session)):
+                        logger.error("Could not change to default session")
                         sys.exit(1)
 
                     logger.debug(
