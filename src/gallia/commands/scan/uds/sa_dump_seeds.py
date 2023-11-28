@@ -218,4 +218,4 @@ class SASeedsDumper(UDSScanner):
 
         await file.close()
         self.log_size(seeds_file, time.time() - start_time)
-        await self.ecu.leave_session(session)
+        await self.ecu.leave_session()

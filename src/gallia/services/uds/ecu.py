@@ -220,17 +220,13 @@ class ECU(UDSClient):
         self.state.reset()
         return True
 
-    async def leave_session(
-        self, level: int, config: UDSRequestConfig | None = None
-    ) -> bool:
+    async def leave_session(self, config: UDSRequestConfig | None = None) -> bool:
         """leave_session() is a hook which can be called explicitly by a
         scanner when a session is to be disabled. Use this hook if resetting
         the ECU is required, e.g. when disabling the programming session.
 
         Args:
-            uds: The UDSClient class where this hook is embedded. The caller typically
-                 calls this function with `self` as the first argument.
-            session: The desired session identifier.
+            config: The configuration.
         Returns:
             True on success, False on error.
         """

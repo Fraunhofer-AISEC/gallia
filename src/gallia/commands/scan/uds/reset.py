@@ -81,7 +81,7 @@ class ResetScanner(UDSScanner):
                 logger.result(f"Scanning in session: {g_repr(session)}")
                 await self.perform_scan(args, session)
 
-                await self.ecu.leave_session(session)
+                await self.ecu.leave_session()
 
     async def perform_scan(self, args: Namespace, session: None | int = None) -> None:
         l_ok: list[int] = []

@@ -195,7 +195,7 @@ class PDUFuzzer(UDSScanner):
                 logger.result(f"Flow control frames missing: {flow_control_miss}")
 
                 logger.info(f"Leaving session 0x{session:02x} via hook")
-                await self.ecu.leave_session(session)
+                await self.ecu.leave_session()
 
         if args.observe_can_ids:
             recv_task.cancel()

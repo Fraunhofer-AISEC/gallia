@@ -119,7 +119,7 @@ class ServicesScanner(UDSScanner):
 
                 found[session] = await self.perform_scan(args, session)
 
-                await self.ecu.leave_session(session)
+                await self.ecu.leave_session()
 
         for key, value in found.items():
             logger.result(f"findings in session 0x{key:02X}:")
