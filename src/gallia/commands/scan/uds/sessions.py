@@ -55,11 +55,8 @@ class SessionsScanner(UDSScanner):
         )
         self.parser.add_argument(
             "--reset",
-            nargs="?",
-            default=None,
-            const=0x01,
-            type=lambda x: int(x, 0),
-            help="Reset the ECU after each iteration with the optionally given reset level",
+            action="store_true",
+            help="Reset and if necessary power cycle the ECU after each iteration",
         )
         self.parser.add_argument(
             "--fast",
@@ -156,24 +153,16 @@ class SessionsScanner(UDSScanner):
                         continue
 
                     if args.reset:
-                        try:
-                            logger.info("Resetting the ECU")
-                            resp: UDSResponse = await self.ecu.ecu_reset(args.reset)
+                        logger.info("Resetting the ECU")
+                        success = await self.ecu.leave_session(session)
 
-                            if isinstance(resp, NegativeResponse):
-                                logger.warning(
-                                    f"Could not reset ECU with {EcuResetSubFuncs(args.reset).name if args.reset in iter(EcuResetSubFuncs) else args.reset}: {resp}"
-                                    f"; continuing without reset"
-                                )
-                            else:
-                                logger.info("Waiting for the ECU to recover…")
-                                await self.ecu.wait_for_ecu(timeout=args.timeout)
-                        except (asyncio.TimeoutError, ConnectionError):
+                        if not success:
                             logger.warning(
-                                "Lost connection to the ECU after performing a reset. "
-                                "Attempting to reconnect…"
+                                f"Could not reset ECU; continuing without reset"
                             )
-                            await self.ecu.reconnect()
+                        else:
+                            logger.info("Waiting for the ECU to recover…")
+                            await self.ecu.wait_for_ecu(timeout=args.timeout)
 
                     if not (await self.ecu.leave_session(session)):
                         logger.error("Could not change to default session")
