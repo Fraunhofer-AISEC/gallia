@@ -25,13 +25,13 @@ zipapp:
 lint:
 	mypy src tests
 	ruff check src tests
-	black --check src tests
+	ruff format --check src tests
 	reuse lint
 
 .PHONY: fmt
 fmt:
 	ruff check --fix-only src tests
-	black src tests
+	ruff format src tests
 
 .PHONY: docs
 docs:

@@ -419,7 +419,9 @@ class RandomUDSServer(UDSServer):
             p_transition = self.p_session / len(level_sessions) / 2 ** (level + 0.5)
             next_level_sessions = set()
             available_sessions = [
-                i for i, l in enumerate(session_transitions) if len(l) > 0  # noqa: E741
+                i
+                for i, l in enumerate(session_transitions)  # noqa: E741
+                if len(l) > 0
             ]
 
             for session in level_sessions:
@@ -662,7 +664,9 @@ class RandomUDSServer(UDSServer):
                 request.service_id, UDSErrorCodes.incorrectMessageLengthOrInvalidFormat
             )
 
-        return request.RESPONSE_TYPE(request.data_identifier, rng.random_payload(min_len=1))  # type: ignore
+        return request.RESPONSE_TYPE(
+            request.data_identifier, rng.random_payload(min_len=1)
+        )  # type: ignore
 
     def clear_diagnostic_information(
         self, request: service.ClearDiagnosticInformationRequest

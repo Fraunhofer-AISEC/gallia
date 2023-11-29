@@ -360,7 +360,9 @@ class DoIPDiscoverer(AsyncScript):
 
             except (ConnectionError, ConnectionResetError) as e:
                 # Whenever this triggers, but sometimes connections are closed not by us
-                logger.warn(f"[🫦] Sexy, but unexpected: {target_addr:#x} triggered {e}")
+                logger.warn(
+                    f"[🫦] Sexy, but unexpected: {target_addr:#x} triggered {e}"
+                )
                 async with aiofiles.open(
                     self.artifacts_dir.joinpath("7_targets_with_errors.txt"), "a"
                 ) as f:

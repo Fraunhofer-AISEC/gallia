@@ -51,14 +51,12 @@ exitcode = "^0.1.0"
 psutil = "^5.9.4"
 
 [tool.poetry.group.dev.dependencies]
-black = ">=22.10,<24.0"
 Sphinx = ">=5.2,<8.0"
 mypy = "^1.0"
 pylsp-mypy = "^0.6"
 pylsp-rope = "^0.1"
 pytest = "^7.1"
 pytest-asyncio = ">=0.20,<0.22"
-python-lsp-black = "^1.1"
 python-lsp-server = "^1.5"
 types-aiofiles = "^23.1"
 types-psutil = "^5.9.5.10"
@@ -69,7 +67,7 @@ reuse = ">=1,<3"
 construct-typing = ">=0.5.2,<0.7.0"
 pytest-cov = "^4.0"
 ruff = "^0.1.0"
-python-lsp-ruff = "^1.1.0"
+python-lsp-ruff = "^1.6.0"
 
 [tool.poetry.scripts]
 "gallia" = "gallia.cli:main"
@@ -92,6 +90,8 @@ ignore_missing_imports = true
 
 [tool.ruff]
 target-version = "py310"
+
+[tool.ruff.lint]
 select = [
     # TODO: Enable this
     # "B",    # flake8-bugbear
@@ -112,9 +112,6 @@ ignore = [
     "PLR0915",  # too many statements
     "PLC1901",  # empty string is falsey
 ]
-
-[tool.black]
-target-version = ['py310']
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

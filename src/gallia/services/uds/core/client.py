@@ -494,7 +494,7 @@ class UDSClient:
         dtc_status_mask: int,
         suppress_response: bool = False,
         config: UDSRequestConfig | None = None,
-    ) -> (service.NegativeResponse | service.ReportMirrorMemoryDTCByStatusMaskResponse):
+    ) -> service.NegativeResponse | service.ReportMirrorMemoryDTCByStatusMaskResponse:
         """Read DTCs and their state from the UDS server's mirror memory.
         This is an implementation of the UDS request for the reportMirrorMemoryDTCByStatusMask
         sub-function of the
@@ -600,7 +600,7 @@ class UDSClient:
         control_option_record: bytes,
         control_enable_mask_record: bytes = b"",
         config: UDSRequestConfig | None = None,
-    ) -> (service.NegativeResponse | service.InputOutputControlByIdentifierResponse):
+    ) -> service.NegativeResponse | service.InputOutputControlByIdentifierResponse:
         """Controls input or output values on the server.
         This is an implementation of the UDS request for the service InputOutputControlByIdentifier
         (0x2F).
@@ -636,7 +636,7 @@ class UDSClient:
         data_identifier: int,
         control_enable_mask_record: bytes = b"",
         config: UDSRequestConfig | None = None,
-    ) -> (service.NegativeResponse | service.InputOutputControlByIdentifierResponse):
+    ) -> service.NegativeResponse | service.InputOutputControlByIdentifierResponse:
         """Gives the control over input / output parameters back to the ECU.
         This is a convenience wrapper for the generic input_output_control_by_id() for the case
         where an inputOutputControlParameter is used and is set to returnControlToECU.
@@ -662,7 +662,7 @@ class UDSClient:
         data_identifier: int,
         control_enable_mask_record: bytes = b"",
         config: UDSRequestConfig | None = None,
-    ) -> (service.NegativeResponse | service.InputOutputControlByIdentifierResponse):
+    ) -> service.NegativeResponse | service.InputOutputControlByIdentifierResponse:
         """Sets the input / output parameters to the default value(s).
         This is a convenience wrapper of the generic request for the case where an
         inputOutputControlParameter is used and is set to resetToDefault.
@@ -686,7 +686,7 @@ class UDSClient:
         data_identifier: int,
         control_enable_mask_record: bytes = b"",
         config: UDSRequestConfig | None = None,
-    ) -> (service.NegativeResponse | service.InputOutputControlByIdentifierResponse):
+    ) -> service.NegativeResponse | service.InputOutputControlByIdentifierResponse:
         """Freezes the input / output parameters at their current state.
         This is a convenience wrapper of the generic request for the case where an
         inputOutputControlParameter is used and is set to  freezeCurrentState.
@@ -712,7 +712,7 @@ class UDSClient:
         control_states: bytes,
         control_enable_mask_record: bytes = b"",
         config: UDSRequestConfig | None = None,
-    ) -> (service.NegativeResponse | service.InputOutputControlByIdentifierResponse):
+    ) -> service.NegativeResponse | service.InputOutputControlByIdentifierResponse:
         """Sets the input / output parameters as specified in the controlOptionRecord.
         This is a convenience wrapper of the generic request for the case
         where an inputOutputControlParameter is used and is set to freezeCurrentState.
@@ -1040,7 +1040,7 @@ class UDSClient:
         self,
         request: service.ReportMirrorMemoryDTCByStatusMaskRequest,
         config: UDSRequestConfig | None = None,
-    ) -> (service.NegativeResponse | service.ReportMirrorMemoryDTCByStatusMaskResponse):
+    ) -> service.NegativeResponse | service.ReportMirrorMemoryDTCByStatusMaskResponse:
         ...
 
     @overload
@@ -1081,7 +1081,7 @@ class UDSClient:
         self,
         request: service.InputOutputControlByIdentifierRequest,
         config: UDSRequestConfig | None = None,
-    ) -> (service.NegativeResponse | service.InputOutputControlByIdentifierResponse):
+    ) -> service.NegativeResponse | service.InputOutputControlByIdentifierResponse:
         ...
 
     @overload

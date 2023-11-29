@@ -47,9 +47,9 @@ jobs:
     - name: Run mypy
       run: |
         poetry run mypy src tests
-    - name: Run black
+    - name: Run ruff format
       run: |
-        poetry run black --check --verbose src tests
+        poetry run ruff format --check src tests
     - name: Run reuse lint
       run: |
         poetry run reuse lint
