@@ -127,6 +127,7 @@ class UDSClient:
                 except asyncio.TimeoutError as e:
                     # Send a tester present to indicate that
                     # we are still there.
+                    # TODO Is this really necessary?
                     await self._tester_present(suppress_resp=True)
                     n_timeout += 1
                     if n_timeout >= max_n_timeout:
@@ -158,6 +159,7 @@ class UDSClient:
             tags = config.tags if config.tags is not None else []
             logger.debug(pdu.hex(), extra={"tags": ["write", "uds"] + tags})
             await self.transport.write(pdu, timeout, config.tags)
+            # TODO This is not fail safe: What if there is an answer???
             return None
         return await self.tester_present(False, config)
 
