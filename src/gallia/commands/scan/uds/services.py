@@ -169,10 +169,6 @@ class ServicesScanner(UDSScanner):
                         f"{g_repr(sid)}: {e!r} occurred, this needs to be investigated!"
                     )
                     continue
-                except Exception as e:
-                    logger.info(f"{g_repr(sid)}: {e!r} occurred")
-                    await self.ecu.reconnect()
-                    continue
 
                 if isinstance(resp, NegativeResponse) and resp.response_code in [
                     UDSErrorCodes.serviceNotSupported,
