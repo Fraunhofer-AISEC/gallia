@@ -370,7 +370,9 @@ class ECU(UDSClient):
     async def _tester_present_worker(self, interval: float) -> None:
         assert self.transport
         logger.debug("tester present worker started")
-        while True:
+
+        task = asyncio.current_task()
+        while task is not None and task.cancelling() == 0:
             try:
                 async with self.mutex:
                     try:
@@ -392,12 +394,16 @@ class ECU(UDSClient):
                         except asyncio.TimeoutError:
                             pass
                     except asyncio.CancelledError:
+                        logger.debug("tester present worker terminated")
                         raise
                     except ConnectionError:
                         logger.info("connection lost; tester present waiting…")
                         await asyncio.sleep(1)
                     except Exception as e:
                         logger.debug(f"tester present got {e!r}")
+                logger.debug(
+                    "Tester present worker was cancelled but did not receive asyncio.CancelledError"
+                )
 
                 # Release the mutex while sleeping.
                 await asyncio.sleep(interval)
@@ -406,6 +412,7 @@ class ECU(UDSClient):
                 break
 
     async def start_cyclic_tester_present(self, interval: float) -> None:
+        logger.debug("Starting tester present worker")
         self.tester_present_interval = interval
         coroutine = self._tester_present_worker(interval)
         self.tester_present_task = asyncio.create_task(coroutine)
@@ -416,6 +423,7 @@ class ECU(UDSClient):
         await asyncio.sleep(0)
 
     async def stop_cyclic_tester_present(self) -> None:
+        logger.debug("Stopping tester present worker")
         if self.tester_present_task is None:
             logger.warning(
                 "BUG: stop_cyclic_tester_present() called but no task running"
@@ -423,7 +431,10 @@ class ECU(UDSClient):
             return
 
         self.tester_present_task.cancel()
-        await self.tester_present_task
+        try:
+            await self.tester_present_task
+        except asyncio.CancelledError:
+            pass
 
     async def update_state(
         self, request: service.UDSRequest, response: service.UDSResponse
