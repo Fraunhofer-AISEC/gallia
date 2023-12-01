@@ -14,6 +14,7 @@ from abc import ABC, abstractmethod
 from argparse import ArgumentParser, Namespace
 from datetime import UTC, datetime
 from enum import Enum, unique
+from logging import Handler
 from pathlib import Path
 from subprocess import CalledProcessError, run
 from tempfile import gettempdir
@@ -104,6 +105,8 @@ class BaseCommand(ABC):
     #: a log message with level critical is logged.
     CATCHED_EXCEPTIONS: list[type[Exception]] = []
 
+    log_file_handlers: list[Handler]
+
     def __init__(self, parser: ArgumentParser, config: Config = Config()) -> None:
         self.id = camel_to_snake(self.__class__.__name__)
         self.parser = parser
@@ -124,6 +127,7 @@ class BaseCommand(ABC):
         self.db_handler: DBHandler | None = None
         self.configure_class_parser()
         self.configure_parser()
+        self.log_file_handlers = []
 
     @abstractmethod
     def run(self, args: Namespace) -> int:
@@ -381,10 +385,12 @@ class BaseCommand(ABC):
                 args.artifacts_base,
                 args.artifacts_dir,
             )
-            add_zst_log_handler(
-                logger_name="gallia",
-                filepath=self.artifacts_dir.joinpath(FileNames.LOGFILE.value),
-                file_log_level=get_file_log_level(args),
+            self.log_file_handlers.append(
+                add_zst_log_handler(
+                    logger_name="gallia",
+                    filepath=self.artifacts_dir.joinpath(FileNames.LOGFILE.value),
+                    file_log_level=get_file_log_level(args),
+                )
             )
 
         if args.hooks:
