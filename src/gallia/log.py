@@ -299,7 +299,7 @@ def add_stderr_log_handler(
 
 def add_zst_log_handler(
     logger_name: str, filepath: Path, file_log_level: Loglevel
-) -> None:
+) -> logging.Handler:
     queue: Queue[Any] = Queue()
     logger = get_logger(logger_name)
     logger.addHandler(QueueHandler(queue))
@@ -318,6 +318,7 @@ def add_zst_log_handler(
     )
     queue_listener.start()
     atexit.register(queue_listener.stop)
+    return zstd_handler
 
 
 class _PenlogRecordV1(msgspec.Struct, omit_defaults=True):
