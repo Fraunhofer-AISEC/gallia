@@ -128,7 +128,7 @@ class Dumpcap:
     ) -> list[str] | None:
         args = ["dumpcap", "-q", "-i", iface, "-w", "-"]
         # Debug this with `dumpcap -d` or `tshark -x` to inspect the captured buffer.
-        filter_ = "link[1] == 0x01"  # broadcast flag; ignore "sent by us" frames
+        filter_ = ""
 
         if src_addr is not None and dst_addr is not None:
             # TODO: Support extended CAN IDs
@@ -136,10 +136,9 @@ class Dumpcap:
                 logger.error("Extended CAN Ids are currently not supported!")
                 return None
 
-            # Debug this with `dumpcap -d` or `tshark -x` to inspect the captured buffer.
             filter_ += (
-                f"&& (link[16:2] == {Dumpcap._swap_bytes_16(src_addr):#x} "  # can_id is in little endian
-                f"|| link[16:2] == {Dumpcap._swap_bytes_16(dst_addr):#x})"
+                f"link[0:2] == {Dumpcap._swap_bytes_16(src_addr):#x} "  # can_id is in little endian
+                f"|| link[0:2] == {Dumpcap._swap_bytes_16(dst_addr):#x}"
             )
         args += ["-f", filter_]
         return args
