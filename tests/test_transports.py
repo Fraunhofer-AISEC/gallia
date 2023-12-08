@@ -38,9 +38,8 @@ class TCPServer:
     async def accept(self) -> TCPTransport:
         return await self.queue.get()
 
-    async def close(self) -> None:
+    def close(self) -> None:
         self.server.close()
-        await self.server.wait_closed()
 
 
 async def _echo_test(
@@ -66,7 +65,7 @@ async def tcp_server() -> AsyncIterator[TCPServer]:
     tcp_server = TCPServer()
     await tcp_server.listen(listen_target)
     yield tcp_server
-    await tcp_server.close()
+    tcp_server.close()
 
 
 @pytest.mark.asyncio
@@ -127,7 +126,7 @@ async def test_tcp_linesep_request(tcp_server: TCPServer) -> None:
 @pytest.mark.asyncio
 async def test_tcp_timeout(tcp_server: TCPServer) -> None:
     client = await TCPLinesTransport.connect(TargetURI("tcp-lines://127.0.0.1:1234"))
-    _ = await tcp_server.accept()
+    await tcp_server.accept()
 
     with pytest.raises(asyncio.TimeoutError):
         await client.request(b"hello", timeout=0.5)
