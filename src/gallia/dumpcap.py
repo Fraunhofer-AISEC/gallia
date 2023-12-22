@@ -164,11 +164,12 @@ class Dumpcap:
         return args
 
     @staticmethod
-    async def _eth_cmd(target_ip: str) -> list[str]:
+    async def _eth_cmd(target_ip: str) -> list[str] | None:
         try:
             host, port = split_host_port(target_ip)
         except Exception as e:
-            raise ValueError(f"Invalid argument for target ip: {target_ip}; {e}") from e
+            logger.error(f"Invalid argument for target ip: {target_ip}; {e}")
+            return None
 
         if proxy := os.getenv("all_proxy"):
             url = urlparse(proxy)
