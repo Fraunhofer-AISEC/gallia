@@ -1534,13 +1534,13 @@ testing = ["fields", "hunter", "process-tests", "pytest-xdist", "six", "virtuale
 
 [[package]]
 name = "python-can"
-version = "4.3.0"
+version = "4.3.1"
 description = "Controller Area Network interface module for Python"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "python-can-4.3.0.tar.gz", hash = "sha256:0af380470b8998650028993fec364effe4578befa09d3a73e1e93c9a9cfa4e1e"},
-    {file = "python_can-4.3.0-py3-none-any.whl", hash = "sha256:545d8e464046a9b5dfff359682aa065d6fba6a4a348c1d79034005a28f2753b8"},
+    {file = "python-can-4.3.1.tar.gz", hash = "sha256:008bea1c12e31586e1aa76971126b831bf01056a900e91862a11360e011ab933"},
+    {file = "python_can-4.3.1-py3-none-any.whl", hash = "sha256:eebb68db388b8c997fc7c92dce311656946c968ff407706f5b5f9cc671879479"},
 ]
 
 [package.dependencies]
