@@ -40,7 +40,7 @@ jobs:
       run: |
         poetry run make -C docs SPHINXOPTS="-W" html
     - name: Archive webpage
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         path: |
           docs/_build/html
