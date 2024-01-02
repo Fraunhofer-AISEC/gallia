@@ -4,7 +4,7 @@
 
 {
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs";
+    nixpkgs.url = "nixpkgs/nixos-23.05";
   };
 
   outputs = { self, nixpkgs }:
