@@ -14,6 +14,10 @@
       devShell.x86_64-linux = pkgs.mkShell {
         buildInputs = with pkgs; [ 
           poetry
+          shellcheck
+          shfmt
+          bats
+          nodePackages_latest.bash-language-server
           python311
           python312
         ];
