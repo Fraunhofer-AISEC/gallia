@@ -12,7 +12,7 @@ import signal
 import sys
 from abc import ABC, abstractmethod
 from argparse import ArgumentParser, Namespace
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum, unique
 from pathlib import Path
 from subprocess import CalledProcessError, run
@@ -268,7 +268,7 @@ class BaseCommand(ABC):
                 arguments=sys.argv[1:],
                 command_meta=msgspec.json.encode(self.run_meta.command_meta),
                 settings=dump_args(args),
-                start_time=datetime.now(timezone.utc).astimezone(),
+                start_time=datetime.now(UTC).astimezone(),
                 path=self.artifacts_dir,
             )
 
@@ -277,7 +277,7 @@ class BaseCommand(ABC):
             if self.db_handler.meta is not None:
                 try:
                     await self.db_handler.complete_run_meta(
-                        datetime.now(timezone.utc).astimezone(),
+                        datetime.now(UTC).astimezone(),
                         self.run_meta.exit_code,
                         self.artifacts_dir,
                     )

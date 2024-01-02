@@ -3,10 +3,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+import tomllib
 from pathlib import Path
 from typing import Any
 
-import tomllib
 from platformdirs import user_config_path
 from pygit2 import discover_repository
 

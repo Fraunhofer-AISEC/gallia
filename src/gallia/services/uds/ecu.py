@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import asyncio
 from asyncio import Task
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 from gallia.db.log import LogMode
@@ -479,12 +479,12 @@ class ECU(UDSClient):
         """
         response = None
         exception: Exception | None = None
-        send_time = datetime.now(timezone.utc).astimezone()
+        send_time = datetime.now(UTC).astimezone()
         receive_time = None
 
         try:
             response = await super()._request(request, config)
-            receive_time = datetime.now(timezone.utc).astimezone()
+            receive_time = datetime.now(UTC).astimezone()
             return response
         except ResponseException as e:
             exception = e
