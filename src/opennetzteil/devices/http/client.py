@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Any, cast
 from urllib.parse import urljoin
 
-import aiohttp
+import httpx
 from gallia.transports import TargetURI
 
 from opennetzteil.exceptions import OperationNotSupportedError
@@ -20,7 +20,7 @@ class HTTPNetzteil(BaseNetzteil):
 
     def __init__(
         self,
-        session: aiohttp.ClientSession,
+        session: httpx.AsyncClient,
         host: str,
         device: int,
     ):
@@ -36,7 +36,7 @@ class HTTPNetzteil(BaseNetzteil):
         else:
             device_id = 1
 
-        return cls(aiohttp.ClientSession(), target.location, device_id)
+        return cls(httpx.AsyncClient(), target.location, device_id)
 
     async def _put_value(self, endpoint: str, channel: int, val: Any) -> None:
         p = f"devices/{self.device_id}/channels/{channel}/{endpoint}"
