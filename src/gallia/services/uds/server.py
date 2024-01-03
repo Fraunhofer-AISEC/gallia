@@ -869,8 +869,12 @@ class TCPUDSServerTransport(UDSServerTransport):
                 if uds_response_raw is not None:
                     writer.write(hexlify(uds_response_raw) + b"\n")
                     await writer.drain()
-            except Exception:
+            except Exception as e:
+                logger.error(
+                    f"Unexpected exception when handling client communication: {e!r}"
+                )
                 traceback.print_exc()
+                break
 
         logger.info("Connection closed")
         logger.info(
@@ -897,8 +901,12 @@ class ISOTPUDSServerTransport(UDSServerTransport):
 
                 if uds_response_raw is not None:
                     await transport.write(uds_response_raw)
-            except Exception:
+            except Exception as e:
+                logger.error(
+                    f"Unexpected exception when handling client communication: {e!r}"
+                )
                 traceback.print_exc()
+                break
 
 
 class UnixUDSServerTransport(TCPUDSServerTransport):
