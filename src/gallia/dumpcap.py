@@ -73,8 +73,8 @@ class Dumpcap:
                     src_addr,
                     dst_addr,
                 )
-            # Unix domain sockets are not supported by dumpcap.
             case UnixTransport.SCHEME | UnixLinesTransport.SCHEME:
+                logger.warning("Dumpcap does not support unix domain sockets")
                 return None
             # There is currently no API for transport plugins to
             # register a scheme and a corresponding invocation
