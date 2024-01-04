@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Hayden Richards
+#
+# SPDX-License-Identifier: MIT
+
 """Errors Utility Functions for Declarative Typed Argument Parsing.
 
 The `errors` module contains a utility function used for formatting `pydantic`

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Hayden Richards
+#
+# SPDX-License-Identifier: MIT
+
 """Single-Source of Truth Package Versioning and Metadata.
 
 The `pydantic-argparse` package uses the `pyproject.toml` file as a

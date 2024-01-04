@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: Hayden Richards
+
+SPDX-License-Identifier: MIT
+-->
+
 ## Overview
 Before delving into the documentation, examples and code reference, it is first
 necessary to explore and understand why you may want to use this package.
