@@ -11,18 +11,13 @@ command-line arguments.
 """
 
 import argparse
-import sys
-from typing import Optional
 
-from pydantic_argparse import utils
-from pydantic_argparse.utils.pydantic import PydanticField, PydanticValidator
+from pydantic_argparse.utils.pydantic import PydanticField
 
 from .utils import SupportsAddArgument
+from ..utils.field import ArgFieldInfo
 
-if sys.version_info < (3, 8):  # pragma: <3.8 cover
-    from typing_extensions import Literal, get_args
-else:  # pragma: >=3.8 cover
-    from typing import Literal, get_args
+from typing import Literal, get_args, Any
 
 
 def should_parse(field: PydanticField) -> bool:
@@ -41,44 +36,28 @@ def should_parse(field: PydanticField) -> bool:
 def parse_field(
     parser: SupportsAddArgument,
     field: PydanticField,
-) -> Optional[PydanticValidator]:
+) -> None:
     """Adds enum pydantic field to argument parser.
 
     Args:
         parser (argparse.ArgumentParser): Argument parser to add to.
         field (PydanticField): Field to be added to parser.
-
-    Returns:
-        Optional[PydanticValidator]: Possible validator method.
     """
     # Extract Choices
     choices = get_args(field.info.annotation)
 
-    # Compute Argument Intrinsics
-    is_flag = len(choices) == 1 and not field.info.is_required()
-    is_inverted = is_flag and field.info.get_default() is not None
-
-    # Determine Argument Properties
     metavar = f"{{{', '.join(str(c) for c in choices)}}}"
-    action = argparse._StoreConstAction if is_flag else argparse._StoreAction
-    const = (
-        {} if not is_flag else {"const": None} if is_inverted else {"const": choices[0]}
-    )
+
+    if isinstance(field.info, ArgFieldInfo) and field.info.metavar is not None:
+        metavar = field.info.metavar
+
+    action = argparse._StoreAction
+
+    args: dict[str, Any] = {}
+    args.update(field.arg_required())
+    args.update(field.arg_default())
+    args.update(field.arg_const())
+    args.update(field.arg_dest())
 
     # Add Literal Field
-    parser.add_argument(
-        field.argname(is_inverted),
-        action=action,
-        help=field.description(),
-        dest=field.name,
-        metavar=metavar,
-        required=field.info.is_required(),
-        **const,  # type: ignore[arg-type]
-    )
-
-    # Construct String Representation Mapping of Choices
-    # This allows us O(1) parsing of choices from strings
-    mapping = {str(choice): choice for choice in choices}
-
-    # Construct and Return Validator
-    return utils.pydantic.as_validator(field, lambda v: mapping[v])
+    parser.add_argument(*field.arg_names(), action=action, help=field.description(), metavar=metavar, **args)

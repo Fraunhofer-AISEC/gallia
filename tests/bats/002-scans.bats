@@ -31,15 +31,15 @@ teardown() {
 }
 
 @test "scan identifiers sid 0x22" {
-	gallia scan uds identifiers --start 0 --end 100 --sid 0x22
+	gallia scan uds identifiers --start 0 --end 100 --service 0x22
 }
 
 @test "scan identifiers sid 0x2e" {
-	gallia scan uds identifiers --start 0 --end 100 --sid 0x2e
+	gallia scan uds identifiers --start 0 --end 100 --service 0x2e
 }
 
 @test "scan identifiers sid 0x31" {
-	gallia scan uds identifiers --start 0 --end 100 --sid 0x31
+	gallia scan uds identifiers --start 0 --end 100 --service 0x31
 }
 
 @test "scan reset" {
@@ -52,6 +52,6 @@ teardown() {
 
 @test "scan memory" {
 	for sid in 0x23 0x34 0x35 0x3d; do
-		gallia scan uds memory --sid "$sid"
+		gallia scan uds memory --service "$sid"
 	done
 }

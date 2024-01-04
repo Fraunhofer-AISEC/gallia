@@ -10,28 +10,28 @@ field validator dictionaries and constructing new model classes with
 dynamically generated validators and environment variable parsers.
 """
 
-from collections.abc import Container, Mapping
+from collections.abc import Container
+from dataclasses import dataclass
 from enum import Enum
+from types import UnionType
 from typing import (
     Any,
-    Callable,
-    Dict,
     Iterator,
     Literal,
-    NamedTuple,
-    Optional,
-    Tuple,
     Type,
     TypeVar,
     Union,
     cast,
     get_args,
     get_origin,
+    Annotated,
 )
 
-import pydantic
 from pydantic import BaseModel
 from pydantic.fields import FieldInfo
+from pydantic_core import PydanticUndefined
+
+from pydantic_argparse.utils.field import ArgFieldInfo
 
 from .types import all_types
 
@@ -42,7 +42,8 @@ PydanticValidator = classmethod
 NoneType = type(None)
 
 
-class PydanticField(NamedTuple):
+@dataclass
+class PydanticField:
     """Simple Pydantic v2.0 field wrapper.
 
     Pydantic fields no longer store their name, so this named tuple
@@ -53,11 +54,10 @@ class PydanticField(NamedTuple):
 
     name: str
     info: FieldInfo
+    extra_default: tuple[str, Any] | None = None
 
     @classmethod
-    def parse_model(
-        cls, model: BaseModel | Type[BaseModel]
-    ) -> Iterator["PydanticField"]:
+    def parse_model(cls, model: BaseModel | Type[BaseModel]) -> Iterator["PydanticField"]:
         """Iterator over the pydantic model fields, yielding this wrapper class.
 
         Yields:
@@ -66,54 +66,47 @@ class PydanticField(NamedTuple):
         for name, info in model.model_fields.items():
             yield cls(name, info)
 
-    @property
-    def outer_type(self) -> Optional[Type]:
-        """Returns the outer type for nested types using `typing.get_origin`.
+    def _get_type(self, annotation: type | None) -> type | tuple[type | None, ...] | None:
+        origin = get_origin(annotation)
 
-        This will return `None` for simple, unnested types.
+        if origin is Literal or isinstance(origin, type) and issubclass(origin, Container):
+            return origin
+        elif origin is Union or origin is UnionType:
+            args = get_args(annotation)
+            types = list(arg for arg in args if arg is not NoneType)
+        elif origin is None:
+            types = [annotation]
+        else:
+            raise AssertionError(f"Unsupported origin {origin} for field {self.name} with annotation {annotation}")
+
+        base_types: list[Type | None] = []
+
+        for t in types:
+            origin = get_origin(t)
+
+            if origin is Annotated:
+                sub_types = self._get_type(get_args(t)[0])
+
+                if isinstance(sub_types, tuple):
+                    base_types += sub_types
+                else:
+                    base_types.append(sub_types)
+            elif origin is not None:
+                base_types.append(origin)
+            else:
+                base_types.append(t)
+
+        return tuple(base_types)
+
+    def get_type(self) -> type | tuple[type | None, ...] | None:
+        """Return the mainly interesting types according to the type annotation (in the context of argument parsing).
+
+        Returns: One or more types (potentially None).
         """
-        return get_origin(self.info.annotation)
+        annotation = self.info.annotation
+        return self._get_type(annotation)
 
-    @property
-    def inner_type(self) -> Tuple[Type, ...]:
-        """Returns the inner type for nested types using `typing.get_args`.
-
-        This will be an empty tuple for simple, unnested types.
-        """
-        return get_args(self.info.annotation)
-
-    @property
-    def main_type(self) -> Tuple[Type, ...]:
-        """Return the main inner types.
-
-        This excludes the `NoneType` when dealing with `typing.Optional` types.
-        """
-        return tuple(t for t in self.inner_type if t is not NoneType)
-
-    def get_type(self) -> Union[Type, Tuple[Type, ...], None]:
-        """Return the type annotation for the `pydantic` field.
-
-        Returns:
-            Union[Type, Tuple[Type, ...], None]
-        """
-        field_type = self.info.annotation
-        main_type = self.main_type
-        outer_type = self.outer_type
-        outer_type_is_type = isinstance(outer_type, type)
-        if outer_type and (
-            isinstance(outer_type, (Container, Mapping))
-            or (outer_type_is_type and issubclass(outer_type, (Container, Mapping)))
-            or outer_type is Literal
-        ):
-            # only return if outer_type is a concrete type like list, dict, etc OR typing.Literal
-            # NOT if outer_type is typing.Union, etc
-            return outer_type
-        if main_type and all_types(main_type):
-            # the all type check is specifically for typing.Literal
-            return main_type
-        return field_type
-
-    def is_a(self, types: Union[Any, Tuple[Any, ...]]) -> bool:
+    def is_a(self, types: Any | tuple[Any, ...]) -> bool:
         """Checks whether the subject *is* any of the supplied types.
 
         The checks are performed as follows:
@@ -150,10 +143,7 @@ class PydanticField(NamedTuple):
         is_type = False
         for t in field_type:
             is_type = (
-                is_type
-                or t in types
-                or (is_valid and isinstance(t, types))
-                or (is_valid and issubclass(t, types))  # type: ignore
+                is_type or t in types or (is_valid and isinstance(t, types)) or (is_valid and issubclass(t, types))  # type: ignore
             )
 
         return is_type
@@ -176,9 +166,7 @@ class PydanticField(NamedTuple):
             if isinstance(t, type) and issubclass(t, BaseModel):
                 return t
         else:
-            raise TypeError(
-                "No `pydantic.BaseModel`s were found associated with this field."
-            )
+            raise TypeError("No `pydantic.BaseModel`s were found associated with this field.")
 
     def is_subcommand(self) -> bool:
         """Check whether the input pydantic Model is a subcommand.
@@ -210,23 +198,29 @@ class PydanticField(NamedTuple):
             #   - field is not a pydantic BaseModel or it can't be found
             return default
 
-    def argname(self, invert: bool = False) -> str:
+    def arg_names(self, invert: bool = False) -> tuple[str, str] | tuple[str]:
         """Standardises argument name when printing to command line.
+
+        This also includes potential short names if specified.
 
         Args:
             invert (bool): Whether to invert the name by prepending `--no-`.
 
         Returns:
-            str: Standardised name of the argument. Checks `pydantic.Field` title first,
-                but defaults to the field name.
+            str: Standardised name of the argument.
         """
-        # TODO: this should return a tuple to allow short name args
-        # Construct Prefix
-        prefix = "--no-" if invert else "--"
         name = self.info.title or self.name
 
-        # Prepend prefix, replace '_' with '-'
-        return f"{prefix}{name.replace('_', '-')}"
+        if isinstance(self.info, ArgFieldInfo) and self.info.positional:
+            return (name,)
+
+        prefix = "--no-" if invert else "--"
+        long_name = f"{prefix}{name.replace('_', '-')}"
+
+        if isinstance(self.info, ArgFieldInfo) and self.info.short is not None:
+            return f"-{self.info.short}", long_name
+
+        return (long_name,)
 
     def description(self) -> str:
         """Standardises argument description.
@@ -235,151 +229,73 @@ class PydanticField(NamedTuple):
             str: Standardised description of the argument.
         """
         # Construct Default String
-        if self.info.is_required():
-            default = None
-            required = "REQUIRED:"
-        else:
+        default = ""
+
+        if not self.info.is_required():
             _default = self.info.get_default()
             if isinstance(_default, Enum):
                 _default = _default.name
-            default = f"(default: {_default})"
-            required = None
+            default = f"default: {_default}"
+
+        if self.extra_default is not None:
+            if len(default) > 0:
+                default += "; "
+            default += f"{self.extra_default[0]}: {self.extra_default[1]}"
+
+        if len(default) > 0:
+            default = f" ({default})"
 
         # Return Standardised Description String
-        return " ".join(filter(None, [required, self.info.description, default]))
+        description = self.info.description if self.info.description is not None else ""
+        return f"{description}{default}"
 
-    def metavar(self) -> Optional[str]:
+    def metavar(self) -> str | None:
         """Generate the metavar name for the field.
 
         Returns:
-            Optional[str]: Field metavar if the `Field.info.alias` exists.
+            Optional[str]: Field metavar if of type ArgField and has metavar set.
                 Otherwise, return constituent type names.
         """
-        # check alias first
-        if self.info.alias is not None:
-            return self.info.alias.upper()
+        # check metavar first
+        if isinstance(self.info, ArgFieldInfo):
+            if self.info.metavar is not None:
+                return self.info.metavar
+
+            if self.info.positional:
+                return self.arg_names()[0].upper()
 
         # otherwise default to the type
         field_type = self.get_type()
-        if field_type:
+        if field_type is not None:
             if isinstance(field_type, tuple):
-                return "|".join(t.__name__.upper() for t in field_type)
+                return "|".join(t.__name__.upper() for t in field_type if t is not None)
             return field_type.__name__.upper()
-
-
-def as_validator(
-    field: PydanticField,
-    caster: Callable[[str], Any],
-) -> PydanticValidator:
-    """Shortcut to wrap a caster and construct a validator for a given field.
-
-    The provided caster function must cast from a string to the type required
-    by the field. Once wrapped, the constructed validator will pass through any
-    non-string values, or any values that cause the caster function to raise an
-    exception to let the built-in `pydantic` field validation handle them. The
-    validator will also cast empty strings to `None`.
-
-    Args:
-        name (str): field name
-        field (pydantic.fields.FieldInfo): Field to construct validator for.
-        caster (Callable[[str], Any]): String to field type caster function.
-
-    Returns:
-        PydanticValidator: Constructed field validator function.
-    """
-
-    # Dynamically construct a `pydantic` validator function for the supplied
-    # field. The constructed validator must be `pre=True` so that the validator
-    # is called before the built-in `pydantic` field validation occurs and is
-    # provided with the raw input data. The constructed validator must also be
-    # `allow_reuse=True` so the `__validator` function name can be reused
-    # multiple times when being decorated as a `pydantic` validator. Note that
-    # despite the `__validator` function *name* being reused, each instance of
-    # the validator function is uniquely constructed for the supplied field.
-    @pydantic.validator(field.name, pre=True, allow_reuse=True)
-    def __validator(cls: Type[Any], value: T) -> Optional[Union[T, Any]]:
-        if not isinstance(value, str):
-            return value
-        if not value:
+        else:
             return None
-        try:
-            return caster(value)
-        except Exception:
-            return value
 
-    # Rename the validator uniquely for this field to avoid any collisions. The
-    # leading `__` and prefix of `pydantic_argparse` should guard against any
-    # potential collisions with user defined validators.
-    __validator.__name__ = f"__pydantic_argparse_{field.name}"  # type: ignore
+    def arg_required(self) -> dict[str, bool]:
+        return (
+            {}
+            if isinstance(self.info, ArgFieldInfo) and self.info.positional
+            else {"required": self.info.is_required() and self.extra_default is None}
+        )
 
-    # Return the constructed validator
-    return __validator  # type: ignore
+    def arg_default(self) -> dict[str, Any]:
+        return (
+            {}
+            if self.extra_default is None or isinstance(self.info, ArgFieldInfo) and self.info.positional
+            else {"default": self.extra_default[1]}
+        )
 
+    def arg_const(self) -> dict[str, Any]:
+        return (
+            {"const": self.info.const, "nargs": "?"}
+            if isinstance(self.info, ArgFieldInfo) and self.info.const is not PydanticUndefined
+            else {}
+        )
 
-def update_validators(
-    validators: Dict[str, PydanticValidator],
-    validator: Optional[PydanticValidator],
-) -> None:
-    """Updates a validators dictionary with a possible new field validator.
-
-    Note that this function mutates the validators dictionary *in-place*, and
-    does not return the dictionary.
-
-    Args:
-        validators (Dict[str, PydanticValidator]): Validators to update.
-        validator (Optional[PydanticValidator]): Possible field validator.
-    """
-    # Check for Validator
-    if validator:
-        # Add Validator
-        validators[validator.__name__] = validator
-
-
-def model_with_validators(
-    model: Type[BaseModel],
-    validators: Dict[str, PydanticValidator],
-) -> Type[BaseModel]:
-    """Generates a new `pydantic` model class with the supplied validators.
-
-    If the supplied base model is a subclass of `pydantic.BaseSettings`, then
-    the newly generated model will also have a new `parse_env_var` classmethod
-    monkeypatched onto it that suppresses any exceptions raised when initially
-    parsing the environment variables. This allows the raw values to still be
-    passed through to the `pydantic` field validators if initial parsing fails.
-
-    Args:
-        model (Type[BaseModel]): Model type to use as base class.
-        validators (Dict[str, PydanticValidator]): Field validators to add.
-
-    Returns:
-        Type[BaseModel]: New `pydantic` model type with field validators.
-    """
-    # Construct New Model with Validators
-    model = pydantic.create_model(
-        model.__name__,
-        __base__=model,
-        __validators__=validators,
-    )
-
-    # Check if the model is a `BaseSettings`
-    # if issubclass(model, pydantic.BaseSettings):
-    #     # Hold a reference to the current `parse_env_var` classmethod
-    #     parse_env_var = model.__config__.parse_env_var
-
-    #     # Construct a new `parse_env_var` function which suppresses exceptions
-    #     # raised by the current `parse_env_var` classmethod. This allows the
-    #     # raw values to be passed through to the `pydantic` field validator
-    #     # methods if they cannot be parsed initially.
-    #     def __parse_env_var(field_name: str, raw_val: str) -> Any:
-    #         with contextlib.suppress(Exception):
-    #             return parse_env_var(field_name, raw_val)
-    #         return raw_val
-
-    #     # Monkeypatch `parse_env_var`
-    #     model.__config__.parse_env_var = __parse_env_var  # type: ignore[assignment]
-
-    # Return Constructed Model
-    return model
+    def arg_dest(self) -> dict[str, str]:
+        return {} if isinstance(self.info, ArgFieldInfo) and self.info.positional else {"dest": self.name}
 
 
 def is_subcommand(model: BaseModel | Type[BaseModel]) -> bool:

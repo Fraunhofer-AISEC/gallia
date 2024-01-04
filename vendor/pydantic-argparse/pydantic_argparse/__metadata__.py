@@ -13,7 +13,6 @@ The metadata exported are the `title`, `description`, `version`, `author` and
 `license` of the package
 """
 
-
 # Standard
 import sys
 

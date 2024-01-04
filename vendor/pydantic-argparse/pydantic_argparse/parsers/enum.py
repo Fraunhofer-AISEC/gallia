@@ -12,12 +12,12 @@ command-line arguments.
 
 import argparse
 import enum
-from typing import Optional, Type, cast
+from typing import Any
 
-from pydantic_argparse import utils
-from pydantic_argparse.utils.pydantic import PydanticField, PydanticValidator
+from pydantic_argparse.utils.pydantic import PydanticField
 
 from .utils import SupportsAddArgument
+from ..utils.field import ArgFieldInfo
 
 
 def should_parse(field: PydanticField) -> bool:
@@ -36,44 +36,36 @@ def should_parse(field: PydanticField) -> bool:
 def parse_field(
     parser: SupportsAddArgument,
     field: PydanticField,
-) -> Optional[PydanticValidator]:
+) -> None:
     """Adds enum pydantic field to argument parser.
 
     Args:
         parser (argparse.ArgumentParser): Argument parser to add to.
         field (PydanticField): Field to be added to parser.
-
-    Returns:
-        Optional[PydanticValidator]: Possible validator method.
     """
     # Extract Enum
-    enum_type = cast(Type[enum.Enum], field.info.annotation)
+    types = field.get_type()
+    assert types is not None
 
-    # Compute Argument Intrinsics
-    is_flag = len(enum_type) == 1 and not field.info.is_required()
-    is_inverted = is_flag and field.info.get_default() is not None
+    if isinstance(types, tuple):
+        enum_type = types[0]
+    else:
+        enum_type = types
 
     # Determine Argument Properties
-    metavar = f"{{{', '.join(e.name for e in enum_type)}}}"
-    action = argparse._StoreConstAction if is_flag else argparse._StoreAction
-    const = (
-        {}
-        if not is_flag
-        else {"const": None}
-        if is_inverted
-        else {"const": list(enum_type)[0]}
-    )
+    assert enum_type is not None
+    metavar = enum_type.__name__
+
+    if isinstance(field.info, ArgFieldInfo) and field.info.metavar is not None:
+        metavar = field.info.metavar
+
+    action = argparse._StoreAction
+
+    args: dict[str, Any] = {}
+    args.update(field.arg_required())
+    args.update(field.arg_default())
+    args.update(field.arg_const())
+    args.update(field.arg_dest())
 
     # Add Enum Field
-    parser.add_argument(
-        field.argname(is_inverted),
-        action=action,
-        help=field.description(),
-        dest=field.name,
-        metavar=metavar,
-        required=field.info.is_required(),
-        **const,  # type: ignore[arg-type]
-    )
-
-    # Construct and Return Validator
-    return utils.pydantic.as_validator(field, lambda v: enum_type[v])
+    parser.add_argument(*field.arg_names(), action=action, help=field.description(), metavar=metavar, **args)

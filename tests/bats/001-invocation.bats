@@ -12,7 +12,7 @@ load "helpers"
 }
 
 @test "invoke gallia without config" {
-	run -1 gallia --show-config
+	run -78 gallia --show-config
 }
 
 @test "invoke gallia with config" {

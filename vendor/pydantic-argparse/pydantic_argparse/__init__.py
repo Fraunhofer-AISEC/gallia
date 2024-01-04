@@ -41,7 +41,7 @@ class BaseCommand(BaseModel):
     have `subcommand=True`.
     """
 
-    model_config = ConfigDict(json_schema_extra=dict(subcommand=True))
+    model_config = ConfigDict(json_schema_extra=dict(subcommand=True), defer_build=True)
 
 
 # Public Re-Exports

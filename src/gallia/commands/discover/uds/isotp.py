@@ -4,19 +4,46 @@
 
 import asyncio
 import sys
-from argparse import Namespace
-from binascii import unhexlify
+from typing import Self
+
+from pydantic import model_validator
 
 assert sys.platform.startswith("linux"), "unsupported platform"
 
 from gallia.command import UDSDiscoveryScanner
+from gallia.command.config import AutoInt, Field, HexBytes
+from gallia.command.uds import UDSDiscoveryScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse, UDSClient, UDSRequest
 from gallia.services.uds.core.utils import g_repr
 from gallia.transports import ISOTPTransport, RawCANTransport, TargetURI
-from gallia.utils import auto_int, can_id_repr, write_target_list
+from gallia.utils import can_id_repr, write_target_list
 
 logger = get_logger(__name__)
+
+
+class IsotpDiscovererConfig(UDSDiscoveryScannerConfig):
+    start: AutoInt = Field(description="set start address", metavar="INT")
+    stop: AutoInt = Field(description="set end address", metavar="INT")
+    padding: AutoInt | None = Field(None, description="set isotp padding")
+    pdu: HexBytes = Field(bytes([0x3E, 0x00]), description="set pdu used for discovery")
+    sleep: float = Field(0.01, description="set sleeptime between loop iterations")
+    extended_addr: bool = Field(False, description="use extended isotp addresses")
+    tester_addr: AutoInt = Field(0x6F1, description="tester address for --extended")
+    query: bool = Field(False, description="query ECU description via RDBID")
+    info_did: AutoInt = Field(0xF197, description="DID to query ECU description", metavar="DID")
+    sniff_time: int = Field(
+        5, description="Time in seconds to sniff on bus for current traffic", metavar="SECONDS"
+    )
+
+    @model_validator(mode="after")
+    def check_transport_requirements(self) -> Self:
+        if self.target is not None and (not self.target.scheme == RawCANTransport.SCHEME):
+            raise ValueError(f"Unsupported transport schema {self.target.scheme}; must be can-raw!")
+        if self.extended_addr and (self.start > 0xFF or self.stop > 0xFF):
+            raise ValueError("start/stop maximum value is 0xFF")
+
+        return self
 
 
 class IsotpDiscoverer(UDSDiscoveryScanner):
@@ -26,82 +53,12 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
     Addressing is only done via CAN IDs. Every endpoint has a source and destination CAN ID.
     Typically, there is also a broadcast destination ID to address all endpoints."""
 
-    SUBGROUP = "uds"
-    COMMAND = "isotp"
+    CONFIG_TYPE = IsotpDiscovererConfig
     SHORT_HELP = "ISO-TP enumeration scanner"
 
-    def configure_parser(self) -> None:
-        self.parser.add_argument(
-            "--start",
-            metavar="INT",
-            type=auto_int,
-            required=True,
-            help="set start address",
-        )
-        self.parser.add_argument(
-            "--stop",
-            metavar="INT",
-            type=auto_int,
-            required=True,
-            help="set end address",
-        )
-        self.parser.add_argument(
-            "--padding",
-            type=auto_int,
-            default=None,
-            help="set isotp padding",
-        )
-        self.parser.add_argument(
-            "--pdu",
-            type=unhexlify,
-            default=bytes([0x3E, 0x00]),
-            help="set pdu used for discovery",
-        )
-        self.parser.add_argument(
-            "--sleep",
-            type=float,
-            default=0.01,
-            help="set sleeptime between loop iterations",
-        )
-        self.parser.add_argument(
-            "--extended-addr",
-            action="store_true",
-            help="use extended isotp addresses",
-        )
-        self.parser.add_argument(
-            "--tester-addr",
-            type=auto_int,
-            default=0x6F1,
-            help="tester address for --extended",
-        )
-        self.parser.add_argument(
-            "--query",
-            action="store_true",
-            help="query ECU description via RDBID",
-        )
-        self.parser.add_argument(
-            "--info-did",
-            metavar="DID",
-            type=auto_int,
-            default=0xF197,
-            help="DID to query ECU description",
-        )
-        self.parser.add_argument(
-            "--sniff-time",
-            default=5,
-            type=int,
-            metavar="SECONDS",
-            help="Time in seconds to sniff on bus for current traffic",
-        )
-
-    async def setup(self, args: Namespace) -> None:
-        if args.target is not None and not args.target.scheme == RawCANTransport.SCHEME:
-            self.parser.error(
-                f"Unsupported transport schema {args.target.scheme}; must be can-raw!"
-            )
-        if args.extended_addr and (args.start > 0xFF or args.stop > 0xFF):
-            self.parser.error("--start/--stop maximum value is 0xFF")
-        await super().setup(args)
+    def __init__(self, config: IsotpDiscovererConfig):
+        super().__init__(config)
+        self.config: IsotpDiscovererConfig = config
 
     async def query_description(self, target_list: list[TargetURI], did: int) -> None:
         logger.info("reading info DID from all discovered endpoints")
@@ -121,11 +78,7 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
             except Exception as e:
                 logger.result(f"reading description failed: {e!r}")
 
-    def _build_isotp_frame_extended(
-        self,
-        pdu: bytes,
-        ext_addr: int,
-    ) -> bytes:
+    def _build_isotp_frame_extended(self, pdu: bytes, ext_addr: int) -> bytes:
         isotp_hdr = bytes([ext_addr, len(pdu) & 0x0F])
         return isotp_hdr + pdu
 
@@ -134,10 +87,7 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
         return isotp_hdr + pdu
 
     def build_isotp_frame(
-        self,
-        req: UDSRequest,
-        ext_addr: int | None = None,
-        padding: int | None = None,
+        self, req: UDSRequest, ext_addr: int | None = None, padding: int | None = None
     ) -> bytes:
         pdu = req.pdu
         max_pdu_len = 7 if ext_addr is None else 6
@@ -155,26 +105,26 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
 
         return frame
 
-    async def main(self, args: Namespace) -> None:
-        transport = await RawCANTransport.connect(args.target)
+    async def main(self) -> None:
+        transport = await RawCANTransport.connect(self.config.target)
         found = []
 
-        sniff_time: int = args.sniff_time
+        sniff_time: int = self.config.sniff_time
         logger.result(f"Recording idle bus communication for {sniff_time}s")
         addr_idle = await transport.get_idle_traffic(sniff_time)
 
         logger.result(f"Found {len(addr_idle)} CAN Addresses on idle Bus")
         transport.set_filter(addr_idle, inv_filter=True)
 
-        req = UDSRequest.parse_dynamic(args.pdu)
-        pdu = self.build_isotp_frame(req, padding=args.padding)
+        req = UDSRequest.parse_dynamic(self.config.pdu)
+        pdu = self.build_isotp_frame(req, padding=self.config.padding)
 
-        for ID in range(args.start, args.stop + 1):
-            await asyncio.sleep(args.sleep)
+        for ID in range(self.config.start, self.config.stop + 1):
+            await asyncio.sleep(self.config.sleep)
 
-            dst_addr = args.tester_addr if args.extended_addr else ID
-            if args.extended_addr:
-                pdu = self.build_isotp_frame(req, ID, padding=args.padding)
+            dst_addr = self.config.tester_addr if self.config.extended_addr else ID
+            if self.config.extended_addr:
+                pdu = self.build_isotp_frame(req, ID, padding=self.config.padding)
 
             logger.info(f"Testing ID {can_id_repr(ID)}")
             is_broadcast = False
@@ -196,8 +146,7 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
                     if new_addr != addr:
                         is_broadcast = True
                         logger.result(
-                            f"seems that broadcast was triggered on CAN ID {can_id_repr(ID)}, "
-                            f"got answer from {can_id_repr(new_addr)}"
+                            f"seems that broadcast was triggered on CAN ID {can_id_repr(ID)}, got answer from {can_id_repr(new_addr)}"
                         )
                     else:
                         logger.info(
@@ -206,8 +155,7 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
                 except TimeoutError:
                     if is_broadcast:
                         logger.result(
-                            f"seems that broadcast was triggered on CAN ID {can_id_repr(ID)}, "
-                            f"got answer from {can_id_repr(addr)}"
+                            f"seems that broadcast was triggered on CAN ID {can_id_repr(ID)}, got answer from {can_id_repr(addr)}"
                         )
                     else:
                         logger.result(
@@ -217,25 +165,25 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
                         target_args["is_fd"] = str(transport.config.is_fd).lower()
                         target_args["is_extended"] = str(transport.config.is_extended).lower()
 
-                        if args.extended_addr:
+                        if self.config.extended_addr:
                             target_args["ext_address"] = hex(ID)
-                            target_args["rx_ext_address"] = hex(args.tester_addr & 0xFF)
-                            target_args["src_addr"] = hex(args.tester_addr)
+                            target_args["rx_ext_address"] = hex(self.config.tester_addr & 0xFF)
+                            target_args["src_addr"] = hex(self.config.tester_addr)
                             target_args["dst_addr"] = hex(addr)
                         else:
                             target_args["src_addr"] = hex(ID)
                             target_args["dst_addr"] = hex(addr)
 
-                        if args.padding is not None:
-                            target_args["tx_padding"] = f"{args.padding}"
-                        if args.padding is not None:
-                            target_args["rx_padding"] = f"{args.padding}"
+                        if self.config.padding is not None:
+                            target_args["tx_padding"] = f"{self.config.padding}"
+                        if self.config.padding is not None:
+                            target_args["rx_padding"] = f"{self.config.padding}"
+
+                        hostname = self.config.target.hostname
+                        assert hostname is not None
 
                         target = TargetURI.from_parts(
-                            ISOTPTransport.SCHEME,
-                            args.target.hostname,
-                            None,
-                            target_args,
+                            ISOTPTransport.SCHEME, hostname, None, target_args
                         )
                         found.append(target)
                     break
@@ -245,5 +193,5 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
         logger.result(f"Writing urls to file: {ecus_file}")
         await write_target_list(ecus_file, found, self.db_handler)
 
-        if args.query:
-            await self.query_description(found, args.info_did)
+        if self.config.query:
+            await self.query_description(found, self.config.info_did)

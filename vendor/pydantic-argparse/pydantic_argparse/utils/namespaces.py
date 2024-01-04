@@ -22,7 +22,7 @@ def to_dict(namespace: argparse.Namespace) -> Dict[str, Any]:
         Dict[str, Any]: Nested dictionary generated from namespace.
     """
     # Get Dictionary from Namespace Vars
-    dictionary = vars(namespace)
+    dictionary = dict(vars(namespace))
 
     # Loop Through Dictionary
     for key, value in dictionary.items():

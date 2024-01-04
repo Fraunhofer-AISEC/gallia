@@ -18,15 +18,15 @@ The resultant arguments object returned is an instance of the defined
 be compatible with an IDE, linter or type checker.
 """
 
-
 import argparse
 import sys
-from typing import Dict, Generic, List, NoReturn, Optional, Type, cast
+from typing import Generic, NoReturn, Optional, Type, Any, Never
 
 from pydantic import BaseModel, ValidationError
 
-from pydantic_argparse import parsers, utils
+from pydantic_argparse import parsers
 from pydantic_argparse.argparse import actions
+from pydantic_argparse.utils.field import ArgFieldInfo
 from pydantic_argparse.utils.nesting import _NestedArgumentParser
 from pydantic_argparse.utils.pydantic import PydanticField, PydanticModelT
 
@@ -59,52 +59,51 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
 
     def __init__(
         self,
-        model: Type[PydanticModelT],
-        prog: Optional[str] = None,
-        description: Optional[str] = None,
-        version: Optional[str] = None,
-        epilog: Optional[str] = None,
+        model: type[PydanticModelT],
+        prog: str | None = None,
+        description: str | None = None,
+        version: str | None = None,
+        epilog: str | None = None,
         add_help: bool = True,
         exit_on_error: bool = True,
+        extra_defaults: dict[type, dict[str, tuple[str, Any]]] | None = None,
     ) -> None:
-        """Instantiates the Typed Argument Parser with its `pydantic` model.
+        """Instantiates the typed Argument Parser with its `pydantic` model.
 
-        Args:
-            model (Type[PydanticModelT]): Pydantic argument model class.
-            prog (Optional[str]): Program name for CLI.
-            description (Optional[str]): Program description for CLI.
-            version (Optional[str]): Program version string for CLI.
-            epilog (Optional[str]): Optional text following help message.
-            add_help (bool): Whether to add a `-h`/`--help` flag.
-            exit_on_error (bool): Whether to exit on error.
+        :param model: Pydantic argument model class.
+        :param prog: Program name for CLI.
+        :param description: Program description for CLI.
+        :param version: Program version string for CLI.
+        :param epilog: Optional text following help message.
+        :param add_help: Whether to add a `-h`/`--help` flag.
+        :param exit_on_error: Whether to exit on error.
+        :param extra_defaults: Defaults coming from external sources, such as environment variables or config files.
         """
         # Initialise Super Class
-        if sys.version_info < (3, 9):  # pragma: <3.9 cover
-            super().__init__(
-                prog=prog,
-                description=description,
-                epilog=epilog,
-                add_help=False,  # Always disable the automatic help flag.
-                argument_default=argparse.SUPPRESS,  # Allow `pydantic` to handle defaults.
-            )
-
-        else:  # pragma: >=3.9 cover
-            super().__init__(
-                prog=prog,
-                description=description,
-                epilog=epilog,
-                exit_on_error=exit_on_error,
-                add_help=False,  # Always disable the automatic help flag.
-                argument_default=argparse.SUPPRESS,  # Allow `pydantic` to handle defaults.
-            )
+        super().__init__(
+            prog=prog,
+            description=description,
+            epilog=epilog,
+            exit_on_error=exit_on_error,
+            add_help=False,  # Always disable the automatic help flag.
+            argument_default=argparse.SUPPRESS,  # Allow `pydantic` to handle defaults.
+            formatter_class=argparse.RawTextHelpFormatter,
+        )
 
         # Set Version, Add Help and Exit on Error Flag
         self.version = version
         self.add_help = add_help
         self.exit_on_error = exit_on_error
+        self.extra_defaults = extra_defaults
 
         # Add Arguments Groups
         self._subcommands: Optional[argparse._SubParsersAction] = None
+
+        # Add Arguments from Model
+        self._submodels: dict[str, Type[BaseModel]] = dict()
+        self.model = model
+        self._add_model(model)
+
         self._help_group = self.add_argument_group(ArgumentParser.HELP)
 
         # Add Help and Version Flags
@@ -113,52 +112,83 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
         if self.version:
             self._add_version_flag()
 
-        # Add Arguments from Model
-        self._submodels: dict[str, Type[BaseModel]] = dict()
-        self.model = self._add_model(model)
-
-    @property
-    def has_submodels(self) -> bool:  # noqa: D102
-        # this is for simple nested models as arg groups
-        has_submodels = len(self._submodels) > 0
-
-        # this is for nested commands
-        if self._subcommands is not None:
-            has_submodels = has_submodels or any(
-                len(subparser._submodels) > 0
-                for subparser in self._subcommands.choices.values()
-            )
-        return has_submodels
-
     def parse_typed_args(
         self,
-        args: Optional[List[str]] = None,
-    ) -> PydanticModelT:
+        args: list[str] | None = None,
+    ) -> tuple[PydanticModelT, BaseModel]:
         """Parses command line arguments.
 
         If `args` are not supplied by the user, then they are automatically
         retrieved from the `sys.argv` command-line arguments.
 
-        Args:
-            args (Optional[List[str]]): Optional list of arguments to parse.
-
-        Returns:
-            PydanticModelT: Populated instance of typed arguments model.
-
-        Raises:
-            argparse.ArgumentError: Raised upon error, if not exiting on error.
-            SystemExit: Raised upon error, if exiting on error.
+        :param args: Optional list of arguments to parse.
+        :return: A tuple of the whole parsed model, as well as the submodel representing the selected subcommand.
         """
         # Call Super Class Method
         namespace = self.parse_args(args)
+        nested_parser = _NestedArgumentParser(model=self.model, namespace=namespace)
 
         try:
-            nested_parser = _NestedArgumentParser(model=self.model, namespace=namespace)
-            return cast(PydanticModelT, nested_parser.validate())
+            return nested_parser.validate()
         except ValidationError as exc:
             # Catch exceptions, and use the ArgumentParser.error() method
             # to report it to the user
-            self.error(utils.errors.format(exc))
+            self._validation_error(exc, nested_parser)
+
+    def _validation_error(self, error: ValidationError, parser: _NestedArgumentParser) -> Never:
+        self.print_usage(sys.stderr)
+
+        model = parser.model
+        for scp in parser.subcommand_path:
+            model = PydanticField(scp, model.model_fields[scp]).model_type
+
+        fields = model.model_fields
+        msg = ""
+
+        if error.error_count() == 1:
+            msg += "error: "
+        else:
+            msg += f"{error.error_count()} errors: \n"
+
+        for e in error.errors():
+            if error.error_count() > 1:
+                msg += "  "
+
+            source = ""
+            sources = e["loc"][len(parser.subcommand_path) :]
+
+            # If the validation failed for a field validator there is one source level left,
+            # which equals the name of the field
+            if len(sources) > 0:
+                argument = sources[0]
+
+                assert isinstance(argument, str)
+
+                if (
+                    self.extra_defaults is not None
+                    and model in self.extra_defaults
+                    and argument in self.extra_defaults[model]
+                    and self.extra_defaults[model][argument][1] == e["input"]
+                ):
+                    source = f"default of {argument} from {self.extra_defaults[model][argument][0]}: "
+                else:
+                    # Use the same method, that was used for the CLI generation
+                    argument_name = PydanticField(argument, fields[argument]).arg_names()
+                    source = f"argument {', '.join(argument_name)}: "
+
+            try:
+                error_msg = str(e["ctx"]["error"])
+            except KeyError:
+                error_msg = e["msg"]
+
+            msg += f"{source}{error_msg}\n"
+
+        # Check whether parser should exit
+        if self.exit_on_error:
+            self.exit(ArgumentParser.EXIT_ERROR, msg)
+
+        # Raise Error
+        raise argparse.ArgumentError(None, msg)
 
     def error(self, message: str) -> NoReturn:
         """Prints a usage message to `stderr` and exits if required.
@@ -173,12 +203,15 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
         # Print usage message
         self.print_usage(sys.stderr)
 
+        msg = f"error: {message}\n"
+
+        # TODO: Investigate why this function is called twice when exit_on_error is respected
         # Check whether parser should exit
-        if self.exit_on_error:
-            self.exit(ArgumentParser.EXIT_ERROR, f"{self.prog}: error: {message}\n")
+        # if self.exit_on_error:
+        self.exit(ArgumentParser.EXIT_ERROR, msg)
 
         # Raise Error
-        raise argparse.ArgumentError(None, f"{self.prog}: error: {message}")
+        # raise argparse.ArgumentError(None, msg)
 
     def _commands(self) -> argparse._SubParsersAction:
         """Creates and Retrieves Subcommands Action for the ArgumentParser.
@@ -224,34 +257,28 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
     def _add_model(
         self,
         model: Type[BaseModel],
-        arg_group: Optional[argparse._ArgumentGroup] = None,
-    ) -> Type[BaseModel]:
+        arg_group: argparse._ArgumentGroup | None = None,
+    ) -> None:
         """Adds the `pydantic` model to the argument parser.
 
-        This method also generates "validators" for the arguments derived from
-        the `pydantic` model, and generates a new subclass from the model
-        containing these validators.
-
         Args:
-            model (Type[PydanticModelT]): Pydantic model class to add to the
+            model (Type[BaseModel]): Pydantic model class to add to the
                 argument parser.
             arg_group: (Optional[argparse._ArgumentGroup]): argparse ArgumentGroup.
                 This should not normally be passed manually, but only during
                 recursion if the original model is a nested pydantic model. These
                 nested models are then parsed as argument groups.
-
-        Returns:
-            Type[PydanticModelT]: Pydantic model possibly with new validators.
         """
         # Initialise validators dictionary
-        validators: Dict[str, utils.pydantic.PydanticValidator] = dict()
         parser = self if arg_group is None else arg_group
+
+        explicit_groups = {}
 
         # Loop through fields in model
         for field in PydanticField.parse_model(model):
             if field.is_a(BaseModel):
                 if field.is_subcommand():
-                    validator = parsers.command.parse_field(self._commands(), field)
+                    parsers.command.parse_field(self._commands(), field, self.extra_defaults)
                 else:
                     # for any nested pydantic models, set default factory to model_construct
                     # method. This allows pydantic to handle if no arguments from a nested
@@ -261,24 +288,31 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
                         field.info.default_factory = field.model_type.model_construct
 
                     # create new arg group
-                    group_name = str.upper(field.info.title or field.name)
+                    group_name = field.info.title or field.name
                     arg_group = self.add_argument_group(group_name)
 
                     # recurse and parse fields below this submodel
-                    # TODO: storage of submodels not needed
-                    self._submodels[field.name] = self._add_model(
-                        model=field.model_type,
-                        arg_group=arg_group,
-                    )
-
-                    validator = None
-
+                    self._add_model(model=field.model_type, arg_group=arg_group)
             else:
                 # Add field
-                validator = parsers.add_field(parser, field)
+                added = False
 
-            # Update validators
-            utils.pydantic.update_validators(validators, validator)
+                if (
+                    self.extra_defaults is not None
+                    and model in self.extra_defaults
+                    and field.name in self.extra_defaults[model]
+                ):
+                    field.extra_default = self.extra_defaults[model][field.name]
 
-        # Construct and return model with validators
-        return utils.pydantic.model_with_validators(model, validators)
+                if isinstance(field.info, ArgFieldInfo) and field.info.hidden:
+                    continue
+
+                if isinstance(field.info, ArgFieldInfo) and field.info.group is not None:
+                    if field.info.group not in explicit_groups:
+                        explicit_groups[field.info.group] = self.add_argument_group(field.info.group)
+
+                    parsers.add_field(explicit_groups[field.info.group], field)
+                    added = True
+
+                if not added:
+                    parsers.add_field(parser, field)
