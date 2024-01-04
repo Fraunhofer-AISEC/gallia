@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Hayden Richards
+#
+# SPDX-License-Identifier: MIT
+
 [tool.poetry]
 name = "pydantic-argparse"
 version = "1.0.0"

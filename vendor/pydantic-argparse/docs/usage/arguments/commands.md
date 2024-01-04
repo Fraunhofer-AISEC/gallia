@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: Hayden Richards
+
+SPDX-License-Identifier: MIT
+-->
+
 ## Overview
 `pydantic-argparse` provides functionality for commands. A command is a
 positional command-line argument that can be followed by its own specific

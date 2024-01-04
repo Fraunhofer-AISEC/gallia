@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Hayden Richards
+#
+# SPDX-License-Identifier: MIT
+
 """Recursively Nesting Sub-Parsers Action for Typed Argument Parsing.
 
 The `actions` module contains the `SubParsersAction` class, which is an action

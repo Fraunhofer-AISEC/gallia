@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: Hayden Richards
+
+SPDX-License-Identifier: MIT
+-->
+
 ### Define Model
 ```python title="commands.py"
 --8<-- "examples/commands.py"
