@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Hayden Richards
+#
+# SPDX-License-Identifier: MIT
+
 """Configures Testing and Defines Pytest Fixtures.
 
 The `conftest.py` file serves as a means of providing fixtures for an entire

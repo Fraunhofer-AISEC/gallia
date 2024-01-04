@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Hayden Richards
+#
+# SPDX-License-Identifier: MIT
+
 """Tests the `actions` Module.
 
 This module provides full unit test coverage for the `actions` module, testing

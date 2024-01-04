@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Hayden Richards
+#
+# SPDX-License-Identifier: MIT
+
 """Parses Boolean Pydantic Fields to Command-Line Arguments.
 
 The `boolean` module contains the `should_parse` function, which checks whether

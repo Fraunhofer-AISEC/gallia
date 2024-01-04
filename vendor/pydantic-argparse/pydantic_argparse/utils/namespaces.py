@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Hayden Richards
+#
+# SPDX-License-Identifier: MIT
+
 """Namespaces Utility Functions for Declarative Typed Argument Parsing.
 
 The `namespaces` module contains a utility function used for recursively
