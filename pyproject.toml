@@ -67,6 +67,10 @@ construct-typing = ">=0.5.2,<0.7.0"
 pytest-cov = ">=4,<6"
 ruff = ">=0.6,<0.8"
 
+[tool.poetry.plugins."gallia_plugins"]
+"uds" = "gallia.plugins.uds:UDSPlugin"
+"xcp" = "gallia.plugins.xcp:XCPPlugin"
+
 [tool.poetry.scripts]
 "gallia" = "gallia.cli:main"
 "netzteil" = "opennetzteil.cli:main"

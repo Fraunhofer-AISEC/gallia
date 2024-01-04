@@ -11,47 +11,30 @@ sub-commands.
 """
 
 import argparse
-from typing import Optional
+from typing import Type, Any
 
 from pydantic_argparse.utils.pydantic import (
     PydanticField,
-    PydanticValidator,
 )
-
-
-def should_parse(field: PydanticField) -> bool:
-    """Checks whether the field should be parsed as a `command`.
-
-    Args:
-        field (PydanticField): Field to check.
-
-    Returns:
-        bool: Whether the field should be parsed as a `command`.
-    """
-    # Check and Return
-    return field.is_subcommand()
 
 
 def parse_field(
     subparser: argparse._SubParsersAction,
     field: PydanticField,
-) -> Optional[PydanticValidator]:
+    extra_defaults: dict[Type, dict[str, Any]] | None = None,
+) -> None:
     """Adds command pydantic field to argument parser.
 
     Args:
         subparser (argparse._SubParsersAction): Sub-parser to add to.
         field (PydanticField): Field to be added to parser.
-
-    Returns:
-        Optional[PydanticValidator]: Possible validator method.
+        extra_defaults: Defaults coming from external sources, such as environment variables or config files.
     """
     # Add Command
     subparser.add_parser(
         field.info.title or field.info.alias or field.name,
         help=field.info.description,
-        model=field.model_type,  # type: ignore[call-arg]
+        model=field.model_type,
         exit_on_error=False,  # Allow top level parser to handle exiting
+        extra_defaults=extra_defaults,
     )
-
-    # Return
-    return None

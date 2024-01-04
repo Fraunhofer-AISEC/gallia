@@ -14,4 +14,4 @@ The public interface exposed by this package is the various described utility
 modules each containing helper functions.
 """
 
-from . import errors, namespaces, pydantic, types
+from . import namespaces, pydantic, types

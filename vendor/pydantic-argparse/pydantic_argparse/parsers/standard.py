@@ -13,10 +13,9 @@ that do not match any other types and require no special handling are parsed.
 """
 
 import argparse
-from typing import Optional
+from typing import Any
 
-from pydantic_argparse import utils
-from pydantic_argparse.utils.pydantic import PydanticField, PydanticValidator
+from pydantic_argparse.utils.pydantic import PydanticField
 
 from .utils import SupportsAddArgument
 
@@ -24,25 +23,20 @@ from .utils import SupportsAddArgument
 def parse_field(
     parser: SupportsAddArgument,
     field: PydanticField,
-) -> Optional[PydanticValidator]:
+) -> None:
     """Adds standard pydantic field to argument parser.
 
     Args:
         parser (argparse.ArgumentParser): Argument parser to add to.
         field (PydanticField): Field to be added to parser.
-
-    Returns:
-        Optional[PydanticValidator]: Possible validator method.
     """
+    args: dict[str, Any] = {}
+    args.update(field.arg_required())
+    args.update(field.arg_default())
+    args.update(field.arg_const())
+    args.update(field.arg_dest())
+
     # Add Standard Field
     parser.add_argument(
-        field.argname(),
-        action=argparse._StoreAction,
-        help=field.description(),
-        dest=field.name,
-        metavar=field.metavar(),
-        required=field.info.is_required(),
+        *field.arg_names(), action=argparse._StoreAction, help=field.description(), metavar=field.metavar(), **args
     )
-
-    # Construct and Return Validator
-    return utils.pydantic.as_validator(field, lambda v: v)

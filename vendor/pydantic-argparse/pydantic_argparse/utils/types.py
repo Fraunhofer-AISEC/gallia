@@ -8,7 +8,6 @@ The `types` module contains a utility function used for determining and
 comparing the types of `pydantic fields.
 """
 
-
 import sys
 from typing import Iterable
 

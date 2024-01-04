@@ -11,8 +11,7 @@ import ipaddress
 import logging
 import re
 import sys
-from argparse import Action, ArgumentError, ArgumentParser, Namespace
-from collections.abc import Awaitable, Callable, Sequence
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 from types import ModuleType
 from typing import TYPE_CHECKING, Any, TypeVar
@@ -101,7 +100,23 @@ def can_id_repr(i: int) -> str:
     return f"{i:03x}"
 
 
-def _unravel(listing: str) -> list[int]:
+def unravel(listing: str) -> list[int]:
+    """
+    Parses a string representing a one-dimensional list of ranges into an equivalent python data structure.
+
+    Ranges are delimited by hyphens ('-').
+    Enumerations are delimited by commas (',').
+
+    Ranges are allowed to overlap and are merged.
+    Ranges are always unraveled, which could lead to high memory consumption for distant limits.
+
+    Example: 0,10,8-11
+    This would result in [0,8,9,10,11].
+
+    :param listing: The string representation of the one-dimensional list of ranges.
+    :return: A list of numbers.
+    """
+
     listing_delimiter = ","
     range_delimiter = "-"
     result = set()
@@ -121,43 +136,54 @@ def _unravel(listing: str) -> list[int]:
     return sorted(result)
 
 
-class ParseSkips(Action):
-    def __call__(
-        self,
-        parser: ArgumentParser,
-        namespace: Namespace,
-        values: str | Sequence[Any] | None,
-        option_string: str | None = None,
-    ) -> None:
-        skip_sids: dict[int, list[int] | None] = {}
+def unravel_2d(listing: str) -> dict[int, list[int] | None]:
+    """
+    Parses a string representing a two-dimensional list of ranges into an equivalent python data structure.
 
-        try:
-            if values is not None:
-                for session_skips in values:
-                    # Whole sessions can be skipped by only giving the session number without ids
-                    if ":" not in session_skips:
-                        session_ids = _unravel(session_skips)
+    The outer dimension entries are separated by spaces (' ').
+    Inner dimension ranges and outer dimension ranges are separated by colons (':').
+    Ranges in both dimensions are delimited by hyphens ('-').
+    Enumerations in both dimensions are delimited by commas (',').
 
-                        for session_id in session_ids:
-                            skip_sids[session_id] = None
-                    else:
-                        session_ids_tmp, identifier_ids_tmp = session_skips.split(":")
-                        session_ids = _unravel(session_ids_tmp)
-                        identifier_ids = _unravel(identifier_ids_tmp)
-                        skips = session_skips
+    Ranges are allowed to overlap and are merged.
+    Ranges are always unraveled, which could lead to high memory consumption for distant limits.
+    If a range with only outer dimensions is given, this will result in None for the inner list and overrides other values.
 
-                        for session_id in session_ids:
-                            if session_id not in skip_sids:
-                                skip_sids[session_id] = []
+    Example: "1:1,2  1-3:0,2-4  3"
+    This would result in {1: [0,1,2,3,4], 2: [0,2,3,4], 3: None}.
 
-                            skips = skip_sids[session_id]
+    :param listing: The string representation of the two-dimensional list of ranges.
+    :return: A mapping of numbers in the outer dimension to numbers in the inner dimension.
+    """
 
-                            if skips is not None:
-                                skips += identifier_ids
+    listing_delimiter = " "
+    level_delimiter = ":"
 
-            setattr(namespace, self.dest, skip_sids)
-        except Exception as e:
-            raise ArgumentError(self, "malformed argument") from e
+    unsorted_result: dict[int, set[int] | None] = {}
+
+    for range_element in listing.split(listing_delimiter):
+        if level_delimiter in range_element:
+            first_tmp, second_tmp = range_element.split(level_delimiter)
+            first = unravel(first_tmp)
+            second = unravel(second_tmp)
+
+            for x in first:
+                if x not in unsorted_result:
+                    unsorted_result[x] = set()
+
+                if (ur := unsorted_result[x]) is not None:
+                    for y in second:
+                        ur.add(y)
+        else:
+            first = unravel(range_element)
+
+            for x in first:
+                unsorted_result[x] = None
+
+    return {
+        x: None if (ur := unsorted_result[x]) is None else sorted(ur)
+        for x in sorted(unsorted_result)
+    }
 
 
 T = TypeVar("T")
@@ -217,7 +243,8 @@ def lazy_import(name: str) -> ModuleType:
     return module
 
 
-def dump_args(args: Namespace) -> dict[str, str | int | float]:
+# TODO: (Re)move these functions
+def dump_args(args: Any) -> dict[str, str | int | float]:
     settings = {}
     for key, value in args.__dict__.items():
         match value:
@@ -227,7 +254,7 @@ def dump_args(args: Namespace) -> dict[str, str | int | float]:
     return settings
 
 
-def get_log_level(args: Namespace) -> Loglevel:
+def get_log_level(args: Any) -> Loglevel:
     level = Loglevel.INFO
     if hasattr(args, "verbose"):
         if args.verbose == 1:
@@ -237,7 +264,7 @@ def get_log_level(args: Namespace) -> Loglevel:
     return level
 
 
-def get_file_log_level(args: Namespace) -> Loglevel:
+def get_file_log_level(args: Any) -> Loglevel:
     level = Loglevel.DEBUG
     if hasattr(args, "trace_log"):
         if args.trace_log:

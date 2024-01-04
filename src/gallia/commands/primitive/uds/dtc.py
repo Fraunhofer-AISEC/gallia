@@ -3,12 +3,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import sys
-from argparse import Namespace
-from functools import partial
 
 from tabulate import tabulate
 
 from gallia.command import UDSScanner
+from gallia.command.config import AutoInt, Field, HexInt
+from gallia.command.uds import UDSScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds.core.constants import (
     CDTCSSubFuncs,
@@ -17,78 +17,62 @@ from gallia.services.uds.core.constants import (
 )
 from gallia.services.uds.core.service import NegativeResponse
 from gallia.services.uds.core.utils import g_repr
-from gallia.utils import auto_int
 
 logger = get_logger(__name__)
 
 
-class DTCPrimitive(UDSScanner):
-    """Read out the Diagnostic Troube Codes (DTC)"""
+class DTCPrimitiveConfig(UDSScannerConfig):
+    properties: bool = Field(
+        False,
+        description="Read and store the ECU proporties prior and after scan",
+        cli_group=UDSScannerConfig._cli_group,
+        config_section=UDSScannerConfig._config_section,
+    )
+    session: AutoInt = Field(
+        DiagnosticSessionControlSubFuncs.defaultSession.value,
+        description="Session to perform test in",
+    )
 
-    GROUP = "primitive"
-    COMMAND = "dtc"
-    SHORT_HELP = "DiagnosticTroubleCodes"
 
-    def configure_parser(self) -> None:
-        self.parser.set_defaults(properties=False)
+class ReadDTCPrimitiveConfig(DTCPrimitiveConfig):
+    mask: HexInt = Field(
+        0xFF,
+        description="The bitmask which is sent to the ECU in order to select the relevant DTCs according to their error state. By default, all error codes are returned (c.f. ISO 14229-1,D.2).",
+    )
+    show_legend: bool = Field(
+        False, description="Show the legend of the bit interpretation according to ISO 14229-1,D.2"
+    )
+    show_failed: bool = Field(False, description="Show a summary of the codes which failed")
+    show_uncompleted: bool = Field(
+        False, description="Show a summary of the codes which have not completed"
+    )
 
-        self.parser.add_argument(
-            "--session",
-            default=DiagnosticSessionControlSubFuncs.defaultSession.value,
-            type=auto_int,
-            help="Session to perform test in",
-        )
-        sub_parser = self.parser.add_subparsers(dest="cmd", required=True)
-        read_parser = sub_parser.add_parser(
-            "read", help="Read the DTCs using the ReadDTCInformation service"
-        )
-        read_parser.add_argument(
-            "--mask",
-            type=partial(int, base=16),
-            default=0xFF,
-            help="The bitmask which is sent to the ECU in order to select the relevant DTCs according to their "
-            "error state. By default, all error codes are returned (c.f. ISO 14229-1,D.2).",
-        )
-        read_parser.add_argument(
-            "--show-legend",
-            action="store_true",
-            help="Show the legend of the bit interpretation according to ISO 14229-1,D.2",
-        )
-        read_parser.add_argument(
-            "--show-failed",
-            action="store_true",
-            help="Show a summary of the codes which failed",
-        )
-        read_parser.add_argument(
-            "--show-uncompleted",
-            action="store_true",
-            help="Show a summary of the codes which have not completed",
-        )
-        clear_parser = sub_parser.add_parser(
-            "clear", help="Clear the DTCs using the ClearDiagnosticInformation service"
-        )
-        clear_parser.add_argument(
-            "--group-of-dtc",
-            type=int,
-            default=0xFFFFFF,
-            help="Only clear a particular DTC or the DTCs belonging to the given group. "
-            "By default, all error codes are cleared.",
-        )
-        control_parser = sub_parser.add_parser(
-            "control",
-            help="Stop or resume the setting of DTCs using the " "ControlDTCSetting service",
-        )
-        control_group = control_parser.add_mutually_exclusive_group(required=True)
-        control_group.add_argument(
-            "--stop",
-            action="store_true",
-            help="Stop the setting of DTCs. If already disabled, this has no effect.",
-        )
-        control_group.add_argument(
-            "--resume",
-            action="store_true",
-            help="Resume the setting of DTCs. If already enabled, this has no effect.",
-        )
+
+class ClearDTCPrimitiveConfig(DTCPrimitiveConfig):
+    group_of_dtc: int = Field(
+        0xFFFFFF,
+        description="Only clear a particular DTC or the DTCs belonging to the given group. By default, all error codes are cleared.",
+    )
+
+
+class ControlDTCPrimitiveConfig(DTCPrimitiveConfig):
+    stop: bool = Field(
+        False, description="Stop the setting of DTCs. If already disabled, this has no effect."
+    )
+    resume: bool = Field(
+        False, description="Resume the setting of DTCs. If already enabled, this has no effect."
+    )
+
+
+class ReadDTCPrimitive(UDSScanner):
+    """Read out the Diagnostic Trouble Codes (DTC)"""
+
+    CONFIG_TYPE = ReadDTCPrimitiveConfig
+    SHORT_HELP = "Read the DTCs using the ReadDTCInformation service"
+
+    def __init__(self, config: ReadDTCPrimitiveConfig):
+        super().__init__(config)
+        self.config: ReadDTCPrimitiveConfig = config
 
     async def fetch_error_codes(self, mask: int, split: bool = True) -> dict[int, int]:
         ecu_response = await self.ecu.read_dtc_information_report_dtc_by_status_mask(mask)
@@ -97,8 +81,7 @@ class DTCPrimitive(UDSScanner):
         if isinstance(ecu_response, NegativeResponse):
             if ecu_response.response_code == UDSErrorCodes.responseTooLong:
                 logger.error(
-                    f"There are too many codes for (sub)mask {mask}. Consider setting --mask "
-                    f"with a parameter that excludes one or more of the corresponding bits."
+                    f"There are too many codes for (sub)mask {mask}. Consider setting --mask with a parameter that excludes one or more of the corresponding bits."
                 )
                 if split:
                     logger.warning("Trying to fetch the error codes iteratively.")
@@ -117,8 +100,8 @@ class DTCPrimitive(UDSScanner):
 
         return dtcs
 
-    async def read(self, args: Namespace) -> None:
-        dtcs = await self.fetch_error_codes(args.mask)
+    async def main(self) -> None:
+        dtcs = await self.fetch_error_codes(self.config.mask)
 
         failed_dtcs: list[list[str]] = []
         uncompleted_dtcs: list[list[str]] = []
@@ -141,16 +124,16 @@ class DTCPrimitive(UDSScanner):
                 logger.result(raw_output)
                 uncompleted_dtcs.append(table_output)
 
-        if args.show_legend:
+        if self.config.show_legend:
             logger.result("")
             self.show_bit_legend()
 
-        if args.show_failed:
+        if self.config.show_failed:
             logger.result("")
             logger.result("Failed codes:")
             self.show_summary(failed_dtcs)
 
-        if args.show_uncompleted:
+        if self.config.show_uncompleted:
             logger.result("")
             logger.result("Uncompleted codes:")
             self.show_summary(uncompleted_dtcs)
@@ -167,32 +150,30 @@ class DTCPrimitive(UDSScanner):
             "7 = warningIndicatorRequested: existing warning indicators (e.g. lamp, display)",
         ]
 
-        for line in (
-            tabulate([[d] for d in bit_descriptions], headers=["bit descriptions"])
+        for line in tabulate(
+            [[d] for d in bit_descriptions], headers=["bit descriptions"]
         ).splitlines():
             logger.result(line)
 
     def show_summary(self, dtcs: list[list[str]]) -> None:
         dtcs.sort()
 
-        header = [
-            "DTC",
-            "error state",
-            "0",
-            "1",
-            "2",
-            "3",
-            "4",
-            "5",
-            "6",
-            "7",
-        ]
+        header = ["DTC", "error state", "0", "1", "2", "3", "4", "5", "6", "7"]
 
         for line in tabulate(dtcs, headers=header, tablefmt="fancy_grid").splitlines():
             logger.result(line)
 
-    async def clear(self, args: Namespace) -> None:
-        group_of_dtc: int = args.group_of_dtc
+
+class ClearDTCPrimitive(UDSScanner):
+    CONFIG_TYPE = ClearDTCPrimitiveConfig
+    SHORT_HELP = "Clear the DTCs using the ClearDiagnosticInformation service"
+
+    def __init__(self, config: ClearDTCPrimitiveConfig):
+        super().__init__(config)
+        self.config: ClearDTCPrimitiveConfig = config
+
+    async def main(self) -> None:
+        group_of_dtc: int = self.config.group_of_dtc
 
         min_group_of_dtc = 0
         max_group_of_dtc = 0xFFFFFF
@@ -209,21 +190,19 @@ class DTCPrimitive(UDSScanner):
         else:
             logger.result("Success")
 
-    async def control(self, args: Namespace) -> None:
-        if args.stop:
+
+class ControlDTCPrimitive(UDSScanner):
+    CONFIG_TYPE = ControlDTCPrimitiveConfig
+    SHORT_HELP = "Stop or resume the setting of DTCs using the ControlDTCSetting service"
+
+    def __init__(self, config: ControlDTCPrimitiveConfig):
+        super().__init__(config)
+        self.config: ControlDTCPrimitiveConfig = config
+
+    async def main(self) -> None:
+        assert isinstance(self.config, ControlDTCPrimitiveConfig)
+
+        if self.config.stop:
             await self.ecu.control_dtc_setting(CDTCSSubFuncs.OFF)
         else:
             await self.ecu.control_dtc_setting(CDTCSSubFuncs.ON)
-
-    async def main(self, args: Namespace) -> None:
-        await self.ecu.set_session(args.session)
-
-        if args.cmd == "clear":
-            await self.clear(args)
-        elif args.cmd == "control":
-            await self.control(args)
-        elif args.cmd == "read":
-            await self.read(args)
-        else:
-            logger.critical("Unhandled command")
-            sys.exit(1)

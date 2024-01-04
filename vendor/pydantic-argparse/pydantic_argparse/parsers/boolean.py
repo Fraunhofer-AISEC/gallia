@@ -10,12 +10,10 @@ function, which parses boolean `pydantic` model fields to `ArgumentParser`
 command-line arguments.
 """
 
-import argparse
-from typing import Optional
+from typing import Any
 
-from pydantic_argparse import utils
 from pydantic_argparse.argparse import actions
-from pydantic_argparse.utils.pydantic import PydanticField, PydanticValidator
+from pydantic_argparse.utils.pydantic import PydanticField
 
 from .utils import SupportsAddArgument
 
@@ -36,36 +34,21 @@ def should_parse(field: PydanticField) -> bool:
 def parse_field(
     parser: SupportsAddArgument,
     field: PydanticField,
-) -> Optional[PydanticValidator]:
+) -> None:
     """Adds boolean pydantic field to argument parser.
 
     Args:
         parser (argparse.ArgumentParser): Argument parser to add to.
         field (PydanticField): Field to be added to parser.
-
-    Returns:
-        Optional[PydanticValidator]: Possible validator method.
     """
-    # Compute Argument Intrinsics
-    is_inverted = not field.info.is_required() and bool(field.info.get_default())
-
     # Determine Argument Properties
-    action = (
-        actions.BooleanOptionalAction
-        if field.info.is_required()
-        else argparse._StoreFalseAction
-        if is_inverted
-        else argparse._StoreTrueAction
-    )
+    action = actions.BooleanOptionalAction
+
+    args: dict[str, Any] = {}
+    args.update(field.arg_required())
+    args.update(field.arg_default())
+    args.update(field.arg_const())
+    args.update(field.arg_dest())
 
     # Add Boolean Field
-    parser.add_argument(
-        field.argname(is_inverted),
-        action=action,
-        help=field.description(),
-        dest=field.name,
-        required=field.info.is_required(),
-    )
-
-    # Construct and Return Validator
-    return utils.pydantic.as_validator(field, lambda v: v)
+    parser.add_argument(*field.arg_names(), action=action, help=field.description(), **args)
