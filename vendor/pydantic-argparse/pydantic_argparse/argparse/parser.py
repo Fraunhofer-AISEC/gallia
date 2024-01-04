@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Hayden Richards
+#
+# SPDX-License-Identifier: MIT
+
 """Declarative and Typed Argument Parser.
 
 The `parser` module contains the `ArgumentParser` class, which provides a

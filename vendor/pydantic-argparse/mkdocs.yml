@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Hayden Richards
+#
+# SPDX-License-Identifier: MIT
+
 # Site
 site_name: Pydantic Argparse
 site_description: Typed Argument Parsing with Pydantic
