@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: Hayden Richards
+
+SPDX-License-Identifier: MIT
+-->
+
 ## Overview
 The interface for `pydantic-argparse` is the custom typed
 [`ArgumentParser`][pydantic_argparse.argparse.parser.ArgumentParser] class,

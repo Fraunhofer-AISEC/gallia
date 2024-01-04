@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: Hayden Richards
+
+SPDX-License-Identifier: MIT
+-->
+
 ## Overview
 At the core of `pydantic-argparse` is the `pydantic` *model*, in which
 arguments are declared with `pydantic` *fields*. This combination of the

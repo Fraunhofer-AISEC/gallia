@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: Hayden Richards
+
+SPDX-License-Identifier: MIT
+-->
+
 ## Feature Showcase
 This showcase demonstrates how `pydantic-argparse` can be useful, by
 highlighting some of its features and showing how they can be utilised.

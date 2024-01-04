@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Hayden Richards
+#
+# SPDX-License-Identifier: MIT
+
 """Types Utility Functions for Declarative Typed Argument Parsing.
 
 The `types` module contains a utility function used for determining and

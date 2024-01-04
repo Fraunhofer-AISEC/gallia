@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Hayden Richards
+#
+# SPDX-License-Identifier: MIT
+
 """Declarative Typed Argument Parsing with Pydantic Models.
 
 This is the `pydantic-argparse` package, which contains the classes, methods

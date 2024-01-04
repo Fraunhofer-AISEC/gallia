@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: Hayden Richards
+
+SPDX-License-Identifier: MIT
+-->
+
 ## Overview
 `pydantic-argparse` provides functionality for variadic arguments. A variadic
 argument is a command-line argument that is followed by one *or more* values.

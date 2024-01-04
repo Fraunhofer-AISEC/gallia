@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Hayden Richards
+#
+# SPDX-License-Identifier: MIT
+
 """Pydantic Utility Functions for Declarative Typed Argument Parsing.
 
 The `pydantic` module contains utility functions used for interacting with the

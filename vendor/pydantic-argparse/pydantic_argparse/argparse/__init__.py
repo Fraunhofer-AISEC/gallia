@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Hayden Richards
+#
+# SPDX-License-Identifier: MIT
+
 """Declarative and Typed Argument Parsing.
 
 This package contains the classes and methods required for declarative and

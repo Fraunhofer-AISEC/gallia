@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Hayden Richards
+#
+# SPDX-License-Identifier: MIT
+
 """Utilities to help with parsing arbitrarily nested `pydantic` models."""
 
 from argparse import Namespace

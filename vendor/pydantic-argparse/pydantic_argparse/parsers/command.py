@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Hayden Richards
+#
+# SPDX-License-Identifier: MIT
+
 """Parses Nested Pydantic Model Fields to Sub-Commands.
 
 The `command` module contains the `should_parse` function, which checks whether

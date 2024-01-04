@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Hayden Richards
+#
+# SPDX-License-Identifier: MIT
+
 """Tests the `errors` Module.
 
 This module provides full unit test coverage for the `errors` module, testing

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Hayden Richards
+#
+# SPDX-License-Identifier: MIT
+
 """Parses Standard Pydantic Fields to Command-Line Arguments.
 
 The `standard` module contains the `parse_field` function, which parses

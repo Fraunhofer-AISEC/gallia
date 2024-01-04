@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Hayden Richards
+#
+# SPDX-License-Identifier: MIT
+
 """Utilities for Declarative Typed Argument Parsing.
 
 This package contains helper utility functions for the typed argument parsing

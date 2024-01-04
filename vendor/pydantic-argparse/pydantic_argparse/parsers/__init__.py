@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Hayden Richards
+#
+# SPDX-License-Identifier: MIT
+
 """Parses Pydantic Fields to Command-Line Arguments.
 
 This package contains the functions required for parsing `pydantic` model

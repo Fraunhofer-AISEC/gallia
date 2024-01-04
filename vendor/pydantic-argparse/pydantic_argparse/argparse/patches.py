@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Hayden Richards
+#
+# SPDX-License-Identifier: MIT
+
 """Monkey patches for ArgumentParser.
 
 In order to support Python 3.7 and 3.8 while retaining the unit tests, we need

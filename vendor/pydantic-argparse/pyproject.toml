@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Hayden Richards
+#
+# SPDX-License-Identifier: MIT
+
 [tool.poetry]
 name = "pydantic-argparse"
 version = "1.0.0"
@@ -13,7 +17,7 @@ include = ["LICENSE.md"]
 [tool.poetry.dependencies]
 python = "^3.7"
 pydantic = "^2"
-boltons = "*"
+boltons = "^23"
 importlib_metadata = { version = ">=4", python = "<3.8" }
 typing_extensions = { version = ">=4", python = "<3.8" }
 
