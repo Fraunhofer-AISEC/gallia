@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Hayden Richards
+#
+# SPDX-License-Identifier: MIT
+
 """Tests the `pydantic-argparse` Environment Variables Functionality.
 
 This module provides functional regression tests for the `pydantic-argparse`

@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: Hayden Richards
+
+SPDX-License-Identifier: MIT
+-->
+
 <div align="center">
     <a href="https://pydantic-argparse.supimdos.com">
         <img src="assets/images/logo.svg" width="50%">

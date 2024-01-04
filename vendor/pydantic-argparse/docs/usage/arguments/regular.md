@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: Hayden Richards
+
+SPDX-License-Identifier: MIT
+-->
+
 ## Overview
 `pydantic-argparse` provides functionality for regular arguments. A regular
 argument is a command-line argument that is followed by *exactly* one value.

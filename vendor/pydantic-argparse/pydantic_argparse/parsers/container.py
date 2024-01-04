@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Hayden Richards
+#
+# SPDX-License-Identifier: MIT
+
 """Parses Container Pydantic Fields to Command-Line Arguments.
 
 The `container` module contains the `should_parse` function, which checks
