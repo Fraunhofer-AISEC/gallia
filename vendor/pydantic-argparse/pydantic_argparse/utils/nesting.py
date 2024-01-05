@@ -80,6 +80,12 @@ class _NestedArgumentParser(Generic[PydanticModelT]):
         # the schema
         return remap(schema, visit=lambda p, k, v: v is not None)
 
-    def validate(self):
-        """Return an instance of the `pydantic` modeled validated with data passed from the command line."""
-        return self.model.model_validate(self.schema)
+    def validate(self) -> Tuple[PydanticModelT, BaseModel]:
+        """Return the root of the model, as well as the sub-model for the bottom subcommand"""
+        model = self.model.model_validate(self.schema)
+        subcommand = model
+
+        for step in self.subcommand_path:
+            subcommand = getattr(subcommand, step)
+
+        return model, subcommand
