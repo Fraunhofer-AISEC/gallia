@@ -21,7 +21,7 @@ be compatible with an IDE, linter or type checker.
 
 import argparse
 import sys
-from typing import Dict, Generic, List, NoReturn, Optional, Type, cast
+from typing import Dict, Generic, List, NoReturn, Optional, Tuple, Type
 
 from pydantic import BaseModel, ValidationError
 
@@ -133,7 +133,7 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
     def parse_typed_args(
         self,
         args: Optional[List[str]] = None,
-    ) -> PydanticModelT:
+    ) -> Tuple[PydanticModelT, BaseModel]:
         """Parses command line arguments.
 
         If `args` are not supplied by the user, then they are automatically
@@ -154,7 +154,7 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
 
         try:
             nested_parser = _NestedArgumentParser(model=self.model, namespace=namespace)
-            return cast(PydanticModelT, nested_parser.validate())
+            return nested_parser.validate()
         except ValidationError as exc:
             # Catch exceptions, and use the ArgumentParser.error() method
             # to report it to the user
