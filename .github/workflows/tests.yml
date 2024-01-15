@@ -41,7 +41,28 @@ jobs:
         poetry install
     - name: Run pytest
       run: |
-        poetry run python -m pytest -v tests
+        poetry run make pytest
+
+  bats:
+    strategy:
+      fail-fast: false
+
+    runs-on: ubuntu-latest
+    container: debian:stable
+
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/cache@v3
+      with:
+        path: ~/.cache/pypoetry/virtualenvs
+        key: ${{ runner.os }}-poetry-${{ hashFiles('poetry.lock') }}-${{ hashFiles('pyproject.toml') }}
+    - name: Install Dependencies
+      run: |
+        apt-get update -y && apt-get install -y bats python3 python3-poetry jq
+        poetry install
+    - name: Run bats
+      run: |
+        poetry run make bats
 
   vecu:
     strategy:
