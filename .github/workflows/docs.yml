@@ -28,7 +28,7 @@ jobs:
       with:
         python-version: '3.11'
     - uses: Gr1N/setup-poetry@v8
-    - uses: actions/cache@v3
+    - uses: actions/cache@v4
       with:
         path: ~/.cache/pypoetry/virtualenvs
         key: ${{ runner.os }}-poetry-${{ hashFiles('poetry.lock') }}-${{ hashFiles('pyproject.toml') }}
@@ -52,7 +52,7 @@ jobs:
 
     steps:
     - uses: Gr1N/setup-poetry@v8
-    - uses: actions/cache@v3
+    - uses: actions/cache@v4
       with:
         path: ~/.cache/pypoetry/virtualenvs
         key: ${{ runner.os }}-poetry-${{ hashFiles('poetry.lock') }}
