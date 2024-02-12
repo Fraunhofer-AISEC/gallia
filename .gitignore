@@ -146,3 +146,4 @@ dmypy.json
 cython_debug/
 
 gallia.toml
+.ruff_cache
