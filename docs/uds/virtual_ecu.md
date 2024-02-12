@@ -12,7 +12,7 @@ The virtual ECUs can however also be used independently of the remaining Gallia 
 The generic command to create a virtual ECU is as follows:
 
 ```shell-session
-$ gallia vecu [vecu-arguments] <transport> <model> [model-arguments]
+$ gallia script vecu [vecu-arguments] <transport> <model> [model-arguments]
 ```
 
 The virtual ECUs support different transport schemes and answering models, 
@@ -38,13 +38,13 @@ For example, a random virtual ECU, which uses the tcp-lines protocol for communi
 and listens for IPv4 connections on port 20162 can be started with the following command:
 
 ```shell-session
-$ gallia vecu "tcp-lines://127.0.0.1:20162" rng
+$ gallia script vecu "tcp-lines://127.0.0.1:20162" rng
 ```
 
 For IPv6, the command would look as follows:
 
 ```shell-session
-$ gallia vecu "tcp-lines://[::1]:20162" rng
+$ gallia script vecu "tcp-lines://[::1]:20162" rng
 ```
 
 ### iso-tp
@@ -65,8 +65,8 @@ For example, two random virtual ECUs, which uses the iso-tp protocol for communi
 and use the *vcan0* interface can be started with the following commands:
 
 ```shell-session
-$ gallia vecu "isotp://vcan0?src_addr=0x6aa&dst_addr=0x6f4&rx_ext_address=0xaa&ext_address=0xf4&is_fd=false" rng
-$ gallia vecu "isotp://vcan0?src_addr=0x6bb&dst_addr=0x6f4&rx_ext_address=0xbb&ext_address=0xf4&is_fd=false" rng
+$ gallia script vecu "isotp://vcan0?src_addr=0x6aa&dst_addr=0x6f4&rx_ext_address=0xaa&ext_address=0xf4&is_fd=false" rng
+$ gallia script vecu "isotp://vcan0?src_addr=0x6bb&dst_addr=0x6f4&rx_ext_address=0xbb&ext_address=0xf4&is_fd=false" rng
 ```
 
 ## model
