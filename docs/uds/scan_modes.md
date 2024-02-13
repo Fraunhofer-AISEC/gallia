@@ -22,6 +22,7 @@ A well working payload is `1001` which is a request to the DiagnosticSessionCont
 This request instructs an ECU to change to the so called DefaultSession.
 The DiagnosticSessionControl service and the DefaultSession should be always available, thus this payload is a good candidate for a discovery scan.
 Payloads different from `1001` can be used as well; for instance `1003` to enable the ExtendedDiagnosticSession (session id `0x03`).
+Another well working example is `3E00`, the TesterPresent service.
 
 The **addressing** of the ECU is provided by the underlying transport protocol.
 Most of the time there are two addresses: the tester address and the ECU address.
