@@ -4,6 +4,7 @@
 
 import asyncio
 import socket
+import sys
 from argparse import Namespace
 from collections.abc import Iterable
 from itertools import chain, product
@@ -240,6 +241,11 @@ class DoIPDiscoverer(AsyncScript):
 
                 if e.rac_code == RoutingActivationResponseCodes.UnknownSourceAddress:
                     rat_wrong_source.append(routing_activation_type)
+            except DoIPNegativeAckError:
+                logger.error(
+                    "Wrong synchronisation parameter (e.g. wrong protocol version); exit"
+                )
+                sys.exit(1)
 
             finally:
                 await conn.close()
@@ -360,9 +366,7 @@ class DoIPDiscoverer(AsyncScript):
 
             except (ConnectionError, ConnectionResetError) as e:
                 # Whenever this triggers, but sometimes connections are closed not by us
-                logger.warn(
-                    f"[🫦] Sexy, but unexpected: {target_addr:#x} triggered {e}"
-                )
+                logger.warn(f"[🫦] Sexy, but unexpected: {target_addr:#x} triggered {e}")
                 async with aiofiles.open(
                     self.artifacts_dir.joinpath("7_targets_with_errors.txt"), "a"
                 ) as f:
@@ -418,9 +422,12 @@ class DoIPDiscoverer(AsyncScript):
                 await conn.write_routing_activation_request(
                     RoutingActivationRequestTypes(routing_activation_type)
                 )
+            except OSError as e:
+                logger.error(f"Connection error: {e}; exit")
+                sys.exit(1)
             except Exception as e:  # TODO this probably is too broad
                 logger.warning(
-                    f"[🫨] Got me some good errors when it should be working (dis an infinite loop): {e}"
+                    f"[🫨] Got me some good errors when it should be working (dis an infinite loop): {repr(e)}"
                 )
                 continue
             return conn

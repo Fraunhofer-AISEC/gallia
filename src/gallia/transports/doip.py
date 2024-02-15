@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import asyncio
+import socket
 import struct
 from dataclasses import dataclass
 from enum import IntEnum, unique
@@ -23,6 +24,7 @@ logger = get_logger("gallia.transport.doip")
 class ProtocolVersions(IntEnum):
     ISO_13400_2_2010 = 0x01
     ISO_13400_2_2012 = 0x02
+    ISO_13400_2_2019 = 0x03
 
 
 @unique
@@ -183,6 +185,18 @@ class RoutingActivationRequest:
 
 
 @dataclass
+class DoIPNegativeAckResponse:
+    nack_code: DiagnosticMessageNegativeAckCodes
+
+    @classmethod
+    def unpack(cls, data: bytes) -> DoIPNegativeAckResponse:
+        (nack_code,) = struct.unpack("!B", data)
+        return cls(
+            nack_code,
+        )
+
+
+@dataclass
 class RoutingActivationResponse:
     SourceAddress: int
     TargetAddress: int
@@ -302,6 +316,7 @@ DoIPInData = (
     | DiagnosticMessagePositiveAcknowledgement
     | DiagnosticMessageNegativeAcknowledgement
     | AliveCheckRequest
+    | DoIPNegativeAckResponse
 )
 
 # Messages expected to be sent by us.
@@ -340,6 +355,8 @@ class DoIPConnection:
         target_addr: int,
     ) -> DoIPConnection:
         reader, writer = await asyncio.open_connection(host, port)
+        sock = writer.get_extra_info("socket")
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         return cls(reader, writer, src_addr, target_addr)
 
     async def _read_frame(self) -> DoIPFrame:
@@ -360,6 +377,8 @@ class DoIPConnection:
                 payload = DiagnosticMessage.unpack(payload_buf)
             case PayloadTypes.AliveCheckRequest:
                 payload = AliveCheckRequest()
+            case PayloadTypes.NegativeAcknowledge:
+                payload = DoIPNegativeAckResponse.unpack(payload_buf)
             case _:
                 raise BrokenPipeError(
                     f"unexpected DoIP message: {hdr} {payload_buf.hex()}"
@@ -388,7 +407,11 @@ class DoIPConnection:
         # the connection has been terminated.
         if self._is_closed:
             raise ConnectionError()
-        return await self._read_queue.get()
+        frame = await self._read_queue.get()
+        payload = frame[1]
+        if isinstance(payload, DoIPNegativeAckResponse):
+            raise DoIPNegativeAckError(payload.nack_code)
+        return frame
 
     async def read_frame(self) -> DoIPFrame:
         async with self._mutex:
@@ -450,7 +473,8 @@ class DoIPConnection:
                 continue
             if (
                 len(payload.PreviousDiagnosticMessageData) > 0
-                and prev_data != payload.PreviousDiagnosticMessageData
+                and prev_data[: len(payload.PreviousDiagnosticMessageData)]
+                != payload.PreviousDiagnosticMessageData
             ):
                 logger.warning("ack: previous data differs from request")
                 logger.warning(
@@ -524,7 +548,7 @@ class DoIPConnection:
 
     async def write_diag_request(self, data: bytes) -> None:
         hdr = GenericHeader(
-            ProtocolVersion=ProtocolVersions.ISO_13400_2_2012,
+            ProtocolVersion=ProtocolVersions.ISO_13400_2_2019,
             PayloadType=PayloadTypes.DiagnosticMessage,
             PayloadLength=len(data) + 4,
         )
@@ -540,7 +564,7 @@ class DoIPConnection:
         activation_type: int,
     ) -> None:
         hdr = GenericHeader(
-            ProtocolVersion=ProtocolVersions.ISO_13400_2_2012,
+            ProtocolVersion=ProtocolVersions.ISO_13400_2_2019,
             PayloadType=PayloadTypes.RoutingActivationRequest,
             PayloadLength=7,
         )
@@ -553,7 +577,7 @@ class DoIPConnection:
 
     async def write_alive_check_response(self) -> None:
         hdr = GenericHeader(
-            ProtocolVersion=ProtocolVersions.ISO_13400_2_2012,
+            ProtocolVersion=ProtocolVersions.ISO_13400_2_2019,
             PayloadType=PayloadTypes.AliveCheckResponse,
             PayloadLength=2,
         )
