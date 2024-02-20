@@ -97,9 +97,7 @@ class MemoryFunctionsScanner(UDSScanner):
                     sys.exit(1)
 
             try:
-                resp = await self.ecu.send_raw(
-                    pdu, config=UDSRequestConfig(tags=["ANALYZE"])
-                )
+                resp = await self.ecu.send_raw(pdu, config=UDSRequestConfig(tags=["ANALYZE"]))
             except asyncio.TimeoutError:
                 logger.result(f"Address {g_repr(addr)}: timeout")
                 continue

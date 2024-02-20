@@ -73,9 +73,7 @@ class ResetScanner(UDSScanner):
                 logger.notice(f"Switching to session {g_repr(session)}")
                 resp: UDSResponse = await self.ecu.set_session(session)
                 if isinstance(resp, NegativeResponse):
-                    logger.warning(
-                        f"Switching to session {g_repr(session)} failed: {resp}"
-                    )
+                    logger.warning(f"Switching to session {g_repr(session)} failed: {resp}")
                     continue
 
                 logger.result(f"Scanning in session: {g_repr(session)}")
@@ -134,9 +132,7 @@ class ResetScanner(UDSScanner):
             except asyncio.TimeoutError:
                 l_timeout.append(sub_func)
                 if not args.power_cycle:
-                    logger.error(
-                        f"ECU did not respond after reset level {g_repr(sub_func)}; exit"
-                    )
+                    logger.error(f"ECU did not respond after reset level {g_repr(sub_func)}; exit")
                     sys.exit(1)
 
                 logger.warning(
@@ -163,9 +159,7 @@ class ResetScanner(UDSScanner):
                         f"should be {g_repr(session)}"
                     )
                 except UnexpectedNegativeResponse as e:
-                    logger.warning(
-                        f"Could not read current session: {e.RESPONSE_CODE.name}"
-                    )
+                    logger.warning(f"Could not read current session: {e.RESPONSE_CODE.name}")
 
             if session is not None:
                 logger.info(f"Setting session {g_repr(session)}")

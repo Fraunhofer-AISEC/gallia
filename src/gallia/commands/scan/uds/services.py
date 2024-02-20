@@ -28,9 +28,7 @@ class ServicesScanner(UDSScanner):
 
     COMMAND = "services"
     SHORT_HELP = "service scan on an ECU"
-    EPILOG = (
-        "https://fraunhofer-aisec.github.io/gallia/uds/scan_modes.html#service-scan"
-    )
+    EPILOG = "https://fraunhofer-aisec.github.io/gallia/uds/scan_modes.html#service-scan"
 
     def configure_parser(self) -> None:
         self.parser.add_argument(
@@ -85,11 +83,7 @@ class ServicesScanner(UDSScanner):
         if args.sessions is None:
             found[0] = await self.perform_scan(args)
         else:
-            sessions = [
-                s
-                for s in args.sessions
-                if s not in args.skip or args.skip[s] is not None
-            ]
+            sessions = [s for s in args.sessions if s not in args.skip or args.skip[s] is not None]
             logger.info(f"testing sessions {g_repr(sessions)}")
 
             # TODO: Unified shortened output necessary here
@@ -126,15 +120,11 @@ class ServicesScanner(UDSScanner):
             for sid, data in value.items():
                 self.result.append((key, sid))
                 try:
-                    logger.result(
-                        f"  [{g_repr(sid)}] {UDSIsoServices(sid).name}: {data}"
-                    )
+                    logger.result(f"  [{g_repr(sid)}] {UDSIsoServices(sid).name}: {data}")
                 except Exception:
                     logger.result(f"  [{g_repr(sid)}] vendor specific sid: {data}")
 
-    async def perform_scan(
-        self, args: Namespace, session: None | int = None
-    ) -> dict[int, Any]:
+    async def perform_scan(self, args: Namespace, session: None | int = None) -> dict[int, Any]:
         result: dict[int, Any] = {}
 
         # Starts at 0x00, see first loop iteration.
@@ -158,16 +148,12 @@ class ServicesScanner(UDSScanner):
             for length_payload in [1, 2, 3, 5]:
                 pdu = bytes([sid]) + bytes(length_payload)
                 try:
-                    resp = await self.ecu.send_raw(
-                        pdu, config=UDSRequestConfig(tags=["ANALYZE"])
-                    )
+                    resp = await self.ecu.send_raw(pdu, config=UDSRequestConfig(tags=["ANALYZE"]))
                 except asyncio.TimeoutError:
                     logger.info(f"{g_repr(sid)}: timeout")
                     continue
                 except MalformedResponse as e:
-                    logger.warning(
-                        f"{g_repr(sid)}: {e!r} occurred, this needs to be investigated!"
-                    )
+                    logger.warning(f"{g_repr(sid)}: {e!r} occurred, this needs to be investigated!")
                     continue
 
                 if isinstance(resp, NegativeResponse) and resp.response_code in [
@@ -182,9 +168,7 @@ class ServicesScanner(UDSScanner):
                 ]:
                     continue
 
-                logger.result(
-                    f"{g_repr(sid)}: available in session {g_repr(session)}: {resp}"
-                )
+                logger.result(f"{g_repr(sid)}: available in session {g_repr(session)}: {resp}")
                 result[sid] = resp
                 break
 

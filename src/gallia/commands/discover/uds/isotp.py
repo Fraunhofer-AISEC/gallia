@@ -180,9 +180,7 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
             try:
                 addr, payload = await transport.recvfrom(timeout=0.1)
                 if addr == ID:
-                    logger.info(
-                        f"The same CAN ID {can_id_repr(ID)} answered. Skipping…"
-                    )
+                    logger.info(f"The same CAN ID {can_id_repr(ID)} answered. Skipping…")
                     continue
             except asyncio.TimeoutError:
                 continue
@@ -214,9 +212,7 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
                         )
                         target_args = {}
                         target_args["is_fd"] = str(transport.config.is_fd).lower()
-                        target_args["is_extended"] = str(
-                            transport.config.is_extended
-                        ).lower()
+                        target_args["is_extended"] = str(transport.config.is_extended).lower()
 
                         if args.extended_addr:
                             target_args["ext_address"] = hex(ID)

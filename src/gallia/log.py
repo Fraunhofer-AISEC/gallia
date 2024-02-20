@@ -408,9 +408,7 @@ def _format_record(  # noqa: PLR0913
 
     if volatile_info and levelno <= Loglevel.INFO:
         terminal_width, _ = shutil.get_terminal_size()
-        msg = msg[
-            : terminal_width + extra_len - 1
-        ]  # Adapt length to invisible ANSI colors
+        msg = msg[: terminal_width + extra_len - 1]  # Adapt length to invisible ANSI colors
         msg += _Color.RESET.value
         msg += "\r"
     else:
@@ -756,9 +754,7 @@ class _ConsoleFormatter(logging.Formatter):
             assert exc_traceback
 
             stacktrace = "\n"
-            stacktrace += "".join(
-                traceback.format_exception(exc_type, exc_value, exc_traceback)
-            )
+            stacktrace += "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
 
         return _format_record(
             dt=datetime.datetime.fromtimestamp(record.created),

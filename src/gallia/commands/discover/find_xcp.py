@@ -30,9 +30,7 @@ class FindXCP(AsyncScript):
         self.socket: socket.socket
 
     def configure_parser(self) -> None:
-        subparsers = self.parser.add_subparsers(
-            dest="mode", required=True, help="Transport mode"
-        )
+        subparsers = self.parser.add_subparsers(dest="mode", required=True, help="Transport mode")
 
         sp = subparsers.add_parser("can")
         sp.add_argument(
@@ -42,9 +40,7 @@ class FindXCP(AsyncScript):
             required=True,
             help="CAN interface used for XCP communication",
         )
-        sp.add_argument(
-            "--can-fd", action="store_true", default=False, help="use can FD"
-        )
+        sp.add_argument("--can-fd", action="store_true", default=False, help="use can FD")
         sp.add_argument(
             "--extended",
             action="store_true",
@@ -256,9 +252,7 @@ class FindXCP(AsyncScript):
         logger.info(f"xcp interface ip for multicast group: {addr}")
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.socket.setsockopt(
-            socket.IPPROTO_IP, socket.IP_MULTICAST_IF, socket.inet_aton(addr)
-        )
+        self.socket.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_IF, socket.inet_aton(addr))
         self.socket.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 32)
         self.socket.settimeout(2)
 
@@ -276,6 +270,4 @@ class FindXCP(AsyncScript):
         except socket.timeout:
             logger.info("Timeout")
 
-        logger.result(
-            f"Finished; Found {len(endpoints)} XCP endpoints via multicast group"
-        )
+        logger.result(f"Finished; Found {len(endpoints)} XCP endpoints via multicast group")

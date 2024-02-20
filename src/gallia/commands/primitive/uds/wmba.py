@@ -51,9 +51,7 @@ class WMBAPrimitive(UDSScanner):
         try:
             await self.ecu.check_and_set_session(args.session)
         except Exception as e:
-            logger.critical(
-                f"Could not change to session: {g_repr(args.session)}: {e!r}"
-            )
+            logger.critical(f"Could not change to session: {g_repr(args.session)}: {e!r}")
             sys.exit(1)
 
         if args.data is not None:

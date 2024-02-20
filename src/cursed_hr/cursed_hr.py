@@ -199,9 +199,7 @@ class CursedHR:
             self.file = self.uncompressed_file()
 
             try:
-                with mmap.mmap(
-                    self.file.fileno(), 0, access=mmap.ACCESS_READ
-                ) as mm_file:
+                with mmap.mmap(self.file.fileno(), 0, access=mmap.ACCESS_READ) as mm_file:
                     self.parse_structure(mm_file)
                     self.entries = EntryCache(mm_file, self.entry_positions)
                     self.handle_io()
@@ -244,9 +242,7 @@ class CursedHR:
 
         curses.init_pair(InterpretationColor.DEFAULT, 8, -1)
         curses.init_pair(InterpretationColor.UDS_REQUEST, curses.COLOR_CYAN, -1)
-        curses.init_pair(
-            InterpretationColor.UDS_POSITIVE_RESPONSE, curses.COLOR_GREEN, -1
-        )
+        curses.init_pair(InterpretationColor.UDS_POSITIVE_RESPONSE, curses.COLOR_GREEN, -1)
         curses.init_pair(InterpretationColor.UDS_NEGATIVE_RESPONSE, 166, -1)
 
         return {prio: color[0] for prio, color in prio_colors.items()}
@@ -265,9 +261,7 @@ class CursedHR:
         try:
             if self.in_file.suffix in [".zst", ".gz"]:
                 self.window.erase()
-                self.window.addstr(
-                    f"Loading contents from {self.in_file}: Decompressing file ..."
-                )
+                self.window.addstr(f"Loading contents from {self.in_file}: Decompressing file ...")
                 self.window.refresh()
 
                 file = tempfile.TemporaryFile()
@@ -314,9 +308,7 @@ class CursedHR:
         file.seek(0)
 
         self.window.erase()
-        self.window.addstr(
-            f"Loading contents from {self.in_file}: Parsing structure ({0}%)"
-        )
+        self.window.addstr(f"Loading contents from {self.in_file}: Parsing structure ({0}%)")
         self.window.refresh()
 
         prev_progress = 0
@@ -365,9 +357,7 @@ class CursedHR:
 
     def new_configuration(self) -> None:
         self.configuration_index += 1
-        self.configuration_history = self.configuration_history[
-            : self.configuration_index
-        ]
+        self.configuration_history = self.configuration_history[: self.configuration_index]
         self.configuration_history.append(deepcopy(self.configuration_history[-1]))
 
     def entry_zone(self, entry_id: int) -> PriorityZone:
@@ -439,9 +429,7 @@ class CursedHR:
             if new_zone.start >= last_zone.start:
                 self.configuration.priority_zones.insert(
                     -1,
-                    PriorityZone(
-                        last_zone.start, new_zone.start - 1, last_zone.priority
-                    ),
+                    PriorityZone(last_zone.start, new_zone.start - 1, last_zone.priority),
                 )
             last_zone.start = new_zone.end + 1
 
@@ -461,9 +449,7 @@ class CursedHR:
         :return: The formatted text.
         """
         if entry.tags is not None and "JSON" in entry.tags:
-            return FormattedText(
-                text, curses.color_pair(self.color_ids[PenlogPriority.ERROR])
-            )
+            return FormattedText(text, curses.color_pair(self.color_ids[PenlogPriority.ERROR]))
 
         text_format = curses.color_pair(self.color_ids[entry.priority])
 
@@ -612,13 +598,9 @@ class CursedHR:
                     entry.interpretation = repr(response)
 
                     if isinstance(response, NegativeResponse):
-                        entry.interpretation_color = (
-                            InterpretationColor.UDS_NEGATIVE_RESPONSE
-                        )
+                        entry.interpretation_color = InterpretationColor.UDS_NEGATIVE_RESPONSE
                     else:
-                        entry.interpretation_color = (
-                            InterpretationColor.UDS_POSITIVE_RESPONSE
-                        )
+                        entry.interpretation_color = InterpretationColor.UDS_POSITIVE_RESPONSE
                 else:
                     entry.interpretation = repr(UDSRequest.parse_dynamic(data))
                     entry.interpretation_color = InterpretationColor.UDS_REQUEST
@@ -641,9 +623,7 @@ class CursedHR:
 
         return True
 
-    def calculate_display_entries(
-        self, start_entry: int, entry_line: int
-    ) -> list[DisplayEntry]:
+    def calculate_display_entries(self, start_entry: int, entry_line: int) -> list[DisplayEntry]:
         """
         Returns a list of display entries starting from the given start entry, which qualify to be displayed by having
         a sufficient priority as well as passing any other filter.
@@ -675,11 +655,7 @@ class CursedHR:
 
         fallback_entry = [
             DisplayEntry(
-                [
-                    self.default_text(
-                        "No entries found! You can select a new priority on this line"
-                    )
-                ],
+                [self.default_text("No entries found! You can select a new priority on this line")],
                 0,
                 0,
             )
@@ -750,9 +726,7 @@ class CursedHR:
         pointer = self.priority_pointer(entry_id, prio)
         assert pointer is not None
         zone, pointer = self.next_sufficient_pointer(None, pointer, entry_id)
-        return (
-            self.level_pointers[zone.priority][pointer] if pointer is not None else None
-        )
+        return self.level_pointers[zone.priority][pointer] if pointer is not None else None
 
     def previous_sufficient_entry(self, entry_id: int) -> int | None:
         """
@@ -768,9 +742,7 @@ class CursedHR:
         pointer = self.priority_pointer(entry_id, prio)
         assert pointer is not None
         zone, pointer = self.previous_sufficient_pointer(None, pointer, entry_id)
-        return (
-            self.level_pointers[zone.priority][pointer] if pointer is not None else None
-        )
+        return self.level_pointers[zone.priority][pointer] if pointer is not None else None
 
     def next_sufficient_pointer(
         self, prio_zone: PriorityZone | None, pointer: int, entry_id: int
@@ -787,17 +759,11 @@ class CursedHR:
         :param entry_id: The index of the entry, to which the given pointer points, in self.entries.
         :return: The next priority pointer's index along the corresponding priority zone.
         """
-        zone, ptr = self.next_sufficient_pointer_without_filters(
-            prio_zone, pointer, entry_id
-        )
+        zone, ptr = self.next_sufficient_pointer_without_filters(prio_zone, pointer, entry_id)
 
-        while ptr is not None and not self.check_filter(
-            self.level_pointers[zone.priority][ptr]
-        ):
+        while ptr is not None and not self.check_filter(self.level_pointers[zone.priority][ptr]):
             entry_id = self.level_pointers[zone.priority][ptr]
-            zone, ptr = self.next_sufficient_pointer_without_filters(
-                prio_zone, ptr, entry_id
-            )
+            zone, ptr = self.next_sufficient_pointer_without_filters(prio_zone, ptr, entry_id)
 
         return zone, ptr
 
@@ -816,17 +782,11 @@ class CursedHR:
         :param entry_id: The index of the entry, to which the given pointer points, in self.entries.
         :return: The previous priority pointer's index along the corresponding priority zone.
         """
-        zone, ptr = self.previous_sufficient_pointer_without_filters(
-            prio_zone, pointer, entry_id
-        )
+        zone, ptr = self.previous_sufficient_pointer_without_filters(prio_zone, pointer, entry_id)
 
-        while ptr is not None and not self.check_filter(
-            self.level_pointers[zone.priority][ptr]
-        ):
+        while ptr is not None and not self.check_filter(self.level_pointers[zone.priority][ptr]):
             entry_id = self.level_pointers[zone.priority][ptr]
-            zone, ptr = self.previous_sufficient_pointer_without_filters(
-                prio_zone, ptr, entry_id
-            )
+            zone, ptr = self.previous_sufficient_pointer_without_filters(prio_zone, ptr, entry_id)
 
         return zone, ptr
 
@@ -908,9 +868,7 @@ class CursedHR:
 
         return self.configuration.priority_zones[0], None
 
-    def priority_pointer(
-        self, entry_id: int, prio: PenlogPriority, mode: int = 0
-    ) -> int | None:
+    def priority_pointer(self, entry_id: int, prio: PenlogPriority, mode: int = 0) -> int | None:
         """
         Returns the index of the level pointer of the entry with the given id,
         or depending on the mode the previous or next entry, in the level pointers with the given priority.
@@ -990,9 +948,7 @@ class CursedHR:
         filter_history = [self.configuration.filter]
 
         display_entries = self.calculate_display_entries(0, 0)
-        self.display(
-            display_entries, self.status(display_entries, (len(display_entries) - 1, 0))
-        )
+        self.display(display_entries, self.status(display_entries, (len(display_entries) - 1, 0)))
         prefix_length = 0
         cursor = (0, prefix_length)
         self.window.move(*cursor)
@@ -1006,9 +962,7 @@ class CursedHR:
             if start_entry is None:
                 return
 
-            stop_display_entry = display_entries[
-                min(cursor[0], len(display_entries) - 1)
-            ]
+            stop_display_entry = display_entries[min(cursor[0], len(display_entries) - 1)]
             stop_entry = stop_display_entry.penlog_entry_number
 
             if start_entry == stop_entry:
@@ -1024,9 +978,7 @@ class CursedHR:
                     stop_entry = stop_entry_
 
             self.update_zones(
-                PriorityZone(
-                    min(start_entry, stop_entry), max(start_entry, stop_entry), prio
-                )
+                PriorityZone(min(start_entry, stop_entry), max(start_entry, stop_entry), prio)
             )
             start_entry = None
 
@@ -1048,9 +1000,7 @@ class CursedHR:
 
                     if display_entries[0].entry_line_number == 0:
                         if entry_start > 0:
-                            entry_start = max(
-                                0, display_entries[0].penlog_entry_number - 1
-                            )
+                            entry_start = max(0, display_entries[0].penlog_entry_number - 1)
                             line_start = -1
                     else:
                         line_start = display_entries[0].entry_line_number - 1
@@ -1058,9 +1008,7 @@ class CursedHR:
                     if old_entry_start == entry_start and old_line_start == line_start:
                         break
 
-                    display_entries = self.calculate_display_entries(
-                        entry_start, line_start
-                    )
+                    display_entries = self.calculate_display_entries(entry_start, line_start)
 
             def line_up() -> None:
                 nonlocal entry_start
@@ -1106,9 +1054,7 @@ class CursedHR:
                     entry_start = len(self.entries) - 1
                     line_start = -1
 
-                    display_entries = self.calculate_display_entries(
-                        entry_start, line_start
-                    )
+                    display_entries = self.calculate_display_entries(entry_start, line_start)
                     page_up()
                     cursor = (len(display_entries) - 1, cursor[1])
                 case "KEY_LEFT":
@@ -1152,9 +1098,7 @@ class CursedHR:
                                 update_selected_zones(prio)
                             else:
                                 self.new_configuration()
-                                self.configuration.priority_zones = [
-                                    PriorityZone(0, None, prio)
-                                ]
+                                self.configuration.priority_zones = [PriorityZone(0, None, prio)]
 
                             break
                     case "u":
@@ -1169,10 +1113,7 @@ class CursedHR:
                         self.configuration.interpret = not self.configuration.interpret
                     case "f":
                         # fh is short for filter_history to reduce long unreadable lines
-                        fh_tmp = [
-                            "; ".join(filter_commands)
-                            for filter_commands in filter_history
-                        ]
+                        fh_tmp = ["; ".join(filter_commands) for filter_commands in filter_history]
                         fh_tmp.append("")
                         fh_index = len(fh_tmp) - 1
 
@@ -1241,9 +1182,7 @@ class CursedHR:
                                 display_entries,
                                 [FormattedText(fh_tmp[fh_index], input_format)],
                             )
-                            self.window.move(
-                                max_lines, min(filter_cursor, len(fh_tmp[fh_index]))
-                            )
+                            self.window.move(max_lines, min(filter_cursor, len(fh_tmp[fh_index])))
                     case "x":
                         self.use_prefix = not self.use_prefix
                     case "?":
@@ -1260,9 +1199,7 @@ class CursedHR:
             if display_help:
                 display_entries = self.help_message(line_start)
             else:
-                display_entries = self.calculate_display_entries(
-                    entry_start, line_start
-                )
+                display_entries = self.calculate_display_entries(entry_start, line_start)
 
             previous_entry_start = 0
             previous_line_start = 0
@@ -1279,9 +1216,7 @@ class CursedHR:
                 if display_help:
                     display_entries = self.help_message(line_start)
                 else:
-                    display_entries = self.calculate_display_entries(
-                        entry_start, line_start
-                    )
+                    display_entries = self.calculate_display_entries(entry_start, line_start)
 
             if start_entry is not None:
                 stop_entry = display_entries[
@@ -1346,21 +1281,15 @@ class CursedHR:
         add_entries("Log level keys (ordered from highest to lowest):")
 
         for level in self.priority_keys:
-            add_entries(
-                f"{PenlogPriority(self.priority_keys[level]).name}", f"    {level}: "
-            )
+            add_entries(f"{PenlogPriority(self.priority_keys[level]).name}", f"    {level}: ")
 
         add_entries("")
         add_entries("Filtering information:")
         add_entries(
             "Beware that filters are arbitrary Python statements executed with eval on each line!"
         )
-        add_entries(
-            "This can lead to poor performance on large files as well as side effects!"
-        )
-        add_entries(
-            "Existing filters can be traversed using the up and down arrow keys"
-        )
+        add_entries("This can lead to poor performance on large files as well as side effects!")
+        add_entries("Existing filters can be traversed using the up and down arrow keys")
         add_entries("The following attributes of each line are exposed as a variable:")
 
         for attr in self.entries[0].__dict__:
@@ -1436,9 +1365,7 @@ def parse_filter(text: str) -> list[str]:
         tags=[],
     )
 
-    commands = [
-        command.strip() for command in text.split(";") if len(command.strip()) > 0
-    ]
+    commands = [command.strip() for command in text.split(";") if len(command.strip()) > 0]
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", SyntaxWarning)

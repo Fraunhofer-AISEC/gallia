@@ -33,9 +33,7 @@ class HMC804(BaseNetzteil):
         await asyncio.wait_for(writer.drain(), self.timeout)
 
     async def _recv_line(self, reader: asyncio.StreamReader) -> str:
-        return (
-            (await asyncio.wait_for(reader.readline(), self.timeout)).decode().strip()
-        )
+        return (await asyncio.wait_for(reader.readline(), self.timeout)).decode().strip()
 
     async def _close_conn(self, writer: asyncio.StreamWriter) -> None:
         writer.close()

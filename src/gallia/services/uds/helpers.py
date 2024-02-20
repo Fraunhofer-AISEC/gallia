@@ -16,9 +16,7 @@ def raise_for_error(response: service.UDSResponse, message: str | None = None) -
         if response.trigger_request is None:
             raise ValueError("The response has not been assigned a trigger request")
 
-        raise UnexpectedNegativeResponse.parse_dynamic(
-            response.trigger_request, response, message
-        )
+        raise UnexpectedNegativeResponse.parse_dynamic(response.trigger_request, response, message)
 
 
 def as_exception(
@@ -27,9 +25,7 @@ def as_exception(
     if response.trigger_request is None:
         raise ValueError("The response has not been assigned a trigger request")
 
-    return UnexpectedNegativeResponse.parse_dynamic(
-        response.trigger_request, response, message
-    )
+    return UnexpectedNegativeResponse.parse_dynamic(response.trigger_request, response, message)
 
 
 def raise_for_mismatch(

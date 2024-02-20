@@ -228,9 +228,7 @@ class DBHandler:
 
         await self.connection.commit()
 
-    async def complete_run_meta(
-        self, end_time: datetime, exit_code: int, path: Path
-    ) -> None:
+    async def complete_run_meta(self, end_time: datetime, exit_code: int, path: Path) -> None:
         assert self.connection is not None, "Not connected to the database"
         assert self.meta is not None, "Run meta not yet created"
 
@@ -245,9 +243,7 @@ class DBHandler:
         assert self.connection is not None, "Not connected to the database"
         assert self.meta is not None, "Run meta not yet created"
 
-        await self.connection.execute(
-            "INSERT OR IGNORE INTO address(url) VALUES(?)", (target,)
-        )
+        await self.connection.execute("INSERT OR IGNORE INTO address(url) VALUES(?)", (target,))
 
         query = (
             "INSERT INTO scan_run(address, meta) VALUES "
@@ -259,16 +255,12 @@ class DBHandler:
         self.target = target
         await self.connection.commit()
 
-    async def insert_scan_run_properties_pre(
-        self, properties_pre: dict[str, Any]
-    ) -> None:
+    async def insert_scan_run_properties_pre(self, properties_pre: dict[str, Any]) -> None:
         assert self.connection is not None, "Not connected to the database"
         assert self.scan_run is not None, "Scan run not yet created"
 
         query = "UPDATE scan_run SET properties_pre = ? WHERE id = ?"
-        await self.connection.execute(
-            query, (json.dumps(properties_pre), self.scan_run)
-        )
+        await self.connection.execute(query, (json.dumps(properties_pre), self.scan_run))
         await self.connection.commit()
 
     async def complete_scan_run(self, properties_post: dict[str, Any]) -> None:
@@ -276,9 +268,7 @@ class DBHandler:
         assert self.scan_run is not None, "Scan run not yet created"
 
         query = "UPDATE scan_run SET properties_post = ? WHERE id = ?"
-        await self.connection.execute(
-            query, (json.dumps(properties_post), self.scan_run)
-        )
+        await self.connection.execute(query, (json.dumps(properties_post), self.scan_run))
         await self.connection.commit()
 
     async def insert_discovery_run(self, protocol: str) -> None:
@@ -294,9 +284,7 @@ class DBHandler:
         assert self.connection is not None, "Not connected to the database"
         assert self.discovery_run is not None, "Discovery run not yet created"
 
-        await self.connection.execute(
-            "INSERT OR IGNORE INTO address(url) VALUES(?)", (target,)
-        )
+        await self.connection.execute("INSERT OR IGNORE INTO address(url) VALUES(?)", (target,))
 
         query = "INSERT INTO discovery_result(address, run) VALUES ((SELECT id FROM address WHERE url = ?), ?)"
 
@@ -376,12 +364,8 @@ class DBHandler:
             send_time.tzname(),
             json.dumps(request_attributes),
             bytes_repr(response.pdu) if response is not None else None,
-            receive_time.timestamp()
-            if response is not None and receive_time is not None
-            else None,
-            receive_time.tzname()
-            if response is not None and receive_time is not None
-            else None,
+            receive_time.timestamp() if response is not None and receive_time is not None else None,
+            receive_time.tzname() if response is not None and receive_time is not None else None,
             json.dumps(response_attributes) if response is not None else None,
             repr(exception) if exception is not None else None,
             log_mode.name,
@@ -406,9 +390,7 @@ class DBHandler:
 
         self.tasks.append(asyncio.create_task(execute()))
 
-    async def insert_session_transition(
-        self, destination: int, steps: list[int]
-    ) -> None:
+    async def insert_session_transition(self, destination: int, steps: list[int]) -> None:
         assert self.connection is not None, "Not connected to the database"
 
         query = "INSERT INTO session_transition VALUES(?, ?, ?)"

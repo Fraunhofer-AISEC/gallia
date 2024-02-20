@@ -36,9 +36,7 @@ def check_sub_function(sub_function: int) -> None:
         raise ValueError(f"Not a valid subFunction: {int_repr(sub_function)}")
 
 
-def check_length(
-    pdu: bytes, minimal_length: int = 0, maximal_length: int | None = None
-) -> None:
+def check_length(pdu: bytes, minimal_length: int = 0, maximal_length: int | None = None) -> None:
     if len(pdu) < 1:
         raise ValueError("The PDU is empty")
 
@@ -208,17 +206,12 @@ def address_and_size_length(address_and_length_fmt: int) -> tuple[int, int]:
     """
     if not 0x00 <= address_and_length_fmt <= 0xFF:
         raise ValueError(
-            "The addressAndLengthFormatIdentifier must not be negative "
-            "nor exceed 0xff"
+            "The addressAndLengthFormatIdentifier must not be negative " "nor exceed 0xff"
         )
     if address_and_length_fmt & 0xF0 == 0:
-        raise ValueError(
-            "The addressAndLengthFormatIdentifier's first nibble must not be 0"
-        )
+        raise ValueError("The addressAndLengthFormatIdentifier's first nibble must not be 0")
     if address_and_length_fmt & 0x0F == 0:
-        raise ValueError(
-            "The addressAndLengthFormatIdentifier's second nibble must not be 0"
-        )
+        raise ValueError("The addressAndLengthFormatIdentifier's second nibble must not be 0")
 
     addr_length = address_and_length_fmt & 0x0F
     size_length = (address_and_length_fmt & 0xF0) >> 4

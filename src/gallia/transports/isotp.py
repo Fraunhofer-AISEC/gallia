@@ -187,14 +187,10 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
         await asyncio.wait_for(loop.sock_sendall(self._sock, data), timeout)
         return len(data)
 
-    async def read(
-        self, timeout: float | None = None, tags: list[str] | None = None
-    ) -> bytes:
+    async def read(self, timeout: float | None = None, tags: list[str] | None = None) -> bytes:
         loop = asyncio.get_running_loop()
         try:
-            data = await asyncio.wait_for(
-                loop.sock_recv(self._sock, self.BUFSIZE), timeout
-            )
+            data = await asyncio.wait_for(loop.sock_recv(self._sock, self.BUFSIZE), timeout)
         except OSError as e:
             if e.errno == errno.ECOMM:
                 raise BrokenPipeError(f"isotp flow control frame missing: {e}") from e

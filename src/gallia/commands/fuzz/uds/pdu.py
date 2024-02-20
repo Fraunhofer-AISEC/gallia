@@ -103,15 +103,11 @@ class PDUFuzzer(UDSScanner):
                     can_id, msg = await transport.recvfrom(timeout=1)
                     if can_id in can_msgs:
                         if msg != can_msgs[can_id]:
-                            logger.result(
-                                f"Message for {can_id:03x} changed to {msg.hex()}"
-                            )
+                            logger.result(f"Message for {can_id:03x} changed to {msg.hex()}")
                             can_msgs[can_id] = msg
                     else:
                         can_msgs[can_id] = msg
-                        logger.result(
-                            f"Observed new message from {can_id:03x}: {msg.hex()}"
-                        )
+                        logger.result(f"Observed new message from {can_id:03x}: {msg.hex()}")
                 except asyncio.TimeoutError:
                     continue
 
@@ -120,9 +116,7 @@ class PDUFuzzer(UDSScanner):
 
     async def main(self, args: Namespace) -> None:
         if args.observe_can_ids:
-            recv_task = asyncio.create_task(
-                self.observe_can_messages(args.observe_can_ids, args)
-            )
+            recv_task = asyncio.create_task(self.observe_can_messages(args.observe_can_ids, args))
 
         logger.info(f"testing sessions {args.sessions}")
 
@@ -135,9 +129,7 @@ class PDUFuzzer(UDSScanner):
                 logger.notice(f"Switching to session 0x{session:02x}")
                 resp: UDSResponse = await self.ecu.set_session(session)
                 if isinstance(resp, NegativeResponse):
-                    logger.warning(
-                        f"Switching to session 0x{session:02x} failed: {resp}"
-                    )
+                    logger.warning(f"Switching to session 0x{session:02x} failed: {resp}")
                     continue
 
                 logger.result(f"Starting scan in session: 0x{session:02x}")
@@ -177,9 +169,7 @@ class PDUFuzzer(UDSScanner):
                         illegal_resp += 1
                     # Temporary patch: Exception handler is deleted when it goes productive
                     except ConnectionError:
-                        logger.warning(
-                            "isotp flow control frame missing. Reconnecting…"
-                        )
+                        logger.warning("isotp flow control frame missing. Reconnecting…")
                         flow_control_miss += 1
                         await self.ecu.reconnect()
 

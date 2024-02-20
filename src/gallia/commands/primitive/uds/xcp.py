@@ -34,9 +34,7 @@ class SimpleTestXCP(Scanner):
 
         if isinstance(transport, RawCANTransport):
             if args.can_master is None or args.can_slave is None:
-                self.parser.error(
-                    "For CAN interfaces, master and slave address are required!"
-                )
+                self.parser.error("For CAN interfaces, master and slave address are required!")
 
             self.service = CANXCPSerivce(transport, args.can_master, args.can_slave)
         elif isinstance(transport, ISOTPTransport):
