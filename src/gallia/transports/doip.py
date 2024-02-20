@@ -55,9 +55,7 @@ class DoIPRoutingActivationDeniedError(ConnectionAbortedError):
 
     def __init__(self, rac_code: int):
         self.rac_code = RoutingActivationResponseCodes(rac_code)
-        super().__init__(
-            f"DoIP routing activation denied: {self.rac_code.name} ({rac_code})"
-        )
+        super().__init__(f"DoIP routing activation denied: {self.rac_code.name} ({rac_code})")
 
 
 @unique
@@ -103,9 +101,7 @@ class DoIPNegativeAckError(BrokenPipeError):
 
     def __init__(self, negative_ack_code: int):
         self.nack_code = DiagnosticMessageNegativeAckCodes(negative_ack_code)
-        super().__init__(
-            f"DoIP negative ACK received: {self.nack_code.name} ({negative_ack_code})"
-        )
+        super().__init__(f"DoIP negative ACK received: {self.nack_code.name} ({negative_ack_code})")
 
 
 @unique
@@ -177,9 +173,7 @@ class RoutingActivationRequest:
     # OEMReserved uint32
 
     def pack(self) -> bytes:
-        return struct.pack(
-            "!HBI", self.SourceAddress, self.ActivationType, self.Reserved
-        )
+        return struct.pack("!HBI", self.SourceAddress, self.ActivationType, self.Reserved)
 
 
 @dataclass
@@ -361,9 +355,7 @@ class DoIPConnection:
             case PayloadTypes.AliveCheckRequest:
                 payload = AliveCheckRequest()
             case _:
-                raise BrokenPipeError(
-                    f"unexpected DoIP message: {hdr} {payload_buf.hex()}"
-                )
+                raise BrokenPipeError(f"unexpected DoIP message: {hdr} {payload_buf.hex()}")
         return hdr, payload
 
     async def _read_worker(self) -> None:
@@ -399,15 +391,10 @@ class DoIPConnection:
         while True:
             hdr, payload = await self.read_frame()
             if not isinstance(payload, DiagnosticMessage):
-                logger.warning(
-                    f"expected DoIP DiagnosticMessage, instead got: {hdr} {payload}"
-                )
+                logger.warning(f"expected DoIP DiagnosticMessage, instead got: {hdr} {payload}")
                 unexpected_packets.append((hdr, payload))
                 continue
-            if (
-                payload.SourceAddress != self.target_addr
-                or payload.TargetAddress != self.src_addr
-            ):
+            if payload.SourceAddress != self.target_addr or payload.TargetAddress != self.src_addr:
                 logger.warning(
                     f"DoIP-DiagnosticMessage: unexpected addresses (src:dst); expected {self.src_addr:#04x}:"
                     + f"{self.target_addr:#04x} but got: {payload.SourceAddress:#04x}:{payload.TargetAddress:#04x}"
@@ -429,19 +416,14 @@ class DoIPConnection:
         unexpected_packets: list[tuple[Any, Any]] = []
         while True:
             hdr, payload = await self.read_frame_unsafe()
-            if not isinstance(
-                payload, DiagnosticMessagePositiveAcknowledgement
-            ) and not isinstance(payload, DiagnosticMessageNegativeAcknowledgement):
-                logger.warning(
-                    f"expected DoIP positive/negative ACK, instead got: {hdr} {payload}"
-                )
+            if not isinstance(payload, DiagnosticMessagePositiveAcknowledgement) and not isinstance(
+                payload, DiagnosticMessageNegativeAcknowledgement
+            ):
+                logger.warning(f"expected DoIP positive/negative ACK, instead got: {hdr} {payload}")
                 unexpected_packets.append((hdr, payload))
                 continue
 
-            if (
-                payload.SourceAddress != self.target_addr
-                or payload.TargetAddress != self.src_addr
-            ):
+            if payload.SourceAddress != self.target_addr or payload.TargetAddress != self.src_addr:
                 logger.warning(
                     f"DoIP-ACK: unexpected addresses (src:dst); expected {self.src_addr:#04x}:{self.target_addr:#04x} "
                     + f"but got: {payload.SourceAddress:#04x}:{payload.TargetAddress:#04x}"
@@ -482,13 +464,8 @@ class DoIPConnection:
             for item in unexpected_packets:
                 await self._read_queue.put(item)
 
-            if (
-                payload.RoutingActivationResponseCode
-                != RoutingActivationResponseCodes.Success
-            ):
-                raise DoIPRoutingActivationDeniedError(
-                    payload.RoutingActivationResponseCode
-                )
+            if payload.RoutingActivationResponseCode != RoutingActivationResponseCodes.Success:
+                raise DoIPRoutingActivationDeniedError(payload.RoutingActivationResponseCode)
             return
 
     async def write_request_raw(self, hdr: GenericHeader, payload: DoIPOutData) -> None:
@@ -518,9 +495,7 @@ class DoIPConnection:
                         )
             except asyncio.TimeoutError as e:
                 await self.close()
-                raise BrokenPipeError(
-                    "Timeout while waiting for DoIP ACK message"
-                ) from e
+                raise BrokenPipeError("Timeout while waiting for DoIP ACK message") from e
 
     async def write_diag_request(self, data: bytes) -> None:
         hdr = GenericHeader(
@@ -614,9 +589,7 @@ class DoIPTransport(BaseTransport, scheme="doip"):
             src_addr,
             target_addr,
         )
-        await conn.write_routing_activation_request(
-            RoutingActivationRequestTypes(activation_type)
-        )
+        await conn.write_routing_activation_request(RoutingActivationRequestTypes(activation_type))
         return conn
 
     @classmethod

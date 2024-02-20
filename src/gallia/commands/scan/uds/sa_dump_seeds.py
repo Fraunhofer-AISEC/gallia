@@ -102,9 +102,7 @@ class SASeedsDumper(UDSScanner):
         if isinstance(resp, NegativeResponse):
             logger.debug(f"Key was rejected: {resp}")
             return False
-        logger.result(
-            f'Unlocked SA level {g_repr(level)} with key "{key.hex()}"! resp: {resp}'
-        )
+        logger.result(f'Unlocked SA level {g_repr(level)} with key "{key.hex()}"! resp: {resp}')
         return True
 
     def log_size(self, path: Path, time_delta: float) -> None:
@@ -118,9 +116,7 @@ class SASeedsDumper(UDSScanner):
         if size > 1024:
             size = size / 1024
             size_unit = "MiB"
-        logger.notice(
-            f"Dumping seeds with {rate:.2f}{rate_unit}/h: {size:.2f}{size_unit}"
-        )
+        logger.notice(f"Dumping seeds with {rate:.2f}{rate_unit}/h: {size:.2f}{size_unit}")
 
     async def main(self, args: Namespace) -> None:
         session = args.session
@@ -155,9 +151,7 @@ class SASeedsDumper(UDSScanner):
 
             if args.check_session or reset:
                 if not await self.ecu.check_and_set_session(args.session):
-                    logger.error(
-                        f"ECU persistently lost session {g_repr(args.session)}"
-                    )
+                    logger.error(f"ECU persistently lost session {g_repr(args.session)}")
                     sys.exit(1)
 
             reset = False

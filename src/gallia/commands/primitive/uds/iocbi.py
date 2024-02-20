@@ -71,9 +71,7 @@ class IOCBIPrimitive(UDSScanner):
         try:
             await self.ecu.check_and_set_session(args.session)
         except Exception as e:
-            logger.critical(
-                f"Could not change to session: {g_repr(args.session)}: {e!r}"
-            )
+            logger.critical(f"Could not change to session: {g_repr(args.session)}: {e!r}")
             sys.exit(1)
 
         did = args.data_identifier
@@ -81,26 +79,20 @@ class IOCBIPrimitive(UDSScanner):
         uses_control_parameter = True
 
         if args.control_parameter == "return-control-to-ecu":
-            resp = (
-                await self.ecu.input_output_control_by_identifier_return_control_to_ecu(
-                    did, control_enable_mask_record
-                )
+            resp = await self.ecu.input_output_control_by_identifier_return_control_to_ecu(
+                did, control_enable_mask_record
             )
         elif args.control_parameter == "reset-to-default":
             resp = await self.ecu.input_output_control_by_identifier_reset_to_default(
                 did, control_enable_mask_record
             )
         elif args.control_parameter == "freeze-current-state":
-            resp = (
-                await self.ecu.input_output_control_by_identifier_freeze_current_state(
-                    did, control_enable_mask_record
-                )
+            resp = await self.ecu.input_output_control_by_identifier_freeze_current_state(
+                did, control_enable_mask_record
             )
         elif args.control_parameter == "short-term-adjustment":
-            resp = (
-                await self.ecu.input_output_control_by_identifier_short_term_adjustment(
-                    did, args.new_state, control_enable_mask_record
-                )
+            resp = await self.ecu.input_output_control_by_identifier_short_term_adjustment(
+                did, args.new_state, control_enable_mask_record
             )
         elif args.control_parameter == "without-control-parameter":
             resp = await self.ecu.input_output_control_by_identifier(

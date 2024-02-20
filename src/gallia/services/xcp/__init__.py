@@ -26,9 +26,7 @@ class XCPService:
         header = types.Response.parse(resp)
         logger.info(header)
         if int(header.type) != 255:
-            raise ValueError(
-                f"Unknown response type: {header.type}, maybe no XCP packet?"
-            )
+            raise ValueError(f"Unknown response type: {header.type}, maybe no XCP packet?")
         # strip header byte
         return resp[1:]
 
@@ -106,8 +104,6 @@ class CANXCPSerivce(XCPService):
         header = types.Response.parse(resp)
         logger.info(header)
         if int(header.type) != 255:
-            raise ValueError(
-                f"Unknown response type: {header.type}, maybe no XCP packet?"
-            )
+            raise ValueError(f"Unknown response type: {header.type}, maybe no XCP packet?")
         # strip header byte
         return resp[1:]

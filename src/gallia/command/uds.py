@@ -76,9 +76,7 @@ class UDSScanner(Scanner):
         )
         group.add_argument(
             "--tester-present-interval",
-            default=self.config.get_value(
-                "gallia.protocols.uds.tester_present_interval", 0.5
-            ),
+            default=self.config.get_value("gallia.protocols.uds.tester_present_interval", 0.5),
             type=float,
             metavar="SECONDS",
             help="Modify the interval of the cyclic tester present packets",
@@ -97,9 +95,7 @@ class UDSScanner(Scanner):
         )
         group.add_argument(
             "--compare-properties",
-            default=self.config.get_value(
-                "gallia.protocols.uds.compare_properties", True
-            ),
+            default=self.config.get_value("gallia.protocols.uds.compare_properties", True),
             action=BooleanOptionalAction,
             help="Compare properties before and after the scan",
         )
@@ -167,14 +163,10 @@ class UDSScanner(Scanner):
 
         if self.db_handler is not None:
             try:
-                await self.db_handler.insert_scan_run_properties_pre(
-                    await self.ecu.properties()
-                )
+                await self.db_handler.insert_scan_run_properties_pre(await self.ecu.properties())
                 self._apply_implicit_logging_setting()
             except Exception as e:
-                logger.warning(
-                    f"Could not write the properties_pre to the database: {e!r}"
-                )
+                logger.warning(f"Could not write the properties_pre to the database: {e!r}")
 
     async def teardown(self, args: Namespace) -> None:
         if args.properties is True and not self.ecu.transport.is_closed:
@@ -192,9 +184,7 @@ class UDSScanner(Scanner):
 
         if self.db_handler is not None:
             try:
-                await self.db_handler.complete_scan_run(
-                    await self.ecu.properties(False)
-                )
+                await self.db_handler.complete_scan_run(await self.ecu.properties(False))
             except Exception as e:
                 logger.warning(f"Could not write the scan run to the database: {e!r}")
 
@@ -225,6 +215,4 @@ class UDSDiscoveryScanner(Scanner):
             try:
                 await self.db_handler.insert_discovery_run(args.target.url.scheme)
             except Exception as e:
-                logger.warning(
-                    f"Could not write the discovery run to the database: {e!r}"
-                )
+                logger.warning(f"Could not write the discovery run to the database: {e!r}")

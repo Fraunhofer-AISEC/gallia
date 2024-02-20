@@ -78,9 +78,7 @@ class SessionsScanner(UDSScanner):
             isinstance(resp, NegativeResponse)
             and resp.response_code == UDSErrorCodes.conditionsNotCorrect
         ):
-            logger.notice(
-                f"Received conditionsNotCorrect for session {g_repr(session)}"
-            )
+            logger.notice(f"Received conditionsNotCorrect for session {g_repr(session)}")
             if not use_hooks:
                 logger.warning(
                     f"Session {g_repr(session)} is potentially available but could not be entered. "
@@ -94,9 +92,7 @@ class SessionsScanner(UDSScanner):
             )
 
             if not isinstance(resp_, NegativeResponse):
-                logger.notice(
-                    f"Successfully changed to session {g_repr(session)} with hooks"
-                )
+                logger.notice(f"Successfully changed to session {g_repr(session)} with hooks")
                 resp = resp_
             else:
                 logger.notice(
@@ -185,9 +181,7 @@ class SessionsScanner(UDSScanner):
                         logger.error(f"Could not change to default session: {e!r}")
                         sys.exit(1)
 
-                    logger.debug(
-                        f"Sleeping for {args.sleep}s after changing to DefaultSession"
-                    )
+                    logger.debug(f"Sleeping for {args.sleep}s after changing to DefaultSession")
                     await asyncio.sleep(args.sleep)
 
                     logger.debug("Recovering the current session stack")
@@ -196,19 +190,14 @@ class SessionsScanner(UDSScanner):
 
                     try:
                         logger.debug(f"Attempting to change to session {session:#04x}")
-                        resp = await self.set_session_with_hooks_handling(
-                            session, args.with_hooks
-                        )
+                        resp = await self.set_session_with_hooks_handling(session, args.with_hooks)
 
                         # do not ignore NCR subFunctionNotSupportedInActiveSession in this case
                         if (
                             isinstance(resp, NegativeResponse)
-                            and resp.response_code
-                            == UDSErrorCodes.subFunctionNotSupported
+                            and resp.response_code == UDSErrorCodes.subFunctionNotSupported
                         ):
-                            logger.info(
-                                f"Could not change to session {g_repr(session)}: {resp}"
-                            )
+                            logger.info(f"Could not change to session {g_repr(session)}: {resp}")
                             continue
 
                         logger.notice(
@@ -234,9 +223,7 @@ class SessionsScanner(UDSScanner):
                             )
 
                     except asyncio.TimeoutError:
-                        logger.warning(
-                            f"Could not change to session {g_repr(session)}: Timeout"
-                        )
+                        logger.warning(f"Could not change to session {g_repr(session)}: Timeout")
                         continue
                     except Exception as e:
                         logger.warning(f"Mamma mia: {repr(e)}")
@@ -253,17 +240,11 @@ class SessionsScanner(UDSScanner):
                 logger.result(f"* Session {g_repr(session)} ")
 
                 if self.db_handler is not None:
-                    await self.db_handler.insert_session_transition(
-                        session, res["stack"]
-                    )
+                    await self.db_handler.insert_session_transition(session, res["stack"])
 
-            logger.result(
-                f"\tvia stack: {'->'.join([f'{g_repr(i)}' for i in res['stack']])}"
-            )
+            logger.result(f"\tvia stack: {'->'.join([f'{g_repr(i)}' for i in res['stack']])}")
 
-        logger.result(
-            "The following sessions were identified but could not be activated:"
-        )
+        logger.result("The following sessions were identified but could not be activated:")
         previous_session = 0
 
         for res in sorted(negative_results, key=lambda x: x["session"]):
@@ -278,9 +259,7 @@ class SessionsScanner(UDSScanner):
                     logger.result(f"* Session {g_repr(session)} ")
 
                     if self.db_handler is not None:
-                        await self.db_handler.insert_session_transition(
-                            session, res["stack"]
-                        )
+                        await self.db_handler.insert_session_transition(session, res["stack"])
 
                 logger.result(
                     f"\tvia stack: {'->'.join([f'{g_repr(i)}' for i in res['stack']])} "

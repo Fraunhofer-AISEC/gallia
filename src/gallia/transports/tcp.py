@@ -24,9 +24,7 @@ class TCPTransport(BaseTransport, scheme="tcp"):
         self.writer = writer
 
     @classmethod
-    async def connect(
-        cls, target: str | TargetURI, timeout: float | None = None
-    ) -> TCPTransport:
+    async def connect(cls, target: str | TargetURI, timeout: float | None = None) -> TCPTransport:
         t = target if isinstance(target, TargetURI) else TargetURI(target)
         cls.check_scheme(t)
 

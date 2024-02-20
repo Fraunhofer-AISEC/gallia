@@ -58,16 +58,8 @@ class Dumpcap:
         match target.scheme:
             case ISOTPTransport.SCHEME | RawCANTransport.SCHEME:
                 outfile = artifacts_dir.joinpath(f"candump-{ts}.pcap.gz")
-                src_addr = (
-                    auto_int(target.qs["src_addr"][0])
-                    if "src_addr" in target.qs
-                    else None
-                )
-                dst_addr = (
-                    auto_int(target.qs["dst_addr"][0])
-                    if "dst_addr" in target.qs
-                    else None
-                )
+                src_addr = auto_int(target.qs["src_addr"][0]) if "src_addr" in target.qs else None
+                dst_addr = auto_int(target.qs["dst_addr"][0]) if "dst_addr" in target.qs else None
                 cmd = cls._can_cmd(
                     target.netloc,
                     src_addr,
@@ -143,9 +135,7 @@ class Dumpcap:
         return cast(int, struct.unpack(">H", struct.pack("<H", x))[0])
 
     @staticmethod
-    def _can_cmd(
-        iface: str, src_addr: int | None, dst_addr: int | None
-    ) -> list[str] | None:
+    def _can_cmd(iface: str, src_addr: int | None, dst_addr: int | None) -> list[str] | None:
         args = ["dumpcap", "-q", "-i", iface, "-w", "-"]
         # Debug this with `dumpcap -d` or `tshark -x` to inspect the captured buffer.
         filter_ = ""

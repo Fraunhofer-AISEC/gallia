@@ -44,9 +44,7 @@ class MissingResponse(UDSException, asyncio.TimeoutError):
 
 
 class ResponseException(UDSException):
-    def __init__(
-        self, request: UDSRequest, response: UDSResponse, message: str | None = None
-    ):
+    def __init__(self, request: UDSRequest, response: UDSResponse, message: str | None = None):
         self.response = response
 
         super().__init__(request, message)
@@ -74,9 +72,7 @@ class UnexpectedResponse(ResponseException):
 
 class UnexpectedNegativeResponse(UnexpectedResponse, ABC):
     RESPONSE_CODE: UDSErrorCodes
-    _CONCRETE_EXCEPTIONS: dict[
-        UDSErrorCodes | None, type[UnexpectedNegativeResponse]
-    ] = {}
+    _CONCRETE_EXCEPTIONS: dict[UDSErrorCodes | None, type[UnexpectedNegativeResponse]] = {}
 
     def __init_subclass__(cls, /, response_code: UDSErrorCodes, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
@@ -113,9 +109,7 @@ class UnexpectedNegativeResponse(UnexpectedResponse, ABC):
 #           f'\n        UnexpectedNegativeResponse, response_code={str(ec)}):\n    pass\n\n')
 
 
-class GeneralReject(
-    UnexpectedNegativeResponse, response_code=UDSErrorCodes.generalReject
-):
+class GeneralReject(UnexpectedNegativeResponse, response_code=UDSErrorCodes.generalReject):
     pass
 
 
@@ -138,15 +132,11 @@ class IncorrectMessageLengthOrInvalidFormat(
     pass
 
 
-class ResponseTooLong(
-    UnexpectedNegativeResponse, response_code=UDSErrorCodes.responseTooLong
-):
+class ResponseTooLong(UnexpectedNegativeResponse, response_code=UDSErrorCodes.responseTooLong):
     pass
 
 
-class BusyRepeatRequest(
-    UnexpectedNegativeResponse, response_code=UDSErrorCodes.busyRepeatRequest
-):
+class BusyRepeatRequest(UnexpectedNegativeResponse, response_code=UDSErrorCodes.busyRepeatRequest):
     pass
 
 
@@ -169,9 +159,7 @@ class NoResponseFromSubnetComponent(
     pass
 
 
-class RequestOutOfRange(
-    UnexpectedNegativeResponse, response_code=UDSErrorCodes.requestOutOfRange
-):
+class RequestOutOfRange(UnexpectedNegativeResponse, response_code=UDSErrorCodes.requestOutOfRange):
     pass
 
 
@@ -369,9 +357,7 @@ class RpmTooLow(UnexpectedNegativeResponse, response_code=UDSErrorCodes.rpmTooLo
     pass
 
 
-class EngineIsRunning(
-    UnexpectedNegativeResponse, response_code=UDSErrorCodes.engineIsRunning
-):
+class EngineIsRunning(UnexpectedNegativeResponse, response_code=UDSErrorCodes.engineIsRunning):
     pass
 
 
@@ -393,9 +379,7 @@ class TemperatureTooHigh(
     pass
 
 
-class TemperatureTooLow(
-    UnexpectedNegativeResponse, response_code=UDSErrorCodes.temperatureTooLow
-):
+class TemperatureTooLow(UnexpectedNegativeResponse, response_code=UDSErrorCodes.temperatureTooLow):
     pass
 
 
@@ -454,15 +438,11 @@ class TorqueConverterClutchLocked(
     pass
 
 
-class VoltageTooHigh(
-    UnexpectedNegativeResponse, response_code=UDSErrorCodes.voltageTooHigh
-):
+class VoltageTooHigh(UnexpectedNegativeResponse, response_code=UDSErrorCodes.voltageTooHigh):
     pass
 
 
-class VoltageTooLow(
-    UnexpectedNegativeResponse, response_code=UDSErrorCodes.voltageTooLow
-):
+class VoltageTooLow(UnexpectedNegativeResponse, response_code=UDSErrorCodes.voltageTooLow):
     pass
 
 

@@ -76,8 +76,7 @@ class DTCPrimitive(UDSScanner):
         )
         control_parser = sub_parser.add_parser(
             "control",
-            help="Stop or resume the setting of DTCs using the "
-            "ControlDTCSetting service",
+            help="Stop or resume the setting of DTCs using the " "ControlDTCSetting service",
         )
         control_group = control_parser.add_mutually_exclusive_group(required=True)
         control_group.add_argument(
@@ -92,9 +91,7 @@ class DTCPrimitive(UDSScanner):
         )
 
     async def fetch_error_codes(self, mask: int, split: bool = True) -> dict[int, int]:
-        ecu_response = await self.ecu.read_dtc_information_report_dtc_by_status_mask(
-            mask
-        )
+        ecu_response = await self.ecu.read_dtc_information_report_dtc_by_status_mask(mask)
         dtcs = {}
 
         if isinstance(ecu_response, NegativeResponse):
@@ -113,9 +110,7 @@ class DTCPrimitive(UDSScanner):
                             logger.info(f"Trying to fetch with mask {g_repr(sub_mask)}")
                             dtcs.update(await self.fetch_error_codes(sub_mask, False))
             else:
-                logger.critical(
-                    f"Could not fetch error codes: {ecu_response}; exiting…"
-                )
+                logger.critical(f"Could not fetch error codes: {ecu_response}; exiting…")
                 sys.exit(1)
         else:
             dtcs = ecu_response.dtc_and_status_record

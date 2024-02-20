@@ -286,9 +286,7 @@ class BaseCommand(ABC):
                         self.artifacts_dir,
                     )
                 except Exception as e:
-                    logger.warning(
-                        f"Could not write the run meta to the database: {e!r}"
-                    )
+                    logger.warning(f"Could not write the run meta to the database: {e!r}")
 
             try:
                 await self.db_handler.disconnect()
@@ -416,9 +414,7 @@ class BaseCommand(ABC):
                 if isinstance(e, t):
                     # TODO: Map the exitcode to superclass of builtin exceptions.
                     exit_code = exitcode.IOERR
-                    logger.critical(
-                        f"Caught expected exception, stack trace on debug level: {e!r}"
-                    )
+                    logger.critical(f"Caught expected exception, stack trace on debug level: {e!r}")
                     logger.debug(e, exc_info=True)
                     break
             else:

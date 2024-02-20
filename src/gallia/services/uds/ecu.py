@@ -103,9 +103,7 @@ class ECU(UDSClient):
             raise as_exception(resp)
         return from_bytes(resp.data_record)
 
-    async def set_session_pre(
-        self, level: int, config: UDSRequestConfig | None = None
-    ) -> bool:
+    async def set_session_pre(self, level: int, config: UDSRequestConfig | None = None) -> bool:
         """set_session_pre() is called before the diagnostic session control
         pdu is written on the wire. Implement this if there are special
         preconditions for a particular session, such as disabling error
@@ -120,9 +118,7 @@ class ECU(UDSClient):
         """
         return True
 
-    async def set_session_post(
-        self, level: int, config: UDSRequestConfig | None = None
-    ) -> bool:
+    async def set_session_post(self, level: int, config: UDSRequestConfig | None = None) -> bool:
         """set_session_post() is called after the diagnostic session control
         pdu was written on the wire. Implement this if there are special
         cleanup routines or sleeping until a certain moment is required.
@@ -150,9 +146,7 @@ class ECU(UDSClient):
         logger.debug(f"Checking current session, expecting {g_repr(expected_session)}")
 
         try:
-            current_session = await self.read_session(
-                config=UDSRequestConfig(max_retry=retries)
-            )
+            current_session = await self.read_session(config=UDSRequestConfig(max_retry=retries))
         except UnexpectedNegativeResponse as e:
             if suggests_identifier_not_supported(e.RESPONSE_CODE):
                 logger.info(
@@ -179,9 +173,7 @@ class ECU(UDSClient):
             resp = await self.set_session(expected_session)
 
             if isinstance(resp, service.NegativeResponse):
-                logger.warning(
-                    f"Switching to session {g_repr(expected_session)} failed: {resp}"
-                )
+                logger.warning(f"Switching to session {g_repr(expected_session)} failed: {resp}")
 
             try:
                 current_session = await self.read_session(
@@ -198,9 +190,7 @@ class ECU(UDSClient):
                     return True
                 raise e
             except asyncio.TimeoutError:
-                logger.warning(
-                    "Reading current session timed out, skipping check_session"
-                )
+                logger.warning("Reading current session timed out, skipping check_session")
                 return True
 
         logger.warning(
@@ -220,9 +210,7 @@ class ECU(UDSClient):
         self.state.reset()
         return True
 
-    async def leave_session(
-        self, level: int, config: UDSRequestConfig | None = None
-    ) -> bool:
+    async def leave_session(self, level: int, config: UDSRequestConfig | None = None) -> bool:
         """leave_session() is a hook which can be called explicitly by a
         scanner when a session is to be disabled. Use this hook if resetting
         the ECU is required, e.g. when disabling the programming session.
@@ -259,14 +247,8 @@ class ECU(UDSClient):
 
         resp = await self.diagnostic_session_control(level, config=config)
 
-        if (
-            isinstance(resp, service.NegativeResponse)
-            and self.db_handler is not None
-            and use_db
-        ):
-            logger.debug(
-                "Could not switch to session. Trying with database transitions ..."
-            )
+        if isinstance(resp, service.NegativeResponse) and self.db_handler is not None and use_db:
+            logger.debug("Could not switch to session. Trying with database transitions ...")
 
             if self.db_handler is not None:
                 steps = await self.db_handler.get_session_transition(level)
@@ -288,9 +270,7 @@ class ECU(UDSClient):
         self, config: UDSRequestConfig | None = None
     ) -> service.NegativeResponse | service.ReportDTCByStatusMaskResponse:
         """Read all dtc records from the ecu."""
-        return await self.read_dtc_information_report_dtc_by_status_mask(
-            0xFF, config=config
-        )
+        return await self.read_dtc_information_report_dtc_by_status_mask(0xFF, config=config)
 
     async def clear_dtc(
         self, config: UDSRequestConfig | None = None
@@ -323,8 +303,7 @@ class ECU(UDSClient):
             counter += 1
             payload = data[i : i + payload_size]
             logger.debug(
-                f"Transferring block {g_repr(counter)} "
-                f"with payload size {g_repr(len(payload))}"
+                f"Transferring block {g_repr(counter)} " f"with payload size {g_repr(len(payload))}"
             )
             resp: service.UDSResponse = await self.transfer_data(
                 counter & 0xFF, payload, config=config
@@ -383,9 +362,7 @@ class ECU(UDSClient):
                 logger.info("connection lost; tester present waiting…")
             except Exception as e:
                 logger.warning(f"Tester present worker got {e!r}")
-        logger.debug(
-            "Tester present worker was cancelled but received no asyncio.CancelledError"
-        )
+        logger.debug("Tester present worker was cancelled but received no asyncio.CancelledError")
 
     async def start_cyclic_tester_present(self, interval: float) -> None:
         logger.debug("Starting tester present worker")
@@ -401,9 +378,7 @@ class ECU(UDSClient):
     async def stop_cyclic_tester_present(self) -> None:
         logger.debug("Stopping tester present worker")
         if self.tester_present_task is None:
-            logger.warning(
-                "BUG: stop_cyclic_tester_present() called but no task running"
-            )
+            logger.warning("BUG: stop_cyclic_tester_present() called but no task running")
             return
 
         self.tester_present_task.cancel()
@@ -421,8 +396,7 @@ class ECU(UDSClient):
 
         if (
             isinstance(response, service.ReadDataByIdentifierResponse)
-            and response.data_identifier
-            == DataIdentifier.ActiveDiagnosticSessionDataIdentifier
+            and response.data_identifier == DataIdentifier.ActiveDiagnosticSessionDataIdentifier
         ):
             new_session = int.from_bytes(response.data_record, "big")
 
@@ -485,11 +459,7 @@ class ECU(UDSClient):
                 if self.implicit_logging and self.db_handler is not None:
                     mode = LogMode.implicit
 
-                    if (
-                        config is not None
-                        and config.tags is not None
-                        and "ANALYZE" in config.tags
-                    ):
+                    if config is not None and config.tags is not None and "ANALYZE" in config.tags:
                         mode = LogMode.emphasized
 
                     await self.db_handler.insert_scan_result(
