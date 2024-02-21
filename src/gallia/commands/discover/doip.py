@@ -206,7 +206,7 @@ class DoIPDiscoverer(AsyncScript):
                     0xAFFE,
                 )
             except OSError as e:
-                logger.error(f"[🚨] Mr. Stark I don't feel so good: {e}")
+                logger.error(f"[🚨] Mr. Stark I don't feel so good: {e!r}")
                 return rat_success, rat_wrong_source
 
             try:
@@ -331,7 +331,7 @@ class DoIPDiscoverer(AsyncScript):
 
             except (ConnectionError, ConnectionResetError) as e:
                 # Whenever this triggers, but sometimes connections are closed not by us
-                logger.warn(f"[🫦] Sexy, but unexpected: {target_addr:#x} triggered {e}")
+                logger.warn(f"[🫦] Sexy, but unexpected: {target_addr:#x} triggered {e!r}")
                 async with aiofiles.open(
                     self.artifacts_dir.joinpath("7_targets_with_errors.txt"), "a"
                 ) as f:
@@ -389,7 +389,7 @@ class DoIPDiscoverer(AsyncScript):
                 )
             except Exception as e:  # TODO this probably is too broad
                 logger.warning(
-                    f"[🫨] Got me some good errors when it should be working (dis an infinite loop): {e}"
+                    f"[🫨] Got me some good errors when it should be working (dis an infinite loop): {e!r}"
                 )
                 continue
             return conn
@@ -429,7 +429,7 @@ class DoIPDiscoverer(AsyncScript):
                     0xAFFE,
                 )
             except OSError as e:
-                logger.error(f"[🚨] Mr. Stark I don't feel so good: {e}")
+                logger.error(f"[🚨] Mr. Stark I don't feel so good: {e!r}")
                 return []
 
             try:
