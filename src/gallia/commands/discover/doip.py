@@ -225,7 +225,7 @@ class DoIPDiscoverer(AsyncScript):
             try:
                 await conn.write_routing_activation_request(routing_activation_type)
                 rat_success.append(routing_activation_type)
-                logger.info(
+                logger.notice(
                     f"[🤯] Holy moly, it actually worked for activation_type {routing_activation_type:#x} and src_addr {src_addr:#x}!!!"
                 )
             except DoIPRoutingActivationDeniedError as e:
@@ -493,7 +493,7 @@ class DoIPDiscoverer(AsyncScript):
             finally:
                 await conn.close()
 
-            logger.info(
+            logger.notice(
                 f"[🤯] Holy moly, it actually worked for activation_type {routing_activation_type:#x} and src_addr {source_address:#x}!!!"
             )
             known_sourceAddresses.append(source_address)
