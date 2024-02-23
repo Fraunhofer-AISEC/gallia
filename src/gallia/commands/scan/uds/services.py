@@ -78,10 +78,10 @@ class ServicesScanner(UDSScanner):
     async def main(self, args: Namespace) -> None:
         self.result: list[tuple[int, int]] = []
         self.ecu.max_retry = 1
-        found: dict[int, dict[int, Any]] = {}
+        self.found: dict[int, dict[int, Any]] = {}
 
         if args.sessions is None:
-            found[0] = await self.perform_scan(args)
+            self.found[0] = await self.perform_scan(args)
         else:
             sessions = [s for s in args.sessions if s not in args.skip or args.skip[s] is not None]
             logger.info(f"testing sessions {g_repr(sessions)}")
@@ -111,11 +111,11 @@ class ServicesScanner(UDSScanner):
 
                 logger.result(f"scanning in session {g_repr(session)}")
 
-                found[session] = await self.perform_scan(args, session)
+                self.found[session] = await self.perform_scan(args, session)
 
                 await self.ecu.leave_session(session)
 
-        for key, value in found.items():
+        for key, value in self.found.items():
             logger.result(f"findings in session 0x{key:02X}:")
             for sid, data in value.items():
                 self.result.append((key, sid))
@@ -151,6 +151,7 @@ class ServicesScanner(UDSScanner):
                     resp = await self.ecu.send_raw(pdu, config=UDSRequestConfig(tags=["ANALYZE"]))
                 except asyncio.TimeoutError:
                     logger.info(f"{g_repr(sid)}: timeout")
+                    result[sid] = "TimeoutError"
                     continue
                 except MalformedResponse as e:
                     logger.warning(f"{g_repr(sid)}: {e!r} occurred, this needs to be investigated!")
