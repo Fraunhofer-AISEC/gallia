@@ -21,7 +21,9 @@ be compatible with an IDE, linter or type checker.
 
 import argparse
 import sys
-from typing import Dict, Generic, List, NoReturn, Optional, Tuple, Type
+from collections.abc import Sequence
+from dataclasses import dataclass
+from typing import Dict, Generic, List, NoReturn, Optional, Tuple, Type, Any
 
 from pydantic import BaseModel, ValidationError
 
@@ -29,6 +31,12 @@ from pydantic_argparse import parsers, utils
 from pydantic_argparse.argparse import actions
 from pydantic_argparse.utils.nesting import _NestedArgumentParser
 from pydantic_argparse.utils.pydantic import PydanticField, PydanticModelT
+
+
+
+@dataclass
+class ArgumentGroup:
+    name: str | None
 
 
 class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
@@ -66,6 +74,7 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
         epilog: Optional[str] = None,
         add_help: bool = True,
         exit_on_error: bool = True,
+        extra_defaults: dict[Type, dict[str, Any]] | None = None
     ) -> None:
         """Instantiates the Typed Argument Parser with its `pydantic` model.
 
@@ -102,9 +111,16 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
         self.version = version
         self.add_help = add_help
         self.exit_on_error = exit_on_error
+        self.extra_defaults = extra_defaults
 
         # Add Arguments Groups
         self._subcommands: Optional[argparse._SubParsersAction] = None
+
+        # Add Arguments from Model
+        self._submodels: dict[str, Type[BaseModel]] = dict()
+        self.model = self._add_model(model)
+        print(vars(self.model), file=open("/tmp/after", "w"))
+
         self._help_group = self.add_argument_group(ArgumentParser.HELP)
 
         # Add Help and Version Flags
@@ -112,10 +128,6 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
             self._add_help_flag()
         if self.version:
             self._add_version_flag()
-
-        # Add Arguments from Model
-        self._submodels: dict[str, Type[BaseModel]] = dict()
-        self.model = self._add_model(model)
 
     @property
     def has_submodels(self) -> bool:  # noqa: D102
@@ -247,11 +259,14 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
         validators: Dict[str, utils.pydantic.PydanticValidator] = dict()
         parser = self if arg_group is None else arg_group
 
+        explicit_groups = {}
+        validation_model = model.model_construct()
+
         # Loop through fields in model
         for field in PydanticField.parse_model(model):
             if field.is_a(BaseModel):
                 if field.is_subcommand():
-                    validator = parsers.command.parse_field(self._commands(), field)
+                    validator = parsers.command.parse_field(self._commands(), field, self.extra_defaults)
                 else:
                     # for any nested pydantic models, set default factory to model_construct
                     # method. This allows pydantic to handle if no arguments from a nested
@@ -261,21 +276,41 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
                         field.info.default_factory = field.model_type.model_construct
 
                     # create new arg group
-                    group_name = str.upper(field.info.title or field.name)
+                    group_name = field.info.title or field.name
                     arg_group = self.add_argument_group(group_name)
 
                     # recurse and parse fields below this submodel
                     # TODO: storage of submodels not needed
                     self._submodels[field.name] = self._add_model(
                         model=field.model_type,
-                        arg_group=arg_group,
+                        arg_group=arg_group
                     )
 
                     validator = None
 
             else:
                 # Add field
-                validator = parsers.add_field(parser, field)
+                added = False
+
+                if self.extra_defaults is not None and model in self.extra_defaults and field.name in self.extra_defaults[model]:
+                    field.extra_default = self.extra_defaults[model][field.name]
+                    try:
+                        field.validated_extra_default = getattr(model.__pydantic_validator__.validate_assignment(validation_model, field.name, field.extra_default), field.name)
+                    except ValidationError:
+                        # TODO Print warning for invalid config
+                        pass
+
+                for annotation in field.info.metadata:
+                    if isinstance(annotation, ArgumentGroup) and annotation.name is not None:
+                        if annotation.name not in explicit_groups:
+                            explicit_groups[annotation.name] = self.add_argument_group(annotation.name)
+
+                        validator = parsers.add_field(explicit_groups[annotation.name], field)
+                        added = True
+                        break
+
+                if not added:
+                    validator = parsers.add_field(parser, field)
 
             # Update validators
             utils.pydantic.update_validators(validators, validator)

@@ -26,7 +26,7 @@ from . import (
 )
 from .utils import SupportsAddArgument
 
-
+# TODO: The validators do not work for nested models, either fix or remove this functionality
 def add_field(
     parser: SupportsAddArgument,
     field: PydanticField,
