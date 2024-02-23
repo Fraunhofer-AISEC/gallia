@@ -355,8 +355,6 @@ class DoIPConnection:
         target_addr: int,
     ) -> DoIPConnection:
         reader, writer = await asyncio.open_connection(host, port)
-        sock = writer.get_extra_info("socket")
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         return cls(reader, writer, src_addr, target_addr)
 
     async def _read_frame(self) -> DoIPFrame:
