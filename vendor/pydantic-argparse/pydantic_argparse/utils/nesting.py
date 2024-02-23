@@ -20,7 +20,8 @@ class _NestedArgumentParser(Generic[PydanticModelT]):
     """Parses arbitrarily nested `pydantic` models and inserts values passed at the command line."""
 
     def __init__(
-        self, model: PydanticModelT | Type[PydanticModelT], namespace: Namespace
+        self, model: PydanticModelT | Type[PydanticModelT],
+        namespace: Namespace,
     ) -> None:
         self.model = model
         self.args = to_dict(namespace)
