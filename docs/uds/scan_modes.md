@@ -18,7 +18,7 @@ A UDS scan usually covers multiple phases:
 
 Discovery scans are specific for the underlying transport, such as DoIP or ISO-TP.
 The idea is crafting a valid UDS payload which is valid and at least some answer is expected.
-A well working payload is or `1001` which is a request to the DiagnosticSessionControl service.
+A well working payload is `1001` which is a request to the DiagnosticSessionControl service.
 This request instructs an ECU to change to the so called DefaultSession.
 The DiagnosticSessionControl service and the DefaultSession should be always available, thus this payload is a good candidate for a discovery scan.
 Payloads different from `1001` can be used as well; for instance `1003` to enable the ExtendedDiagnosticSession (session id `0x03`).
