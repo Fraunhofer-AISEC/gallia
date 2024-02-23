@@ -220,7 +220,7 @@ class DoIPDiscoverer(AsyncScript):
                 )
             except OSError as e:
                 logger.error(f"[🚨] Mr. Stark I don't feel so good: {e!r}")
-                return rat_success, rat_wrong_source
+                continue
 
             try:
                 await conn.write_routing_activation_request(routing_activation_type)
