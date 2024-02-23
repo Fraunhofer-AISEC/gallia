@@ -49,30 +49,19 @@ def parse_field(
     # Extract Enum
     enum_type = cast(Type[enum.Enum], field.info.annotation)
 
-    # Compute Argument Intrinsics
-    is_flag = len(enum_type) == 1 and not field.info.is_required()
-    is_inverted = is_flag and field.info.get_default() is not None
-
     # Determine Argument Properties
     metavar = f"{{{', '.join(e.name for e in enum_type)}}}"
-    action = argparse._StoreConstAction if is_flag else argparse._StoreAction
-    const = (
-        {}
-        if not is_flag
-        else {"const": None}
-        if is_inverted
-        else {"const": list(enum_type)[0]}
-    )
+    action = argparse._StoreAction
 
     # Add Enum Field
     parser.add_argument(
-        field.argname(is_inverted),
+        field.argname(),
         action=action,
         help=field.description(),
         dest=field.name,
         metavar=metavar,
-        required=field.info.is_required(),
-        **const,  # type: ignore[arg-type]
+        required=field.arg_required(),
+        **field.arg_default(),
     )
 
     # Construct and Return Validator

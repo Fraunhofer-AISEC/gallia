@@ -54,26 +54,19 @@ def parse_field(
     # Extract Choices
     choices = get_args(field.info.annotation)
 
-    # Compute Argument Intrinsics
-    is_flag = len(choices) == 1 and not field.info.is_required()
-    is_inverted = is_flag and field.info.get_default() is not None
-
     # Determine Argument Properties
     metavar = f"{{{', '.join(str(c) for c in choices)}}}"
-    action = argparse._StoreConstAction if is_flag else argparse._StoreAction
-    const = (
-        {} if not is_flag else {"const": None} if is_inverted else {"const": choices[0]}
-    )
+    action = argparse._StoreAction
 
     # Add Literal Field
     parser.add_argument(
-        field.argname(is_inverted),
+        field.argname(),
         action=action,
         help=field.description(),
         dest=field.name,
         metavar=metavar,
-        required=field.info.is_required(),
-        **const,  # type: ignore[arg-type]
+        required=field.arg_required(),
+        **field.arg_default()
     )
 
     # Construct String Representation Mapping of Choices
