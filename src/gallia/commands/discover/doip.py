@@ -458,18 +458,19 @@ class DoIPDiscoverer(AsyncScript):
         known_sourceAddresses: list[int] = []
         denied_sourceAddresses: list[int] = []
         targets: list[str] = []
-
-        try:
-            conn = await DoIPConnection.connect(tgt_hostname, tgt_port, 0x0, 0xAFFE)
-        except OSError as e:
-            # Sounds like an unrecoverable error! Return what we got so far...
-            logger.error(f"[🚨] Mr. Stark I don't feel so good: {e!r}")
-            return targets
-
         for routing_activation_type, source_address in product(
             valid_routing_activation_types, range(0x0000, 0x10000)
         ):
-            conn.src_addr = source_address
+            try:
+                conn = await DoIPConnection.connect(
+                    tgt_hostname,
+                    tgt_port,
+                    source_address,
+                    0xAFFE,
+                )
+            except OSError as e:
+                logger.warning(f"[🚨] J.A.R.V.I.S., recheck rat {routing_activation_type:#x} and src_addr {source_address:#x}; they failed with {e!r}")
+                continue
 
             try:
                 await conn.write_routing_activation_request(routing_activation_type)
@@ -488,14 +489,9 @@ class DoIPDiscoverer(AsyncScript):
                         )
 
                 continue
-            except ConnectionError as e:
-                # This should trigger when the DoIP gateway closed the connection
-                logger.warn(f"[🫦] Sexy, but unexpected: {source_address:#x} triggered {e!r}")
-                # Re-establish DoIP connection
+
+            finally:
                 await conn.close()
-                conn = await DoIPConnection.connect(
-                    tgt_hostname, tgt_port, source_address, 0xAFFE
-                )
 
             logger.notice(
                 f"[🤯] Holy moly, it actually worked for activation_type {routing_activation_type:#x} and src_addr {source_address:#x}!!!"
@@ -508,8 +504,6 @@ class DoIPDiscoverer(AsyncScript):
                 self.artifacts_dir.joinpath("1_valid_src_addresses.txt"), "a"
             ) as f:
                 await f.write(f"{targets[-1]}\n")
-
-        await conn.close()
 
         # Print valid SourceAddresses and suitable target string for config
         logger.notice(
