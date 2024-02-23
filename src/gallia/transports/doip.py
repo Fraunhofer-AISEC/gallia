@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import asyncio
+import errno
 import socket
 import struct
 from dataclasses import dataclass
@@ -399,6 +400,10 @@ class DoIPConnection:
             logger.debug(f"read worker received EOF: {e}")
         except Exception as e:
             logger.critical(f"read worker died with {type(e)}: {e}")
+        finally:
+            logger.debug(f"Feeding EOF to reader and requesting a close")
+            self.reader.feed_eof()
+            await self.close()
 
     async def read_frame_unsafe(self) -> DoIPFrame:
         # Avoid waiting on the queue forever when
@@ -585,11 +590,29 @@ class DoIPConnection:
         await self.write_request_raw(hdr, payload)
 
     async def close(self) -> None:
+        logger.debug("Closing DoIP connection...")
         if self._is_closed:
+            logger.debug("Already closed!")
             return
         self._is_closed = True
+        logger.debug("Cancelling read worker")
         self._read_task.cancel()
+        try:
+            logger.debug("Writing garbage to help our kernel realize the connection is closed to avoid TIME_WAIT")
+            self.writer.write(b"\xAF\xFE")
+            await self.writer.drain()
+            logger.debug("Writing EOF")
+            self.writer.write_eof()
+            await self.writer.drain()
+        except OSError as e:
+            if e.errno == errno.ENOTCONN:
+                logger.debug(
+                    f"Could not write EOF, but expected since the kernel might already have closed the socket: {e!r}"
+                )
+            else:
+                raise e
         self.writer.close()
+        logger.debug("Awaiting confirmation of closed writer")
         await self.writer.wait_closed()
 
 
