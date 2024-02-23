@@ -11,6 +11,7 @@ SPDX-License-Identifier: CC0-1.0
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/gallia)](https://pypi.python.org/pypi/gallia/)
 [![PyPI - License](https://img.shields.io/pypi/l/gallia)](https://www.apache.org/licenses/LICENSE-2.0.html)
 [![PyPI](https://img.shields.io/pypi/v/gallia)](https://pypi.python.org/pypi/gallia/)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10696368.svg)](https://zenodo.org/doi/10.5281/zenodo.10696368)
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/gallia.svg)](https://repology.org/project/gallia/versions)
 
