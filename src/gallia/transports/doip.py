@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import asyncio
+import socket
 import struct
 from dataclasses import dataclass
 from enum import IntEnum, unique
@@ -326,14 +327,27 @@ class DoIPConnection:
         self._mutex = asyncio.Lock()
 
     @classmethod
-    async def connect(
+    async def connect(  # noqa: PLR0913
         cls,
         host: str,
         port: int,
         src_addr: int,
         target_addr: int,
+        so_linger: bool = False,
     ) -> DoIPConnection:
         reader, writer = await asyncio.open_connection(host, port)
+
+        if so_linger is True:
+            # Depending on who will close the connection in the end, one party's socket
+            # will remain in a TIME_WAIT state, which occupies resources until enough
+            # time has passed. Setting the LINGER socket option tells our kernel to
+            # close the connection with a RST, which brings the TCP connection to an
+            # error state and thus avoids TIME_WAIT and instantly forces LISTEN or CLOSED
+            # For more info, see e.g. Note 3 of :
+            # https://www.ietf.org/rfc/rfc9293.html#name-state-machine-overview
+            sock = writer.get_extra_info("socket")
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("ii", 1, 0))
+
         return cls(reader, writer, src_addr, target_addr)
 
     async def _read_frame(self) -> DoIPFrame:
@@ -374,6 +388,10 @@ class DoIPConnection:
             logger.debug(f"read worker received EOF: {e}")
         except Exception as e:
             logger.critical(f"read worker died with {type(e)}: {e}")
+        finally:
+            logger.debug("Feeding EOF to reader and requesting a close")
+            self.reader.feed_eof()
+            await self.close()
 
     async def read_frame_unsafe(self) -> DoIPFrame:
         # Avoid waiting on the queue forever when
@@ -538,11 +556,15 @@ class DoIPConnection:
         await self.write_request_raw(hdr, payload)
 
     async def close(self) -> None:
+        logger.debug("Closing DoIP connection...")
         if self._is_closed:
+            logger.debug("Already closed!")
             return
         self._is_closed = True
+        logger.debug("Cancelling read worker")
         self._read_task.cancel()
         self.writer.close()
+        logger.debug("Awaiting confirmation of closed writer")
         await self.writer.wait_closed()
 
 
