@@ -382,6 +382,7 @@ class DoIPConnection:
                 raise BrokenPipeError(
                     f"unexpected DoIP message: {hdr} {payload_buf.hex()}"
                 )
+        logger.trace("Received DoIP message: %s, %s", hdr, payload)
         return hdr, payload
 
     async def _read_worker(self) -> None:
@@ -526,7 +527,7 @@ class DoIPConnection:
             self.writer.write(buf)
             await self.writer.drain()
 
-            logger.trace(f"hdr: {hdr}, payload: {payload}")
+            logger.trace("Sent DoIP message: hdr: %s, payload: %s", hdr, payload)
 
             try:
                 match payload:
