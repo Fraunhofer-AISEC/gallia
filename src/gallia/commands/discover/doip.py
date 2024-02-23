@@ -37,7 +37,7 @@ class DoIPDiscoverer(AsyncScript):
     """This script scans for active DoIP endpoints and automatically enumerates allowed
     RoutingActivationTypes and known SourceAddresses. Once valid endpoints are acquired,
     the script continues to discover valid TargetAddresses that are accepted and respond
-    to UDS DiagnosticSessionControl requests."""
+    to UDS TesterPresent requests."""
 
     GROUP = "discover"
     COMMAND = "doip"
@@ -50,14 +50,14 @@ class DoIPDiscoverer(AsyncScript):
             metavar="INT",
             type=lambda x: int(x, 0),
             default=0x00,
-            help="set start address of TargetAddress search range",
+            help="Set start address of TargetAddress search range",
         )
         self.parser.add_argument(
             "--stop",
             metavar="INT",
             type=lambda x: int(x, 0),
             default=0xFFFF,
-            help="set stop address of TargetAddress search range",
+            help="Set stop address of TargetAddress search range",
         )
         self.parser.add_argument(
             "--target",
@@ -130,7 +130,7 @@ class DoIPDiscoverer(AsyncScript):
             )
             rat_success = [int(parse_qs(target.query)["activation_type"][0], 0)]
         else:
-            logger.notice("[🔍] Enumerating all RoutingActivationTypes")
+            logger.notice("[🔍] Enumerating RoutingActivationTypes")
 
             (
                 rat_success,
@@ -145,7 +145,7 @@ class DoIPDiscoverer(AsyncScript):
 
         if len(rat_success) == 0 and len(rat_wrong_source) == 0:
             logger.error(
-                "[🥾] Damn son, didn't find a single routing activation type with unknown source?! OUTTA HERE!"
+                "[🥾] Damn son, didn't find a single RoutingActivationType with unknown source?! OUTTA HERE!"
             )
             return 10
 
@@ -160,7 +160,7 @@ class DoIPDiscoverer(AsyncScript):
             ]
 
         else:
-            logger.notice("[🔍] Enumerating all SourceAddresses")
+            logger.notice("[🔍] Enumerating SourceAddresses for all found RoutingActivationTypes")
             targets = await self.enumerate_source_addresses(
                 tgt_hostname,
                 tgt_port,
@@ -250,9 +250,12 @@ class DoIPDiscoverer(AsyncScript):
             finally:
                 await conn.close()
 
-        logger.notice(
-            f"[💎] Look what RoutingActivationTypes I've found that are not 'unsupported': {', '.join([f'{x:#x}' for x in rat_not_unsupported])}"
-        )
+        if len(rat_not_unsupported) > 0:
+            logger.notice(
+                f"[💎] Look what RoutingActivationTypes I've found that are not 'unsupported': {', '.join([f'{x:#x}' for x in rat_not_unsupported])}"
+            )
+        else:
+            logger.notice("[😿] Darn boi, all RoutingActivationTypes are unsupported!")
         return rat_success, rat_wrong_source
 
     async def enumerate_target_addresses(  # noqa: PLR0913
@@ -506,15 +509,20 @@ class DoIPDiscoverer(AsyncScript):
                 await f.write(f"{targets[-1]}\n")
 
         # Print valid SourceAddresses and suitable target string for config
-        logger.notice(
-            f"[💀] Look what SourceAddresses got denied: {', '.join([f'{x:#x}' for x in denied_sourceAddresses])}"
-        )
-        logger.notice(
-            f"[💎] Look what valid SourceAddresses I've found: {', '.join([f'{x:#x}' for x in known_sourceAddresses])}"
-        )
-        logger.notice("[⚔️] It's dangerous to test alone, take one of these:")
-        for item in targets:
-            logger.notice(item)
+        if len(denied_sourceAddresses) > 0:
+            logger.notice(
+                f"[💀] Look what SourceAddresses got denied: {', '.join([f'{x:#x}' for x in denied_sourceAddresses])}"
+            )
+        if len(targets) > 0:
+            logger.notice(
+                f"[💎] Look what valid SourceAddresses I've found: {', '.join([f'{x:#x}' for x in known_sourceAddresses])}"
+            )
+            logger.notice("[⚔️] It's dangerous to test alone, take one of these:")
+            for item in targets:
+                logger.notice(item)
+        else:
+            logger.notice(f"[😭] Did not find any valid source address!")
+
         return targets
 
     async def run_udp_discovery(self) -> list[tuple[str, int]]:
