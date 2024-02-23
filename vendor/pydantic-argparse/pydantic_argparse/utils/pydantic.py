@@ -11,6 +11,7 @@ dynamically generated validators and environment variable parsers.
 """
 
 from collections.abc import Container, Mapping
+from dataclasses import dataclass
 from enum import Enum
 from typing import (
     Any,
@@ -42,7 +43,8 @@ PydanticValidator = classmethod
 NoneType = type(None)
 
 
-class PydanticField(NamedTuple):
+@dataclass
+class PydanticField:
     """Simple Pydantic v2.0 field wrapper.
 
     Pydantic fields no longer store their name, so this named tuple
@@ -53,6 +55,8 @@ class PydanticField(NamedTuple):
 
     name: str
     info: FieldInfo
+    extra_default: Any = None
+    validated_extra_default: Any = None
 
     @classmethod
     def parse_model(
@@ -235,18 +239,25 @@ class PydanticField(NamedTuple):
             str: Standardised description of the argument.
         """
         # Construct Default String
-        if self.info.is_required():
-            default = None
-            required = "REQUIRED:"
-        else:
+        default = ""
+
+        if not self.info.is_required():
             _default = self.info.get_default()
             if isinstance(_default, Enum):
                 _default = _default.name
-            default = f"(default: {_default})"
-            required = None
+            default = f"default: {_default}"
+
+        if self.extra_default is not None:
+            if len(default) > 0:
+                default += "; "
+            default += f"config: {self.extra_default}"
+
+        if len(default) > 0:
+            default = f" ({default})"
 
         # Return Standardised Description String
-        return " ".join(filter(None, [required, self.info.description, default]))
+        description = self.info.description if self.info.description is not None else ""
+        return f"{description}{default}"
 
     def metavar(self) -> Optional[str]:
         """Generate the metavar name for the field.
@@ -265,6 +276,12 @@ class PydanticField(NamedTuple):
             if isinstance(field_type, tuple):
                 return "|".join(t.__name__.upper() for t in field_type)
             return field_type.__name__.upper()
+
+    def arg_required(self):
+        return self.info.is_required() and self.extra_default is None
+
+    def arg_default(self):
+        return {} if self.extra_default is None else {'default': self.extra_default}
 
 
 def as_validator(

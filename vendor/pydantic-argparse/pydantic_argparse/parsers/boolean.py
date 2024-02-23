@@ -47,12 +47,17 @@ def parse_field(
         Optional[PydanticValidator]: Possible validator method.
     """
     # Compute Argument Intrinsics
-    is_inverted = not field.info.is_required() and bool(field.info.get_default())
+    invalid_extra_default = field.extra_default is not None and field.validated_extra_default is None
+
+    if field.validated_extra_default is not None:
+        is_inverted = field.validated_extra_default
+    else:
+        is_inverted = not field.info.is_required() and bool(field.info.get_default())
 
     # Determine Argument Properties
     action = (
         actions.BooleanOptionalAction
-        if field.info.is_required()
+        if field.arg_required() or invalid_extra_default
         else argparse._StoreFalseAction
         if is_inverted
         else argparse._StoreTrueAction
@@ -60,11 +65,12 @@ def parse_field(
 
     # Add Boolean Field
     parser.add_argument(
-        field.argname(is_inverted),
+        field.argname(is_inverted and not invalid_extra_default),
         action=action,
         help=field.description(),
         dest=field.name,
-        required=field.info.is_required(),
+        required=field.arg_required(),
+        **field.arg_default()
     )
 
     # Construct and Return Validator
