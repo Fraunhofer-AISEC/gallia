@@ -7,3 +7,6 @@
 src/gallia/db           @fkglr
 src/gallia/uds          @fkglr
 src/cursed_hr           @fkglr
+
+src/gallia/commands/discover/doip.py	@ferdinandjarisch
+src/gallia/transports/doip.py		@ferdinandjarisch
