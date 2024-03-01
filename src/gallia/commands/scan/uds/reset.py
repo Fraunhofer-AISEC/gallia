@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import asyncio
 import reprlib
 import sys
 from argparse import Namespace
@@ -129,7 +128,7 @@ class ResetScanner(UDSScanner):
                 else:
                     await self.ecu.wait_for_ecu()
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 l_timeout.append(sub_func)
                 if not args.power_cycle:
                     logger.error(f"ECU did not respond after reset level {g_repr(sub_func)}; exit")
@@ -141,7 +140,7 @@ class ResetScanner(UDSScanner):
                 try:
                     await self.ecu.power_cycle()
                     await self.ecu.wait_for_ecu()
-                except (ConnectionError, asyncio.TimeoutError) as e:
+                except (TimeoutError, ConnectionError) as e:
                     logger.error(f"Failed to recover ECU: {g_repr(e)}; exit")
                     sys.exit(1)
             except ConnectionError:

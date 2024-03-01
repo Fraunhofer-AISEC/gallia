@@ -493,7 +493,7 @@ class DoIPConnection:
                             TimingAndCommunicationParameters.RoutingActivationResponseTimeout
                             / 1000,
                         )
-            except asyncio.TimeoutError as e:
+            except TimeoutError as e:
                 await self.close()
                 raise BrokenPipeError("Timeout while waiting for DoIP ACK message") from e
 

@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import asyncio
 import binascii
 import sys
 import time
@@ -158,7 +157,7 @@ class SASeedsDumper(UDSScanner):
 
             try:
                 seed = await self.request_seed(args.level, args.data_record)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.error("Timeout while requesting seed")
                 continue
             except Exception as e:
@@ -179,7 +178,7 @@ class SASeedsDumper(UDSScanner):
                 try:
                     if await self.send_key(args.level, bytes(args.send_zero_key)):
                         break
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     logger.warning("Timeout while sending key")
                     continue
                 except Exception as e:
@@ -197,7 +196,7 @@ class SASeedsDumper(UDSScanner):
                     await self.ecu.ecu_reset(0x01)
                     logger.info("Waiting for the ECU to recover…")
                     await self.ecu.wait_for_ecu()
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     logger.error("ECU did not respond after reset; exiting…")
                     sys.exit(1)
                 except ConnectionError:

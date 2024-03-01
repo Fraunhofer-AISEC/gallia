@@ -164,7 +164,7 @@ class SessionsScanner(UDSScanner):
                             else:
                                 logger.info("Waiting for the ECU to recover…")
                                 await self.ecu.wait_for_ecu(timeout=args.timeout)
-                        except (asyncio.TimeoutError, ConnectionError):
+                        except (TimeoutError, ConnectionError):
                             logger.warning(
                                 "Lost connection to the ECU after performing a reset. "
                                 "Attempting to reconnect…"
@@ -222,7 +222,7 @@ class SessionsScanner(UDSScanner):
                                 }
                             )
 
-                    except asyncio.TimeoutError:
+                    except TimeoutError:
                         logger.warning(f"Could not change to session {g_repr(session)}: Timeout")
                         continue
                     except Exception as e:

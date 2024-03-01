@@ -219,7 +219,7 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
                 if addr not in addr_idle:
                     logger.info(f"Received a message from {addr:03x}")
                     addr_idle.append(addr)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 continue
         addr_idle.sort()
         return addr_idle

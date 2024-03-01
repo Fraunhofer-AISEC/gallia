@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import asyncio
 import socket
 import struct
 from argparse import ArgumentParser, Namespace
@@ -188,7 +187,7 @@ class FindXCP(AsyncScript):
                 else:
                     logger.info(f"UDP port {port} is no XCP slave, data: {ret}")
 
-            except socket.timeout:
+            except TimeoutError:
                 logger.info(f"Timeout on UDP port {port}")
 
             self.xcp_disconnect(server)
@@ -232,7 +231,7 @@ class FindXCP(AsyncScript):
                             f"Received non XCP answer for CAN-ID {can_id_repr(can_id)}: {can_id_repr(master)}:"
                             f"{bytes_repr(data)}"
                         )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 pass
 
         logger.result(f"Finished; Found {len(endpoints)} XCP endpoints via CAN")
@@ -267,7 +266,7 @@ class FindXCP(AsyncScript):
 
                 logger.result(f"Found XCP slave: {slave} {bytes_repr(data)}")
                 endpoints.append(slave)
-        except socket.timeout:
+        except TimeoutError:
             logger.info("Timeout")
 
         logger.result(f"Finished; Found {len(endpoints)} XCP endpoints via multicast group")
