@@ -182,7 +182,7 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
                 if addr == ID:
                     logger.info(f"The same CAN ID {can_id_repr(ID)} answered. Skipping…")
                     continue
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 continue
 
             while True:
@@ -200,7 +200,7 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
                         logger.info(
                             f"seems like a large ISO-TP packet was received on CAN ID {can_id_repr(ID)}"
                         )
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     if is_broadcast:
                         logger.result(
                             f"seems that broadcast was triggered on CAN ID {can_id_repr(ID)}, "

@@ -154,7 +154,7 @@ class ECU(UDSClient):
                 )
                 return True
             raise e
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning("Reading current session timed out, skipping check_session")
             return True
 
@@ -189,7 +189,7 @@ class ECU(UDSClient):
                     )
                     return True
                 raise e
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.warning("Reading current session timed out, skipping check_session")
                 return True
 
@@ -339,7 +339,7 @@ class ECU(UDSClient):
         try:
             await asyncio.wait_for(self._wait_for_ecu(0.5), timeout=t)
             return True
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.critical("Timeout while waiting for ECU!")
             return False
         finally:

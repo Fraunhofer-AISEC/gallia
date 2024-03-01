@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import asyncio
 import reprlib
 from argparse import BooleanOptionalAction, Namespace
 from typing import Any
@@ -149,7 +148,7 @@ class ServicesScanner(UDSScanner):
                 pdu = bytes([sid]) + bytes(length_payload)
                 try:
                     resp = await self.ecu.send_raw(pdu, config=UDSRequestConfig(tags=["ANALYZE"]))
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     logger.info(f"{g_repr(sid)}: timeout")
                     continue
                 except MalformedResponse as e:

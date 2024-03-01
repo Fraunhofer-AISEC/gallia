@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import asyncio
 import binascii
 import reprlib
 from argparse import Namespace
@@ -192,7 +191,7 @@ class ScanIdentifiers(UDSScanner):
                 resp = await self.ecu.send_raw(
                     pdu, config=UDSRequestConfig(tags=["ANALYZE"], max_retry=3)
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.result(f"{g_repr(DID)}: Retries exceeded")
                 timeout_DIDs += 1
                 continue

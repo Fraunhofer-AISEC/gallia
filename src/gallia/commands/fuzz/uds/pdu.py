@@ -108,7 +108,7 @@ class PDUFuzzer(UDSScanner):
                     else:
                         can_msgs[can_id] = msg
                         logger.result(f"Observed new message from {can_id:03x}: {msg.hex()}")
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     continue
 
         except asyncio.CancelledError:
@@ -161,7 +161,7 @@ class PDUFuzzer(UDSScanner):
                             logger.result(f"0x{did:0x}: {resp}")
                             positive_DIDs += 1
 
-                    except asyncio.TimeoutError:
+                    except TimeoutError:
                         logger.warning(f"0x{did :0x}: Retries exceeded")
                         timeout_DIDs += 1
                     except IllegalResponse as e:

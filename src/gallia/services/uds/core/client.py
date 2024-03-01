@@ -81,7 +81,7 @@ class UDSClient:
                 raw_resp = await self.transport.request_unsafe(request.pdu, timeout, config.tags)
                 if raw_resp == b"":
                     raise BrokenPipeError("connection to target lost")
-            except asyncio.TimeoutError as e:
+            except TimeoutError as e:
                 logger.debug(f"{request} failed with: {repr(e)}")
                 last_exception = MissingResponse(request, str(e))
                 await asyncio.sleep(wait_time)
@@ -117,7 +117,7 @@ class UDSClient:
                     if raw_resp == b"":
                         raise BrokenPipeError("connection to target lost")
                     logger.debug(raw_resp.hex(), extra={"tags": ["read", "uds"] + tags})
-                except asyncio.TimeoutError as e:
+                except TimeoutError as e:
                     # Send a tester present to indicate that
                     # we are still there.
                     # TODO Is this really necessary?

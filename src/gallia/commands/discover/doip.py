@@ -321,7 +321,7 @@ class DoIPDiscoverer(AsyncScript):
                         await f.write(f"{target_addr:#x}: {e.nack_code.name}\n")
                     continue
 
-            except asyncio.TimeoutError:  # This triggers when DoIP ACK but no UDS reply
+            except TimeoutError:  # This triggers when DoIP ACK but no UDS reply
                 logger.info(f"[🙊] Presumably no active ECU on target address {target_addr:#x}")
                 async with aiofiles.open(
                     self.artifacts_dir.joinpath("5_unresponsive_targets.txt"), "a"
