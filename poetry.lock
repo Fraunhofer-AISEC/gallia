@@ -1602,13 +1602,13 @@ use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
 
 [[package]]
 name = "reuse"
-version = "2.1.0"
+version = "3.0.1"
 description = "reuse is a tool for compliance with the REUSE recommendations."
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "reuse-2.1.0-cp310-cp310-manylinux_2_35_x86_64.whl", hash = "sha256:b214e756582766c9a8c84e195707a4ee86f58640bc2b0c5eac85279f5fd7d9de"},
-    {file = "reuse-2.1.0.tar.gz", hash = "sha256:4211e91caa4c9e433802618a89a2d49a67e2bf76a8029d6708090892f0cdebec"},
+    {file = "reuse-3.0.1-cp311-cp311-manylinux_2_36_x86_64.whl", hash = "sha256:2f13d9f31268e566e715fffe97299a002376477fada7ccd3d05a1458310cbf98"},
+    {file = "reuse-3.0.1.tar.gz", hash = "sha256:590ce429ad964c515ed5e18b1f755d9b6cf027943d940d472d107e64ede70a6f"},
 ]
 
 [package.dependencies]
@@ -1616,7 +1616,7 @@ binaryornot = ">=0.4.4,<0.5.0"
 "boolean.py" = ">=3.8"
 Jinja2 = ">=3.0.0,<4.0.0"
 license-expression = ">=1.0"
-python-debian = ">=0.1.38,<0.1.45 || >0.1.45,<0.1.46 || >0.1.46,<0.1.47 || >0.1.47,<0.2.0"
+python-debian = ">=0.1.34,<0.1.45 || >0.1.45,<0.1.46 || >0.1.46,<0.1.47 || >0.1.47,<0.2.0"
 
 [[package]]
 name = "rope"
@@ -2170,4 +2170,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<3.13"
-content-hash = "fa4ed82d4d16e58bb7492cdaaf15cb1984e90131b8f56222522151b92b11b127"
+content-hash = "a719d62ccbabe859a9be0c32cd32de1b285854ec994c8dcbfdfa151528310f8b"
