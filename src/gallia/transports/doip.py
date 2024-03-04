@@ -451,7 +451,8 @@ class DoIPConnection:
                 continue
             if (
                 len(payload.PreviousDiagnosticMessageData) > 0
-                and prev_data != payload.PreviousDiagnosticMessageData
+                and payload.PreviousDiagnosticMessageData
+                != prev_data[: len(payload.PreviousDiagnosticMessageData)]
             ):
                 logger.warning("ack: previous data differs from request")
                 logger.warning(
