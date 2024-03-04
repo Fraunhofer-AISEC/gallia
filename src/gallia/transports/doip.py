@@ -24,6 +24,7 @@ logger = get_logger("gallia.transport.doip")
 class ProtocolVersions(IntEnum):
     ISO_13400_2_2010 = 0x01
     ISO_13400_2_2012 = 0x02
+    ISO_13400_2_2019 = 0x03
 
 
 @unique
@@ -310,17 +311,19 @@ DoIPDiagFrame = tuple[GenericHeader, DiagnosticMessage]
 
 
 class DoIPConnection:
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         reader: asyncio.StreamReader,
         writer: asyncio.StreamWriter,
         src_addr: int,
         target_addr: int,
+        protocol_version: int,
     ):
         self.reader = reader
         self.writer = writer
         self.src_addr = src_addr
         self.target_addr = target_addr
+        self.protocol_version = protocol_version
         self._read_queue: asyncio.Queue[DoIPFrame] = asyncio.Queue()
         self._read_task = asyncio.create_task(self._read_worker())
         self._is_closed = False
@@ -334,6 +337,7 @@ class DoIPConnection:
         src_addr: int,
         target_addr: int,
         so_linger: bool = False,
+        protocol_version: int = ProtocolVersions.ISO_13400_2_2019,
     ) -> DoIPConnection:
         reader, writer = await asyncio.open_connection(host, port)
 
@@ -348,7 +352,7 @@ class DoIPConnection:
             sock = writer.get_extra_info("socket")
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("ii", 1, 0))
 
-        return cls(reader, writer, src_addr, target_addr)
+        return cls(reader, writer, src_addr, target_addr, protocol_version)
 
     async def _read_frame(self) -> DoIPFrame:
         # Header is fixed size 8 byte.
@@ -519,7 +523,7 @@ class DoIPConnection:
 
     async def write_diag_request(self, data: bytes) -> None:
         hdr = GenericHeader(
-            ProtocolVersion=ProtocolVersions.ISO_13400_2_2012,
+            ProtocolVersion=self.protocol_version,
             PayloadType=PayloadTypes.DiagnosticMessage,
             PayloadLength=len(data) + 4,
         )
@@ -535,7 +539,7 @@ class DoIPConnection:
         activation_type: int,
     ) -> None:
         hdr = GenericHeader(
-            ProtocolVersion=ProtocolVersions.ISO_13400_2_2012,
+            ProtocolVersion=self.protocol_version,
             PayloadType=PayloadTypes.RoutingActivationRequest,
             PayloadLength=7,
         )
@@ -548,7 +552,7 @@ class DoIPConnection:
 
     async def write_alive_check_response(self) -> None:
         hdr = GenericHeader(
-            ProtocolVersion=ProtocolVersions.ISO_13400_2_2012,
+            ProtocolVersion=self.protocol_version,
             PayloadType=PayloadTypes.AliveCheckResponse,
             PayloadLength=2,
         )
@@ -574,11 +578,13 @@ class DoIPConfig(BaseModel):
     src_addr: int
     target_addr: int
     activation_type: int = RoutingActivationRequestTypes.WWH_OBD.value
+    protocol_version: int = ProtocolVersions.ISO_13400_2_2019
 
     @field_validator(
         "src_addr",
         "target_addr",
         "activation_type",
+        "protocol_version",
         mode="before",
     )
     def auto_int(cls, v: str) -> int:
@@ -600,18 +606,20 @@ class DoIPTransport(BaseTransport, scheme="doip"):
         self._is_closed = False
 
     @staticmethod
-    async def _connect(
+    async def _connect(  # noqa: PLR0913
         hostname: str,
         port: int,
         src_addr: int,
         target_addr: int,
         activation_type: int,
+        protocol_version: int,
     ) -> DoIPConnection:
         conn = await DoIPConnection.connect(
             hostname,
             port,
             src_addr,
             target_addr,
+            protocol_version=protocol_version,
         )
         await conn.write_routing_activation_request(RoutingActivationRequestTypes(activation_type))
         return conn
@@ -637,6 +645,7 @@ class DoIPTransport(BaseTransport, scheme="doip"):
                 config.src_addr,
                 config.target_addr,
                 config.activation_type,
+                config.protocol_version,
             ),
             timeout,
         )
