@@ -264,6 +264,42 @@ class SynchronisationStatusCodes(IntEnum):
 
 
 @dataclass
+class DoIPEntityStatusRequest:
+    def pack(self) -> bytes:
+        return b""
+
+
+@dataclass
+class DoIPEntityStatusResponse:
+    NodeType: NodeTypes
+    MaximumConcurrentTCP_DATASockets: int
+    CurrentlyOpenTCP_DATASockets: int
+    MaximumDataSize: int | None
+
+    @classmethod
+    def unpack(cls, data: bytes) -> DoIPEntityStatusResponse:
+        if len(data) == 3:
+            # MaximumDataSize is optional
+            (nt, mcts, ncts) = struct.unpack("!BBB", data)
+            mds = None
+        else:
+            (nt, mcts, ncts, mds) = struct.unpack("!BBBI", data)
+
+        return cls(NodeTypes(nt), mcts, ncts, mds)
+
+
+@unique
+class NodeTypes(IntEnum):
+    RESERVED = 0xFF
+    Gateway = 0x00
+    Node = 0x01
+
+    @classmethod
+    def _missing_(cls, value: Any) -> NodeTypes:
+        return cls.RESERVED
+
+
+@dataclass
 class RoutingActivationRequest:
     SourceAddress: int
     ActivationType: int
