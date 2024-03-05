@@ -63,15 +63,18 @@ class DoIPRoutingActivationDeniedError(ConnectionAbortedError):
 @unique
 class PayloadTypes(IntEnum):
     GenericDoIPHeaderNACK = 0x0000
-    VehicleIdentificationRequestMessage = 0x0002
-    VehicleIdentificationRequestMessageWithEID = 0x0003
-    VehicleIdentificationRequestMessageWithVIN = 0x0004
+    VehicleIdentificationRequestMessage = 0x0001
+    VehicleIdentificationRequestMessageWithEID = 0x0002
+    VehicleIdentificationRequestMessageWithVIN = 0x0003
+    VehicleAnnouncementMessage = 0x004
     RoutingActivationRequest = 0x0005
     RoutingActivationResponse = 0x0006
     AliveCheckRequest = 0x0007
     AliveCheckResponse = 0x0008
     DoIPEntityStatusRequest = 0x4001
     DoIPEntityStatusResponse = 0x4002
+    DiagnosticPowerModeInformationRequest = 0x4003
+    DiagnosticPowerModeInformationResponse = 0x4004
     DiagnosticMessage = 0x8001
     DiagnosticMessagePositiveAcknowledgement = 0x8002
     DiagnosticMessageNegativeAcknowledgement = 0x8003
@@ -191,6 +194,73 @@ class GenericDoIPHeaderNACK:
         return cls(
             generic_header_NACK_code,
         )
+
+
+@dataclass
+class VehicleIdentificationRequestMessage:
+    def pack(self) -> bytes:
+        return b""
+
+
+@dataclass
+class VehicleAnnouncementMessage:
+    VIN: bytes
+    LogicalAddress: int
+    EID: bytes
+    GID: bytes
+    FurtherActionRequired: FurtherActionCodes
+    VINGIDSyncStatus: SynchronisationStatusCodes | None
+
+    @classmethod
+    def unpack(cls, data: bytes) -> VehicleAnnouncementMessage:
+        if len(data) == 32:
+            # VINGIDSyncStatus is optional
+            (vin, logical_address, eid, gid, further_action_required) = struct.unpack(
+                "!17sH6s6sB", data
+            )
+            vin_gid_sync_status = None
+        else:
+            (
+                vin,
+                logical_address,
+                eid,
+                gid,
+                further_action_required,
+                vin_gid_sync_status,
+            ) = struct.unpack("!17sH6s6sBB", data)
+
+        return cls(
+            vin,
+            logical_address,
+            eid,
+            gid,
+            FurtherActionCodes(further_action_required),
+            SynchronisationStatusCodes(vin_gid_sync_status)
+            if vin_gid_sync_status is not None
+            else None,
+        )
+
+
+@unique
+class FurtherActionCodes(IntEnum):
+    RESERVED = 0x01
+    NoFurtherActionRequired = 0x00
+    RoutingActivationRequiredToInitiateCentralSecurity = 0x10
+
+    @classmethod
+    def _missing_(cls, value: Any) -> FurtherActionCodes:
+        return cls.RESERVED
+
+
+@unique
+class SynchronisationStatusCodes(IntEnum):
+    RESERVED = 0x01
+    VINGIDSynchronized = 0x00
+    IncompleteVINGIDNotSynchronized = 0x10
+
+    @classmethod
+    def _missing_(cls, value: Any) -> SynchronisationStatusCodes:
+        return cls.RESERVED
 
 
 @dataclass
