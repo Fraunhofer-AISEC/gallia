@@ -62,7 +62,7 @@ class DoIPRoutingActivationDeniedError(ConnectionAbortedError):
 
 @unique
 class PayloadTypes(IntEnum):
-    NegativeAcknowledge = 0x0000
+    GenericDoIPHeaderNACK = 0x0000
     VehicleIdentificationRequestMessage = 0x0002
     VehicleIdentificationRequestMessageWithEID = 0x0003
     VehicleIdentificationRequestMessageWithVIN = 0x0004
@@ -107,12 +107,25 @@ class DoIPNegativeAckError(BrokenPipeError):
 
 
 @unique
-class GenericHeaderNACKCodes(IntEnum):
-    IncorrectPatternFormat = 0x01
-    UnknownPayloadType = 0x02
-    MessageTooLarge = 0x03
-    OutOfMemory = 0x04
-    InvalidPayloadLength = 0x05
+class GenericDoIPHeaderNACKCodes(IntEnum):
+    UNDEFINED = -0x01
+    IncorrectPatternFormat = 0x00
+    UnknownPayloadType = 0x01
+    MessageTooLarge = 0x02
+    OutOfMemory = 0x03
+    InvalidPayloadLength = 0x04
+
+    @classmethod
+    def _missing_(cls, value: Any) -> GenericDoIPHeaderNACKCodes:
+        return cls.UNDEFINED
+
+
+class DoIPGenericHeaderNACKError(ConnectionAbortedError):
+    nack_code: GenericDoIPHeaderNACKCodes
+
+    def __init__(self, nack_code: int):
+        self.nack_code = GenericDoIPHeaderNACKCodes(nack_code)
+        super().__init__(f"DoIP generic header negative ACK: {self.nack_code.name} ({nack_code})")
 
 
 class TimingAndCommunicationParameters(IntEnum):
@@ -163,8 +176,21 @@ class GenericHeader:
 
 
 @dataclass
-class GenericHeaderNegativeAcknowledge:
-    GenericHeaderNACKCode: GenericHeaderNACKCodes
+class GenericDoIPHeaderNACK:
+    GenericHeaderNACKCode: GenericDoIPHeaderNACKCodes
+
+    def pack(self) -> bytes:
+        return struct.pack(
+            "!B",
+            self.GenericHeaderNACKCode,
+        )
+
+    @classmethod
+    def unpack(cls, data: bytes) -> GenericDoIPHeaderNACK:
+        (generic_header_NACK_code,) = struct.unpack("!B", data)
+        return cls(
+            generic_header_NACK_code,
+        )
 
 
 @dataclass
@@ -293,7 +319,8 @@ class AliveCheckResponse:
 
 # Messages expected to be sent by the DoIP gateway.
 DoIPInData = (
-    RoutingActivationResponse
+    GenericDoIPHeaderNACK
+    | RoutingActivationResponse
     | DiagnosticMessage
     | DiagnosticMessagePositiveAcknowledgement
     | DiagnosticMessageNegativeAcknowledgement
@@ -362,6 +389,8 @@ class DoIPConnection:
         payload_buf = await self.reader.readexactly(hdr.PayloadLength)
         payload: DoIPInData
         match hdr.PayloadType:
+            case PayloadTypes.GenericDoIPHeaderNACK:
+                payload = GenericDoIPHeaderNACK.unpack(payload_buf)
             case PayloadTypes.RoutingActivationResponse:
                 payload = RoutingActivationResponse.unpack(payload_buf)
             case PayloadTypes.DiagnosticMessagePositiveAcknowledgement:
