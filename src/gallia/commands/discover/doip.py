@@ -22,6 +22,7 @@ from gallia.transports.doip import (
     DiagnosticMessage,
     DiagnosticMessageNegativeAckCodes,
     DoIPConnection,
+    DoIPEntityStatusResponse,
     DoIPNegativeAckError,
     DoIPRoutingActivationDeniedError,
     GenericHeader,
@@ -118,6 +119,9 @@ class DoIPDiscoverer(AsyncScript):
 
             tgt_hostname, tgt_port = hosts[0]
 
+        # Politely ask for more details via UDP
+        await self.gather_doip_details(tgt_hostname, tgt_port)
+
         # Find correct RoutingActivationType
         rat_success: list[int] = []
         rat_wrong_source: list[int] = []
@@ -193,6 +197,57 @@ class DoIPDiscoverer(AsyncScript):
 
         logger.notice("[🛩️] All done, thanks for flying with us!")
         return 0
+
+    async def gather_doip_details(
+        self,
+        tgt_hostname: str,
+        tgt_port: int,
+    ) -> None:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+        sock.setblocking(False)
+        sock.bind(("0.0.0.0", 0))
+        loop = asyncio.get_running_loop()
+
+        # We send two packets: a VehicleIdentificationRequest and a DoIPEntityStatusRequest that
+        # only differ in their response, so let's reuse code...
+        for req_type in [
+            PayloadTypes.VehicleIdentificationRequestMessage,
+            PayloadTypes.DoIPEntityStatusRequest,
+        ]:
+            logger.info(f"[🥚] Sending {req_type.name}...")
+
+            hdr = GenericHeader(
+                ProtocolVersion=self.protocol_version
+                if req_type == PayloadTypes.DoIPEntityStatusRequest
+                else 0xFF,
+                PayloadType=req_type,
+                PayloadLength=0,
+            )
+            await loop.sock_sendto(sock, hdr.pack(), (tgt_hostname, tgt_port))
+
+            try:
+                data, _ = await asyncio.wait_for(loop.sock_recvfrom(sock, 1024), 2)
+            except TimeoutError:
+                logger.info("[🐣] No response!")
+                continue
+
+            hdr = GenericHeader.unpack(data[:8])
+
+            if hdr.PayloadType == PayloadTypes.VehicleAnnouncementMessage:
+                logger.notice(
+                    f"[👮] Identification please: {VehicleAnnouncementMessage.unpack(data[8:])}"
+                )
+                logger.info(f"[🎯] Setting protocol version to {hdr.ProtocolVersion}")
+                self.protocol_version = hdr.ProtocolVersion
+            elif hdr.PayloadType == PayloadTypes.DoIPEntityStatusResponse:
+                status = DoIPEntityStatusResponse.unpack(data[8:])
+                logger.notice(
+                    f"[👏] This DoIP entity is a {status.NodeType.name} with "
+                    f"{status.CurrentlyOpenTCP_DATASockets}/{status.MaximumConcurrentTCP_DATASockets} "
+                    f"concurrent TCP sockets currently open and a maximum data size of {status.MaximumDataSize}."
+                )
+
+        sock.close()
 
     async def enumerate_routing_activation_types(
         self,
