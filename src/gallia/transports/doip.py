@@ -487,7 +487,7 @@ class DoIPConnection:
 
         return cls(reader, writer, src_addr, target_addr, protocol_version)
 
-    async def _read_frame(self) -> DoIPFrame:
+    async def _read_frame(self) -> DoIPFrame | tuple[None, None]:
         # Header is fixed size 8 byte.
         hdr_buf = await self.reader.readexactly(8)
         hdr = GenericHeader.unpack(hdr_buf)
@@ -508,7 +508,10 @@ class DoIPConnection:
             case PayloadTypes.AliveCheckRequest:
                 payload = AliveCheckRequest()
             case _:
-                raise BrokenPipeError(f"unexpected DoIP message: {hdr} {payload_buf.hex()}")
+                logger.warning(
+                    f"DoIP message with unhandled PayloadType: {hdr} {payload_buf.hex()}"
+                )
+                return None, None
         logger.trace("Received DoIP message: %s, %s", hdr, payload)
         return hdr, payload
 
@@ -516,6 +519,8 @@ class DoIPConnection:
         try:
             while True:
                 hdr, data = await self._read_frame()
+                if hdr is None or data is None:
+                    continue
                 if hdr.PayloadType == PayloadTypes.DiagnosticMessage and isinstance(
                     data, AliveCheckRequest
                 ):
