@@ -50,7 +50,7 @@ def parse_field(
         Optional[PydanticValidator]: Possible validator method.
     """
     parser.add_argument(
-        field.argname(),
+        *field.arg_names(),
         action=argparse._StoreAction,
         nargs=argparse.ONE_OR_MORE,
         help=field.description(),
