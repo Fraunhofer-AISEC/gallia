@@ -79,6 +79,16 @@ class DoIPDiscoverer(AsyncScript):
             default=None,
             help="This flag overrides the default timeout of DiagnosticMessages, which can be used to fine-tune classification of unresponsive ECUs or broadcast detection",
         )
+        self.parser.add_argument(
+            "--tcp-connect-delay",
+            metavar="SECONDS (FLOAT)",
+            type=float,
+            default=0.0,
+            help=(
+                "This flag delays subsequent TCP connect attempts during all enumerations. "
+                "Useful if the DoIP entity requires some time before accepting new TCP requests."
+            ),
+        )
 
     # This is an ugly hack to circumvent AsyncScript's shortcomings regarding return codes
     def run(self, args: Namespace) -> int:
@@ -100,6 +110,9 @@ class DoIPDiscoverer(AsyncScript):
                 await self.db_handler.insert_discovery_run("doip")
             except Exception as e:
                 logger.warning(f"Could not write the discovery run to the database: {e!r}")
+
+        # Set TCP connect delay for RoutingActivationType and SourceAddress enumeration
+        tcp_connect_delay: float = args.tcp_connect_delay
 
         # Discover Hostname and Port
         tgt_hostname: str
@@ -139,14 +152,14 @@ class DoIPDiscoverer(AsyncScript):
         # We need to know whether the DoIP entity checks for RoutingActivationTypes or SourceAddresses first
         # By requesting a RoutingActivation with reserved RAT and reserved SrcAddr, we see it based on the error
         a, _, _ = await self.enumerate_routing_activation_requests(
-            tgt_hostname, tgt_port, [0x02], [0x00]
+            tgt_hostname, tgt_port, [0x02], [0x00], tcp_connect_delay
         )
         routing_activation_types_first = len(a) == 0
 
         if routing_activation_types_first is True and len(rat_not_unsupported) != 1:
             logger.notice("[🔍] Enumerating RoutingActivationTypes")
             rat_not_unsupported, _, _ = await self.enumerate_routing_activation_requests(
-                tgt_hostname, tgt_port, range(0x100), [0x00]
+                tgt_hostname, tgt_port, range(0x100), [0x00], tcp_connect_delay
             )
             logger.notice(
                 f"[💎] Look what promising RoutingActivationTypes I've found: {', '.join([f'{x:#x}' for x in rat_not_unsupported])}"
@@ -154,7 +167,7 @@ class DoIPDiscoverer(AsyncScript):
         elif routing_activation_types_first is False and len(rat_not_unknown) != 1:
             logger.notice("[🔍] Enumerating SourceAddresses")
             _, rat_not_unknown, _ = await self.enumerate_routing_activation_requests(
-                tgt_hostname, tgt_port, [0x02], range(0x10000)
+                tgt_hostname, tgt_port, [0x02], range(0x10000), tcp_connect_delay
             )
             logger.notice(
                 f"[💎] Look what promising SourceAddresses I've found: {', '.join([f'{x:#x}' for x in rat_not_unknown])}"
@@ -162,7 +175,7 @@ class DoIPDiscoverer(AsyncScript):
 
         logger.notice("[🔍] Enumerating valid RoutingActivationType/SourceAddress tuples")
         _, _, targets = await self.enumerate_routing_activation_requests(
-            tgt_hostname, tgt_port, rat_not_unsupported, rat_not_unknown
+            tgt_hostname, tgt_port, rat_not_unsupported, rat_not_unknown, tcp_connect_delay
         )
 
         if len(targets) != 1:
@@ -194,6 +207,7 @@ class DoIPDiscoverer(AsyncScript):
             tgt_src,
             args.start,
             args.stop,
+            tcp_connect_delay,
             args.timeout,
         )
 
@@ -251,12 +265,13 @@ class DoIPDiscoverer(AsyncScript):
 
         sock.close()
 
-    async def enumerate_routing_activation_requests(
+    async def enumerate_routing_activation_requests(  # noqa: PLR0913
         self,
         tgt_hostname: str,
         tgt_port: int,
         routing_activation_types: Iterable[int],
         source_addresses: Iterable[int],
+        tcp_connect_delay: float,
     ) -> tuple[list[int], list[int], list[str]]:
         rat_not_unsupported: list[int] = []
         rat_not_unknown: list[int] = []
@@ -295,6 +310,7 @@ class DoIPDiscoverer(AsyncScript):
 
             finally:
                 await conn.close()
+                await asyncio.sleep(tcp_connect_delay)
 
             targets.append(
                 f"doip://{tgt_hostname}:{tgt_port}?protocol_version={self.protocol_version}&activation_type={routing_activation_type:#x}&src_addr={source_address:#x}"
@@ -320,6 +336,7 @@ class DoIPDiscoverer(AsyncScript):
         correct_src: int,
         start: int,
         stop: int,
+        tcp_connect_delay: float,
         timeout: None | float = None,
     ) -> None:
         known_targets = []
@@ -418,12 +435,15 @@ class DoIPDiscoverer(AsyncScript):
                     await f.write(f"{target_addr:#x}: {e}\n")
                 # Re-establish DoIP connection
                 await conn.close()
+                await asyncio.sleep(tcp_connect_delay)
+
                 conn = await self.create_DoIP_conn(
                     tgt_hostname, tgt_port, correct_rat, correct_src, 0xAFFE
                 )
                 continue
 
         await conn.close()
+        await asyncio.sleep(tcp_connect_delay)
 
         logger.notice(
             f"[⚔️] It's dangerous to test alone, take one of these {len(known_targets)} known targets:"
