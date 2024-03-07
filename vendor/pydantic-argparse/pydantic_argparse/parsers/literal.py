@@ -60,7 +60,7 @@ def parse_field(
 
     # Add Literal Field
     parser.add_argument(
-        field.argname(),
+        *field.arg_names(),
         action=action,
         help=field.description(),
         dest=field.name,
