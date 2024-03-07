@@ -44,6 +44,7 @@ class RoutingActivationResponseCodes(IntEnum):
     AuthenticationMissing = 0x04
     ConfirmationRejected = 0x05
     UnsupportedActivationType = 0x06
+    TLSRequired = 0x07
     Success = 0x10
     SuccessConfirmationRequired = 0x11
 
