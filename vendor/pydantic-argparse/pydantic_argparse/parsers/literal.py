@@ -66,7 +66,8 @@ def parse_field(
         dest=field.name,
         metavar=metavar,
         required=field.arg_required(),
-        **field.arg_default()
+        **field.arg_default(),
+        **field.arg_const()
     )
 
     # Construct String Representation Mapping of Choices
