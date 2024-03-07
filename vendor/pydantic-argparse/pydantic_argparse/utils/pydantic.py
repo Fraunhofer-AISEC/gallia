@@ -33,7 +33,7 @@ from typing import (
 import pydantic
 from pydantic import BaseModel
 from pydantic.fields import FieldInfo
-from pydantic_argparse.utils.field import ArgField
+from pydantic_argparse.utils.field import ArgFieldInfo
 
 from .types import all_types
 
@@ -227,13 +227,13 @@ class PydanticField:
         """
         name = self.info.title or self.name
 
-        if isinstance(self.info, ArgField) and self.info.positional:
+        if isinstance(self.info, ArgFieldInfo) and self.info.positional:
             return name.upper(),
 
         prefix = "--no-" if invert else "--"
         long_name = f"{prefix}{name.replace('_', '-')}"
 
-        if isinstance(self.info, ArgField) and self.info.short is not None:
+        if isinstance(self.info, ArgFieldInfo) and self.info.short is not None:
             return f"-{self.info.short}", long_name
 
         return long_name,
@@ -273,7 +273,7 @@ class PydanticField:
                 Otherwise, return constituent type names.
         """
         # check metavar first
-        if isinstance(self.info, ArgField) and self.info.metavar is not None:
+        if isinstance(self.info, ArgFieldInfo) and self.info.metavar is not None:
             return self.info.metavar
 
         # otherwise default to the type
@@ -284,10 +284,10 @@ class PydanticField:
             return field_type.__name__.upper()
 
     def arg_required(self):
-        return self.info.is_required() and self.extra_default is None or isinstance(self.info, ArgField) and self.info.positional
+        return self.info.is_required() and self.extra_default is None or isinstance(self.info, ArgFieldInfo) and self.info.positional
 
     def arg_default(self):
-        return {} if self.extra_default is None or isinstance(self.info, ArgField) and self.info.positional else {'default': self.extra_default}
+        return {} if self.extra_default is None or isinstance(self.info, ArgFieldInfo) and self.info.positional else {'default': self.extra_default}
 
 
 def as_validator(
