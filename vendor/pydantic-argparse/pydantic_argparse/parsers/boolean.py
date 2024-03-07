@@ -70,7 +70,8 @@ def parse_field(
         help=field.description(),
         dest=field.name,
         required=field.arg_required(),
-        **field.arg_default()
+        **field.arg_default(),
+        **field.arg_const()
     )
 
     # Construct and Return Validator
