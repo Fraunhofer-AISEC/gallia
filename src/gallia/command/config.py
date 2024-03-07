@@ -10,7 +10,7 @@ from typing import Annotated, Any, TypeVar, Union, Unpack, get_args, get_origin
 from pydantic import BeforeValidator
 from pydantic.fields import _FromFieldInfoInputs
 from pydantic_argparse import BaseCommand
-from pydantic_argparse.utils.field import ArgField
+from pydantic_argparse.utils.field import ArgFieldInfo
 from pydantic_core import PydanticUndefined
 
 from gallia.config import Config
@@ -41,15 +41,15 @@ def idempotent(cls: type[T]) -> type[T]:
     return Annotated[cls, BeforeValidator(lambda x: x if isinstance(x, cls) else cls(x))]
 
 
-class ConfigArgField(ArgField):
+class ConfigArgFieldInfo(ArgFieldInfo):
     def __init__(
         self,
-        default: Any = PydanticUndefined,
-        positional: bool = False,
-        short: str | None = None,
-        metavar: str | None = None,
-        group: str | None = None,
-        config_section: str | None = None,
+        default: Any,
+        positional: bool,
+        short: str | None,
+        metavar: str | None,
+        group: str | None,
+        config_section: str | None,
         **kwargs: Unpack[_FromFieldInfoInputs],
     ):
         super().__init__(
@@ -62,6 +62,18 @@ class ConfigArgField(ArgField):
         )
 
         self.config_section = config_section
+
+
+def Field(
+    default: Any = PydanticUndefined,
+    positional: bool = False,
+    short: str | None = None,
+    metavar: str | None = None,
+    group: str | None = None,
+    config_section: str | None = None,
+    **kwargs: Unpack[_FromFieldInfoInputs],
+) -> Any:
+    return ConfigArgFieldInfo(default, positional, short, metavar, group, config_section, **kwargs)
 
 
 class GalliaBaseModel(BaseCommand, ABC):
@@ -87,10 +99,10 @@ class GalliaBaseModel(BaseCommand, ABC):
 
         for attribute, info in vars(cls).items():
             # Attribute specific annotation takes precedence
-            if isinstance(info, ArgField) and info.group is None:
+            if isinstance(info, ArgFieldInfo) and info.group is None:
                 info.group = argument_group
 
-            if isinstance(info, ConfigArgField):
+            if isinstance(info, ConfigArgFieldInfo):
                 # Attribute specific annotation takes precedence
                 if info.config_section is None:
                     info.config_section = config_section
@@ -128,7 +140,7 @@ class GalliaBaseModel(BaseCommand, ABC):
         result = {}
 
         for name, info in cls.model_fields.items():
-            if isinstance(info, ConfigArgField):
+            if isinstance(info, ConfigArgFieldInfo):
                 config_attribute = (
                     f"{info.config_section}.{name}" if info.config_section != "" else name
                 )
@@ -143,7 +155,7 @@ class GalliaBaseModel(BaseCommand, ABC):
         result = {}
 
         for name, info in cls.model_fields.items():
-            if isinstance(info, ConfigArgField):
+            if isinstance(info, ConfigArgFieldInfo):
                 config_attribute = f"GALLIA_{name.upper()}"
 
                 if (value := os.getenv(config_attribute)) is not None:
