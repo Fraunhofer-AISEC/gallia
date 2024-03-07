@@ -29,7 +29,7 @@ from pydantic import BaseModel, ValidationError
 
 from pydantic_argparse import parsers, utils
 from pydantic_argparse.argparse import actions
-from pydantic_argparse.utils.field import ArgField
+from pydantic_argparse.utils.field import ArgFieldInfo
 from pydantic_argparse.utils.nesting import _NestedArgumentParser
 from pydantic_argparse.utils.pydantic import PydanticField, PydanticModelT
 
@@ -295,7 +295,7 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
                         # TODO Print warning for invalid config
                         pass
 
-                if isinstance(field.info, ArgField) and field.info.group is not None:
+                if isinstance(field.info, ArgFieldInfo) and field.info.group is not None:
                     if field.info.group not in explicit_groups:
                         explicit_groups[field.info.group] = self.add_argument_group(field.info.group)
 
