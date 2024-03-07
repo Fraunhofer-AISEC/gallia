@@ -6,7 +6,7 @@ import asyncio
 import socket
 from argparse import Namespace
 from collections.abc import Iterable
-from itertools import chain, product
+from itertools import product
 from urllib.parse import parse_qs, urlparse
 
 import aiofiles
@@ -122,51 +122,53 @@ class DoIPDiscoverer(AsyncScript):
         # Politely ask for more details via UDP
         await self.gather_doip_details(tgt_hostname, tgt_port)
 
-        # Find correct RoutingActivationType
-        rat_success: list[int] = []
-        rat_wrong_source: list[int] = []
+        # Enumerate all valid RoutingActivationType/Source Address tuples, but only if required
+        rat_not_unsupported: Iterable[int]
+        rat_not_unknown: Iterable[int]
         if target is not None and "activation_type" in parse_qs(target.query):
             logger.notice("[📋] Skipping RoutingActivationType discovery because given by --target")
-            rat_success = [int(parse_qs(target.query)["activation_type"][0], 0)]
+            rat_not_unsupported = [int(parse_qs(target.query)["activation_type"][0], 0)]
         else:
-            logger.notice("[🔍] Enumerating RoutingActivationTypes")
-
-            (
-                rat_success,
-                rat_wrong_source,
-            ) = await self.enumerate_routing_activation_types(
-                tgt_hostname,
-                tgt_port,
-                int(parse_qs(target.query)["src_addr"][0], 0)
-                if target is not None and "src_addr" in parse_qs(target.query)
-                else 0xE00,
-            )
-
-        if len(rat_success) == 0 and len(rat_wrong_source) == 0:
-            logger.error(
-                "[🥾] Damn son, didn't find a single RoutingActivationType with unknown source?! OUTTA HERE!"
-            )
-            return 10
-
-        # Discovering correct source address for suitable RoutingActivationRequests
+            rat_not_unsupported = range(0x100)
         if target is not None and "src_addr" in parse_qs(target.query):
             logger.notice("[📋] Skipping SourceAddress discovery because given by --target")
-            targets = [
-                f"doip://{tgt_hostname}:{tgt_port}?protocol_version={self.protocol_version}&activation_type={rat:#x}&src_addr={parse_qs(target.query)['src_addr'][0]}"
-                for rat in rat_success
-            ]
-
+            rat_not_unknown = [int(parse_qs(target.query)["src_addr"][0], 0)]
         else:
-            logger.notice("[🔍] Enumerating SourceAddresses for all found RoutingActivationTypes")
-            targets = await self.enumerate_source_addresses(
-                tgt_hostname,
-                tgt_port,
-                chain(rat_success, rat_wrong_source),
+            rat_not_unknown = range(0x10000)
+
+        # We need to know whether the DoIP entity checks for RoutingActivationTypes or SourceAddresses first
+        # By requesting a RoutingActivation with reserved RAT and reserved SrcAddr, we see it based on the error
+        a, _, _ = await self.enumerate_routing_activation_requests(
+            tgt_hostname, tgt_port, [0x02], [0x00]
+        )
+        routing_activation_types_first = len(a) == 0
+
+        if routing_activation_types_first is True and len(rat_not_unsupported) != 1:
+            logger.notice("[🔍] Enumerating RoutingActivationTypes")
+            rat_not_unsupported, _, _ = await self.enumerate_routing_activation_requests(
+                tgt_hostname, tgt_port, range(0x100), [0x00]
             )
+            logger.notice(
+                f"[💎] Look what promising RoutingActivationTypes I've found: {', '.join([f'{x:#x}' for x in rat_not_unsupported])}"
+            )
+        elif routing_activation_types_first is False and len(rat_not_unknown) != 1:
+            logger.notice("[🔍] Enumerating SourceAddresses")
+            _, rat_not_unknown, _ = await self.enumerate_routing_activation_requests(
+                tgt_hostname, tgt_port, [0x02], range(0x10000)
+            )
+            logger.notice(
+                f"[💎] Look what promising SourceAddresses I've found: {', '.join([f'{x:#x}' for x in rat_not_unknown])}"
+            )
+
+        logger.notice("[🔍] Enumerating valid RoutingActivationType/SourceAddress tuples")
+        _, _, targets = await self.enumerate_routing_activation_requests(
+            tgt_hostname, tgt_port, rat_not_unsupported, rat_not_unknown
+        )
 
         if len(targets) != 1:
             logger.error(
-                f"[💣] I found {len(targets)} valid RoutingActivationType/SourceAddress combos, but can only continue with exactly one; choose your weapon with --target!"
+                f"[💣] I found {len(targets)} valid RoutingActivationType/SourceAddress tuples, "
+                "but can only continue with exactly one; choose your weapon with --target!"
             )
             return 20
 
@@ -249,54 +251,66 @@ class DoIPDiscoverer(AsyncScript):
 
         sock.close()
 
-    async def enumerate_routing_activation_types(
+    async def enumerate_routing_activation_requests(
         self,
         tgt_hostname: str,
         tgt_port: int,
-        src_addr: int,
-    ) -> tuple[list[int], list[int]]:
+        routing_activation_types: Iterable[int],
+        source_addresses: Iterable[int],
+    ) -> tuple[list[int], list[int], list[str]]:
         rat_not_unsupported: list[int] = []
-        rat_success: list[int] = []
-        rat_wrong_source: list[int] = []
-        for routing_activation_type in range(0x100):
+        rat_not_unknown: list[int] = []
+        targets: list[str] = []
+
+        for routing_activation_type, source_address in product(
+            routing_activation_types, source_addresses
+        ):
             try:
                 conn = await DoIPConnection.connect(
                     tgt_hostname,
                     tgt_port,
-                    src_addr,
-                    0xAFFE,
+                    source_address,
+                    0xAFFE,  # Dummy target address, never actually used
                     so_linger=True,  # Ensure that connections do not remain in TIME_WAIT
                     protocol_version=self.protocol_version,
                 )
             except OSError as e:
-                logger.error(f"[🚨] Mr. Stark I don't feel so good: {e!r}")
-                return rat_success, rat_wrong_source
+                logger.warning(
+                    f"[🚨] J.A.R.V.I.S., recheck rat {routing_activation_type:#x} and src_addr {source_address:#x}; they failed with {e!r}"
+                )
+                continue
 
             try:
                 await conn.write_routing_activation_request(routing_activation_type)
-                rat_success.append(routing_activation_type)
-                logger.notice(
-                    f"[🤯] Holy moly, it actually worked for activation_type {routing_activation_type:#x} and src_addr {src_addr:#x}!!!"
-                )
             except DoIPRoutingActivationDeniedError as e:
-                logger.info(f"[🌟] splendid, {routing_activation_type:#x} yields {e.rac_code.name}")
+                logger.info(
+                    f"[🌟] Brilliant, RoutingActivationType {routing_activation_type:#x} and SourceAddress {source_address:#x} yields {e.rac_code.name}"
+                )
 
                 if e.rac_code != RoutingActivationResponseCodes.UnsupportedActivationType:
                     rat_not_unsupported.append(routing_activation_type)
-
-                if e.rac_code == RoutingActivationResponseCodes.UnknownSourceAddress:
-                    rat_wrong_source.append(routing_activation_type)
+                if e.rac_code != RoutingActivationResponseCodes.UnknownSourceAddress:
+                    rat_not_unknown.append(source_address)
+                continue
 
             finally:
                 await conn.close()
 
-        if len(rat_not_unsupported) > 0:
-            logger.notice(
-                f"[💎] Look what RoutingActivationTypes I've found that are not 'unsupported': {', '.join([f'{x:#x}' for x in rat_not_unsupported])}"
+            targets.append(
+                f"doip://{tgt_hostname}:{tgt_port}?protocol_version={self.protocol_version}&activation_type={routing_activation_type:#x}&src_addr={source_address:#x}"
             )
-        else:
-            logger.notice("[😿] Darn boi, all RoutingActivationTypes are unsupported!")
-        return rat_success, rat_wrong_source
+            logger.notice(f"[🤯] Holy moly, it actually worked: {targets[-1]}")
+            async with aiofiles.open(
+                self.artifacts_dir.joinpath("1_valid_routing_activation_requests.txt"), "a"
+            ) as f:
+                await f.write(f"{targets[-1]}\n")
+
+        if len(targets) > 0:
+            logger.notice("[⚔️] It's dangerous to test alone, take one of these:")
+            for item in targets:
+                logger.notice(item)
+
+        return rat_not_unsupported, rat_not_unknown, targets
 
     async def enumerate_target_addresses(  # noqa: PLR0913
         self,
@@ -476,78 +490,6 @@ class DoIPDiscoverer(AsyncScript):
                 )
                 continue
             return None, payload.UserData
-
-    async def enumerate_source_addresses(
-        self,
-        tgt_hostname: str,
-        tgt_port: int,
-        valid_routing_activation_types: Iterable[int],
-    ) -> list[str]:
-        known_sourceAddresses: list[int] = []
-        denied_sourceAddresses: list[int] = []
-        targets: list[str] = []
-        for routing_activation_type, source_address in product(
-            valid_routing_activation_types, range(0x0000, 0x10000)
-        ):
-            try:
-                conn = await DoIPConnection.connect(
-                    tgt_hostname,
-                    tgt_port,
-                    source_address,
-                    0xAFFE,
-                    protocol_version=self.protocol_version,
-                )
-            except OSError as e:
-                logger.error(f"[🚨] Mr. Stark I don't feel so good: {e!r}")
-                return []
-
-            try:
-                await conn.write_routing_activation_request(routing_activation_type)
-            except DoIPRoutingActivationDeniedError as e:
-                logger.info(f"[🌟] splendid, {source_address:#x} yields {e.rac_code.name}")
-
-                if e.rac_code != RoutingActivationResponseCodes.UnknownSourceAddress:
-                    denied_sourceAddresses.append(source_address)
-                    async with aiofiles.open(
-                        self.artifacts_dir.joinpath("2_denied_src_addresses.txt"), "a"
-                    ) as f:
-                        await f.write(
-                            f"activation_type={routing_activation_type:#x},src_addr={source_address:#x}: {e.rac_code.name}\n"
-                        )
-
-                continue
-
-            finally:
-                await conn.close()
-
-            logger.notice(
-                f"[🤯] Holy moly, it actually worked for activation_type {routing_activation_type:#x} and src_addr {source_address:#x}!!!"
-            )
-            known_sourceAddresses.append(source_address)
-            targets.append(
-                f"doip://{tgt_hostname}:{tgt_port}?protocol_version={self.protocol_version}&activation_type={routing_activation_type:#x}&src_addr={source_address:#x}"
-            )
-            async with aiofiles.open(
-                self.artifacts_dir.joinpath("1_valid_src_addresses.txt"), "a"
-            ) as f:
-                await f.write(f"{targets[-1]}\n")
-
-        # Print valid SourceAddresses and suitable target string for config
-        if len(denied_sourceAddresses) > 0:
-            logger.notice(
-                f"[💀] Look what SourceAddresses got denied: {', '.join([f'{x:#x}' for x in denied_sourceAddresses])}"
-            )
-        if len(targets) > 0:
-            logger.notice(
-                f"[💎] Look what valid SourceAddresses I've found: {', '.join([f'{x:#x}' for x in known_sourceAddresses])}"
-            )
-            logger.notice("[⚔️] It's dangerous to test alone, take one of these:")
-            for item in targets:
-                logger.notice(item)
-        else:
-            logger.notice("[😭] Did not find any valid source address!")
-
-        return targets
 
     async def run_udp_discovery(self) -> list[tuple[str, int]]:
         all_ips = []
