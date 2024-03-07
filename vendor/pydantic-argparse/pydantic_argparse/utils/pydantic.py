@@ -283,11 +283,14 @@ class PydanticField:
                 return "|".join(t.__name__.upper() for t in field_type)
             return field_type.__name__.upper()
 
-    def arg_required(self):
+    def arg_required(self) -> bool:
         return self.info.is_required() and self.extra_default is None or isinstance(self.info, ArgFieldInfo) and self.info.positional
 
-    def arg_default(self):
+    def arg_default(self) -> dict[str, Any]:
         return {} if self.extra_default is None or isinstance(self.info, ArgFieldInfo) and self.info.positional else {'default': self.extra_default}
+
+    def arg_const(self) -> dict[str, Any]:
+        return self.info.const if isinstance(self.info, ArgFieldInfo) and self.info.const is not None else {}
 
 
 def as_validator(
