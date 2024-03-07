@@ -4,13 +4,13 @@ from pydantic.fields import FieldInfo, _FromFieldInfoInputs
 from pydantic_core import PydanticUndefined
 
 
-class ArgField(FieldInfo):
+class ArgFieldInfo(FieldInfo):
     def __init__(self,
-                 default: Any = PydanticUndefined,
-                 positional: bool = False,
-                 short: str | None = None,
-                 metavar: str | None = None,
-                 group: str | None = None,
+                 default: Any,
+                 positional: bool,
+                 short: str | None,
+                 metavar: str | None,
+                 group: str | None,
                  **kwargs: Unpack[_FromFieldInfoInputs]
                  ):
         super().__init__(default=default, **kwargs)
@@ -19,3 +19,13 @@ class ArgField(FieldInfo):
         self.short = short
         self.metavar = metavar
         self.group = group
+
+
+def Field(default: Any = PydanticUndefined,
+                 positional: bool = False,
+                 short: str | None = None,
+                 metavar: str | None = None,
+                 group: str | None = None,
+                 **kwargs: Unpack[_FromFieldInfoInputs]
+                 ) -> Any:
+    return ArgFieldInfo(default, positional, short, metavar, group, **kwargs)
