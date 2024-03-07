@@ -29,14 +29,9 @@ from pydantic import BaseModel, ValidationError
 
 from pydantic_argparse import parsers, utils
 from pydantic_argparse.argparse import actions
+from pydantic_argparse.utils.field import ArgField
 from pydantic_argparse.utils.nesting import _NestedArgumentParser
 from pydantic_argparse.utils.pydantic import PydanticField, PydanticModelT
-
-
-
-@dataclass
-class ArgumentGroup:
-    name: str | None
 
 
 class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
@@ -300,14 +295,12 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
                         # TODO Print warning for invalid config
                         pass
 
-                for annotation in field.info.metadata:
-                    if isinstance(annotation, ArgumentGroup) and annotation.name is not None:
-                        if annotation.name not in explicit_groups:
-                            explicit_groups[annotation.name] = self.add_argument_group(annotation.name)
+                if isinstance(field.info, ArgField) and field.info.group is not None:
+                    if field.info.group not in explicit_groups:
+                        explicit_groups[field.info.group] = self.add_argument_group(field.info.group)
 
-                        validator = parsers.add_field(explicit_groups[annotation.name], field)
-                        added = True
-                        break
+                    validator = parsers.add_field(explicit_groups[field.info.group], field)
+                    added = True
 
                 if not added:
                     validator = parsers.add_field(parser, field)

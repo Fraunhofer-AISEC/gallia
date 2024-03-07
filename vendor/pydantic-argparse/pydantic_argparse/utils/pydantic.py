@@ -33,6 +33,7 @@ from typing import (
 import pydantic
 from pydantic import BaseModel
 from pydantic.fields import FieldInfo
+from pydantic_argparse.utils.field import ArgField
 
 from .types import all_types
 
@@ -214,7 +215,7 @@ class PydanticField:
             #   - field is not a pydantic BaseModel or it can't be found
             return default
 
-    def argname(self, invert: bool = False) -> str:
+    def arg_names(self, invert: bool = False) -> tuple[str, str] | tuple[str]:
         """Standardises argument name when printing to command line.
 
         Args:
@@ -224,13 +225,18 @@ class PydanticField:
             str: Standardised name of the argument. Checks `pydantic.Field` title first,
                 but defaults to the field name.
         """
-        # TODO: this should return a tuple to allow short name args
-        # Construct Prefix
-        prefix = "--no-" if invert else "--"
         name = self.info.title or self.name
 
-        # Prepend prefix, replace '_' with '-'
-        return f"{prefix}{name.replace('_', '-')}"
+        if isinstance(self.info, ArgField) and self.info.positional:
+            return name.upper(),
+
+        prefix = "--no-" if invert else "--"
+        long_name = f"{prefix}{name.replace('_', '-')}"
+
+        if isinstance(self.info, ArgField) and self.info.short is not None:
+            return f"-{self.info.short}", long_name
+
+        return long_name,
 
     def description(self) -> str:
         """Standardises argument description.
@@ -263,12 +269,12 @@ class PydanticField:
         """Generate the metavar name for the field.
 
         Returns:
-            Optional[str]: Field metavar if the `Field.info.alias` exists.
+            Optional[str]: Field metavar if of type ArgField and has metavar set.
                 Otherwise, return constituent type names.
         """
-        # check alias first
-        if self.info.alias is not None:
-            return self.info.alias.upper()
+        # check metavar first
+        if isinstance(self.info, ArgField) and self.info.metavar is not None:
+            return self.info.metavar
 
         # otherwise default to the type
         field_type = self.get_type()
@@ -278,10 +284,10 @@ class PydanticField:
             return field_type.__name__.upper()
 
     def arg_required(self):
-        return self.info.is_required() and self.extra_default is None
+        return self.info.is_required() and self.extra_default is None or isinstance(self.info, ArgField) and self.info.positional
 
     def arg_default(self):
-        return {} if self.extra_default is None else {'default': self.extra_default}
+        return {} if self.extra_default is None or isinstance(self.info, ArgField) and self.info.positional else {'default': self.extra_default}
 
 
 def as_validator(
