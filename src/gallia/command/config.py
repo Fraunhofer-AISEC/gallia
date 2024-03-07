@@ -49,6 +49,7 @@ class ConfigArgFieldInfo(ArgFieldInfo):
         short: str | None,
         metavar: str | None,
         group: str | None,
+        const: Any,
         config_section: str | None,
         **kwargs: Unpack[_FromFieldInfoInputs],
     ):
@@ -58,6 +59,7 @@ class ConfigArgFieldInfo(ArgFieldInfo):
             short=short,
             metavar=metavar,
             group=group,
+            const=const,
             **kwargs,
         )
 
@@ -70,10 +72,13 @@ def Field(
     short: str | None = None,
     metavar: str | None = None,
     group: str | None = None,
+    const: Any = PydanticUndefined,
     config_section: str | None = None,
     **kwargs: Unpack[_FromFieldInfoInputs],
 ) -> Any:
-    return ConfigArgFieldInfo(default, positional, short, metavar, group, config_section, **kwargs)
+    return ConfigArgFieldInfo(
+        default, positional, short, metavar, group, const, config_section, **kwargs
+    )
 
 
 class GalliaBaseModel(BaseCommand, ABC):

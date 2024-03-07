@@ -57,7 +57,8 @@ def parse_field(
         dest=field.name,
         metavar=field.metavar(),
         required=field.arg_required(),
-        **field.arg_default()
+        **field.arg_default(),
+        **field.arg_const()
     )
 
     # Construct and Return Validator
