@@ -34,8 +34,7 @@ class BaseNetzteil(ABC):
         self.ident = await self.get_ident()
 
     @abstractmethod
-    async def status(self) -> dict[str, Any]:
-        ...
+    async def status(self) -> dict[str, Any]: ...
 
     @abstractmethod
     async def get_ident(self) -> str:

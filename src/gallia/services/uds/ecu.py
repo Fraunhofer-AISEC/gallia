@@ -72,8 +72,7 @@ class ECU(UDSClient):
         self.db_handler: DBHandler | None = None
         self.implicit_logging = True
 
-    async def connect(self) -> None:
-        ...
+    async def connect(self) -> None: ...
 
     async def properties(
         self, fresh: bool = False, config: UDSRequestConfig | None = None

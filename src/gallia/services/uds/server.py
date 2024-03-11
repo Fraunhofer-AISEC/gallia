@@ -50,8 +50,7 @@ class UDSServer(ABC):
     @abstractmethod
     def supported_services(
         self,
-    ) -> dict[int, dict[UDSIsoServices, list[int] | None]]:
-        ...
+    ) -> dict[int, dict[UDSIsoServices, list[int] | None]]: ...
 
     def default_response_if_service_not_supported(
         self, request: service.UDSRequest
@@ -291,8 +290,7 @@ class UDSServer(ABC):
     @abstractmethod
     async def respond_after_default(
         self, request: service.UDSRequest
-    ) -> service.UDSResponse | None:
-        ...
+    ) -> service.UDSResponse | None: ...
 
 
 class RNG(random.Random):
@@ -758,8 +756,7 @@ class UDSServerTransport:
         self.target = target
         self.last_time_active = time()
 
-    async def run(self) -> None:
-        ...
+    async def run(self) -> None: ...
 
     async def handle_request(self, request_pdu: bytes) -> tuple[bytes | None, float]:
         start = time()

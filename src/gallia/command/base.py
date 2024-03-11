@@ -130,8 +130,7 @@ class BaseCommand(ABC):
         self.log_file_handlers = []
 
     @abstractmethod
-    def run(self, args: Namespace) -> int:
-        ...
+    def run(self, args: Namespace) -> int: ...
 
     def run_hook(
         self,
@@ -259,8 +258,7 @@ class BaseCommand(ABC):
                 help="Base directory for artifacts",
             )
 
-    def configure_parser(self) -> None:
-        ...
+    def configure_parser(self) -> None: ...
 
     async def _db_insert_run_meta(self, args: Namespace) -> None:
         if args.db is not None:
@@ -448,15 +446,12 @@ class Script(BaseCommand, ABC):
 
     GROUP = "script"
 
-    def setup(self, args: Namespace) -> None:
-        ...
+    def setup(self, args: Namespace) -> None: ...
 
     @abstractmethod
-    def main(self, args: Namespace) -> None:
-        ...
+    def main(self, args: Namespace) -> None: ...
 
-    def teardown(self, args: Namespace) -> None:
-        ...
+    def teardown(self, args: Namespace) -> None: ...
 
     def run(self, args: Namespace) -> int:
         self.setup(args)
@@ -475,15 +470,12 @@ class AsyncScript(BaseCommand, ABC):
 
     GROUP = "script"
 
-    async def setup(self, args: Namespace) -> None:
-        ...
+    async def setup(self, args: Namespace) -> None: ...
 
     @abstractmethod
-    async def main(self, args: Namespace) -> None:
-        ...
+    async def main(self, args: Namespace) -> None: ...
 
-    async def teardown(self, args: Namespace) -> None:
-        ...
+    async def teardown(self, args: Namespace) -> None: ...
 
     async def _run(self, args: Namespace) -> None:
         await self.setup(args)
@@ -528,8 +520,7 @@ class Scanner(AsyncScript, ABC):
         self.dumpcap: Dumpcap | None = None
 
     @abstractmethod
-    async def main(self, args: Namespace) -> None:
-        ...
+    async def main(self, args: Namespace) -> None: ...
 
     async def setup(self, args: Namespace) -> None:
         if args.target is None:
