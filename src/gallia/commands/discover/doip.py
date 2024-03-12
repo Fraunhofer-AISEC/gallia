@@ -24,9 +24,12 @@ from gallia.transports.doip import (
     DoIPConnection,
     DoIPNegativeAckError,
     DoIPRoutingActivationDeniedError,
+    GenericHeader,
+    PayloadTypes,
     RoutingActivationRequestTypes,
     RoutingActivationResponseCodes,
     TimingAndCommunicationParameters,
+    VehicleAnnouncementMessage,
 )
 
 logger = get_logger("gallia.discover.doip")
@@ -499,26 +502,24 @@ class DoIPDiscoverer(AsyncScript):
         for ip in all_ips:
             logger.info(f"[💌] Sending DoIP VehicleIdentificationRequest to {ip.broadcast}")
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+            sock.setblocking(False)
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-            sock.settimeout(2)
             sock.bind((ip.address, 0))
+            loop = asyncio.get_running_loop()
 
-            sock.sendto(b"\xff\x00\x00\x01\x00\x00\x00\x00", (ip.broadcast, 13400))
+            hdr = GenericHeader(0xFF, PayloadTypes.VehicleIdentificationRequestMessage, 0x00)
+            await loop.sock_sendto(sock, hdr.pack(), (ip.broadcast, 13400))
             try:
-                data, addr = sock.recvfrom(1024)
+                while True:
+                    data, addr = await asyncio.wait_for(loop.sock_recvfrom(sock, 1024), 2)
+                    info = VehicleAnnouncementMessage.unpack(data[8:])
+                    logger.notice(f"[💝]: {addr} responded: {info}")
+                    found.append(addr)
             except TimeoutError:
-                logger.info("[💔] no response")
+                logger.info("[💔] Reached timeout...")
                 continue
             finally:
                 sock.close()
-
-            # Hardcoded slices
-            vin = data[8 : 8 + 17]
-            target_addr = int.from_bytes(data[25:27], "big")
-            logger.notice(
-                f"[💝]: {addr} responded with VIN {vin.decode('ascii')} and target_addr {target_addr:#x}"
-            )
-            found.append(addr)
 
         if len(found) > 0:
             logger.notice("[💎] Look what valid hosts I've found:")
