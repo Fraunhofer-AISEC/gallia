@@ -29,14 +29,23 @@ class ProtocolVersions(IntEnum):
 
 @unique
 class RoutingActivationRequestTypes(IntEnum):
+    RESERVED = 0xFF
+    ManufacturerSpecific = 0xFE
     Default = 0x00
     WWH_OBD = 0x01
     CentralSecurity = 0xE0
 
+    @classmethod
+    def _missing_(cls, value: Any) -> RoutingActivationRequestTypes:
+        if value in range(0xE1, 0x100):
+            return cls.ManufacturerSpecific
+        return cls.RESERVED
+
 
 @unique
 class RoutingActivationResponseCodes(IntEnum):
-    UNDEFINED = -0x01
+    RESERVED = 0xFF
+    ManufacturerSpecific = 0xFE
     UnknownSourceAddress = 0x00
     NoResources = 0x01
     InvalidConnectionEntry = 0x02
@@ -50,7 +59,9 @@ class RoutingActivationResponseCodes(IntEnum):
 
     @classmethod
     def _missing_(cls, value: Any) -> RoutingActivationResponseCodes:
-        return cls.UNDEFINED
+        if value in range(0xE0, 0xFF):
+            return cls.ManufacturerSpecific
+        return cls.RESERVED
 
 
 class DoIPRoutingActivationDeniedError(ConnectionAbortedError):
@@ -88,7 +99,7 @@ class DiagnosticMessagePositiveAckCodes(IntEnum):
 
 @unique
 class DiagnosticMessageNegativeAckCodes(IntEnum):
-    UNDEFINED = -0x01
+    RESERVED = 0xFF
     InvalidSourceAddress = 0x02
     UnknownTargetAddress = 0x03
     DiagnosticMessageTooLarge = 0x04
@@ -99,7 +110,7 @@ class DiagnosticMessageNegativeAckCodes(IntEnum):
 
     @classmethod
     def _missing_(cls, value: Any) -> DiagnosticMessageNegativeAckCodes:
-        return cls.UNDEFINED
+        return cls.RESERVED
 
 
 class DoIPNegativeAckError(BrokenPipeError):
@@ -112,7 +123,7 @@ class DoIPNegativeAckError(BrokenPipeError):
 
 @unique
 class GenericDoIPHeaderNACKCodes(IntEnum):
-    UNDEFINED = -0x01
+    RESERVED = 0xFF
     IncorrectPatternFormat = 0x00
     UnknownPayloadType = 0x01
     MessageTooLarge = 0x02
@@ -121,7 +132,7 @@ class GenericDoIPHeaderNACKCodes(IntEnum):
 
     @classmethod
     def _missing_(cls, value: Any) -> GenericDoIPHeaderNACKCodes:
-        return cls.UNDEFINED
+        return cls.RESERVED
 
 
 class DoIPGenericHeaderNACKError(ConnectionAbortedError):
@@ -193,7 +204,7 @@ class GenericDoIPHeaderNACK:
     def unpack(cls, data: bytes) -> GenericDoIPHeaderNACK:
         (generic_header_NACK_code,) = struct.unpack("!B", data)
         return cls(
-            generic_header_NACK_code,
+            GenericDoIPHeaderNACKCodes(generic_header_NACK_code),
         )
 
 
@@ -244,18 +255,21 @@ class VehicleAnnouncementMessage:
 
 @unique
 class FurtherActionCodes(IntEnum):
-    RESERVED = 0x01
+    RESERVED = 0x0F
+    ManufacturerSpecific = 0xFF
     NoFurtherActionRequired = 0x00
     RoutingActivationRequiredToInitiateCentralSecurity = 0x10
 
     @classmethod
     def _missing_(cls, value: Any) -> FurtherActionCodes:
+        if value in range(0x11, 0x100):
+            return cls.ManufacturerSpecific
         return cls.RESERVED
 
 
 @unique
 class SynchronisationStatusCodes(IntEnum):
-    RESERVED = 0x01
+    RESERVED = 0xFF
     VINGIDSynchronized = 0x00
     IncompleteVINGIDNotSynchronized = 0x10
 
