@@ -26,6 +26,7 @@ from gallia.transports.doip import (
     DoIPRoutingActivationDeniedError,
     GenericHeader,
     PayloadTypes,
+    ProtocolVersions,
     RoutingActivationRequestTypes,
     RoutingActivationResponseCodes,
     TimingAndCommunicationParameters,
@@ -45,6 +46,8 @@ class DoIPDiscoverer(AsyncScript):
     COMMAND = "doip"
     SHORT_HELP = "zero-knowledge DoIP enumeration scanner"
     HAS_ARTIFACTS_DIR = True
+
+    protocol_version = ProtocolVersions.ISO_13400_2_2019.value
 
     def configure_parser(self) -> None:
         self.parser.add_argument(
@@ -145,7 +148,7 @@ class DoIPDiscoverer(AsyncScript):
         if target is not None and "src_addr" in parse_qs(target.query):
             logger.notice("[📋] Skipping SourceAddress discovery because given by --target")
             targets = [
-                f"doip://{tgt_hostname}:{tgt_port}?activation_type={rat:#x}&src_addr={parse_qs(target.query)['src_addr'][0]}"
+                f"doip://{tgt_hostname}:{tgt_port}?protocol_version={self.protocol_version}&activation_type={rat:#x}&src_addr={parse_qs(target.query)['src_addr'][0]}"
                 for rat in rat_success
             ]
 
@@ -208,6 +211,7 @@ class DoIPDiscoverer(AsyncScript):
                     src_addr,
                     0xAFFE,
                     so_linger=True,  # Ensure that connections do not remain in TIME_WAIT
+                    protocol_version=self.protocol_version,
                 )
             except OSError as e:
                 logger.error(f"[🚨] Mr. Stark I don't feel so good: {e!r}")
@@ -260,7 +264,7 @@ class DoIPDiscoverer(AsyncScript):
             logger.debug(f"[🚧] Attempting connection to {target_addr:#x}")
 
             conn.target_addr = target_addr
-            current_target = f"doip://{tgt_hostname}:{tgt_port}?activation_type={correct_rat:#x}&src_addr={correct_src:#x}&target_addr={target_addr:#x}"
+            current_target = f"doip://{tgt_hostname}:{tgt_port}?protocol_version={self.protocol_version}&activation_type={correct_rat:#x}&src_addr={correct_src:#x}&target_addr={target_addr:#x}"
 
             try:
                 req = TesterPresentRequest(suppress_response=False)
@@ -390,6 +394,7 @@ class DoIPDiscoverer(AsyncScript):
                     src_addr,
                     target_addr,
                     so_linger=True,  # Ensure that connections do not remain in TIME_WAIT
+                    protocol_version=self.protocol_version,
                 )
                 logger.info("[📫] Sending RoutingActivationRequest")
                 await conn.write_routing_activation_request(
@@ -435,6 +440,7 @@ class DoIPDiscoverer(AsyncScript):
                     tgt_port,
                     source_address,
                     0xAFFE,
+                    protocol_version=self.protocol_version,
                 )
             except OSError as e:
                 logger.error(f"[🚨] Mr. Stark I don't feel so good: {e!r}")
@@ -464,7 +470,7 @@ class DoIPDiscoverer(AsyncScript):
             )
             known_sourceAddresses.append(source_address)
             targets.append(
-                f"doip://{tgt_hostname}:{tgt_port}?activation_type={routing_activation_type:#x}&src_addr={source_address:#x}"
+                f"doip://{tgt_hostname}:{tgt_port}?protocol_version={self.protocol_version}&activation_type={routing_activation_type:#x}&src_addr={source_address:#x}"
             )
             async with aiofiles.open(
                 self.artifacts_dir.joinpath("1_valid_src_addresses.txt"), "a"
