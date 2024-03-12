@@ -204,6 +204,7 @@ class DoIPDiscoverer(AsyncScript):
                     tgt_port,
                     src_addr,
                     0xAFFE,
+                    so_linger=True,  # Ensure that connections do not remain in TIME_WAIT
                 )
             except OSError as e:
                 logger.error(f"[🚨] Mr. Stark I don't feel so good: {e!r}")
@@ -385,6 +386,7 @@ class DoIPDiscoverer(AsyncScript):
                     port,
                     src_addr,
                     target_addr,
+                    so_linger=True,  # Ensure that connections do not remain in TIME_WAIT
                 )
                 logger.info("[📫] Sending RoutingActivationRequest")
                 await conn.write_routing_activation_request(
