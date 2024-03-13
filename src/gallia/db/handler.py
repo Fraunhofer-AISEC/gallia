@@ -10,6 +10,7 @@ from typing import Any
 
 import aiosqlite
 
+from gallia.command.config import GalliaBaseModel
 from gallia.db.log import LogMode
 from gallia.log import get_logger
 from gallia.services.uds.core.service import (
@@ -28,7 +29,7 @@ def bytes_repr(data: bytes) -> str:
     return bytes_repr_(data, False, None)
 
 
-schema_version = "3"
+schema_version = "4.0"
 
 DB_SCHEMA = f"""
 CREATE TABLE IF NOT EXISTS version (
@@ -50,16 +51,14 @@ CREATE TABLE IF NOT EXISTS address (
 CREATE TABLE IF NOT EXISTS run_meta (
   id integer primary key,
   script text not null,
-  arguments json not null check(json_valid(arguments)),
-  command_meta json not null check(json_valid(arguments)),
-  settings json not null check(json_valid(arguments)),
+  config json not null check(json_valid(arguments)),
   start_time real not null,
   start_timezone text not null,
   end_time real,
   end_timezone text check((end_timezone is null) = (end_time is null)),
   exit_code int,
   path text,
-  exclude BOOLEAN
+  exclude boolean
 );
 CREATE TABLE IF NOT EXISTS error_log (
   level int not null,
@@ -70,7 +69,7 @@ CREATE TABLE IF NOT EXISTS error_log (
 );
 CREATE TABLE IF NOT EXISTS discovery_run (
   id integer primary key,
-  protocol str not null,
+  protocol text not null,
   meta int references run_meta(id) on update cascade on delete cascade
 );
 CREATE TABLE IF NOT EXISTS scan_run (
@@ -199,9 +198,7 @@ class DBHandler:
     async def insert_run_meta(  # noqa: PLR0913
         self,
         script: str,
-        arguments: list[str],
-        command_meta: bytes,
-        settings: dict[str, str | int | float],
+        config: GalliaBaseModel,
         start_time: datetime,
         path: Path,
     ) -> None:
@@ -209,16 +206,14 @@ class DBHandler:
 
         query = (
             "INSERT INTO "
-            "run_meta(script, arguments, command_meta, settings, start_time, start_timezone, path, exclude) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, FALSE)"
+            "run_meta(script, config, settings, start_time, start_timezone, path, exclude) "
+            "VALUES (?, ?, ?, ?, ?, FALSE)"
         )
         cursor = await self.connection.execute(
             query,
             (
                 script,
-                json.dumps(arguments),
-                command_meta,
-                json.dumps(settings),
+                config.model_dump_json(),
                 start_time.timestamp(),
                 start_time.tzname(),
                 str(path),

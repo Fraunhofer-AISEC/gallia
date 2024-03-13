@@ -217,7 +217,8 @@ def lazy_import(name: str) -> ModuleType:
     return module
 
 
-def dump_args(args: Namespace) -> dict[str, str | int | float]:
+# TODO: (Re)move these functions
+def dump_args(args: Any) -> dict[str, str | int | float]:
     settings = {}
     for key, value in args.__dict__.items():
         match value:
@@ -227,7 +228,7 @@ def dump_args(args: Namespace) -> dict[str, str | int | float]:
     return settings
 
 
-def get_log_level(args: Namespace) -> Loglevel:
+def get_log_level(args: Any) -> Loglevel:
     level = Loglevel.INFO
     if hasattr(args, "verbose"):
         if args.verbose == 1:
@@ -237,7 +238,7 @@ def get_log_level(args: Namespace) -> Loglevel:
     return level
 
 
-def get_file_log_level(args: Namespace) -> Loglevel:
+def get_file_log_level(args: Any) -> Loglevel:
     level = Loglevel.DEBUG
     if hasattr(args, "trace_log"):
         if args.trace_log:
