@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import argparse
 import asyncio
 import os
 import os.path
@@ -10,7 +9,6 @@ import shutil
 import signal
 import sys
 from abc import ABC, abstractmethod
-from argparse import ArgumentParser, Namespace
 from datetime import UTC, datetime
 from enum import Enum, unique
 from logging import Handler
@@ -22,7 +20,7 @@ from typing import Protocol, cast
 import msgspec
 
 from gallia import exitcodes
-from gallia.config import Config
+from gallia.command.config import Field, GalliaBaseModel
 from gallia.db.handler import DBHandler
 from gallia.dumpcap import Dumpcap
 from gallia.log import add_zst_log_handler, get_logger, tz
@@ -30,7 +28,7 @@ from gallia.plugins import load_transport
 from gallia.powersupply import PowerSupply, PowerSupplyURI
 from gallia.services.uds.core.exception import UDSException
 from gallia.transports import BaseTransport, TargetURI
-from gallia.utils import camel_to_snake, dump_args, get_file_log_level
+from gallia.utils import camel_to_snake, get_file_log_level
 
 
 @unique
@@ -48,18 +46,8 @@ class HookVariant(Enum):
     POST = "post"
 
 
-class CommandMeta(msgspec.Struct):
-    command: str | None
-    group: str | None
-    subgroup: str | None
-
-    def json(self) -> str:
-        return msgspec.json.encode(self).decode()
-
-
 class RunMeta(msgspec.Struct):
     command: list[str]
-    command_meta: CommandMeta
     start_time: str
     end_time: str
     exit_code: int
@@ -118,6 +106,25 @@ if sys.platform == "win32":
             pass
 
 
+class BaseCommandConfig(GalliaBaseModel):
+    verbose: int = Field(0, description="increase verbosity on the console", short="v")
+    no_volatile_info: bool = Field(
+        False, description="do not overwrite log lines with level info or lower in terminal output"
+    )
+    trace_log: bool = Field(False, description="set the loglevel of the logfile to TRACE")
+    pre_hook: str | None = Field(
+        None, description="shell script to run before the main entry_point", metavar="SCRIPT"
+    )
+    post_hook: str | None = Field(
+        None, description="shell script to run after the main entry_point", metavar="SCRIPT"
+    )
+    hooks: bool = Field(True, description="execute pre and post hooks")
+    lock_file: Path | None = Field(
+        None, description="path to file used for a posix lock", metavar="PATH"
+    )
+    db: Path | None = Field(description="Path to sqlite3 database")
+
+
 class BaseCommand(FlockMixin, ABC):
     """BaseCommand is the baseclass for all gallia commands.
     This class can be used in standalone scripts via the
@@ -132,12 +139,6 @@ class BaseCommand(FlockMixin, ABC):
     The main entry_point is :meth:`entry_point()`.
     """
 
-    #: The command name when used in the gallia CLI.
-    COMMAND: str | None = None
-    #: The group name when used in the gallia CLI.
-    GROUP: str | None = None
-    #: The subgroup name when used in the gallia CLI.
-    SUBGROUP: str | None = None
     #: The string which is shown on the cli with --help.
     SHORT_HELP: str | None = None
     #: The string which is shown at the bottom of --help.
@@ -153,31 +154,25 @@ class BaseCommand(FlockMixin, ABC):
 
     log_file_handlers: list[Handler]
 
-    def __init__(self, parser: ArgumentParser, config: Config = Config()) -> None:
+    def __init__(self, config: BaseCommandConfig) -> None:
         self.id = camel_to_snake(self.__class__.__name__)
-        self.parser = parser
         self.config = config
         self.artifacts_dir = Path()
         self.run_meta = RunMeta(
-            command=sys.argv,
-            command_meta=CommandMeta(
-                command=self.COMMAND, group=self.GROUP, subgroup=self.SUBGROUP
-            ),
+            command=type(self).__name__,
             start_time=datetime.now(tz).isoformat(),
             exit_code=0,
             end_time="",
         )
         self._lock_file_fd: int | None = None
         self.db_handler: DBHandler | None = None
-        self.configure_class_parser()
-        self.configure_parser()
         self.log_file_handlers = []
 
     @abstractmethod
-    def run(self, args: Namespace) -> int: ...
+    def run(self) -> int: ...
 
-    def run_hook(self, variant: HookVariant, args: Namespace, exit_code: int | None = None) -> None:
-        script = args.pre_hook if variant == HookVariant.PRE else args.post_hook
+    def run_hook(self, variant: HookVariant, exit_code: int | None = None) -> None:
+        script = self.config.pre_hook if variant == HookVariant.PRE else self.config.post_hook
         if script is None or script == "":
             return
 
@@ -194,12 +189,6 @@ class BaseCommand(FlockMixin, ABC):
         if variant == HookVariant.POST:
             env["GALLIA_META"] = self.run_meta.json()
 
-        if self.COMMAND is not None:
-            env["GALLIA_COMMAND"] = self.COMMAND
-        if self.GROUP is not None:
-            env["GALLIA_GROUP"] = self.GROUP
-        if self.SUBGROUP is not None:
-            env["GALLIA_GROUP"] = self.SUBGROUP
         if exit_code is not None:
             env["GALLIA_EXIT_CODE"] = str(exit_code)
 
@@ -217,90 +206,14 @@ class BaseCommand(FlockMixin, ABC):
         if stderr:
             logger.info(p.stderr.strip(), extra={"tags": [hook_id, "stderr"]})
 
-    def configure_class_parser(self) -> None:
-        group = self.parser.add_argument_group("generic arguments")
-        group.add_argument(
-            "-v",
-            "--verbose",
-            action="count",
-            default=self.config.get_value("gallia.verbosity", 0),
-            help="increase verbosity on the console",
-        )
-        group.add_argument(
-            "--no-volatile-info",
-            action="store_true",
-            default=self.config.get_value("gallia.no-volatile-info", False),
-            help="do not overwrite log lines with level info or lower in terminal output",
-        )
-        group.add_argument(
-            "--trace-log",
-            action=argparse.BooleanOptionalAction,
-            default=self.config.get_value("gallia.trace_log", False),
-            help="set the loglevel of the logfile to TRACE",
-        )
-        group.add_argument(
-            "--pre-hook",
-            metavar="SCRIPT",
-            default=self.config.get_value("gallia.hooks.pre", None),
-            help="shell script to run before the main entry_point",
-        )
-        group.add_argument(
-            "--post-hook",
-            metavar="SCRIPT",
-            default=self.config.get_value("gallia.hooks.post", None),
-            help="shell script to run after the main entry_point",
-        )
-        group.add_argument(
-            "--hooks",
-            action=argparse.BooleanOptionalAction,
-            default=self.config.get_value("gallia.hooks.enable", True),
-            help="execute pre and post hooks",
-        )
-        group.add_argument(
-            "--lock-file",
-            type=Path,
-            metavar="PATH",
-            default=self.config.get_value("gallia.lock_file", None),
-            help="path to file used for a posix lock",
-        )
-        group.add_argument(
-            "--db",
-            default=self.config.get_value("gallia.db"),
-            type=Path,
-            help="Path to sqlite3 database",
-        )
-
-        if self.HAS_ARTIFACTS_DIR:
-            mutex_group = group.add_mutually_exclusive_group()
-            mutex_group.add_argument(
-                "--artifacts-dir",
-                default=self.config.get_value("gallia.scanner.artifacts_dir"),
-                type=Path,
-                metavar="DIR",
-                help="Folder for artifacts",
-            )
-            mutex_group.add_argument(
-                "--artifacts-base",
-                default=self.config.get_value(
-                    "gallia.scanner.artifacts_base", Path(gettempdir()).joinpath("gallia")
-                ),
-                type=Path,
-                metavar="DIR",
-                help="Base directory for artifacts",
-            )
-
-    def configure_parser(self) -> None: ...
-
-    async def _db_insert_run_meta(self, args: Namespace) -> None:
-        if args.db is not None:
-            self.db_handler = DBHandler(args.db)
+    async def _db_insert_run_meta(self) -> None:
+        if self.config.db is not None:
+            self.db_handler = DBHandler(self.config.db)
             await self.db_handler.connect()
 
             await self.db_handler.insert_run_meta(
                 script=sys.argv[0].split()[-1],
-                arguments=sys.argv[1:],
-                command_meta=msgspec.json.encode(self.run_meta.command_meta),
-                settings=dump_args(args),
+                config=self.config,
                 start_time=datetime.now(UTC).astimezone(),
                 path=self.artifacts_dir,
             )
@@ -355,23 +268,7 @@ class BaseCommand(FlockMixin, ABC):
             return force_path
 
         if base_dir is not None:
-            _command_dir = ""
-            if self.GROUP is not None:
-                _command_dir += self.GROUP
-            if self.SUBGROUP is not None:
-                _command_dir += f"_{self.SUBGROUP}"
-            if self.COMMAND is not None:
-                _command_dir += f"_{self.COMMAND}"
-
-            # When self.GROUP is None, then
-            # _command_dir starts with "_"; remove it.
-            if _command_dir.startswith("_"):
-                _command_dir = _command_dir.removeprefix("_")
-
-            # If self.GROUP, self.SUBGROUP, and
-            # self.COMMAND are None, then fallback to self.id.
-            if _command_dir == "":
-                _command_dir = self.id
+            _command_dir = self.id
 
             command_dir = base_dir.joinpath(_command_dir)
 
@@ -386,8 +283,8 @@ class BaseCommand(FlockMixin, ABC):
 
         raise ValueError("base_dir or force_path must be different from None")
 
-    def entry_point(self, args: Namespace) -> int:
-        if (p := args.lock_file) is not None:
+    def entry_point(self) -> int:
+        if (p := self.config.lock_file) is not None:
             try:
                 self._lock_file_fd = self._open_lockfile(p)
                 self._aquire_flock()
@@ -396,23 +293,25 @@ class BaseCommand(FlockMixin, ABC):
                 return exitcodes.OSFILE
 
         if self.HAS_ARTIFACTS_DIR:
-            self.artifacts_dir = self.prepare_artifactsdir(args.artifacts_base, args.artifacts_dir)
+            self.artifacts_dir = self.prepare_artifactsdir(
+                self.config.artifacts_base, self.config.artifacts_dir
+            )
             self.log_file_handlers.append(
                 add_zst_log_handler(
                     logger_name="gallia",
                     filepath=self.artifacts_dir.joinpath(FileNames.LOGFILE.value),
-                    file_log_level=get_file_log_level(args),
+                    file_log_level=get_file_log_level(self.config),
                 )
             )
 
-        if args.hooks:
-            self.run_hook(HookVariant.PRE, args)
+        if self.config.hooks:
+            self.run_hook(HookVariant.PRE)
 
-        asyncio.run(self._db_insert_run_meta(args))
+        asyncio.run(self._db_insert_run_meta())
 
         exit_code = 0
         try:
-            exit_code = self.run(args)
+            exit_code = self.run()
         except KeyboardInterrupt:
             exit_code = 128 + signal.SIGINT
         # Ensure that META.json gets written in the case a
@@ -446,8 +345,8 @@ class BaseCommand(FlockMixin, ABC):
                 )
                 logger.notice(f"Stored artifacts at {self.artifacts_dir}")
 
-        if args.hooks:
-            self.run_hook(HookVariant.POST, args, exit_code)
+        if self.config.hooks:
+            self.run_hook(HookVariant.POST, exit_code)
 
         if self._lock_file_fd is not None:
             self._release_flock()
@@ -462,19 +361,19 @@ class Script(BaseCommand, ABC):
 
     GROUP = "script"
 
-    def setup(self, args: Namespace) -> None: ...
+    def setup(self) -> None: ...
 
     @abstractmethod
-    def main(self, args: Namespace) -> None: ...
+    def main(self) -> None: ...
 
-    def teardown(self, args: Namespace) -> None: ...
+    def teardown(self) -> None: ...
 
-    def run(self, args: Namespace) -> int:
-        self.setup(args)
+    def run(self) -> int:
+        self.setup()
         try:
-            self.main(args)
+            self.main()
         finally:
-            self.teardown(args)
+            self.teardown()
 
         return exitcodes.OK
 
@@ -486,23 +385,38 @@ class AsyncScript(BaseCommand, ABC):
 
     GROUP = "script"
 
-    async def setup(self, args: Namespace) -> None: ...
+    async def setup(self) -> None: ...
 
     @abstractmethod
-    async def main(self, args: Namespace) -> None: ...
+    async def main(self) -> None: ...
 
-    async def teardown(self, args: Namespace) -> None: ...
+    async def teardown(self) -> None: ...
 
-    async def _run(self, args: Namespace) -> None:
-        await self.setup(args)
+    async def _run(self) -> None:
+        await self.setup()
         try:
-            await self.main(args)
+            await self.main()
         finally:
-            await self.teardown(args)
+            await self.teardown()
 
-    def run(self, args: Namespace) -> int:
-        asyncio.run(self._run(args))
+    def run(self) -> int:
+        asyncio.run(self._run())
         return exitcodes.OK
+
+
+class ScannerConfig(BaseCommandConfig):
+    dumpcap: bool = Field(sys.platform == "linux", description="Enable/Disable creating a pcap file")
+    target: TargetURI | None = Field(description="URI that describes the target", metavar="TARGET")
+    power_supply: PowerSupplyURI | None = Field(
+        description="URI specifying the location of the relevant opennetzteil server", metavar="URI"
+    )
+    power_cycle: bool = Field(
+        False,
+        description="use the configured power supply to power-cycle the ECU when needed (e.g. before starting the scan, or to recover bad state during scanning)",
+    )
+    power_cycle_sleep: float = Field(
+        5.0, description="time to sleep after the power-cycle", metavar="SECs"
+    )
 
 
 class Scanner(AsyncScript, ABC):
@@ -522,92 +436,45 @@ class Scanner(AsyncScript, ABC):
     - `main()` is the relevant entry_point for the scanner and must be implemented.
     """
 
-    GROUP = "scan"
     HAS_ARTIFACTS_DIR = True
     CATCHED_EXCEPTIONS: list[type[Exception]] = [ConnectionError, UDSException]
 
-    def __init__(self, parser: ArgumentParser, config: Config = Config()) -> None:
-        super().__init__(parser, config)
+    def __init__(self, config: ScannerConfig):
+        super().__init__(config)
+        self.config = config
         self.power_supply: PowerSupply | None = None
         self.transport: BaseTransport
         self.dumpcap: Dumpcap | None = None
 
     @abstractmethod
-    async def main(self, args: Namespace) -> None: ...
+    async def main(self) -> None: ...
 
-    async def setup(self, args: Namespace) -> None:
-        if args.target is None:
-            self.parser.error("--target is required")
-
-        if args.power_supply is not None:
-            self.power_supply = await PowerSupply.connect(args.power_supply)
-            if args.power_cycle is True:
+    async def setup(self) -> None:
+        if self.config.power_supply is not None:
+            self.power_supply = await PowerSupply.connect(self.config.power_supply)
+            if self.config.power_cycle is True:
                 await self.power_supply.power_cycle(
-                    args.power_cycle_sleep, lambda: asyncio.sleep(2)
+                    self.config.power_cycle_sleep, lambda: asyncio.sleep(2)
                 )
-        elif args.power_cycle is True:
-            self.parser.error("--power-cycle needs --power-supply")
+        # TODO: Transform to pydantic
+        # elif self.config.power_cycle is True:
+        # self.parser.error("--power-cycle needs --power-supply")
 
         # Start dumpcap as the first subprocess; otherwise network
         # traffic might be missing.
-        if args.dumpcap:
+        if self.config.dumpcap:
             if shutil.which("dumpcap") is None:
-                self.parser.error("--dumpcap specified but `dumpcap` is not available")
-            self.dumpcap = await Dumpcap.start(args.target, self.artifacts_dir)
+                raise RuntimeError("--dumpcap specified but `dumpcap` is not available")
+            self.dumpcap = await Dumpcap.start(self.config.target, self.artifacts_dir)
             if self.dumpcap is None:
                 logger.error("`dumpcap` could not be started!")
             else:
                 await self.dumpcap.sync()
 
-        self.transport = await load_transport(args.target).connect(args.target)
+        self.transport = await load_transport(self.config.target).connect(self.config.target)
 
-    async def teardown(self, args: Namespace) -> None:
+    async def teardown(self) -> None:
         await self.transport.close()
 
         if self.dumpcap:
             await self.dumpcap.stop()
-
-    def configure_class_parser(self) -> None:
-        super().configure_class_parser()
-
-        group = self.parser.add_argument_group("scanner related arguments")
-        group.add_argument(
-            "--dumpcap",
-            action=argparse.BooleanOptionalAction,
-            default=self.config.get_value(
-                "gallia.scanner.dumpcap",
-                default=sys.platform == "linux",
-            ),
-            help="Enable/Disable creating a pcap file",
-        )
-
-        group = self.parser.add_argument_group("transport mode related arguments")
-        group.add_argument(
-            "--target",
-            metavar="TARGET",
-            default=self.config.get_value("gallia.scanner.target"),
-            type=TargetURI,
-            help="URI that describes the target",
-        )
-
-        group = self.parser.add_argument_group("power supply related arguments")
-        group.add_argument(
-            "--power-supply",
-            metavar="URI",
-            default=self.config.get_value("gallia.scanner.power_supply"),
-            type=PowerSupplyURI,
-            help="URI specifying the location of the relevant opennetzteil server",
-        )
-        group.add_argument(
-            "--power-cycle",
-            action=argparse.BooleanOptionalAction,
-            default=self.config.get_value("gallia.scanner.power_cycle", False),
-            help="use the configured power supply to power-cycle the ECU when needed (e.g. before starting the scan, or to recover bad state during scanning)",
-        )
-        group.add_argument(
-            "--power-cycle-sleep",
-            metavar="SECs",
-            type=float,
-            default=self.config.get_value("gallia.scanner.power_cycle_sleep", 5.0),
-            help="time to sleep after the power-cycle",
-        )
