@@ -35,18 +35,17 @@ def parse_field(
         Optional[PydanticValidator]: Possible validator method.
     """
 
-
     # Add Standard Field
     parser.add_argument(
         *field.arg_names(),
         action=argparse._StoreAction,
         help=field.description(),
-        dest=field.name,
         metavar=field.metavar(),
-        required=field.arg_required(),
+        **field.arg_required(),
         **field.arg_default(),
-        **field.arg_const()
+        **field.arg_const(),
+        **field.arg_dest()
     )
 
     # Construct and Return Validator
-    return utils.pydantic.as_validator(field, lambda v: print("HEEEEEEEEEEERE"))
+    return utils.pydantic.as_validator(field, lambda v: v)
