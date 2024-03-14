@@ -36,7 +36,7 @@ class VirtualECUConfig(AsyncScriptConfig):
 class DbVirtualECUConfig(VirtualECUConfig):
     path: Path = Field(positional=True)
     ecu: str | None
-    properties: json.loads | None
+    properties: dict | None
 
 
 class RngVirtualECUConfig(VirtualECUConfig):
