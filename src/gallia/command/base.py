@@ -60,7 +60,7 @@ class RunMeta(msgspec.Struct):
 logger = get_logger("gallia.base")
 
 
-class BaseCommandConfig(GalliaBaseModel):
+class BaseCommandConfig(GalliaBaseModel, argument_group="generic", config_section="gallia"):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     verbose: int = Field(0, description="increase verbosity on the console", short="v")
@@ -318,7 +318,7 @@ class BaseCommand(ABC):
         return exit_code
 
 
-class ScriptConfig(BaseCommandConfig, ABC):
+class ScriptConfig(BaseCommandConfig, ABC, argument_group=BaseCommandConfig._argument_group, config_section=BaseCommandConfig._config_section):
     pass
 
 
@@ -346,7 +346,7 @@ class Script(BaseCommand, ABC):
         return exitcode.OK
 
 
-class AsyncScriptConfig(BaseCommandConfig, ABC):
+class AsyncScriptConfig(BaseCommandConfig, ABC, argument_group=BaseCommandConfig._argument_group, config_section=BaseCommandConfig._config_section):
     pass
 
 
@@ -376,7 +376,7 @@ class AsyncScript(BaseCommand, ABC):
         return exitcode.OK
 
 
-class ScannerConfig(AsyncScriptConfig):
+class ScannerConfig(AsyncScriptConfig, argument_group="scanner", config_section="gallia.scanner"):
     dumpcap: bool = Field(True, description="Enable/Disable creating a pcap file")
     target: TargetURI | None = Field(description="URI that describes the target", metavar="TARGET")
     power_supply: PowerSupplyURI | None = Field(
