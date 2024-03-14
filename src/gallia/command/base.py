@@ -19,6 +19,7 @@ from typing import cast
 
 import exitcode
 import msgspec
+from pydantic import ConfigDict
 
 from gallia.command.config import Field, GalliaBaseModel
 from gallia.db.handler import DBHandler
@@ -60,6 +61,8 @@ logger = get_logger("gallia.base")
 
 
 class BaseCommandConfig(GalliaBaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     verbose: int = Field(0, description="increase verbosity on the console", short="v")
     no_volatile_info: bool = Field(
         False, description="do not overwrite log lines with level info or lower in terminal output"
@@ -75,7 +78,7 @@ class BaseCommandConfig(GalliaBaseModel):
     lock_file: Path | None = Field(
         None, description="path to file used for a posix lock", metavar="PATH"
     )
-    db: Path | None = Field(description="Path to sqlite3 database")
+    db: Path | None = Field(None, description="Path to sqlite3 database")
 
 
 class BaseCommand(ABC):
@@ -315,6 +318,10 @@ class BaseCommand(ABC):
         return exit_code
 
 
+class ScriptConfig(BaseCommandConfig, ABC):
+    pass
+
+
 class Script(BaseCommand, ABC):
     """Script is a base class for a synchronous gallia command.
     To implement a script, create a subclass and implement the
@@ -337,6 +344,10 @@ class Script(BaseCommand, ABC):
             self.teardown()
 
         return exitcode.OK
+
+
+class AsyncScriptConfig(BaseCommandConfig, ABC):
+    pass
 
 
 class AsyncScript(BaseCommand, ABC):
@@ -365,10 +376,11 @@ class AsyncScript(BaseCommand, ABC):
         return exitcode.OK
 
 
-class ScannerConfig(BaseCommandConfig):
+class ScannerConfig(AsyncScriptConfig):
     dumpcap: bool = Field(True, description="Enable/Disable creating a pcap file")
     target: TargetURI | None = Field(description="URI that describes the target", metavar="TARGET")
     power_supply: PowerSupplyURI | None = Field(
+        None,
         description="URI specifying the location of the relevant opennetzteil server", metavar="URI"
     )
     power_cycle: bool = Field(
