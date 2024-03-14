@@ -9,7 +9,7 @@ from pydantic_argparse import BaseCommand
 from tabulate import tabulate
 
 from gallia.command import UDSScanner
-from gallia.command.config import AutoInt, Field
+from gallia.command.config import AutoInt, Field, HexInt
 from gallia.command.uds import UDSScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds.core.constants import (
@@ -37,7 +37,7 @@ class DTCPrimitiveConfig(UDSScannerConfig):
 
 
 class ReadDTCPrimitiveConfig(DTCPrimitiveConfig):
-    mask: partial(int, base=16) = Field(
+    mask: HexInt = Field(
         0xFF,
         description="The bitmask which is sent to the ECU in order to select the relevant DTCs according to their error state. By default, all error codes are returned (c.f. ISO 14229-1,D.2).",
     )
