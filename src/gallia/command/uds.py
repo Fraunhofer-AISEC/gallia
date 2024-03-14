@@ -19,10 +19,11 @@ logger = get_logger(__name__)
 
 
 class UDSScannerConfig(ScannerConfig):
-    ecu_reset: int | None = Field(
+    ecu_reset: int | None = Field(None,
         description="Trigger an initial ecu_reset via UDS; reset level is optional", const=0x01
     )
-    oem: Literal[tuple(["default"] + [x.OEM for x in load_ecu_plugins()])] = Field(
+    # TODO: Potentially turn this to a literal, if possible without circular dependencies
+    oem: str = Field(
         "default",
         description="The OEM of the ECU, used to choose a OEM specific ECU implementation",
         metavar="OEM",

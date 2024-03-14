@@ -19,7 +19,6 @@ from typing import (
     Dict,
     Iterator,
     Literal,
-    NamedTuple,
     Optional,
     Tuple,
     Type,
@@ -33,6 +32,8 @@ from typing import (
 import pydantic
 from pydantic import BaseModel
 from pydantic.fields import FieldInfo
+from pydantic_core import PydanticUndefined
+
 from pydantic_argparse.utils.field import ArgFieldInfo
 
 from .types import all_types
@@ -273,8 +274,12 @@ class PydanticField:
                 Otherwise, return constituent type names.
         """
         # check metavar first
-        if isinstance(self.info, ArgFieldInfo) and self.info.metavar is not None:
-            return self.info.metavar
+        if isinstance(self.info, ArgFieldInfo):
+            if self.info.metavar is not None:
+                return self.info.metavar
+
+            if self.info.positional:
+                return self.arg_names()[0]
 
         # otherwise default to the type
         field_type = self.get_type()
@@ -283,14 +288,17 @@ class PydanticField:
                 return "|".join(t.__name__.upper() for t in field_type)
             return field_type.__name__.upper()
 
-    def arg_required(self) -> bool:
-        return self.info.is_required() and self.extra_default is None or isinstance(self.info, ArgFieldInfo) and self.info.positional
+    def arg_required(self) -> dict[str, bool]:
+        return {} if isinstance(self.info, ArgFieldInfo) and self.info.positional else {'required': self.info.is_required() and self.extra_default is None}
 
     def arg_default(self) -> dict[str, Any]:
         return {} if self.extra_default is None or isinstance(self.info, ArgFieldInfo) and self.info.positional else {'default': self.extra_default}
 
     def arg_const(self) -> dict[str, Any]:
-        return self.info.const if isinstance(self.info, ArgFieldInfo) and self.info.const is not None else {}
+        return {'const': self.info.const, 'nargs': '?'} if isinstance(self.info, ArgFieldInfo) and self.info.const is not PydanticUndefined else {}
+
+    def arg_dest(self) -> dict[str, str]:
+        return {} if isinstance(self.info, ArgFieldInfo) and self.info.positional else {'dest': self.name}
 
 
 def as_validator(
