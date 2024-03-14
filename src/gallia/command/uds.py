@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
+from abc import ABC
 
 import aiofiles
 
@@ -17,7 +18,7 @@ from gallia.services.uds.helpers import raise_for_error
 logger = get_logger(__name__)
 
 
-class UDSScannerConfig(ScannerConfig):
+class UDSScannerConfig(ScannerConfig, argument_group="uds", config_section="gallia.protocols.uds"):
     ecu_reset: int | None = Field(
         None,
         description="Trigger an initial ecu_reset via UDS; reset level is optional",
@@ -52,7 +53,7 @@ class UDSScannerConfig(ScannerConfig):
     )
 
 
-class UDSScanner(Scanner):
+class UDSScanner(Scanner, ABC):
     """UDSScanner is a baseclass, particularly for scanning tasks
     related to the UDS protocol. The differences to Scanner are:
 
@@ -171,7 +172,7 @@ class UDSDiscoveryScannerConfig(ScannerConfig):
     timeout: float = Field(0.5, description="timeout value for request")
 
 
-class UDSDiscoveryScanner(Scanner):
+class UDSDiscoveryScanner(Scanner, ABC):
     def __init__(self, config: UDSDiscoveryScannerConfig):
         super().__init__(config)
         self.config = config
