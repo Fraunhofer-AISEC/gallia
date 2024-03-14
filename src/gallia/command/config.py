@@ -86,6 +86,8 @@ def Field(
 
 class GalliaBaseModel(BaseCommand, ABC):
     init_kwargs: dict | None = None
+    _argument_group: str | None
+    _config_section : str | None
 
     def __init__(self, **data: Any):
         init_kwargs = data.pop("init_kwargs", {})
