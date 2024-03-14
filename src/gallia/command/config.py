@@ -21,6 +21,9 @@ registry = {}
 AutoInt = Annotated[int, BeforeValidator(lambda x: x if isinstance(x, int) else int(x, 0))]
 
 
+HexInt = Annotated[int, BeforeValidator(lambda x: x if isinstance(x, int) else int(x, 16))]
+
+
 HexBytes = Annotated[
     bytes,
     BeforeValidator(lambda x: x if isinstance(x, bytes) else binascii.unhexlify(x)),

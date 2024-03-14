@@ -3,9 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-import importlib
 import sys
-from dataclasses import dataclass
 from typing import Any
 
 import argcomplete
@@ -15,43 +13,46 @@ from pydantic_argparse import ArgumentParser, BaseCommand
 from gallia.config import load_config_file
 from gallia.log import Loglevel, setup_logging
 
+from gallia.commands.primitive.uds.rdbi import ReadByIdentifierPrimitive, ReadByIdentifierPrimitiveConfig
+from gallia.commands.primitive.uds.wdbi import WriteByIdentifierPrimitive, WriteByIdentifierPrimitiveConfig
+from gallia.commands.primitive.uds.dtc import DTCPrimitive, ReadDTCPrimitiveConfig, ClearDTCPrimitiveConfig, ControlDTCPrimitiveConfig
+
+
 setup_logging(Loglevel.DEBUG)
-
-from gallia.configs.rdbi_config import ReadByIdentifierPrimitiveConfig
-from gallia.configs.wdbi_config import WriteByIdentifierPrimitiveConfig
-
 config, _ = load_config_file()
-
-
-@dataclass
-class Import:
-    module: str
-    class_name: str
-
-    def get_class(self):
-        return getattr(importlib.import_module(self.module), self.class_name)
 
 
 # Mockup
 def create_parser_tree() -> tuple[type[BaseCommand], dict[type, dict[str, Any]]]:
     setattr(
         ReadByIdentifierPrimitiveConfig,
-        "_class_import",
-        Import("gallia.configs.rdbi", "ReadByIdentifierPrimitive"),
+        "_class",
+        ReadByIdentifierPrimitive
     )
     setattr(
         WriteByIdentifierPrimitiveConfig,
-        "_class_import",
-        Import("gallia.configs.wdbi", "WriteByIdentifierPrimitive"),
+        "_class",
+        WriteByIdentifierPrimitive
     )
+    for cls in [ReadDTCPrimitiveConfig, ClearDTCPrimitiveConfig, ControlDTCPrimitiveConfig]:
+        setattr(
+            cls,
+            "_class",
+            DTCPrimitive
+        )
 
     extra_defaults = {}
 
-    for cls in [ReadByIdentifierPrimitiveConfig, WriteByIdentifierPrimitiveConfig]:
+    for cls in [ReadByIdentifierPrimitiveConfig, WriteByIdentifierPrimitiveConfig, ReadDTCPrimitiveConfig, ClearDTCPrimitiveConfig, ControlDTCPrimitiveConfig]:
         config_attributes = cls.attributes_from_config(config)
         env_attributes = cls.attributes_from_env()
         config_attributes.update(env_attributes)
         extra_defaults[cls] = config_attributes
+
+    class DTC(BaseCommand):
+        read: ReadDTCPrimitiveConfig | None = Field(None, description="Read DTCs")
+        clear: ClearDTCPrimitiveConfig | None = Field(None, description="Clear DTCs")
+        control: ControlDTCPrimitiveConfig | None = Field(None, description="Control DTCs")
 
     class Primitive(BaseCommand):
         rdbi: ReadByIdentifierPrimitiveConfig | None = Field(
@@ -61,6 +62,10 @@ def create_parser_tree() -> tuple[type[BaseCommand], dict[type, dict[str, Any]]]
         wdbi: WriteByIdentifierPrimitiveConfig | None = Field(
             None,
             description="Write data at a specific ID using the UDS service WDBI (0x2e)",
+        )
+        dtc: DTC | None = Field(
+            None,
+            description="Read, delete or control DTCs"
         )
         # iocbi: ...
         # ...
@@ -79,7 +84,7 @@ def main() -> None:
     parser = ArgumentParser(model=model, extra_defaults=extra_defaults)
     argcomplete.autocomplete(parser)
     _, config = parser.parse_typed_args()
-    sys.exit(config._class_import.get_class()(config).entry_point())
+    sys.exit(config._class(config).entry_point())
 
 
 if __name__ == "__main__":

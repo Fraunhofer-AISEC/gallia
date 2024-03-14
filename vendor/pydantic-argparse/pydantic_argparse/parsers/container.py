@@ -54,11 +54,11 @@ def parse_field(
         action=argparse._StoreAction,
         nargs=argparse.ONE_OR_MORE,
         help=field.description(),
-        dest=field.name,
         metavar=field.metavar(),
-        required=field.arg_required(),
+        **field.arg_required(),
         **field.arg_default(),
-        **field.arg_const()
+        **field.arg_const(),
+        **field.arg_dest()
     )
 
     # Construct and Return Validator
