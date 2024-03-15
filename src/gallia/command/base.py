@@ -15,13 +15,14 @@ from enum import Enum, unique
 from logging import Handler
 from pathlib import Path
 from subprocess import CalledProcessError, run
+from tempfile import gettempdir
 from typing import cast
 
 import exitcode
 import msgspec
-from pydantic import ConfigDict
+from pydantic import ConfigDict, field_serializer
 
-from gallia.command.config import Field, GalliaBaseModel
+from gallia.command.config import Field, GalliaBaseModel, idempotent
 from gallia.db.handler import DBHandler
 from gallia.dumpcap import Dumpcap
 from gallia.log import add_zst_log_handler, get_logger, tz
@@ -79,6 +80,15 @@ class BaseCommandConfig(GalliaBaseModel, argument_group="generic", config_sectio
         None, description="path to file used for a posix lock", metavar="PATH"
     )
     db: Path | None = Field(None, description="Path to sqlite3 database")
+    artifacts_dir: Path | None = Field(
+        None, description="Folder for artifacts", metavar="DIR", config_section="gallia.scanner"
+    )
+    artifacts_base: Path = Field(
+        Path(gettempdir()).joinpath("gallia"),
+        description="Base directory for artifacts",
+        metavar="DIR",
+        config_section="gallia.scanner",
+    )
 
 
 class BaseCommand(ABC):
@@ -388,8 +398,10 @@ class AsyncScript(BaseCommand, ABC):
 
 class ScannerConfig(AsyncScriptConfig, argument_group="scanner", config_section="gallia.scanner"):
     dumpcap: bool = Field(True, description="Enable/Disable creating a pcap file")
-    target: TargetURI | None = Field(description="URI that describes the target", metavar="TARGET")
-    power_supply: PowerSupplyURI | None = Field(
+    target: idempotent(TargetURI) = Field(
+        description="URI that describes the target", metavar="TARGET"
+    )
+    power_supply: idempotent(PowerSupplyURI) | None = Field(
         None,
         description="URI specifying the location of the relevant opennetzteil server",
         metavar="URI",
@@ -401,6 +413,13 @@ class ScannerConfig(AsyncScriptConfig, argument_group="scanner", config_section=
     power_cycle_sleep: float = Field(
         5.0, description="time to sleep after the power-cycle", metavar="SECs"
     )
+
+    @field_serializer("target", "power_supply")
+    def serialize_target_uri(self, target_uri: TargetURI | None, _info):
+        if target_uri is None:
+            return None
+
+        return target_uri.raw
 
 
 class Scanner(AsyncScript, ABC):

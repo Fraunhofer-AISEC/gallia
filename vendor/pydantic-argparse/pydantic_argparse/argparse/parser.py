@@ -159,6 +159,8 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
         # Call Super Class Method
         namespace = self.parse_args(args)
 
+        print(namespace)
+
         try:
             nested_parser = _NestedArgumentParser(model=self.model, namespace=namespace)
             return nested_parser.validate()
