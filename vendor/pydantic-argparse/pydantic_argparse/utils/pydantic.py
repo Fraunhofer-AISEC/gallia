@@ -229,7 +229,7 @@ class PydanticField:
         name = self.info.title or self.name
 
         if isinstance(self.info, ArgFieldInfo) and self.info.positional:
-            return name.upper(),
+            return name,
 
         prefix = "--no-" if invert else "--"
         long_name = f"{prefix}{name.replace('_', '-')}"
@@ -279,7 +279,7 @@ class PydanticField:
                 return self.info.metavar
 
             if self.info.positional:
-                return self.arg_names()[0]
+                return self.arg_names()[0].upper()
 
         # otherwise default to the type
         field_type = self.get_type()

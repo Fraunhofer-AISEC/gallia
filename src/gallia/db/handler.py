@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS address (
 CREATE TABLE IF NOT EXISTS run_meta (
   id integer primary key,
   script text not null,
-  config json not null check(json_valid(arguments)),
+  config json not null check(json_valid(config)),
   start_time real not null,
   start_timezone text not null,
   end_time real,
@@ -206,7 +206,7 @@ class DBHandler:
 
         query = (
             "INSERT INTO "
-            "run_meta(script, config, settings, start_time, start_timezone, path, exclude) "
+            "run_meta(script, config, start_time, start_timezone, path, exclude) "
             "VALUES (?, ?, ?, ?, ?, FALSE)"
         )
         cursor = await self.connection.execute(
