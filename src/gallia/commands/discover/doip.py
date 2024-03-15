@@ -4,7 +4,6 @@
 
 import asyncio
 import socket
-from argparse import Namespace
 from collections.abc import Iterable
 from itertools import chain, product
 from urllib.parse import parse_qs, urlparse
@@ -13,11 +12,10 @@ import aiofiles
 import psutil
 
 from gallia.command import AsyncScript
+from gallia.command.base import AsyncScriptConfig
+from gallia.command.config import Field
 from gallia.log import get_logger
-from gallia.services.uds.core.service import (
-    TesterPresentRequest,
-    TesterPresentResponse,
-)
+from gallia.services.uds.core.service import TesterPresentRequest, TesterPresentResponse
 from gallia.transports.doip import (
     DiagnosticMessage,
     DiagnosticMessageNegativeAckCodes,
@@ -32,58 +30,50 @@ from gallia.transports.doip import (
 logger = get_logger("gallia.discover.doip")
 
 
+class DoIPDiscovererConfig(AsyncScriptConfig):
+    start: lambda x: int(
+        x, 0
+    ) = Field(0x00, description="set start address of TargetAddress search range", metavar="INT")
+    stop: lambda x: int(
+        x, 0
+    ) = Field(0xFFFF, description="set stop address of TargetAddress search range", metavar="INT")
+    target: str | None = Field(
+        None,
+        description="The more you give, the more automatic detection will be skipped: IP, Port, RoutingActivationType, SourceAddress",
+        metavar="<DoIP URL target string>",
+    )
+    timeout: float | None = Field(
+        None,
+        description="This flag overrides the default timeout of DiagnosticMessages, which can be used to fine-tune classification of unresponsive ECUs or broadcast detection",
+        metavar="SECONDS (FLOAT)",
+    )
+
+
 class DoIPDiscoverer(AsyncScript):
     """This script scans for active DoIP endpoints and automatically enumerates allowed
     RoutingActivationTypes and known SourceAddresses. Once valid endpoints are acquired,
     the script continues to discover valid TargetAddresses that are accepted and respond
     to UDS DiagnosticSessionControl requests."""
 
-    GROUP = "discover"
-    COMMAND = "doip"
     SHORT_HELP = "zero-knowledge DoIP enumeration scanner"
     HAS_ARTIFACTS_DIR = True
 
-    def configure_parser(self) -> None:
-        self.parser.add_argument(
-            "--start",
-            metavar="INT",
-            type=lambda x: int(x, 0),
-            default=0x00,
-            help="set start address of TargetAddress search range",
-        )
-        self.parser.add_argument(
-            "--stop",
-            metavar="INT",
-            type=lambda x: int(x, 0),
-            default=0xFFFF,
-            help="set stop address of TargetAddress search range",
-        )
-        self.parser.add_argument(
-            "--target",
-            metavar="<DoIP URL target string>",
-            type=str,
-            default=None,
-            help="The more you give, the more automatic detection will be skipped: IP, Port, RoutingActivationType, SourceAddress",
-        )
-        self.parser.add_argument(
-            "--timeout",
-            metavar="SECONDS (FLOAT)",
-            type=float,
-            default=None,
-            help="This flag overrides the default timeout of DiagnosticMessages, which can be used to fine-tune classification of unresponsive ECUs or broadcast detection",
-        )
+    def __init__(self, config: DoIPDiscovererConfig):
+        super().__init__(config)
+        self.config = config
 
     # This is an ugly hack to circumvent AsyncScript's shortcomings regarding return codes
-    def run(self, args: Namespace) -> int:
-        return asyncio.run(self.main2(args))
 
-    async def main(self, args: Namespace) -> None:
+    def run(self) -> int:
+        return asyncio.run(self.main2())
+
+    async def main(self) -> None:
         pass
 
-    async def main2(self, args: Namespace) -> int:
+    async def main2(self) -> int:
         logger.notice("[👋] Welcome to @realDoIP-Discovery powered by MoarMemes…")
 
-        target = urlparse(args.target) if args.target is not None else None
+        target = urlparse(self.config.target) if self.config.target is not None else None
         if target is not None and target.scheme != "doip":
             logger.error("[🫣] --target must be doip://…")
             return 2
@@ -97,7 +87,7 @@ class DoIPDiscoverer(AsyncScript):
         # Discover Hostname and Port
         tgt_hostname: str
         tgt_port: int
-        if target is not None and target.hostname is not None and target.port is not None:
+        if target is not None and target.hostname is not None and (target.port is not None):
             logger.notice("[📋] Skipping host/port discovery because given by --target")
             tgt_hostname = target.hostname
             tgt_port = target.port
@@ -121,10 +111,7 @@ class DoIPDiscoverer(AsyncScript):
         else:
             logger.notice("[🔍] Enumerating all RoutingActivationTypes")
 
-            (
-                rat_success,
-                rat_wrong_source,
-            ) = await self.enumerate_routing_activation_types(
+            rat_success, rat_wrong_source = await self.enumerate_routing_activation_types(
                 tgt_hostname,
                 tgt_port,
                 int(parse_qs(target.query)["src_addr"][0], 0)
@@ -145,13 +132,10 @@ class DoIPDiscoverer(AsyncScript):
                 f"doip://{tgt_hostname}:{tgt_port}?activation_type={rat:#x}&src_addr={parse_qs(target.query)['src_addr'][0]}"
                 for rat in rat_success
             ]
-
         else:
             logger.notice("[🔍] Enumerating all SourceAddresses")
             targets = await self.enumerate_source_addresses(
-                tgt_hostname,
-                tgt_port,
-                chain(rat_success, rat_wrong_source),
+                tgt_hostname, tgt_port, chain(rat_success, rat_wrong_source)
             )
 
         if len(targets) != 1:
@@ -168,7 +152,7 @@ class DoIPDiscoverer(AsyncScript):
             return 3
 
         logger.notice(
-            f"[🔍] Enumerating all TargetAddresses from {args.start:#x} to {args.stop:#x}"
+            f"[🔍] Enumerating all TargetAddresses from {self.config.start:#x} to {self.config.stop:#x}"
         )
 
         target = urlparse(targets[0])
@@ -180,34 +164,26 @@ class DoIPDiscoverer(AsyncScript):
             tgt_port,
             tgt_rat,
             tgt_src,
-            args.start,
-            args.stop,
-            args.timeout,
+            self.config.start,
+            self.config.stop,
+            self.config.timeout,
         )
 
         logger.notice("[🛩️] All done, thanks for flying with us!")
         return 0
 
     async def enumerate_routing_activation_types(
-        self,
-        tgt_hostname: str,
-        tgt_port: int,
-        src_addr: int,
+        self, tgt_hostname: str, tgt_port: int, src_addr: int
     ) -> tuple[list[int], list[int]]:
         rat_not_unsupported: list[int] = []
         rat_success: list[int] = []
         rat_wrong_source: list[int] = []
         for routing_activation_type in range(0x100):
             try:
-                conn = await DoIPConnection.connect(
-                    tgt_hostname,
-                    tgt_port,
-                    src_addr,
-                    0xAFFE,
-                )
+                conn = await DoIPConnection.connect(tgt_hostname, tgt_port, src_addr, 0xAFFE)
             except OSError as e:
                 logger.error(f"[🚨] Mr. Stark I don't feel so good: {e}")
-                return rat_success, rat_wrong_source
+                return (rat_success, rat_wrong_source)
 
             try:
                 await conn.write_routing_activation_request(routing_activation_type)
@@ -223,16 +199,15 @@ class DoIPDiscoverer(AsyncScript):
 
                 if e.rac_code == RoutingActivationResponseCodes.UnknownSourceAddress:
                     rat_wrong_source.append(routing_activation_type)
-
             finally:
                 await conn.close()
 
         logger.notice(
             f"[💎] Look what RoutingActivationTypes I've found that are not 'unsupported': {', '.join([f'{x:#x}' for x in rat_not_unsupported])}"
         )
-        return rat_success, rat_wrong_source
+        return (rat_success, rat_wrong_source)
 
-    async def enumerate_target_addresses(  # noqa: PLR0913
+    async def enumerate_target_addresses(
         self,
         tgt_hostname: str,
         tgt_port: int,
@@ -241,7 +216,7 @@ class DoIPDiscoverer(AsyncScript):
         start: int,
         stop: int,
         timeout: None | float = None,
-    ) -> None:
+    ) -> None:  # noqa: PLR0913
         known_targets = []
         unreachable_targets = []
         responsive_targets = []
@@ -367,29 +342,24 @@ class DoIPDiscoverer(AsyncScript):
             f"[🧭] Check out the content of the log files at {self.artifacts_dir} as well!"
         )
 
-    async def create_DoIP_conn(  # noqa: PLR0913
+    async def create_DoIP_conn(
         self,
         hostname: str,
         port: int,
         routing_activation_type: int,
         src_addr: int,
         target_addr: int,
-    ) -> DoIPConnection:
+    ) -> DoIPConnection:  # noqa: PLR0913
         while True:
             try:
-                conn = await DoIPConnection.connect(
-                    hostname,
-                    port,
-                    src_addr,
-                    target_addr,
-                )
+                conn = await DoIPConnection.connect(hostname, port, src_addr, target_addr)
                 logger.info("[📫] Sending RoutingActivationRequest")
                 await conn.write_routing_activation_request(
                     RoutingActivationRequestTypes(routing_activation_type)
                 )
             except Exception as e:  # TODO this probably is too broad
                 logger.warning(
-                    f"[🫨] Got me some good errors when it should be working (dis an infinite loop): {e}"
+                    f"[\U0001fae8] Got me some good errors when it should be working (dis an infinite loop): {e}"
                 )
                 continue
             return conn
@@ -399,21 +369,18 @@ class DoIPDiscoverer(AsyncScript):
             hdr, payload = await conn.read_frame()
             if not isinstance(payload, DiagnosticMessage):
                 logger.warning(f"[🧨] Unexpected DoIP message: {hdr} {payload}")
-                return None, b""
+                return (None, b"")
             if payload.SourceAddress != conn.target_addr:
-                return payload.SourceAddress, payload.UserData
+                return (payload.SourceAddress, payload.UserData)
             if payload.TargetAddress != conn.src_addr:
                 logger.warning(
                     f"[🤌] You talking to me?! Unexpected DoIP target address: {payload.TargetAddress:#04x}"
                 )
                 continue
-            return None, payload.UserData
+            return (None, payload.UserData)
 
     async def enumerate_source_addresses(
-        self,
-        tgt_hostname: str,
-        tgt_port: int,
-        valid_routing_activation_types: Iterable[int],
+        self, tgt_hostname: str, tgt_port: int, valid_routing_activation_types: Iterable[int]
     ) -> list[str]:
         known_sourceAddresses: list[int] = []
         denied_sourceAddresses: list[int] = []
@@ -422,12 +389,7 @@ class DoIPDiscoverer(AsyncScript):
             valid_routing_activation_types, range(0x0000, 0x10000)
         ):
             try:
-                conn = await DoIPConnection.connect(
-                    tgt_hostname,
-                    tgt_port,
-                    source_address,
-                    0xAFFE,
-                )
+                conn = await DoIPConnection.connect(tgt_hostname, tgt_port, source_address, 0xAFFE)
             except OSError as e:
                 logger.error(f"[🚨] Mr. Stark I don't feel so good: {e}")
                 return []
@@ -447,7 +409,6 @@ class DoIPDiscoverer(AsyncScript):
                         )
 
                 continue
-
             finally:
                 await conn.close()
 
