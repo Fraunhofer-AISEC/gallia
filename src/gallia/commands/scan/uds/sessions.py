@@ -52,11 +52,6 @@ class SessionsScanner(UDSScanner):
             help="Use hooks in case of a ConditionsNotCorrect error",
         )
         self.parser.add_argument(
-            "--reset",
-            action="store_true",
-            help="Reset and if necessary power cycle the ECU after each iteration",
-        )
-        self.parser.add_argument(
             "--fast",
             action="store_true",
             help="Only search for new sessions once in a particular session, i.e. ignore different stacks",
@@ -141,22 +136,14 @@ class SessionsScanner(UDSScanner):
                 if stack:
                     logger.info(f"Starting from session: {g_repr(stack[-1])}")
 
+                current_session = 1
+
                 for session in sessions:
                     if session in args.skip:
                         logger.info(f"Skipping session {g_repr(session)} as requested")
                         continue
 
-                    if args.reset:
-                        logger.info("Resetting the ECU")
-                        success = await self.ecu.leave_session(session)
-
-                        if not success:
-                            logger.warning("Could not reset ECU; continuing without reset")
-                        else:
-                            logger.info("Waiting for the ECU to recover…")
-                            await self.ecu.wait_for_ecu(timeout=args.timeout)
-
-                    if not (await self.ecu.leave_session(session)):
+                    if not (await self.ecu.leave_session(current_session)):
                         logger.error("Could not change to default session")
                         sys.exit(1)
 
@@ -166,6 +153,8 @@ class SessionsScanner(UDSScanner):
                     logger.debug("Recovering the current session stack")
                     if not await self.recover_stack(stack, args.with_hooks):
                         sys.exit(1)
+
+                    current_session = stack[-1]
 
                     try:
                         logger.debug(f"Attempting to change to session {session:#04x}")
@@ -192,6 +181,8 @@ class SessionsScanner(UDSScanner):
                             positive_results.append(
                                 {"session": session, "stack": stack, "error": None}
                             )
+
+                            current_session = session
                         else:
                             negative_results.append(
                                 {
