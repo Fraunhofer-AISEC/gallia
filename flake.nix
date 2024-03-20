@@ -4,7 +4,7 @@
 
 {
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs";
+    nixpkgs.url = "nixpkgs";
   };
 
   outputs = { self, nixpkgs }:
@@ -14,8 +14,8 @@
       devShell.x86_64-linux = pkgs.mkShell {
         buildInputs = with pkgs; [ 
           poetry
-          python310
           python311
+          python312
         ];
         shellHook = ''
           LD_LIBRARY_PATH=${pkgs.lib.makeLibraryPath [stdenv.cc.cc]}

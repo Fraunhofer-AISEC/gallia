@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import asyncio
 import socket
 import struct
 from argparse import ArgumentParser, Namespace
@@ -30,9 +29,7 @@ class FindXCP(AsyncScript):
         self.socket: socket.socket
 
     def configure_parser(self) -> None:
-        subparsers = self.parser.add_subparsers(
-            dest="mode", required=True, help="Transport mode"
-        )
+        subparsers = self.parser.add_subparsers(dest="mode", required=True, help="Transport mode")
 
         sp = subparsers.add_parser("can")
         sp.add_argument(
@@ -42,9 +39,7 @@ class FindXCP(AsyncScript):
             required=True,
             help="CAN interface used for XCP communication",
         )
-        sp.add_argument(
-            "--can-fd", action="store_true", default=False, help="use can FD"
-        )
+        sp.add_argument("--can-fd", action="store_true", default=False, help="use can FD")
         sp.add_argument(
             "--extended",
             action="store_true",
@@ -192,7 +187,7 @@ class FindXCP(AsyncScript):
                 else:
                     logger.info(f"UDP port {port} is no XCP slave, data: {ret}")
 
-            except socket.timeout:
+            except TimeoutError:
                 logger.info(f"Timeout on UDP port {port}")
 
             self.xcp_disconnect(server)
@@ -236,7 +231,7 @@ class FindXCP(AsyncScript):
                             f"Received non XCP answer for CAN-ID {can_id_repr(can_id)}: {can_id_repr(master)}:"
                             f"{bytes_repr(data)}"
                         )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 pass
 
         logger.result(f"Finished; Found {len(endpoints)} XCP endpoints via CAN")
@@ -256,9 +251,7 @@ class FindXCP(AsyncScript):
         logger.info(f"xcp interface ip for multicast group: {addr}")
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.socket.setsockopt(
-            socket.IPPROTO_IP, socket.IP_MULTICAST_IF, socket.inet_aton(addr)
-        )
+        self.socket.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_IF, socket.inet_aton(addr))
         self.socket.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 32)
         self.socket.settimeout(2)
 
@@ -273,9 +266,7 @@ class FindXCP(AsyncScript):
 
                 logger.result(f"Found XCP slave: {slave} {bytes_repr(data)}")
                 endpoints.append(slave)
-        except socket.timeout:
+        except TimeoutError:
             logger.info("Timeout")
 
-        logger.result(
-            f"Finished; Found {len(endpoints)} XCP endpoints via multicast group"
-        )
+        logger.result(f"Finished; Found {len(endpoints)} XCP endpoints via multicast group")

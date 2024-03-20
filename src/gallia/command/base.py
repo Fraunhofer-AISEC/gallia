@@ -12,8 +12,9 @@ import signal
 import sys
 from abc import ABC, abstractmethod
 from argparse import ArgumentParser, Namespace
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum, unique
+from logging import Handler
 from pathlib import Path
 from subprocess import CalledProcessError, run
 from tempfile import gettempdir
@@ -104,6 +105,8 @@ class BaseCommand(ABC):
     #: a log message with level critical is logged.
     CATCHED_EXCEPTIONS: list[type[Exception]] = []
 
+    log_file_handlers: list[Handler]
+
     def __init__(self, parser: ArgumentParser, config: Config = Config()) -> None:
         self.id = camel_to_snake(self.__class__.__name__)
         self.parser = parser
@@ -124,10 +127,10 @@ class BaseCommand(ABC):
         self.db_handler: DBHandler | None = None
         self.configure_class_parser()
         self.configure_parser()
+        self.log_file_handlers = []
 
     @abstractmethod
-    def run(self, args: Namespace) -> int:
-        ...
+    def run(self, args: Namespace) -> int: ...
 
     def run_hook(
         self,
@@ -255,8 +258,7 @@ class BaseCommand(ABC):
                 help="Base directory for artifacts",
             )
 
-    def configure_parser(self) -> None:
-        ...
+    def configure_parser(self) -> None: ...
 
     async def _db_insert_run_meta(self, args: Namespace) -> None:
         if args.db is not None:
@@ -268,7 +270,7 @@ class BaseCommand(ABC):
                 arguments=sys.argv[1:],
                 command_meta=msgspec.json.encode(self.run_meta.command_meta),
                 settings=dump_args(args),
-                start_time=datetime.now(timezone.utc).astimezone(),
+                start_time=datetime.now(UTC).astimezone(),
                 path=self.artifacts_dir,
             )
 
@@ -277,14 +279,12 @@ class BaseCommand(ABC):
             if self.db_handler.meta is not None:
                 try:
                     await self.db_handler.complete_run_meta(
-                        datetime.now(timezone.utc).astimezone(),
+                        datetime.now(UTC).astimezone(),
                         self.run_meta.exit_code,
                         self.artifacts_dir,
                     )
                 except Exception as e:
-                    logger.warning(
-                        f"Could not write the run meta to the database: {e!r}"
-                    )
+                    logger.warning(f"Could not write the run meta to the database: {e!r}")
 
             try:
                 await self.db_handler.disconnect()
@@ -381,10 +381,12 @@ class BaseCommand(ABC):
                 args.artifacts_base,
                 args.artifacts_dir,
             )
-            add_zst_log_handler(
-                logger_name="gallia",
-                filepath=self.artifacts_dir.joinpath(FileNames.LOGFILE.value),
-                file_log_level=get_file_log_level(args),
+            self.log_file_handlers.append(
+                add_zst_log_handler(
+                    logger_name="gallia",
+                    filepath=self.artifacts_dir.joinpath(FileNames.LOGFILE.value),
+                    file_log_level=get_file_log_level(args),
+                )
             )
 
         if args.hooks:
@@ -410,9 +412,7 @@ class BaseCommand(ABC):
                 if isinstance(e, t):
                     # TODO: Map the exitcode to superclass of builtin exceptions.
                     exit_code = exitcode.IOERR
-                    logger.critical(
-                        f"Caught expected exception, stack trace on debug level: {e!r}"
-                    )
+                    logger.critical(f"Caught expected exception, stack trace on debug level: {e!r}")
                     logger.debug(e, exc_info=True)
                     break
             else:
@@ -446,15 +446,12 @@ class Script(BaseCommand, ABC):
 
     GROUP = "script"
 
-    def setup(self, args: Namespace) -> None:
-        ...
+    def setup(self, args: Namespace) -> None: ...
 
     @abstractmethod
-    def main(self, args: Namespace) -> None:
-        ...
+    def main(self, args: Namespace) -> None: ...
 
-    def teardown(self, args: Namespace) -> None:
-        ...
+    def teardown(self, args: Namespace) -> None: ...
 
     def run(self, args: Namespace) -> int:
         self.setup(args)
@@ -473,15 +470,12 @@ class AsyncScript(BaseCommand, ABC):
 
     GROUP = "script"
 
-    async def setup(self, args: Namespace) -> None:
-        ...
+    async def setup(self, args: Namespace) -> None: ...
 
     @abstractmethod
-    async def main(self, args: Namespace) -> None:
-        ...
+    async def main(self, args: Namespace) -> None: ...
 
-    async def teardown(self, args: Namespace) -> None:
-        ...
+    async def teardown(self, args: Namespace) -> None: ...
 
     async def _run(self, args: Namespace) -> None:
         await self.setup(args)
@@ -526,8 +520,7 @@ class Scanner(AsyncScript, ABC):
         self.dumpcap: Dumpcap | None = None
 
     @abstractmethod
-    async def main(self, args: Namespace) -> None:
-        ...
+    async def main(self, args: Namespace) -> None: ...
 
     async def setup(self, args: Namespace) -> None:
         if args.target is None:

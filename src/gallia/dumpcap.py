@@ -18,7 +18,13 @@ from typing import cast
 from urllib.parse import urlparse
 
 from gallia.log import get_logger
-from gallia.transports import ISOTPTransport, RawCANTransport, TargetURI
+from gallia.transports import (
+    ISOTPTransport,
+    RawCANTransport,
+    TargetURI,
+    UnixLinesTransport,
+    UnixTransport,
+)
 from gallia.utils import auto_int, split_host_port
 
 logger = get_logger("gallia.dumpcap")
@@ -48,25 +54,31 @@ class Dumpcap:
         artifacts_dir: Path,
     ) -> Dumpcap | None:
         ts = int(datetime.now().timestamp())
-        if target.scheme in [ISOTPTransport.SCHEME, RawCANTransport.SCHEME]:
-            outfile = artifacts_dir.joinpath(f"candump-{ts}.pcap.gz")
-            src_addr = (
-                auto_int(target.qs["src_addr"][0]) if "src_addr" in target.qs else None
-            )
-            dst_addr = (
-                auto_int(target.qs["dst_addr"][0]) if "dst_addr" in target.qs else None
-            )
-            cmd = cls._can_cmd(
-                target.netloc,
-                src_addr,
-                dst_addr,
-            )
-        else:
-            outfile = artifacts_dir.joinpath(f"eth-{ts}.pcap.gz")
-            cmd = await cls._eth_cmd(target.netloc)
+
+        match target.scheme:
+            case ISOTPTransport.SCHEME | RawCANTransport.SCHEME:
+                outfile = artifacts_dir.joinpath(f"candump-{ts}.pcap.gz")
+                src_addr = auto_int(target.qs["src_addr"][0]) if "src_addr" in target.qs else None
+                dst_addr = auto_int(target.qs["dst_addr"][0]) if "dst_addr" in target.qs else None
+                cmd = cls._can_cmd(
+                    target.netloc,
+                    src_addr,
+                    dst_addr,
+                )
+            case UnixTransport.SCHEME | UnixLinesTransport.SCHEME:
+                logger.warning("Dumpcap does not support unix domain sockets")
+                return None
+            # There is currently no API for transport plugins to
+            # register a scheme and a corresponding invocation
+            # for dumpcap. So this match…case is best effort,
+            # since it defaults to ethernet.
+            case _:
+                outfile = artifacts_dir.joinpath(f"eth-{ts}.pcap.gz")
+                cmd = await cls._eth_cmd(target.netloc)
 
         if cmd is None:
             return None
+
         cmd_str = shlex.join(cmd)
         try:
             proc = await asyncio.create_subprocess_exec(
@@ -123,12 +135,10 @@ class Dumpcap:
         return cast(int, struct.unpack(">H", struct.pack("<H", x))[0])
 
     @staticmethod
-    def _can_cmd(
-        iface: str, src_addr: int | None, dst_addr: int | None
-    ) -> list[str] | None:
+    def _can_cmd(iface: str, src_addr: int | None, dst_addr: int | None) -> list[str] | None:
         args = ["dumpcap", "-q", "-i", iface, "-w", "-"]
         # Debug this with `dumpcap -d` or `tshark -x` to inspect the captured buffer.
-        filter_ = "link[1] == 0x01"  # broadcast flag; ignore "sent by us" frames
+        filter_ = ""
 
         if src_addr is not None and dst_addr is not None:
             # TODO: Support extended CAN IDs
@@ -136,20 +146,20 @@ class Dumpcap:
                 logger.error("Extended CAN Ids are currently not supported!")
                 return None
 
-            # Debug this with `dumpcap -d` or `tshark -x` to inspect the captured buffer.
             filter_ += (
-                f"&& (link[16:2] == {Dumpcap._swap_bytes_16(src_addr):#x} "  # can_id is in little endian
-                f"|| link[16:2] == {Dumpcap._swap_bytes_16(dst_addr):#x})"
+                f"link[0:2] == {Dumpcap._swap_bytes_16(src_addr):#x} "  # can_id is in little endian
+                f"|| link[0:2] == {Dumpcap._swap_bytes_16(dst_addr):#x}"
             )
         args += ["-f", filter_]
         return args
 
     @staticmethod
-    async def _eth_cmd(target_ip: str) -> list[str]:
+    async def _eth_cmd(target_ip: str) -> list[str] | None:
         try:
             host, port = split_host_port(target_ip)
         except Exception as e:
-            raise ValueError(f"Invalid argument for target ip: {target_ip}; {e}") from e
+            logger.error(f"Invalid argument for target ip: {target_ip}; {e}")
+            return None
 
         if proxy := os.getenv("all_proxy"):
             url = urlparse(proxy)

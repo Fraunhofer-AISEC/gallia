@@ -50,15 +50,12 @@ class UDSServer(ABC):
     @abstractmethod
     def supported_services(
         self,
-    ) -> dict[int, dict[UDSIsoServices, list[int] | None]]:
-        ...
+    ) -> dict[int, dict[UDSIsoServices, list[int] | None]]: ...
 
     def default_response_if_service_not_supported(
         self, request: service.UDSRequest
     ) -> service.NegativeResponse | None:
-        assert (
-            self.state.session in self.supported_services
-        ), "Virtual ECU in unsupported session"
+        assert self.state.session in self.supported_services, "Virtual ECU in unsupported session"
 
         if request.service_id not in self.supported_services[self.state.session]:
             if any(request.service_id in s for s in self.supported_services.values()):
@@ -102,9 +99,7 @@ class UDSServer(ABC):
     def default_response_if_sub_function_not_supported(
         self, request: service.UDSRequest
     ) -> service.NegativeResponse | None:
-        assert (
-            self.state.session in self.supported_services
-        ), "Virtual ECU in unsupported session"
+        assert self.state.session in self.supported_services, "Virtual ECU in unsupported session"
 
         # The standards explicitly excludes RoutineControl for this check because the availability of a sub function
         # depends on the routineIdentifier
@@ -116,10 +111,7 @@ class UDSServer(ABC):
             supported_in_other_session = False
 
             for session in self.supported_services:
-                if (
-                    UDSIsoServices(request.service_id)
-                    not in self.supported_services[session]
-                ):
+                if UDSIsoServices(request.service_id) not in self.supported_services[session]:
                     continue
 
                 supported_sub_functions = self.supported_services[session][
@@ -159,13 +151,11 @@ class UDSServer(ABC):
 
         return None
 
-    def default_response_if_session_change(
-        self, request: service.UDSRequest
-    ) -> None | (service.NegativeResponse | service.DiagnosticSessionControlResponse):
+    def default_response_if_session_change(self, request: service.UDSRequest) -> None | (
+        service.NegativeResponse | service.DiagnosticSessionControlResponse
+    ):
         if isinstance(request, service.DiagnosticSessionControlRequest):
-            return service.DiagnosticSessionControlResponse(
-                request.diagnostic_session_type
-            )
+            return service.DiagnosticSessionControlResponse(request.diagnostic_session_type)
 
         return None
 
@@ -173,10 +163,7 @@ class UDSServer(ABC):
         self, request: service.UDSRequest
     ) -> service.ReadDataByIdentifierResponse | None:
         if isinstance(request, service.ReadDataByIdentifierRequest):
-            if (
-                request.data_identifier
-                == DataIdentifier.ActiveDiagnosticSessionDataIdentifier
-            ):
+            if request.data_identifier == DataIdentifier.ActiveDiagnosticSessionDataIdentifier:
                 return service.ReadDataByIdentifierResponse(
                     request.data_identifier, to_bytes(self.state.session, 1)
                 )
@@ -191,9 +178,7 @@ class UDSServer(ABC):
 
         return None
 
-    def default_response_if_none(
-        self, request: service.UDSRequest
-    ) -> service.NegativeResponse:
+    def default_response_if_none(self, request: service.UDSRequest) -> service.NegativeResponse:
         return service.NegativeResponse(request.service_id, UDSErrorCodes.generalReject)
 
     def default_response_if_suppress(
@@ -237,38 +222,32 @@ class UDSServer(ABC):
 
         if (
             self.use_default_response_if_service_not_supported
-            and (response := self.default_response_if_service_not_supported(request))
-            is not None
+            and (response := self.default_response_if_service_not_supported(request)) is not None
         ):
             return response
 
         if (
             self.use_default_response_if_missing_sub_function
-            and (response := self.default_response_if_missing_sub_function(request))
-            is not None
+            and (response := self.default_response_if_missing_sub_function(request)) is not None
         ):
             return response
 
         if (
             self.use_default_response_if_sub_function_not_supported
-            and (
-                response := self.default_response_if_sub_function_not_supported(request)
-            )
+            and (response := self.default_response_if_sub_function_not_supported(request))
             is not None
         ):
             return response
 
         if (
             self.use_default_response_if_incorrect_format
-            and (response := self.default_response_if_incorrect_format(request))
-            is not None
+            and (response := self.default_response_if_incorrect_format(request)) is not None
         ):
             return response
 
         if (
             self.use_default_response_if_session_change
-            and (response := self.default_response_if_session_change(request))
-            is not None
+            and (response := self.default_response_if_session_change(request)) is not None
         ):
             return response
 
@@ -280,8 +259,7 @@ class UDSServer(ABC):
 
         if (
             self.use_default_response_if_tester_present
-            and (response := self.default_response_if_tester_present(request))
-            is not None
+            and (response := self.default_response_if_tester_present(request)) is not None
         ):
             return response
 
@@ -312,8 +290,7 @@ class UDSServer(ABC):
     @abstractmethod
     async def respond_after_default(
         self, request: service.UDSRequest
-    ) -> service.UDSResponse | None:
-        ...
+    ) -> service.UDSResponse | None: ...
 
 
 class RNG(random.Random):
@@ -373,8 +350,7 @@ class RandomUDSServer(UDSServer):
         self.services: dict[int, dict[UDSIsoServices, list[int] | None]] = {}
         self.mandatory_services = [UDSIsoServices.DiagnosticSessionControl]
         self.optional_services = list(
-            set(UDSIsoServices)
-            - set(self.mandatory_services + [UDSIsoServices.NegativeResponse])
+            set(UDSIsoServices) - set(self.mandatory_services + [UDSIsoServices.NegativeResponse])
         )
         self.p_service = 0.2
 
@@ -419,14 +395,14 @@ class RandomUDSServer(UDSServer):
             p_transition = self.p_session / len(level_sessions) / 2 ** (level + 0.5)
             next_level_sessions = set()
             available_sessions = [
-                i for i, l in enumerate(session_transitions) if len(l) > 0  # noqa: E741
+                i
+                for i, l in enumerate(session_transitions)  # noqa: E741
+                if len(l) > 0
             ]
 
             for session in level_sessions:
                 transitions = [
-                    session
-                    for session in combined_sessions
-                    if rng.random() < p_transition
+                    session for session in combined_sessions if rng.random() < p_transition
                 ]
                 session_transitions[session].update(transitions)
                 next_level_sessions.update(transitions)
@@ -469,9 +445,7 @@ class RandomUDSServer(UDSServer):
                         supported_sub_functions = sorted(session_specific_transitions)
                     elif supported_service == UDSIsoServices.SecurityAccess:
                         supported_sub_functions_tmp = [
-                            sf
-                            for sf in range(1, 0x7E, 2)
-                            if rng.random() < self.p_sub_function / 2
+                            sf for sf in range(1, 0x7E, 2) if rng.random() < self.p_sub_function / 2
                         ]
                         supported_sub_functions = []
 
@@ -479,19 +453,13 @@ class RandomUDSServer(UDSServer):
                             supported_sub_functions.append(sf)
                             supported_sub_functions.append(sf + 1)
                     elif supported_service == UDSIsoServices.RoutineControl:
-                        supported_sub_functions = [
-                            sf.value for sf in RoutineControlSubFuncs
-                        ]
+                        supported_sub_functions = [sf.value for sf in RoutineControlSubFuncs]
                     # Currently only this sub function is supported so it doesn't make sense to gamble a lot here
                     elif supported_service == UDSIsoServices.ReadDTCInformation:
-                        supported_sub_functions = [
-                            ReadDTCInformationSubFuncs.reportDTCByStatusMask
-                        ]
+                        supported_sub_functions = [ReadDTCInformationSubFuncs.reportDTCByStatusMask]
                     else:
                         supported_sub_functions = [
-                            sf
-                            for sf in range(1, 0x80, 1)
-                            if rng.random() < self.p_sub_function
+                            sf for sf in range(1, 0x80, 1) if rng.random() < self.p_sub_function
                         ]
 
                 self.services[session][supported_service] = supported_sub_functions
@@ -504,10 +472,7 @@ class RandomUDSServer(UDSServer):
 
     def stateful_rng(self, *args: Any) -> RNG:
         return RNG(
-            str(self.seed)
-            + "|"
-            + str(self.state.session)
-            + "|".join(str(arg) for arg in args)
+            str(self.seed) + "|" + str(self.state.session) + "|".join(str(arg) for arg in args)
         )
 
     async def respond_after_default(
@@ -542,9 +507,7 @@ class RandomUDSServer(UDSServer):
 
         if not isinstance(response, service.TesterPresentResponse):
             self.state.last_sa_response = (
-                response
-                if isinstance(response, service.SecurityAccessResponse)
-                else None
+                response if isinstance(response, service.SecurityAccessResponse) else None
             )
 
     def ecu_reset(self, request: service.ECUResetRequest) -> service.UDSResponse:
@@ -555,9 +518,7 @@ class RandomUDSServer(UDSServer):
 
         return service.ECUResetResponse(request.reset_type)
 
-    def security_access(
-        self, request: service._SecurityAccessRequest
-    ) -> service.UDSResponse:
+    def security_access(self, request: service._SecurityAccessRequest) -> service.UDSResponse:
         if isinstance(request, service.RequestSeedRequest):
             return service.SecurityAccessResponse(
                 request.security_access_type, RNG().random_payload()
@@ -580,21 +541,15 @@ class RandomUDSServer(UDSServer):
             if request.security_key == expected_key:
                 return service.SecurityAccessResponse(request.security_access_type)
 
-            return service.NegativeResponse(
-                request.service_id, UDSErrorCodes.invalidKey
-            )
+            return service.NegativeResponse(request.service_id, UDSErrorCodes.invalidKey)
 
         raise AssertionError()
 
-    def routine_control(
-        self, request: service.RoutineControlRequest
-    ) -> service.UDSResponse:
+    def routine_control(self, request: service.RoutineControlRequest) -> service.UDSResponse:
         rng = self.stateful_rng(request.service_id, request.routine_identifier)
 
         if not rng.random_bool(self.p_identifier):
-            return service.NegativeResponse(
-                request.service_id, UDSErrorCodes.requestOutOfRange
-            )
+            return service.NegativeResponse(request.service_id, UDSErrorCodes.requestOutOfRange)
 
         rng.add_seeds(request.sub_function)
 
@@ -618,9 +573,7 @@ class RandomUDSServer(UDSServer):
         rng = self.stateful_rng(request.pdu)
 
         if not rng.random_bool(self.p_identifier):
-            return service.NegativeResponse(
-                request.service_id, UDSErrorCodes.requestOutOfRange
-            )
+            return service.NegativeResponse(request.service_id, UDSErrorCodes.requestOutOfRange)
 
         return service.ReadDataByIdentifierResponse(
             request.data_identifier, rng.random_payload(min_len=1)
@@ -632,9 +585,7 @@ class RandomUDSServer(UDSServer):
         rng = self.stateful_rng(request.service_id, request.data_identifier)
 
         if not rng.random_bool(self.p_identifier):
-            return service.NegativeResponse(
-                request.service_id, UDSErrorCodes.requestOutOfRange
-            )
+            return service.NegativeResponse(request.service_id, UDSErrorCodes.requestOutOfRange)
 
         rng = self.stateful_rng(request.pdu)
 
@@ -651,9 +602,7 @@ class RandomUDSServer(UDSServer):
         rng = self.stateful_rng(request.service_id, request.data_identifier)
 
         if not rng.random_bool(self.p_identifier):
-            return service.NegativeResponse(
-                request.service_id, UDSErrorCodes.requestOutOfRange
-            )
+            return service.NegativeResponse(request.service_id, UDSErrorCodes.requestOutOfRange)
 
         rng = self.stateful_rng(request.pdu)
 
@@ -670,9 +619,7 @@ class RandomUDSServer(UDSServer):
         rng = self.stateful_rng(request.service_id, request.group_of_dtc)
 
         if not rng.random_bool(self.p_dtc_status_mask):
-            return service.NegativeResponse(
-                request.service_id, UDSErrorCodes.requestOutOfRange
-            )
+            return service.NegativeResponse(request.service_id, UDSErrorCodes.requestOutOfRange)
 
         return service.ClearDiagnosticInformationResponse()
 
@@ -698,15 +645,11 @@ class RandomUDSServer(UDSServer):
                 dtc_status_availability_mask, dtc_and_status_record
             )
 
-        return service.NegativeResponse(
-            request.service_id, UDSErrorCodes.subFunctionNotSupported
-        )
+        return service.NegativeResponse(request.service_id, UDSErrorCodes.subFunctionNotSupported)
 
 
 class DBUDSServer(UDSServer):
-    def __init__(
-        self, db_path: Path, ecu: str | None, properties: dict[str, Any] | None
-    ):
+    def __init__(self, db_path: Path, ecu: str | None, properties: dict[str, Any] | None):
         super().__init__()
 
         self.db_path = db_path
@@ -768,9 +711,7 @@ class DBUDSServer(UDSServer):
                 query += f"json_extract(r.state, '$.{key}') IS NULL AND "
             else:
                 query += f"json_extract(r.state, '$.{key}') = ? AND "
-                parameters.append(
-                    value if isinstance(value, int | float) else json.dumps(value)
-                )
+                parameters.append(value if isinstance(value, int | float) else json.dumps(value))
 
         if self.properties is not None:
             for key, value in self.properties.items():
@@ -787,9 +728,7 @@ class DBUDSServer(UDSServer):
         final_query = f"{query} AND r.id > ? ORDER BY r.id LIMIT 1 "
 
         parameters += [bytes_repr(request.pdu, False, None), self.last_response]
-        cursor: aiosqlite.Cursor = await self.connection.execute(
-            final_query, parameters
-        )
+        cursor: aiosqlite.Cursor = await self.connection.execute(final_query, parameters)
         result = await cursor.fetchone()
 
         if result is None:
@@ -817,8 +756,7 @@ class UDSServerTransport:
         self.target = target
         self.last_time_active = time()
 
-    async def run(self) -> None:
-        ...
+    async def run(self) -> None: ...
 
     async def handle_request(self, request_pdu: bytes) -> tuple[bytes | None, float]:
         start = time()
@@ -857,16 +795,16 @@ class TCPUDSServerTransport(UDSServerTransport):
 
                 tcp_request = line.decode("ascii").strip()
                 uds_request_raw = unhexlify(tcp_request)
-                uds_response_raw, response_time = await self.handle_request(
-                    uds_request_raw
-                )
+                uds_response_raw, response_time = await self.handle_request(uds_request_raw)
                 response_times.append(response_time)
 
                 if uds_response_raw is not None:
                     writer.write(hexlify(uds_response_raw) + b"\n")
                     await writer.drain()
-            except Exception:
+            except Exception as e:
+                logger.error(f"Unexpected exception when handling client communication: {e!r}")
                 traceback.print_exc()
+                break
 
         logger.info("Connection closed")
         logger.info(
@@ -893,8 +831,10 @@ class ISOTPUDSServerTransport(UDSServerTransport):
 
                 if uds_response_raw is not None:
                     await transport.write(uds_response_raw)
-            except Exception:
+            except Exception as e:
+                logger.error(f"Unexpected exception when handling client communication: {e!r}")
                 traceback.print_exc()
+                break
 
 
 class UnixUDSServerTransport(TCPUDSServerTransport):

@@ -193,20 +193,14 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
         self, timeout: float | None = None, tags: list[str] | None = None
     ) -> tuple[int, bytes]:
         loop = asyncio.get_running_loop()
-        can_frame = await asyncio.wait_for(
-            loop.sock_recv(self._sock, self.BUFSIZE), timeout
-        )
+        can_frame = await asyncio.wait_for(loop.sock_recv(self._sock, self.BUFSIZE), timeout)
         msg = CANMessage.unpack(can_frame)
 
         t = tags + ["read"] if tags is not None else ["read"]
         if msg.is_extended_id:
-            logger.trace(
-                f"{msg.arbitration_id:08x}#{msg.data.hex()}", extra={"tags": t}
-            )
+            logger.trace(f"{msg.arbitration_id:08x}#{msg.data.hex()}", extra={"tags": t})
         else:
-            logger.trace(
-                f"{msg.arbitration_id:03x}#{msg.data.hex()}", extra={"tags": t}
-            )
+            logger.trace(f"{msg.arbitration_id:03x}#{msg.data.hex()}", extra={"tags": t})
         return msg.arbitration_id, msg.data
 
     async def close(self) -> None:
@@ -225,7 +219,7 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
                 if addr not in addr_idle:
                     logger.info(f"Received a message from {addr:03x}")
                     addr_idle.append(addr)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 continue
         addr_idle.sort()
         return addr_idle

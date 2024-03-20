@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import asyncio
 import reprlib
 import sys
 from argparse import Namespace
@@ -73,9 +72,7 @@ class ResetScanner(UDSScanner):
                 logger.notice(f"Switching to session {g_repr(session)}")
                 resp: UDSResponse = await self.ecu.set_session(session)
                 if isinstance(resp, NegativeResponse):
-                    logger.warning(
-                        f"Switching to session {g_repr(session)} failed: {resp}"
-                    )
+                    logger.warning(f"Switching to session {g_repr(session)} failed: {resp}")
                     continue
 
                 logger.result(f"Scanning in session: {g_repr(session)}")
@@ -131,12 +128,10 @@ class ResetScanner(UDSScanner):
                 else:
                     await self.ecu.wait_for_ecu()
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 l_timeout.append(sub_func)
                 if not args.power_cycle:
-                    logger.error(
-                        f"ECU did not respond after reset level {g_repr(sub_func)}; exit"
-                    )
+                    logger.error(f"ECU did not respond after reset level {g_repr(sub_func)}; exit")
                     sys.exit(1)
 
                 logger.warning(
@@ -145,7 +140,7 @@ class ResetScanner(UDSScanner):
                 try:
                     await self.ecu.power_cycle()
                     await self.ecu.wait_for_ecu()
-                except (ConnectionError, asyncio.TimeoutError) as e:
+                except (TimeoutError, ConnectionError) as e:
                     logger.error(f"Failed to recover ECU: {g_repr(e)}; exit")
                     sys.exit(1)
             except ConnectionError:
@@ -163,9 +158,7 @@ class ResetScanner(UDSScanner):
                         f"should be {g_repr(session)}"
                     )
                 except UnexpectedNegativeResponse as e:
-                    logger.warning(
-                        f"Could not read current session: {e.RESPONSE_CODE.name}"
-                    )
+                    logger.warning(f"Could not read current session: {e.RESPONSE_CODE.name}")
 
             if session is not None:
                 logger.info(f"Setting session {g_repr(session)}")

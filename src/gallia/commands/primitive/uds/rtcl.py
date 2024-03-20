@@ -94,9 +94,7 @@ class RTCLPrimitive(UDSScanner):
         try:
             await self.ecu.check_and_set_session(args.session)
         except Exception as e:
-            logger.critical(
-                f"Could not change to session: {g_repr(args.session)}: {e!r}"
-            )
+            logger.critical(f"Could not change to session: {g_repr(args.session)}: {e!r}")
             sys.exit(1)
 
         if args.start is False and args.stop is False and args.results is False:
@@ -120,9 +118,7 @@ class RTCLPrimitive(UDSScanner):
             delay = args.stop_delay
 
             if delay > 0:
-                logger.info(
-                    f"Delaying the request for stopping the routine by {delay} seconds"
-                )
+                logger.info(f"Delaying the request for stopping the routine by {delay} seconds")
                 await asyncio.sleep(delay)
 
             resp = await self.ecu.routine_control_stop_routine(
@@ -140,9 +136,7 @@ class RTCLPrimitive(UDSScanner):
             delay = args.results_delay
 
             if delay > 0:
-                logger.info(
-                    f"Delaying the request for the routine results by {delay} seconds"
-                )
+                logger.info(f"Delaying the request for the routine results by {delay} seconds")
                 await asyncio.sleep(delay)
 
             resp = await self.ecu.routine_control_request_routine_results(

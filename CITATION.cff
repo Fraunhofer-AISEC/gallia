@@ -2,13 +2,70 @@
 #
 # SPDX-License-Identifier: CC0-1.0
 
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
 cff-version: 1.2.0
 title: gallia
 message: >-
-  If you use this software as part of a publication and wish to cite
-  it, please use the metadata from this file.
+  If you use this software, please cite it using the
+  metadata from this file.
 type: software
+# Authors are taken from the initial release commit:
+# 075274c7fd253b944b5668fc3ae1c6d760882168 on Thu Apr 28 16:36:33 2022 +0200
 authors:
-  - name: AISEC Pentest Team
-    website: https://github.com/Fraunhofer-AISEC/gallia
+  - given-names: Stefan
+    family-names: Tatschner
+    affiliation: Fraunhofer AISEC
+    orcid: 'https://orcid.org/0000-0002-2288-9010'
+    email: stefan.tatschner@aisec.fraunhofer.de
+  - given-names: Tobias
+    family-names: Specht
+    email: tobias.specht@aisec.fraunhofer.de
+    orcid: 'https://orcid.org/0009-0001-7615-7579'
+    affiliation: Fraunhofer AISEC
+  - given-names: Fabian
+    family-names: Kügler
+    email: fabian.kuegler@aisec.fraunhofer.de
+    affiliation: Fraunhofer AISEC
+  - given-names: Ferdinand
+    family-names: Jarisch
+    email: ferdinand.jarisch@aisec.fraunhofer.de
+    affiliation: Fraunhofer AISEC
+  - given-names: Johannes
+    family-names: Obermaier
+    email: johannes.obermaier@aisec.fraunhofer.de
+    affiliation: Fraunhofer AISEC
+    orcid: 'https://orcid.org/0000-0001-8021-6132'
+  - given-names: Dieter
+    family-names: Schuster
+    email: dieter.schuster@aisec.fraunhofer.de
+    affiliation: Fraunhofer AISEC
+  - given-names: Tobias
+    family-names: Madl
+    email: tobias.madl@aisec.fraunhofer.de
+    affiliation: Fraunhofer AISEC
+  - given-names: Veronique
+    family-names: Ehmes
+    email: veronique.ehmes@aisec.fraunhofer.de
+    orcid: 'https://orcid.org/0009-0001-3605-4305'
+    affiliation: Fraunhofer AISEC
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.10696368
+    description: Zenodo Entry
+repository-code: 'https://github.com/Fraunhofer-AISEC/gallia'
+abstract: >-
+  Gallia is an extendable pentesting framework with the
+  focus on the automotive domain. The scope of the toolchain
+  is conducting penetration tests from a single ECU up to
+  whole cars. Currently, the main focus lies on the UDS
+  interface. Acting as a generic interface, the logging
+  functionality implements reproducible tests and enables
+  post-processing tasks.
+keywords:
+  - pentesting
+  - UDS
+  - automotive
 license: Apache-2.0
+

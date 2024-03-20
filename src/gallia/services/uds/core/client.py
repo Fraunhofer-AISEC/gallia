@@ -52,9 +52,7 @@ class UDSClient:
         async with self.mutex:
             self.transport = await self.transport.reconnect(timeout)
 
-    async def _read(
-        self, timeout: float | None = None, tags: list[str] | None = None
-    ) -> bytes:
+    async def _read(self, timeout: float | None = None, tags: list[str] | None = None) -> bytes:
         if timeout is None and self.timeout:
             timeout = self.timeout
         return await self.transport.read(timeout, tags)
@@ -77,17 +75,13 @@ class UDSClient:
 
             # Avoid pasting this very line in every error branch.
             if i > 0:
-                logger.info(
-                    f"Requesting UDS PDU failed; retrying: {i} from {max_retry}…"
-                )
+                logger.info(f"Requesting UDS PDU failed; retrying: {i} from {max_retry}…")
             try:
                 logger.debug(request.pdu.hex(), extra={"tags": ["write", "uds"] + tags})
-                raw_resp = await self.transport.request_unsafe(
-                    request.pdu, timeout, config.tags
-                )
+                raw_resp = await self.transport.request_unsafe(request.pdu, timeout, config.tags)
                 if raw_resp == b"":
                     raise BrokenPipeError("connection to target lost")
-            except asyncio.TimeoutError as e:
+            except TimeoutError as e:
                 logger.debug(f"{request} failed with: {repr(e)}")
                 last_exception = MissingResponse(request, str(e))
                 await asyncio.sleep(wait_time)
@@ -112,8 +106,7 @@ class UDSClient:
             max_n_timeout = max(timeout if timeout else 0, 20) / waiting_time
             while (
                 isinstance(resp, service.NegativeResponse)
-                and resp.response_code
-                == UDSErrorCodes.requestCorrectlyReceivedResponsePending
+                and resp.response_code == UDSErrorCodes.requestCorrectlyReceivedResponsePending
             ):
                 logger.info(
                     f"Received ResponsePending: {n_pending}/{MAX_N_PENDING}; "
@@ -124,9 +117,10 @@ class UDSClient:
                     if raw_resp == b"":
                         raise BrokenPipeError("connection to target lost")
                     logger.debug(raw_resp.hex(), extra={"tags": ["read", "uds"] + tags})
-                except asyncio.TimeoutError as e:
+                except TimeoutError as e:
                     # Send a tester present to indicate that
                     # we are still there.
+                    # TODO Is this really necessary?
                     await self._tester_present(suppress_resp=True)
                     n_timeout += 1
                     if n_timeout >= max_n_timeout:
@@ -137,9 +131,7 @@ class UDSClient:
                 n_timeout = 0  # Only raise errors for consecutive timeouts
                 n_pending += 1
                 if n_pending >= MAX_N_PENDING:
-                    raise RuntimeError(
-                        "ECU appears to be stuck in ResponsePending loop"
-                    )
+                    raise RuntimeError("ECU appears to be stuck in ResponsePending loop")
             else:
                 # We reach this code here once all response pending
                 # and similar busy stuff is resolved.
@@ -158,6 +150,7 @@ class UDSClient:
             tags = config.tags if config.tags is not None else []
             logger.debug(pdu.hex(), extra={"tags": ["write", "uds"] + tags})
             await self.transport.write(pdu, timeout, config.tags)
+            # TODO This is not fail safe: What if there is an answer???
             return None
         return await self.tester_present(False, config)
 
@@ -190,9 +183,7 @@ class UDSClient:
         :return: The response of the server.
         """
         return await self.request(
-            service.DiagnosticSessionControlRequest(
-                diagnostic_session_type, suppress_response
-            ),
+            service.DiagnosticSessionControlRequest(diagnostic_session_type, suppress_response),
             config,
         )
 
@@ -211,9 +202,7 @@ class UDSClient:
         :param config: Passed on to request_pdu().
         :return: The response of the server.
         """
-        return await self.request(
-            service.ECUResetRequest(reset_type, suppress_response), config
-        )
+        return await self.request(service.ECUResetRequest(reset_type, suppress_response), config)
 
     async def security_access_request_seed(
         self,
@@ -259,9 +248,7 @@ class UDSClient:
         :return: The response of the server.
         """
         return await self.request(
-            service.SendKeyRequest(
-                security_access_type, security_key, suppress_response
-            ),
+            service.SendKeyRequest(security_access_type, security_key, suppress_response),
             config,
         )
 
@@ -300,9 +287,7 @@ class UDSClient:
         :param config: Passed on to request_pdu().
         :return: The response of the server.
         """
-        return await self.request(
-            service.TesterPresentRequest(suppress_response), config
-        )
+        return await self.request(service.TesterPresentRequest(suppress_response), config)
 
     async def control_dtc_setting(
         self,
@@ -347,9 +332,7 @@ class UDSClient:
         :param config: Passed on to request_pdu().
         :return: The response of the server.
         """
-        return await self.request(
-            service.ReadDataByIdentifierRequest(data_identifiers), config
-        )
+        return await self.request(service.ReadDataByIdentifierRequest(data_identifiers), config)
 
     async def read_memory_by_address(
         self,
@@ -441,9 +424,7 @@ class UDSClient:
         :param config: Passed on to request_pdu().
         :return: The response of the server.
         """
-        return await self.request(
-            service.ClearDiagnosticInformationRequest(group_of_dtc), config
-        )
+        return await self.request(service.ClearDiagnosticInformationRequest(group_of_dtc), config)
 
     async def read_dtc_information_report_number_of_dtc_by_status_mask(
         self,
@@ -462,9 +443,7 @@ class UDSClient:
         :return: The response of the server.
         """
         return await self.request(
-            service.ReportNumberOfDTCByStatusMaskRequest(
-                dtc_status_mask, suppress_response
-            ),
+            service.ReportNumberOfDTCByStatusMaskRequest(dtc_status_mask, suppress_response),
             config,
         )
 
@@ -494,7 +473,7 @@ class UDSClient:
         dtc_status_mask: int,
         suppress_response: bool = False,
         config: UDSRequestConfig | None = None,
-    ) -> (service.NegativeResponse | service.ReportMirrorMemoryDTCByStatusMaskResponse):
+    ) -> service.NegativeResponse | service.ReportMirrorMemoryDTCByStatusMaskResponse:
         """Read DTCs and their state from the UDS server's mirror memory.
         This is an implementation of the UDS request for the reportMirrorMemoryDTCByStatusMask
         sub-function of the
@@ -507,9 +486,7 @@ class UDSClient:
         :return: The response of the server.
         """
         return await self.request(
-            service.ReportMirrorMemoryDTCByStatusMaskRequest(
-                dtc_status_mask, suppress_response
-            ),
+            service.ReportMirrorMemoryDTCByStatusMaskRequest(dtc_status_mask, suppress_response),
             config,
         )
 
@@ -518,10 +495,7 @@ class UDSClient:
         dtc_status_mask: int,
         suppress_response: bool = False,
         config: UDSRequestConfig | None = None,
-    ) -> (
-        service.NegativeResponse
-        | service.ReportNumberOfMirrorMemoryDTCByStatusMaskResponse
-    ):
+    ) -> service.NegativeResponse | service.ReportNumberOfMirrorMemoryDTCByStatusMaskResponse:
         """Read the number of DTCs with the specified state from the UDS server's mirror memory.
         This is an implementation of the UDS request for the
         reportNumberOfMirrorMemoryDTCByStatusMask sub-function of
@@ -546,8 +520,7 @@ class UDSClient:
         suppress_response: bool = False,
         config: UDSRequestConfig | None = None,
     ) -> (
-        service.NegativeResponse
-        | service.ReportNumberOfEmissionsRelatedOBDDTCByStatusMaskResponse
+        service.NegativeResponse | service.ReportNumberOfEmissionsRelatedOBDDTCByStatusMaskResponse
     ):
         """Read the number of emission related DTCs with the specified state from the UDS server.
         This is an implementation of the UDS request for the
@@ -572,10 +545,7 @@ class UDSClient:
         dtc_status_mask: int,
         suppress_response: bool = False,
         config: UDSRequestConfig | None = None,
-    ) -> (
-        service.NegativeResponse
-        | service.ReportEmissionsRelatedOBDDTCByStatusMaskResponse
-    ):
+    ) -> service.NegativeResponse | service.ReportEmissionsRelatedOBDDTCByStatusMaskResponse:
         """Read the number of emission related DTCs with the specified state from the UDS server.
         This is an implementation of the UDS request for the
         reportNumberOfEmissionsRelatedOBDDTCByStatusMask
@@ -600,7 +570,7 @@ class UDSClient:
         control_option_record: bytes,
         control_enable_mask_record: bytes = b"",
         config: UDSRequestConfig | None = None,
-    ) -> (service.NegativeResponse | service.InputOutputControlByIdentifierResponse):
+    ) -> service.NegativeResponse | service.InputOutputControlByIdentifierResponse:
         """Controls input or output values on the server.
         This is an implementation of the UDS request for the service InputOutputControlByIdentifier
         (0x2F).
@@ -620,9 +590,7 @@ class UDSClient:
         :param config: Passed on to request_pdu().
         :return: The response of the server.
         """
-        pdu = struct.pack(
-            "!BH", UDSIsoServices.InputOutputControlByIdentifier, data_identifier
-        )
+        pdu = struct.pack("!BH", UDSIsoServices.InputOutputControlByIdentifier, data_identifier)
         pdu += control_option_record + control_enable_mask_record
         return await self.request(
             service.InputOutputControlByIdentifierRequest(
@@ -636,7 +604,7 @@ class UDSClient:
         data_identifier: int,
         control_enable_mask_record: bytes = b"",
         config: UDSRequestConfig | None = None,
-    ) -> (service.NegativeResponse | service.InputOutputControlByIdentifierResponse):
+    ) -> service.NegativeResponse | service.InputOutputControlByIdentifierResponse:
         """Gives the control over input / output parameters back to the ECU.
         This is a convenience wrapper for the generic input_output_control_by_id() for the case
         where an inputOutputControlParameter is used and is set to returnControlToECU.
@@ -651,9 +619,7 @@ class UDSClient:
         :return: The response of the server.
         """
         return await self.request(
-            service.ReturnControlToECURequest(
-                data_identifier, control_enable_mask_record
-            ),
+            service.ReturnControlToECURequest(data_identifier, control_enable_mask_record),
             config,
         )
 
@@ -662,7 +628,7 @@ class UDSClient:
         data_identifier: int,
         control_enable_mask_record: bytes = b"",
         config: UDSRequestConfig | None = None,
-    ) -> (service.NegativeResponse | service.InputOutputControlByIdentifierResponse):
+    ) -> service.NegativeResponse | service.InputOutputControlByIdentifierResponse:
         """Sets the input / output parameters to the default value(s).
         This is a convenience wrapper of the generic request for the case where an
         inputOutputControlParameter is used and is set to resetToDefault.
@@ -686,7 +652,7 @@ class UDSClient:
         data_identifier: int,
         control_enable_mask_record: bytes = b"",
         config: UDSRequestConfig | None = None,
-    ) -> (service.NegativeResponse | service.InputOutputControlByIdentifierResponse):
+    ) -> service.NegativeResponse | service.InputOutputControlByIdentifierResponse:
         """Freezes the input / output parameters at their current state.
         This is a convenience wrapper of the generic request for the case where an
         inputOutputControlParameter is used and is set to  freezeCurrentState.
@@ -700,9 +666,7 @@ class UDSClient:
         :return: The response of the server.
         """
         return await self.request(
-            service.FreezeCurrentStateRequest(
-                data_identifier, control_enable_mask_record
-            ),
+            service.FreezeCurrentStateRequest(data_identifier, control_enable_mask_record),
             config,
         )
 
@@ -712,7 +676,7 @@ class UDSClient:
         control_states: bytes,
         control_enable_mask_record: bytes = b"",
         config: UDSRequestConfig | None = None,
-    ) -> (service.NegativeResponse | service.InputOutputControlByIdentifierResponse):
+    ) -> service.NegativeResponse | service.InputOutputControlByIdentifierResponse:
         """Sets the input / output parameters as specified in the controlOptionRecord.
         This is a convenience wrapper of the generic request for the case
         where an inputOutputControlParameter is used and is set to freezeCurrentState.
@@ -728,9 +692,7 @@ class UDSClient:
         :return: The response of the server.
         """
         return await self.request(
-            service.ShortTermAdjustmentRequest(
-                data_identifier, control_enable_mask_record
-            ),
+            service.ShortTermAdjustmentRequest(data_identifier, control_enable_mask_record),
             config,
         )
 
@@ -896,9 +858,7 @@ class UDSClient:
         :return: The response of the server.
         """
         return await self.request(
-            service.TransferDataRequest(
-                block_sequence_counter, transfer_request_parameter_record
-            ),
+            service.TransferDataRequest(block_sequence_counter, transfer_request_parameter_record),
             config,
         )
 
@@ -922,137 +882,117 @@ class UDSClient:
     @overload
     async def request(
         self, request: service.RawRequest, config: UDSRequestConfig | None = None
-    ) -> service.NegativeResponse | service.PositiveResponse:
-        ...
+    ) -> service.NegativeResponse | service.PositiveResponse: ...
 
     @overload
     async def request(
         self,
         request: service.DiagnosticSessionControlRequest,
         config: UDSRequestConfig | None = None,
-    ) -> service.NegativeResponse | service.DiagnosticSessionControlResponse:
-        ...
+    ) -> service.NegativeResponse | service.DiagnosticSessionControlResponse: ...
 
     @overload
     async def request(
         self,
         request: service.ECUResetRequest,
         config: UDSRequestConfig | None = None,
-    ) -> service.NegativeResponse | service.ECUResetResponse:
-        ...
+    ) -> service.NegativeResponse | service.ECUResetResponse: ...
 
     @overload
     async def request(
         self,
         request: service.RequestSeedRequest,
         config: UDSRequestConfig | None = None,
-    ) -> service.NegativeResponse | service.SecurityAccessResponse:
-        ...
+    ) -> service.NegativeResponse | service.SecurityAccessResponse: ...
 
     @overload
     async def request(
         self, request: service.SendKeyRequest, config: UDSRequestConfig | None = None
-    ) -> service.NegativeResponse | service.SecurityAccessResponse:
-        ...
+    ) -> service.NegativeResponse | service.SecurityAccessResponse: ...
 
     @overload
     async def request(
         self,
         request: service.CommunicationControlRequest,
         config: UDSRequestConfig | None = None,
-    ) -> service.NegativeResponse | service.CommunicationControlResponse:
-        ...
+    ) -> service.NegativeResponse | service.CommunicationControlResponse: ...
 
     @overload
     async def request(
         self,
         request: service.TesterPresentRequest,
         config: UDSRequestConfig | None = None,
-    ) -> service.NegativeResponse | service.TesterPresentResponse:
-        ...
+    ) -> service.NegativeResponse | service.TesterPresentResponse: ...
 
     @overload
     async def request(
         self,
         request: service.ControlDTCSettingRequest,
         config: UDSRequestConfig | None = None,
-    ) -> service.NegativeResponse | service.ControlDTCSettingResponse:
-        ...
+    ) -> service.NegativeResponse | service.ControlDTCSettingResponse: ...
 
     @overload
     async def request(
         self,
         request: service.ReadDataByIdentifierRequest,
         config: UDSRequestConfig | None = None,
-    ) -> service.NegativeResponse | service.ReadDataByIdentifierResponse:
-        ...
+    ) -> service.NegativeResponse | service.ReadDataByIdentifierResponse: ...
 
     @overload
     async def request(
         self,
         request: service.ReadMemoryByAddressRequest,
         config: UDSRequestConfig | None = None,
-    ) -> service.NegativeResponse | service.ReadMemoryByAddressResponse:
-        ...
+    ) -> service.NegativeResponse | service.ReadMemoryByAddressResponse: ...
 
     @overload
     async def request(
         self,
         request: service.WriteDataByIdentifierRequest,
         config: UDSRequestConfig | None = None,
-    ) -> service.NegativeResponse | service.WriteDataByIdentifierResponse:
-        ...
+    ) -> service.NegativeResponse | service.WriteDataByIdentifierResponse: ...
 
     @overload
     async def request(
         self,
         request: service.WriteMemoryByAddressRequest,
         config: UDSRequestConfig | None = None,
-    ) -> service.NegativeResponse | service.WriteMemoryByAddressResponse:
-        ...
+    ) -> service.NegativeResponse | service.WriteMemoryByAddressResponse: ...
 
     @overload
     async def request(
         self,
         request: service.ClearDiagnosticInformationRequest,
         config: UDSRequestConfig | None = None,
-    ) -> service.NegativeResponse | service.ClearDiagnosticInformationResponse:
-        ...
+    ) -> service.NegativeResponse | service.ClearDiagnosticInformationResponse: ...
 
     @overload
     async def request(
         self,
         request: service.ReportNumberOfDTCByStatusMaskRequest,
         config: UDSRequestConfig | None = None,
-    ) -> service.NegativeResponse | service.ReportNumberOfDTCByStatusMaskResponse:
-        ...
+    ) -> service.NegativeResponse | service.ReportNumberOfDTCByStatusMaskResponse: ...
 
     @overload
     async def request(
         self,
         request: service.ReportDTCByStatusMaskRequest,
         config: UDSRequestConfig | None = None,
-    ) -> service.NegativeResponse | service.ReportDTCByStatusMaskResponse:
-        ...
+    ) -> service.NegativeResponse | service.ReportDTCByStatusMaskResponse: ...
 
     @overload
     async def request(
         self,
         request: service.ReportMirrorMemoryDTCByStatusMaskRequest,
         config: UDSRequestConfig | None = None,
-    ) -> (service.NegativeResponse | service.ReportMirrorMemoryDTCByStatusMaskResponse):
-        ...
+    ) -> service.NegativeResponse | service.ReportMirrorMemoryDTCByStatusMaskResponse: ...
 
     @overload
     async def request(
         self,
         request: service.ReportNumberOfMirrorMemoryDTCByStatusMaskRequest,
         config: UDSRequestConfig | None = None,
-    ) -> (
-        service.NegativeResponse
-        | service.ReportNumberOfMirrorMemoryDTCByStatusMaskResponse
-    ):
-        ...
+    ) -> service.NegativeResponse | service.ReportNumberOfMirrorMemoryDTCByStatusMaskResponse: ...
 
     @overload
     async def request(
@@ -1060,85 +1000,71 @@ class UDSClient:
         request: service.ReportNumberOfEmissionsRelatedOBDDTCByStatusMaskRequest,
         config: UDSRequestConfig | None = None,
     ) -> (
-        service.NegativeResponse
-        | service.ReportNumberOfEmissionsRelatedOBDDTCByStatusMaskResponse
-    ):
-        ...
+        service.NegativeResponse | service.ReportNumberOfEmissionsRelatedOBDDTCByStatusMaskResponse
+    ): ...
 
     @overload
     async def request(
         self,
         request: service.ReportEmissionsRelatedOBDDTCByStatusMaskRequest,
         config: UDSRequestConfig | None = None,
-    ) -> (
-        service.NegativeResponse
-        | service.ReportEmissionsRelatedOBDDTCByStatusMaskResponse
-    ):
-        ...
+    ) -> service.NegativeResponse | service.ReportEmissionsRelatedOBDDTCByStatusMaskResponse: ...
 
     @overload
     async def request(
         self,
         request: service.InputOutputControlByIdentifierRequest,
         config: UDSRequestConfig | None = None,
-    ) -> (service.NegativeResponse | service.InputOutputControlByIdentifierResponse):
-        ...
+    ) -> service.NegativeResponse | service.InputOutputControlByIdentifierResponse: ...
 
     @overload
     async def request(
         self,
         request: service.StartRoutineRequest,
         config: UDSRequestConfig | None = None,
-    ) -> service.NegativeResponse | service.StartRoutineResponse:
-        ...
+    ) -> service.NegativeResponse | service.StartRoutineResponse: ...
 
     @overload
     async def request(
         self,
         request: service.StopRoutineRequest,
         config: UDSRequestConfig | None = None,
-    ) -> service.NegativeResponse | service.StopRoutineResponse:
-        ...
+    ) -> service.NegativeResponse | service.StopRoutineResponse: ...
 
     @overload
     async def request(
         self,
         request: service.RequestRoutineResultsRequest,
         config: UDSRequestConfig | None = None,
-    ) -> service.NegativeResponse | service.RequestRoutineResultsResponse:
-        ...
+    ) -> service.NegativeResponse | service.RequestRoutineResultsResponse: ...
 
     @overload
     async def request(
         self,
         request: service.RequestDownloadRequest,
         config: UDSRequestConfig | None = None,
-    ) -> service.NegativeResponse | service.RequestDownloadResponse:
-        ...
+    ) -> service.NegativeResponse | service.RequestDownloadResponse: ...
 
     @overload
     async def request(
         self,
         request: service.RequestUploadRequest,
         config: UDSRequestConfig | None = None,
-    ) -> service.NegativeResponse | service.RequestUploadResponse:
-        ...
+    ) -> service.NegativeResponse | service.RequestUploadResponse: ...
 
     @overload
     async def request(
         self,
         request: service.TransferDataRequest,
         config: UDSRequestConfig | None = None,
-    ) -> service.NegativeResponse | service.TransferDataResponse:
-        ...
+    ) -> service.NegativeResponse | service.TransferDataResponse: ...
 
     @overload
     async def request(
         self,
         request: service.RequestTransferExitRequest,
         config: UDSRequestConfig | None = None,
-    ) -> service.NegativeResponse | service.RequestTransferExitResponse:
-        ...
+    ) -> service.NegativeResponse | service.RequestTransferExitResponse: ...
 
     async def request(
         self, request: service.UDSRequest, config: UDSRequestConfig | None = None

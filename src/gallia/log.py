@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import atexit
+import datetime
 import gzip
 import io
 import logging
@@ -17,13 +18,12 @@ import tempfile
 import traceback
 from collections.abc import Iterator
 from dataclasses import dataclass
-from datetime import datetime
 from enum import Enum, IntEnum, unique
 from logging.handlers import QueueHandler, QueueListener
 from pathlib import Path
 from queue import Queue
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, BinaryIO, TextIO, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, BinaryIO, Self, TextIO, TypeAlias, cast
 
 import msgspec
 import zstandard
@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     from logging import _ExcInfoType
 
 
-tz = datetime.utcnow().astimezone().tzinfo
+tz = datetime.datetime.now(datetime.UTC).tzinfo
 
 
 @unique
@@ -299,7 +299,7 @@ def add_stderr_log_handler(
 
 def add_zst_log_handler(
     logger_name: str, filepath: Path, file_log_level: Loglevel
-) -> None:
+) -> logging.Handler:
     queue: Queue[Any] = Queue()
     logger = get_logger(logger_name)
     logger.addHandler(QueueHandler(queue))
@@ -318,6 +318,7 @@ def add_zst_log_handler(
     )
     queue_listener.start()
     atexit.register(queue_listener.stop)
+    return zstd_handler
 
 
 class _PenlogRecordV1(msgspec.Struct, omit_defaults=True):
@@ -380,7 +381,7 @@ def _colorize_msg(data: str, levelno: int) -> tuple[str, int]:
 
 
 def _format_record(  # noqa: PLR0913
-    dt: datetime,
+    dt: datetime.datetime,
     name: str,
     data: str,
     levelno: int,
@@ -407,9 +408,7 @@ def _format_record(  # noqa: PLR0913
 
     if volatile_info and levelno <= Loglevel.INFO:
         terminal_width, _ = shutil.get_terminal_size()
-        msg = msg[
-            : terminal_width + extra_len - 1
-        ]  # Adapt length to invisible ANSI colors
+        msg = msg[: terminal_width + extra_len - 1]  # Adapt length to invisible ANSI colors
         msg += _Color.RESET.value
         msg += "\r"
     else:
@@ -427,7 +426,7 @@ class PenlogRecord:
     module: str
     host: str
     data: str
-    datetime: datetime
+    datetime: datetime.datetime
     # FIXME: Enums are slow.
     priority: PenlogPriority
     tags: list[str] | None = None
@@ -460,7 +459,7 @@ class PenlogRecord:
         return int(prio_str)
 
     @classmethod
-    def parse_json(cls, data: bytes) -> PenlogRecord:
+    def parse_json(cls, data: bytes) -> Self:
         if data.startswith(b"<"):
             data = data[data.index(b">") + 1 :]
 
@@ -475,12 +474,12 @@ class PenlogRecord:
         match record:
             case _PenlogRecordV1():
                 try:
-                    dt = datetime.fromisoformat(record.timestamp)
+                    dt = datetime.datetime.fromisoformat(record.timestamp)
                 except ValueError:
                     # Workaround for broken ISO strings. Go produced broken strings. :)
                     # We have some old logfiles with this shortcoming.
                     datestr, _ = record.timestamp.split(".", 2)
-                    dt = datetime.strptime(datestr, "%Y-%m-%dT%H:%M:%S")
+                    dt = datetime.datetime.strptime(datestr, "%Y-%m-%dT%H:%M:%S")
 
                 if record.tags is not None:
                     tags = record.tags
@@ -505,7 +504,7 @@ class PenlogRecord:
                     module=record.module,
                     host=record.host,
                     data=record.data,
-                    datetime=datetime.fromisoformat(record.datetime),
+                    datetime=datetime.datetime.fromisoformat(record.datetime),
                     priority=PenlogPriority(record.priority),
                     tags=record.tags,
                     line=record.line,
@@ -726,7 +725,7 @@ class _JSONFormatter(logging.Formatter):
             host=self.hostname,
             data=record.getMessage(),
             priority=PenlogPriority.from_level(record.levelno).value,
-            datetime=datetime.fromtimestamp(record.created, tz=tz).isoformat(),
+            datetime=datetime.datetime.fromtimestamp(record.created, tz=tz).isoformat(),
             line=f"{record.pathname}:{record.lineno}",
             stacktrace=stacktrace,
             tags=tags,
@@ -755,12 +754,10 @@ class _ConsoleFormatter(logging.Formatter):
             assert exc_traceback
 
             stacktrace = "\n"
-            stacktrace += "".join(
-                traceback.format_exception(exc_type, exc_value, exc_traceback)
-            )
+            stacktrace += "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
 
         return _format_record(
-            dt=datetime.fromtimestamp(record.created),
+            dt=datetime.datetime.fromtimestamp(record.created),
             name=record.name,
             data=record.getMessage(),
             levelno=record.levelno,

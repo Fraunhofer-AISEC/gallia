@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import asyncio
 from asyncio import Task
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 from gallia.db.log import LogMode
@@ -72,8 +72,7 @@ class ECU(UDSClient):
         self.db_handler: DBHandler | None = None
         self.implicit_logging = True
 
-    async def connect(self) -> None:
-        ...
+    async def connect(self) -> None: ...
 
     async def properties(
         self, fresh: bool = False, config: UDSRequestConfig | None = None
@@ -103,9 +102,7 @@ class ECU(UDSClient):
             raise as_exception(resp)
         return from_bytes(resp.data_record)
 
-    async def set_session_pre(
-        self, level: int, config: UDSRequestConfig | None = None
-    ) -> bool:
+    async def set_session_pre(self, level: int, config: UDSRequestConfig | None = None) -> bool:
         """set_session_pre() is called before the diagnostic session control
         pdu is written on the wire. Implement this if there are special
         preconditions for a particular session, such as disabling error
@@ -120,9 +117,7 @@ class ECU(UDSClient):
         """
         return True
 
-    async def set_session_post(
-        self, level: int, config: UDSRequestConfig | None = None
-    ) -> bool:
+    async def set_session_post(self, level: int, config: UDSRequestConfig | None = None) -> bool:
         """set_session_post() is called after the diagnostic session control
         pdu was written on the wire. Implement this if there are special
         cleanup routines or sleeping until a certain moment is required.
@@ -150,9 +145,7 @@ class ECU(UDSClient):
         logger.debug(f"Checking current session, expecting {g_repr(expected_session)}")
 
         try:
-            current_session = await self.read_session(
-                config=UDSRequestConfig(max_retry=retries)
-            )
+            current_session = await self.read_session(config=UDSRequestConfig(max_retry=retries))
         except UnexpectedNegativeResponse as e:
             if suggests_identifier_not_supported(e.RESPONSE_CODE):
                 logger.info(
@@ -160,7 +153,7 @@ class ECU(UDSClient):
                 )
                 return True
             raise e
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning("Reading current session timed out, skipping check_session")
             return True
 
@@ -179,9 +172,7 @@ class ECU(UDSClient):
             resp = await self.set_session(expected_session)
 
             if isinstance(resp, service.NegativeResponse):
-                logger.warning(
-                    f"Switching to session {g_repr(expected_session)} failed: {resp}"
-                )
+                logger.warning(f"Switching to session {g_repr(expected_session)} failed: {resp}")
 
             try:
                 current_session = await self.read_session(
@@ -197,10 +188,8 @@ class ECU(UDSClient):
                     )
                     return True
                 raise e
-            except asyncio.TimeoutError:
-                logger.warning(
-                    "Reading current session timed out, skipping check_session"
-                )
+            except TimeoutError:
+                logger.warning("Reading current session timed out, skipping check_session")
                 return True
 
         logger.warning(
@@ -220,9 +209,7 @@ class ECU(UDSClient):
         self.state.reset()
         return True
 
-    async def leave_session(
-        self, level: int, config: UDSRequestConfig | None = None
-    ) -> bool:
+    async def leave_session(self, level: int, config: UDSRequestConfig | None = None) -> bool:
         """leave_session() is a hook which can be called explicitly by a
         scanner when a session is to be disabled. Use this hook if resetting
         the ECU is required, e.g. when disabling the programming session.
@@ -259,14 +246,8 @@ class ECU(UDSClient):
 
         resp = await self.diagnostic_session_control(level, config=config)
 
-        if (
-            isinstance(resp, service.NegativeResponse)
-            and self.db_handler is not None
-            and use_db
-        ):
-            logger.debug(
-                "Could not switch to session. Trying with database transitions ..."
-            )
+        if isinstance(resp, service.NegativeResponse) and self.db_handler is not None and use_db:
+            logger.debug("Could not switch to session. Trying with database transitions ...")
 
             if self.db_handler is not None:
                 steps = await self.db_handler.get_session_transition(level)
@@ -288,9 +269,7 @@ class ECU(UDSClient):
         self, config: UDSRequestConfig | None = None
     ) -> service.NegativeResponse | service.ReportDTCByStatusMaskResponse:
         """Read all dtc records from the ecu."""
-        return await self.read_dtc_information_report_dtc_by_status_mask(
-            0xFF, config=config
-        )
+        return await self.read_dtc_information_report_dtc_by_status_mask(0xFF, config=config)
 
     async def clear_dtc(
         self, config: UDSRequestConfig | None = None
@@ -323,8 +302,7 @@ class ECU(UDSClient):
             counter += 1
             payload = data[i : i + payload_size]
             logger.debug(
-                f"Transferring block {g_repr(counter)} "
-                f"with payload size {g_repr(len(payload))}"
+                f"Transferring block {g_repr(counter)} " f"with payload size {g_repr(len(payload))}"
             )
             resp: service.UDSResponse = await self.transfer_data(
                 counter & 0xFF, payload, config=config
@@ -360,7 +338,7 @@ class ECU(UDSClient):
         try:
             await asyncio.wait_for(self._wait_for_ecu(0.5), timeout=t)
             return True
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.critical("Timeout while waiting for ECU!")
             return False
         finally:
@@ -370,42 +348,23 @@ class ECU(UDSClient):
     async def _tester_present_worker(self, interval: float) -> None:
         assert self.transport
         logger.debug("tester present worker started")
-        while True:
+        task = asyncio.current_task()
+        while task is not None and task.cancelling() == 0:
             try:
-                async with self.mutex:
-                    try:
-                        payload = bytes([0x3E, 0x80])
-                        await self.transport.write(payload)
-                        logger.debug(payload.hex(), extra={"tags": ["write", "uds"]})
-
-                        # Hold the mutex for 10 ms to synchronize this background
-                        # worker with the main sender task.
-                        await asyncio.sleep(0.01)
-
-                        # The BCP might send us an error. Everything
-                        # will break if we do not read it back. Since
-                        # this read() call is only intended to flush
-                        # errors caused by the previous write(), it is
-                        # sane to ignore the error here.
-                        try:
-                            await self.transport.read(timeout=0.01)
-                        except asyncio.TimeoutError:
-                            pass
-                    except asyncio.CancelledError:
-                        raise
-                    except ConnectionError:
-                        logger.info("connection lost; tester present waiting…")
-                        await asyncio.sleep(1)
-                    except Exception as e:
-                        logger.debug(f"tester present got {e!r}")
-
-                # Release the mutex while sleeping.
                 await asyncio.sleep(interval)
+                # TODO Only ping if there was no other UDS traffic for `interval` amount of time
+                await self.ping(UDSRequestConfig(max_retry=1))
             except asyncio.CancelledError:
                 logger.debug("tester present worker terminated")
-                break
+                raise
+            except ConnectionError:
+                logger.info("connection lost; tester present waiting…")
+            except Exception as e:
+                logger.warning(f"Tester present worker got {e!r}")
+        logger.debug("Tester present worker was cancelled but received no asyncio.CancelledError")
 
     async def start_cyclic_tester_present(self, interval: float) -> None:
+        logger.debug("Starting tester present worker")
         self.tester_present_interval = interval
         coroutine = self._tester_present_worker(interval)
         self.tester_present_task = asyncio.create_task(coroutine)
@@ -416,14 +375,16 @@ class ECU(UDSClient):
         await asyncio.sleep(0)
 
     async def stop_cyclic_tester_present(self) -> None:
+        logger.debug("Stopping tester present worker")
         if self.tester_present_task is None:
-            logger.warning(
-                "BUG: stop_cyclic_tester_present() called but no task running"
-            )
+            logger.warning("BUG: stop_cyclic_tester_present() called but no task running")
             return
 
         self.tester_present_task.cancel()
-        await self.tester_present_task
+        try:
+            await self.tester_present_task
+        except asyncio.CancelledError:
+            pass
 
     async def update_state(
         self, request: service.UDSRequest, response: service.UDSResponse
@@ -434,8 +395,7 @@ class ECU(UDSClient):
 
         if (
             isinstance(response, service.ReadDataByIdentifierResponse)
-            and response.data_identifier
-            == DataIdentifier.ActiveDiagnosticSessionDataIdentifier
+            and response.data_identifier == DataIdentifier.ActiveDiagnosticSessionDataIdentifier
         ):
             new_session = int.from_bytes(response.data_record, "big")
 
@@ -479,12 +439,12 @@ class ECU(UDSClient):
         """
         response = None
         exception: Exception | None = None
-        send_time = datetime.now(timezone.utc).astimezone()
+        send_time = datetime.now(UTC).astimezone()
         receive_time = None
 
         try:
             response = await super()._request(request, config)
-            receive_time = datetime.now(timezone.utc).astimezone()
+            receive_time = datetime.now(UTC).astimezone()
             return response
         except ResponseException as e:
             exception = e
@@ -498,11 +458,7 @@ class ECU(UDSClient):
                 if self.implicit_logging and self.db_handler is not None:
                     mode = LogMode.implicit
 
-                    if (
-                        config is not None
-                        and config.tags is not None
-                        and "ANALYZE" in config.tags
-                    ):
+                    if config is not None and config.tags is not None and "ANALYZE" in config.tags:
                         mode = LogMode.emphasized
 
                     await self.db_handler.insert_scan_result(

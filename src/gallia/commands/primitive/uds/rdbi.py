@@ -38,7 +38,7 @@ class ReadByIdentifierPrimitive(UDSScanner):
     async def main(self, args: Namespace) -> None:
         try:
             if args.session != 0x01:
-                await self.ecu.set_session(args.data_identifier)
+                await self.ecu.set_session(args.session)
         except Exception as e:
             logger.critical(f"fatal error: {e!r}")
             sys.exit(1)

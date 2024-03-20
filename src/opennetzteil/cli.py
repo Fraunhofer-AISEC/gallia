@@ -62,9 +62,7 @@ class CLI(AsyncScript):
                 client = await netzteil.connect(args.target, timeout=1.0)
                 break
         else:
-            self.parser.error(
-                f"powersupply {args.power_supply.product_id} is not supported"
-            )
+            self.parser.error(f"powersupply {args.power_supply.product_id} is not supported")
 
         match args.subcommand:
             case "get":

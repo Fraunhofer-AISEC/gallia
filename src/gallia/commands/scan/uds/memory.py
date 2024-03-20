@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import asyncio
 import sys
 from argparse import Namespace
 from binascii import unhexlify
@@ -97,10 +96,8 @@ class MemoryFunctionsScanner(UDSScanner):
                     sys.exit(1)
 
             try:
-                resp = await self.ecu.send_raw(
-                    pdu, config=UDSRequestConfig(tags=["ANALYZE"])
-                )
-            except asyncio.TimeoutError:
+                resp = await self.ecu.send_raw(pdu, config=UDSRequestConfig(tags=["ANALYZE"]))
+            except TimeoutError:
                 logger.result(f"Address {g_repr(addr)}: timeout")
                 continue
 

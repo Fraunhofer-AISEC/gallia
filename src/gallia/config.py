@@ -3,18 +3,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
-import sys
+import tomllib
 from pathlib import Path
 from typing import Any
 
 from platformdirs import user_config_path
 from pygit2 import discover_repository
-
-# TODO: Remove this check when dropping Python 3.10.
-if sys.version_info[1] < 11:
-    import tomli as tomllib
-else:
-    import tomllib
 
 
 class Config(dict[str, Any]):

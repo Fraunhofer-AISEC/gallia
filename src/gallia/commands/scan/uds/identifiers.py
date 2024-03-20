@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import asyncio
 import binascii
 import reprlib
 from argparse import Namespace
@@ -110,9 +109,7 @@ class ScanIdentifiers(UDSScanner):
 
         else:
             sessions: list[int] = [
-                s
-                for s in args.sessions
-                if s not in args.skip or args.skip[s] is not None
+                s for s in args.sessions if s not in args.skip or args.skip[s] is not None
             ]
             logger.info(f"testing sessions {g_repr(sessions)}")
 
@@ -123,9 +120,7 @@ class ScanIdentifiers(UDSScanner):
                 logger.notice(f"Switching to session {g_repr(session)}")
                 resp: UDSResponse = await self.ecu.set_session(session)
                 if isinstance(resp, NegativeResponse):
-                    logger.warning(
-                        f"Switching to session {g_repr(session)} failed: {resp}"
-                    )
+                    logger.warning(f"Switching to session {g_repr(session)} failed: {resp}")
                     continue
 
                 logger.result(f"Starting scan in session: {g_repr(session)}")
@@ -159,18 +154,12 @@ class ScanIdentifiers(UDSScanner):
             )
             args.end = 0xFF
 
-        for DID, sub_function in product(
-            range(args.start, args.end + 1), sub_functions
-        ):
+        for DID, sub_function in product(range(args.start, args.end + 1), sub_functions):
             if session in args.skip and DID in args.skip[session]:
                 logger.info(f"{g_repr(DID)}: skipped")
                 continue
 
-            if (
-                session is not None
-                and args.check_session
-                and DID % args.check_session == 0
-            ):
+            if session is not None and args.check_session and DID % args.check_session == 0:
                 # Check session and try to recover from wrong session (max 3 times), else skip session
                 if not await self.ecu.check_and_set_session(session):
                     logger.error(
@@ -202,7 +191,7 @@ class ScanIdentifiers(UDSScanner):
                 resp = await self.ecu.send_raw(
                     pdu, config=UDSRequestConfig(tags=["ANALYZE"], max_retry=3)
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.result(f"{g_repr(DID)}: Retries exceeded")
                 timeout_DIDs += 1
                 continue

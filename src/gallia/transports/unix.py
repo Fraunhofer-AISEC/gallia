@@ -24,15 +24,11 @@ class UnixTransport(BaseTransport, scheme="unix"):
         self.writer = writer
 
     @classmethod
-    async def connect(
-        cls, target: str | TargetURI, timeout: float | None = None
-    ) -> UnixTransport:
+    async def connect(cls, target: str | TargetURI, timeout: float | None = None) -> UnixTransport:
         t = target if isinstance(target, TargetURI) else TargetURI(target)
         cls.check_scheme(t)
 
-        reader, writer = await asyncio.wait_for(
-            asyncio.open_unix_connection(t.path), timeout
-        )
+        reader, writer = await asyncio.wait_for(asyncio.open_unix_connection(t.path), timeout)
 
         return cls(t, reader, writer)
 

@@ -170,9 +170,7 @@ def build_cli(
             continue
 
         if cls.SUBGROUP is not None:
-            subparsers = parsers["siblings"][cls.GROUP]["siblings"][cls.SUBGROUP][
-                "subparsers"
-            ]
+            subparsers = parsers["siblings"][cls.GROUP]["siblings"][cls.SUBGROUP]["subparsers"]
         else:
             subparsers = parsers["siblings"][cls.GROUP]["subparsers"]
 
@@ -224,9 +222,7 @@ def _get_cli_defaults(parser: argparse.ArgumentParser, out: dict[str, Any]) -> N
             else:
                 continue
 
-            keys = (
-                f"{parser.prog} {opts_str.removeprefix('--').replace('-', '_')}".split()
-            )
+            keys = f"{parser.prog} {opts_str.removeprefix('--').replace('-', '_')}".split()
             value = action.default
 
             d = out
@@ -318,9 +314,7 @@ def _print_plugin(description: str, eps: list[EntryPoint]) -> None:
 
 
 def cmd_show_plugins() -> None:
-    _print_plugin(
-        "initialization callbacks (gallia_cli_init)", load_cli_init_plugin_eps()
-    )
+    _print_plugin("initialization callbacks (gallia_cli_init)", load_cli_init_plugin_eps())
     _print_plugin("commands (gallia_commands)", load_command_plugin_eps())
     _print_plugin("transports (gallia_transports)", load_transport_plugin_eps())
     _print_plugin("ecus (gallia_ecus)", load_ecu_plugin_eps())
@@ -419,9 +413,7 @@ def main() -> None:
 
     setup_logging(
         level=get_log_level(args),
-        no_volatile_info=args.no_volatile_info
-        if hasattr(args, "no_volatile_info")
-        else True,
+        no_volatile_info=args.no_volatile_info if hasattr(args, "no_volatile_info") else True,
     )
 
     sys.exit(args.cls_object.entry_point(args))

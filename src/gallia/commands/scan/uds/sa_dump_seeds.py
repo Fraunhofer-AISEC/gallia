@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import asyncio
 import binascii
 import sys
 import time
@@ -102,9 +101,7 @@ class SASeedsDumper(UDSScanner):
         if isinstance(resp, NegativeResponse):
             logger.debug(f"Key was rejected: {resp}")
             return False
-        logger.result(
-            f'Unlocked SA level {g_repr(level)} with key "{key.hex()}"! resp: {resp}'
-        )
+        logger.result(f'Unlocked SA level {g_repr(level)} with key "{key.hex()}"! resp: {resp}')
         return True
 
     def log_size(self, path: Path, time_delta: float) -> None:
@@ -118,9 +115,7 @@ class SASeedsDumper(UDSScanner):
         if size > 1024:
             size = size / 1024
             size_unit = "MiB"
-        logger.notice(
-            f"Dumping seeds with {rate:.2f}{rate_unit}/h: {size:.2f}{size_unit}"
-        )
+        logger.notice(f"Dumping seeds with {rate:.2f}{rate_unit}/h: {size:.2f}{size_unit}")
 
     async def main(self, args: Namespace) -> None:
         session = args.session
@@ -155,16 +150,14 @@ class SASeedsDumper(UDSScanner):
 
             if args.check_session or reset:
                 if not await self.ecu.check_and_set_session(args.session):
-                    logger.error(
-                        f"ECU persistently lost session {g_repr(args.session)}"
-                    )
+                    logger.error(f"ECU persistently lost session {g_repr(args.session)}")
                     sys.exit(1)
 
             reset = False
 
             try:
                 seed = await self.request_seed(args.level, args.data_record)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.error("Timeout while requesting seed")
                 continue
             except Exception as e:
@@ -185,7 +178,7 @@ class SASeedsDumper(UDSScanner):
                 try:
                     if await self.send_key(args.level, bytes(args.send_zero_key)):
                         break
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     logger.warning("Timeout while sending key")
                     continue
                 except Exception as e:
@@ -203,7 +196,7 @@ class SASeedsDumper(UDSScanner):
                     await self.ecu.ecu_reset(0x01)
                     logger.info("Waiting for the ECU to recover…")
                     await self.ecu.wait_for_ecu()
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     logger.error("ECU did not respond after reset; exiting…")
                     sys.exit(1)
                 except ConnectionError:

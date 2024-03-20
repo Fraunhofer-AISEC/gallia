@@ -92,18 +92,12 @@ class DoIPDiscoverer(AsyncScript):
             try:
                 await self.db_handler.insert_discovery_run("doip")
             except Exception as e:
-                logger.warning(
-                    f"Could not write the discovery run to the database: {e!r}"
-                )
+                logger.warning(f"Could not write the discovery run to the database: {e!r}")
 
         # Discover Hostname and Port
         tgt_hostname: str
         tgt_port: int
-        if (
-            target is not None
-            and target.hostname is not None
-            and target.port is not None
-        ):
+        if target is not None and target.hostname is not None and target.port is not None:
             logger.notice("[📋] Skipping host/port discovery because given by --target")
             tgt_hostname = target.hostname
             tgt_port = target.port
@@ -113,9 +107,7 @@ class DoIPDiscoverer(AsyncScript):
             hosts = await self.run_udp_discovery()
 
             if len(hosts) != 1:
-                logger.error(
-                    "[🍃] Can only continue with a single DoIP host! Give me a --target!"
-                )
+                logger.error("[🍃] Can only continue with a single DoIP host! Give me a --target!")
                 return 11
 
             tgt_hostname, tgt_port = hosts[0]
@@ -124,9 +116,7 @@ class DoIPDiscoverer(AsyncScript):
         rat_success: list[int] = []
         rat_wrong_source: list[int] = []
         if target is not None and "activation_type" in parse_qs(target.query):
-            logger.notice(
-                "[📋] Skipping RoutingActivationType discovery because given by --target"
-            )
+            logger.notice("[📋] Skipping RoutingActivationType discovery because given by --target")
             rat_success = [int(parse_qs(target.query)["activation_type"][0], 0)]
         else:
             logger.notice("[🔍] Enumerating all RoutingActivationTypes")
@@ -150,9 +140,7 @@ class DoIPDiscoverer(AsyncScript):
 
         # Discovering correct source address for suitable RoutingActivationRequests
         if target is not None and "src_addr" in parse_qs(target.query):
-            logger.notice(
-                "[📋] Skipping SourceAddress discovery because given by --target"
-            )
+            logger.notice("[📋] Skipping SourceAddress discovery because given by --target")
             targets = [
                 f"doip://{tgt_hostname}:{tgt_port}?activation_type={rat:#x}&src_addr={parse_qs(target.query)['src_addr'][0]}"
                 for rat in rat_success
@@ -228,14 +216,9 @@ class DoIPDiscoverer(AsyncScript):
                     f"[🤯] Holy moly, it actually worked for activation_type {routing_activation_type:#x} and src_addr {src_addr:#x}!!!"
                 )
             except DoIPRoutingActivationDeniedError as e:
-                logger.info(
-                    f"[🌟] splendid, {routing_activation_type:#x} yields {e.rac_code.name}"
-                )
+                logger.info(f"[🌟] splendid, {routing_activation_type:#x} yields {e.rac_code.name}")
 
-                if (
-                    e.rac_code
-                    != RoutingActivationResponseCodes.UnsupportedActivationType
-                ):
+                if e.rac_code != RoutingActivationResponseCodes.UnsupportedActivationType:
                     rat_not_unsupported.append(routing_activation_type)
 
                 if e.rac_code == RoutingActivationResponseCodes.UnknownSourceAddress:
@@ -264,9 +247,7 @@ class DoIPDiscoverer(AsyncScript):
         responsive_targets = []
         search_space = range(start, stop + 1)
 
-        conn = await self.create_DoIP_conn(
-            tgt_hostname, tgt_port, correct_rat, correct_src, 0xAFFE
-        )
+        conn = await self.create_DoIP_conn(tgt_hostname, tgt_port, correct_rat, correct_src, 0xAFFE)
 
         for target_addr in search_space:
             logger.debug(f"[🚧] Attempting connection to {target_addr:#x}")
@@ -280,9 +261,7 @@ class DoIPDiscoverer(AsyncScript):
 
                 # If we reach this, the request was not denied due to unknown TargetAddress
                 known_targets.append(current_target)
-                logger.notice(
-                    f"[🥇] HEUREKA: target address {target_addr:#x} is valid! "
-                )
+                logger.notice(f"[🥇] HEUREKA: target address {target_addr:#x} is valid! ")
                 async with aiofiles.open(
                     self.artifacts_dir.joinpath("3_valid_targets.txt"), "a"
                 ) as f:
@@ -293,8 +272,7 @@ class DoIPDiscoverer(AsyncScript):
                 while True:
                     pot_broadcast, data = await asyncio.wait_for(
                         self.read_diag_request_custom(conn),
-                        TimingAndCommunicationParameters.DiagnosticMessageMessageTimeout
-                        / 1000
+                        TimingAndCommunicationParameters.DiagnosticMessageMessageTimeout / 1000
                         if timeout is None
                         else timeout,
                     )
@@ -312,9 +290,7 @@ class DoIPDiscoverer(AsyncScript):
                         )
 
                 resp = TesterPresentResponse.parse_static(data)
-                logger.notice(
-                    f"[🥳] It cannot get nicer: {target_addr:#x} responded: {resp}"
-                )
+                logger.notice(f"[🥳] It cannot get nicer: {target_addr:#x} responded: {resp}")
                 responsive_targets.append(current_target)
                 async with aiofiles.open(
                     self.artifacts_dir.joinpath("4_responsive_targets.txt"), "a"
@@ -324,10 +300,7 @@ class DoIPDiscoverer(AsyncScript):
                     await self.db_handler.insert_discovery_result(current_target)
 
             except DoIPNegativeAckError as e:
-                if (
-                    e.nack_code
-                    == DiagnosticMessageNegativeAckCodes.UnknownTargetAddress
-                ):
+                if e.nack_code == DiagnosticMessageNegativeAckCodes.UnknownTargetAddress:
                     logger.info(f"[🫥] {target_addr:#x} is an unknown target address")
                     continue
                 elif e.nack_code == DiagnosticMessageNegativeAckCodes.TargetUnreachable:
@@ -348,10 +321,8 @@ class DoIPDiscoverer(AsyncScript):
                         await f.write(f"{target_addr:#x}: {e.nack_code.name}\n")
                     continue
 
-            except asyncio.TimeoutError:  # This triggers when DoIP ACK but no UDS reply
-                logger.info(
-                    f"[🙊] Presumably no active ECU on target address {target_addr:#x}"
-                )
+            except TimeoutError:  # This triggers when DoIP ACK but no UDS reply
+                logger.info(f"[🙊] Presumably no active ECU on target address {target_addr:#x}")
                 async with aiofiles.open(
                     self.artifacts_dir.joinpath("5_unresponsive_targets.txt"), "a"
                 ) as f:
@@ -423,9 +394,7 @@ class DoIPDiscoverer(AsyncScript):
                 continue
             return conn
 
-    async def read_diag_request_custom(
-        self, conn: DoIPConnection
-    ) -> tuple[int | None, bytes]:
+    async def read_diag_request_custom(self, conn: DoIPConnection) -> tuple[int | None, bytes]:
         while True:
             hdr, payload = await conn.read_frame()
             if not isinstance(payload, DiagnosticMessage):
@@ -466,9 +435,7 @@ class DoIPDiscoverer(AsyncScript):
             try:
                 await conn.write_routing_activation_request(routing_activation_type)
             except DoIPRoutingActivationDeniedError as e:
-                logger.info(
-                    f"[🌟] splendid, {source_address:#x} yields {e.rac_code.name}"
-                )
+                logger.info(f"[🌟] splendid, {source_address:#x} yields {e.rac_code.name}")
 
                 if e.rac_code != RoutingActivationResponseCodes.UnknownSourceAddress:
                     denied_sourceAddresses.append(source_address)
@@ -520,9 +487,7 @@ class DoIPDiscoverer(AsyncScript):
                 all_ips.append(ip)
 
         for ip in all_ips:
-            logger.info(
-                f"[💌] Sending DoIP VehicleIdentificationRequest to {ip.broadcast}"
-            )
+            logger.info(f"[💌] Sending DoIP VehicleIdentificationRequest to {ip.broadcast}")
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             sock.settimeout(2)
@@ -549,9 +514,7 @@ class DoIPDiscoverer(AsyncScript):
         for item in found:
             url = f"doip://{item[0]}:{item[1]}"
             logger.notice(url)
-            async with aiofiles.open(
-                self.artifacts_dir.joinpath("0_valid_hosts.txt"), "a"
-            ) as f:
+            async with aiofiles.open(self.artifacts_dir.joinpath("0_valid_hosts.txt"), "a") as f:
                 await f.write(f"{url}\n")
 
         return found

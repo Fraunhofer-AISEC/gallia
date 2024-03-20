@@ -52,7 +52,7 @@ class ECUResetPrimitive(UDSScanner):
                 logger.error(msg)
             else:
                 logger.result(f"ECU Reset {g_repr(args.subfunc)} succeeded")
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.error("Timeout")
             await asyncio.sleep(10)
         except ConnectionError:
