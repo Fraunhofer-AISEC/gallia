@@ -13,9 +13,7 @@ from gallia.services.uds import (
     NegativeResponse,
     UDSErrorCodes,
     UDSRequestConfig,
-    UDSResponse,
 )
-from gallia.services.uds.core.constants import EcuResetSubFuncs
 from gallia.services.uds.core.service import DiagnosticSessionControlResponse
 from gallia.services.uds.core.utils import g_repr
 from gallia.utils import auto_int
@@ -153,9 +151,7 @@ class SessionsScanner(UDSScanner):
                         success = await self.ecu.leave_session(session)
 
                         if not success:
-                            logger.warning(
-                                f"Could not reset ECU; continuing without reset"
-                            )
+                            logger.warning("Could not reset ECU; continuing without reset")
                         else:
                             logger.info("Waiting for the ECU to recover…")
                             await self.ecu.wait_for_ecu(timeout=args.timeout)
