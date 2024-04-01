@@ -47,7 +47,7 @@ pygit2 = "^1.10"
 platformdirs = ">=2.6,<5.0"
 exitcode = "^0.1.0"
 psutil = "^5.9.4"
-httpx = {extras = ["http2"], version = "^0.26.0"}
+httpx = {extras = ["http2"], version = ">=0.26,<0.28"}
 
 [tool.poetry.group.dev.dependencies]
 Sphinx = ">=5.2,<8.0"
