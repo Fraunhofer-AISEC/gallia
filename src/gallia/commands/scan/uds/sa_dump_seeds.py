@@ -72,10 +72,10 @@ class SASeedsDumper(UDSScanner):
         )
         self.parser.add_argument(
             "--duration",
-            default=12 * 60,
+            default=0,
             type=float,
             metavar="FLOAT",
-            help="Run script for N minutes; zero or negative for infinite runtime",
+            help="Run script for N minutes; zero or negative for infinite runtime (default)",
         )
         self.parser.add_argument(
             "--data-record",
