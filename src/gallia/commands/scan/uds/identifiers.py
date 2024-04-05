@@ -129,7 +129,7 @@ class ScanIdentifiers(UDSScanner):
 
                 logger.result(f"Scan in session {g_repr(session)} is complete!")
                 logger.info(f"Leaving session {g_repr(session)} via hook")
-                await self.ecu.leave_session(session)
+                await self.ecu.leave_session(session, sleep=args.power_cycle_sleep)
 
     async def perform_scan(self, args: Namespace, session: None | int = None) -> None:
         positive_DIDs = 0
