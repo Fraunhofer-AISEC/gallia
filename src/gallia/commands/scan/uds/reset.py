@@ -78,7 +78,7 @@ class ResetScanner(UDSScanner):
                 logger.result(f"Scanning in session: {g_repr(session)}")
                 await self.perform_scan(args, session)
 
-                await self.ecu.leave_session(session)
+                await self.ecu.leave_session(session, sleep=args.power_cycle_sleep)
 
     async def perform_scan(self, args: Namespace, session: None | int = None) -> None:
         l_ok: list[int] = []
@@ -138,7 +138,7 @@ class ResetScanner(UDSScanner):
                     f"ECU did not respond after reset level {g_repr(sub_func)}; try power cycle…"
                 )
                 try:
-                    await self.ecu.power_cycle()
+                    await self.ecu.power_cycle(args.power_cycle_sleep)
                     await self.ecu.wait_for_ecu()
                 except (TimeoutError, ConnectionError) as e:
                     logger.error(f"Failed to recover ECU: {g_repr(e)}; exit")
