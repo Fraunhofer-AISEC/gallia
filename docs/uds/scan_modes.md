@@ -73,6 +73,14 @@ Since there is no concept of a connection on the CAN bus itself and the paramete
 Typically, `gallia` waits for a few seconds and observes the CAN bus traffic.
 Subsequently, a deny filter is configured which filters out all CAN IDs seen in the idle traffic.
 
+#### Usage
+
+The following command discovers UDS endpoints on a CAN bus using virtual interface vcan0 within a CAN ID range of 0x000 to 0x7FF, sending a default ISO-TP PDU and writing discovered endpoints to a file named "ECUs.txt":
+
+`gallia discover uds isotp --start 0x0 --stop 0x7FF --target can-raw://vcan0`
+
+#### ISO-TP addressing methods
+
 ISO-TP provides multiple different addressing methods:
 * normal addressing with normal CAN IDs,
 * normal addressing with extended CAN IDs,
