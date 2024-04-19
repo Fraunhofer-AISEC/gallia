@@ -38,10 +38,10 @@ SPDX-License-Identifier: CC0-1.0
     :show-inheritance:
 ```
 
-## gallia.commands.scan.uds
+## gallia.commands
 
 ```{eval-rst}
-.. automodule:: gallia.commands.scan.uds
+.. automodule:: gallia.commands
     :members:
     :show-inheritance:
 ```
