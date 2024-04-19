@@ -26,7 +26,7 @@ class SASeedsDumper(UDSScanner):
     The scanner offers various functionalities:
 
     * **Session Handling:**
-        - Can iterate through a list of specified sessions using the `--session` argument.
+        - Can switch to a specified session using the `--session` argument.
         - Optionally verifies if it's in the correct session (`--check-session`).
         - Re-enters the session after potential ECU resets.
     * **Seed Request:**

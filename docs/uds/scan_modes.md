@@ -147,6 +147,97 @@ For discovering available subFunctions the following error codes indicate the su
 
 Each identifier or subFunction which responds with a different error code is considered available.
 
-## Memory Scan
+## Memory Functions Scanner
 
-TODO
+This scanner targets Electronic Control Units (ECUs) and explores functionalities that provide direct access to their memory.
+
+### Functionality
+
+The scanner focuses on the following Unified Diagnostic Service (UDS) services:
+
+* **ReadMemoryByAddress (service ID 0x23):** Retrieves data from a specified memory location.
+* **WriteMemoryByAddress (service ID 0x3D):** Writes data to a specified memory location.
+* **RequestDownload (service ID 0x34):** Downloads a block of data from the ECU's memory.
+* **RequestUpload (service ID 0x35):** Uploads a block of data to the ECU's memory.
+
+It iterates through a range of memory addresses and attempts to:
+
+* Read or write data using the chosen UDS service.
+* Handle potential timeouts during communication with the ECU.
+* Analyze the ECU's response to these attempts, which might reveal vulnerabilities or security mechanisms.
+
+### Usage
+
+```
+gallia scan uds memory --target <TARGET_URI> --session <SESSION_ID> --sid <SID>
+```
+
+**Required Arguments:**
+
+* `--target <TARGET_URI>`: URI specifying the target ECU (required). Example: `isotp://vcan0?is_fd=false&is_extended=false&src_addr=0x701&dst_addr=0x700` defines an ISO-TP connection on virtual CAN interface vcan0 (CAN FD disabled, standard frames, source address 0x701, destination address 0x700).
+* `--sid <SID>`: UDS service ID to use for memory access (choices: 0x23, 0x3D, 0x34, 0x35).
+
+**Optional Arguments:**
+
+* `--session <SESSION>`: Diagnostic session to use during communication (default: 0x03).
+* `--check-session`: Optionally verify and recover the session before each memory access (default: False). Provide the number of memory accesses between checks as an argument (e.g., --check-session 10).
+* `--data <DATA>`: Data payload to send with service 0x3D WriteMemoryByAddress (hex string).
+
+**Example:**
+
+The provided command invokes the scanner to utilize the UDS service `ReadMemoryByAddress` (service ID 0x23) on the target ECU reachable through the specified ISO-TP connection. It will iterate through a range of memory addresses and attempt to read data from those locations.
+
+## Dump Security Access Seeds
+
+The `dump-seeds` scanner attempts to retrieve security access seeds from the connected ECU. These seeds are (ideally) random values used by the ECU's security mechanisms. By capturing these seeds, attackers might be able to potentially bypass certain security checks or unlock higher access levels.
+
+The scanner offers several functionalities:
+
+* **Session Management:**
+    * Can switch between diagnostic sessions on the ECU based on the provided session ID.
+    * Optionally verifies the current session before proceeding.
+    * Re-enters the session after potential ECU resets.
+* **Seed Request:**
+    * Requests security access seeds at a specified level from the ECU.
+    * Allows attaching additional data to the seed request message.
+    * Handles timeouts and errors that might occur during communication with the ECU.
+* **Key Sending (Optional):**
+    * Simulates sending a key filled with zeros after requesting a seed.
+    * This technique might bypass certain brute-force protection mechanisms implemented by the ECU.
+* **ECU Reset (Optional):**
+    * Can be configured to periodically reset the ECU.
+    * This aims to overcome limitations imposed by the ECU, such as seed rate limiting.
+    * Handles ECU recovery and reconnection after reset.
+
+### Usage
+
+The seed dumper is invoked using the following command:
+
+```
+gallia scan uds dump-seeds --target <TARGET_URI> --session <SESSION_ID> [OPTIONS]
+```
+
+**Required Arguments:**
+
+* `--target <TARGET_URI>`: URI specifying the connection details to the target ECU (e.g., `isotp://vcan0?is_fd=false&is_extended=false&src_addr=0x701&dst_addr=0x700`).
+* `--session <SESSION_ID>`: Diagnostic session ID to use during communication with the ECU (e.g., 0x02).
+
+**Optional Arguments:**
+
+* `--check-session`: Verify the current session with the ECU before proceeding. (default: False)
+* `--level <LEVEL>`: Security access level to request seeds from (default: 0x11).
+* `--data-record <DATA>`: Optional data record to include in the seed request message (provide as hex string). (default: empty data)
+* `--send-zero-key <LENGTH>`: Simulate sending a zero-filled key after requesting a seed (specify key length in bytes). (default: 0 - disabled)
+* `--reset <COUNT>`: Reset the ECU after every specified number of requested seeds. (default: None - no reset)
+* `--duration <MINUTES>`: Run the scanner for a specified number of minutes (0 or negative for infinite runtime). (default: 0 - infinite)
+* `--power-cycle-sleep <SECONDS>`: Additional sleep time (in seconds) after leaving the session, potentially required for certain ECUs after a power cycle. (default: 0)
+
+**Example Usage:**
+
+This example demonstrates how to capture seeds from security level 0x11 with session 0x02, resetting the ECU every 10th seed request, and running for 30 minutes:
+
+```
+gallia scan uds dump-seeds --target "isotp://vcan0?is_fd=false&is_extended=false&src_addr=0x701&dst_addr=0x700" --session 0x02 --level 0x11 --reset 10 --duration 30
+```
+
+The captured seeds will be written to a file named "seeds.bin" located in the scanner's artifacts directory.
