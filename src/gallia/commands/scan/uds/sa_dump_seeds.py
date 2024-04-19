@@ -21,7 +21,7 @@ logger = get_logger("gallia.scan.dump-seeds")
 
 
 class SASeedsDumper(UDSScanner):
-    """This scanner tries to enable ProgrammingSession and dump seeds for 12h."""
+    """This scanner tries switch to a specified session and dump seeds for a set amount of time (infinite by default)"""
 
     COMMAND = "dump-seeds"
     SHORT_HELP = "dump security access seeds"
