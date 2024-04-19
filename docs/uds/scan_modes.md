@@ -58,13 +58,12 @@ When a valid answer is received an ECU has been found; when the gateway sends a 
 
 ### ISO-TP
 
-[ISO-TP](https://www.iso.org/standard/66574.html) is a standard for a transport protocol on top of the [CAN bus](https://www.iso.org/standard/63648.html) system.
-The CAN bus is a field bus which acts as a broadcast medium; any connected participant can read all messages.
-On the CAN bus there is no concept of a connection.
-Typically, there are cyclic messages on the CAN bus which are important for selected participants.
-However, in order to implement a connection channel for the UDS protocol (which is required by law to be present in vecicles) the ISO-TP standard comes into play.
-In contrast to DoIP special CAN hardware is required.
-The ISO-TP protocol and the interaction with CAN interfaces is handled by the [networking stack](https://www.kernel.org/doc/html/latest/networking/can.html) of the Linux kernel.
+#### Functionality Overview
+
+- Scans a specified CAN ID range to locate potential ECU endpoints.
+- Sends a user-defined ISO-TP PDU (Protocol Data Unit) to discovered CAN IDs to identify responsive endpoints.
+- Analyzes responses to determine if a valid UDS endpoint is present.
+- Optionally queries the ECU description using a data identifier (DID).
 
 For a discovery scan it is important to distinguish whether the tester is connected to a filtered interface (e.g. the OBD connector) or to an unfiltered interface (e.g. an internal CAN bus).
 In order to not confuse the discovery scanner, the so called *idle traffic* needs to be observed.
@@ -73,13 +72,26 @@ Since there is no concept of a connection on the CAN bus itself and the paramete
 Typically, `gallia` waits for a few seconds and observes the CAN bus traffic.
 Subsequently, a deny filter is configured which filters out all CAN IDs seen in the idle traffic.
 
+From a high level perspective, the destination id is iterated and a valid payload is sent.
+If a valid answer is received, an ECU has been found.
+
 #### Usage
 
 The following command discovers UDS endpoints on a CAN bus using virtual interface vcan0 within a CAN ID range of 0x000 to 0x7FF, sending a default ISO-TP PDU and writing discovered endpoints to a file named "ECUs.txt":
 
-`gallia discover uds isotp --start 0x0 --stop 0x7FF --target can-raw://vcan0`
+`gallia discover uds isotp --start 0 --stop 0x7FF --target can-raw://vcan0`
 
-#### ISO-TP addressing methods
+#### ISO-TP Details
+
+[ISO-TP](https://www.iso.org/standard/66574.html) is a standard for a transport protocol on top of the [CAN bus](https://www.iso.org/standard/63648.html) system.
+The CAN bus is a field bus which acts as a broadcast medium; any connected participant can read all messages.
+On the CAN bus there is no concept of a connection.
+Typically, there are cyclic messages on the CAN bus which are important for selected participants.
+However, in order to implement a connection channel for the UDS protocol (which is required by law to be present in vecicles) the ISO-TP standard comes into play.
+In contrast to DoIP special CAN hardware is required.
+The ISO-TP protocol and the interaction with CAN interfaces is handled by the [networking stack](https://www.kernel.org/doc/html/latest/networking/can.html) of the Linux kernel.
+
+##### ISO-TP addressing methods
 
 ISO-TP provides multiple different addressing methods:
 * normal addressing with normal CAN IDs,
@@ -105,9 +117,7 @@ ISO-TP provides the following parameters:
 * **extended source address**: When extended addressing is in use, often set to a static value, e.g. `0xf1`.
 * **extended destination address**: When extended addressing is in use, it is the address of the ECU.
 
-The discovery procedure is dependend on the used addressing scheme.
-From a high level perspective, the destination id is iterated and a valid payload is sent.
-If a valid answer is received, an ECU has been found.
+The discovery procedure is dependent on the used addressing scheme.
 
 ## Session Scan
 

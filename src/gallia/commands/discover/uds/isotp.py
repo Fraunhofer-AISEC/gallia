@@ -28,7 +28,7 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
     * Iterates through a specified CAN ID range to locate potential ECU endpoints.
     * Sends a user-defined ISO-TP PDU (Protocol Data Unit) to the discovered CAN IDs to identify responsive endpoints.
     * Analyzes the response to determine if a valid UDS endpoint is present.
-    * Optionally queries the ECU description using a Diagnostic Trouble Code (DTC) identifier.
+    * Optionally queries the ECU description using a data identifier (DID).
 
     ###  Usable arguments:
 
@@ -42,7 +42,7 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
     * `--sleep`: Sets the sleep time between scans (default: 0.01 seconds).
     * `--extended-addr`: Enables the use of extended ISO-TP addresses.
     * `--tester-addr`: Sets the tester address when extended addressing is enabled (default: 0x6F1).
-    * `--query`: Triggers querying the ECU description via a Diagnostic Trouble Code (DTC) identifier after discovery.
+    * `--query`: Triggers querying the ECU description via a data identifier (DID) after discovery.
     * `--info-did`: Specifies the DID (Data Identifier) used to query the ECU description (default: 0xF197).
     * `--sniff-time`: Sets the time duration (in seconds) to sniff the CAN bus for current traffic before initiating the scan (default: 5 seconds).
 
