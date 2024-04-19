@@ -38,7 +38,7 @@ class ScanIdentifiers(UDSScanner):
             "--sessions",
             type=auto_int,
             nargs="*",
-            help="Set list of sessions to be tested; all if None",
+            help="Set list of sessions to be tested; current if None",
         )
         self.parser.add_argument(
             "--start",
