@@ -60,11 +60,6 @@ class SASeedsDumper(UDSScanner):
     - Run for 30 minutes (or indefinitely if `--duration` is not set).
 
     The dumped seeds will be written to a file named "seeds.bin" in the scanner's artifacts directory.
-
-    :param UDSScanner: _description_
-    :type UDSScanner: _type_
-    :return: _description_
-    :rtype: _type_
     """    
 
     COMMAND = "dump-seeds"
