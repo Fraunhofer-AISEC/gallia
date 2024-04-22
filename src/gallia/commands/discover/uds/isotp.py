@@ -11,7 +11,7 @@ from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse, UDSClient, UDSRequest
 from gallia.services.uds.core.utils import g_repr
 from gallia.transports import ISOTPTransport, RawCANTransport, TargetURI
-from gallia.utils import auto_int, can_id_repr, write_target_list
+from gallia.utils import auto_int, can_id_repr, write_target_list, string_dict
 
 logger = get_logger("gallia.discover.isotp")
 
@@ -44,9 +44,9 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
         )
         self.parser.add_argument(
             "--padding",
-            type=auto_int,
-            default=None,
-            help="set isotp padding",
+            type=string_dict,
+            default="auto",
+            help="set isotp padding (default: auto - try both)",
         )
         self.parser.add_argument(
             "--pdu",
@@ -151,17 +151,24 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
             frame += bytes([padding]) * pad_len
 
         return frame
+    
+    async def _scan_loop(self, args: Namespace, transport: RawCANTransport) -> list:
+        """
+        Performs a scan loop on a CAN bus to discover UDS endpoints.
 
-    async def main(self, args: Namespace) -> None:
-        transport = await RawCANTransport.connect(args.target)
+        This function iterates through a range of CAN IDs specified by `args.start` and 
+        `args.stop`, sending diagnostic requests and waiting for responses to identify 
+        potential UDS servers.
+
+        Args:
+            args: Namespace object containing scan parameters.
+            transport: RawCANTransport object representing the CAN bus connection.
+
+        Returns:
+            A list of TargetURI objects representing discovered UDS endpoints.
+        """
+
         found = []
-
-        sniff_time: int = args.sniff_time
-        logger.result(f"Recording idle bus communication for {sniff_time}s")
-        addr_idle = await transport.get_idle_traffic(sniff_time)
-
-        logger.result(f"Found {len(addr_idle)} CAN Addresses on idle Bus")
-        transport.set_filter(addr_idle, inv_filter=True)
 
         req = UDSRequest.parse_dynamic(args.pdu)
         pdu = self.build_isotp_frame(req, padding=args.padding)
@@ -236,6 +243,52 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
                         )
                         found.append(target)
                     break
+        return found
+
+    async def main(self, args: Namespace) -> None:
+        """
+        The main entry point for the UDS ISOTP scanner.
+
+        This function performs the following steps:
+        1. Connects to the CAN bus using the provided target URI.
+        2. Records idle bus communication for a specified duration to identify 
+            commonly used CAN IDs.
+        3. Sets a CAN filter to exclude those commonly used IDs from the scan.
+        4. Performs a scan loop with potentially two iterations:
+            - One scan with padding disabled (if `args.padding` is "auto").
+            - Another scan with padding set to 0x00 (if `args.padding` is "auto").
+            - Otherwise, a single scan is performed using the provided padding value.
+        5. Writes the discovered UDS endpoints to a file.
+        6. (Optional) Queries the discovered endpoints for descriptions using the 
+            specified diagnostic information identifier (DID).
+
+        Args:
+            args: Namespace object containing scan parameters.
+        """
+
+        transport = await RawCANTransport.connect(args.target)
+        found = []
+
+        sniff_time: int = args.sniff_time
+        logger.result(f"Recording idle bus communication for {sniff_time}s")
+        addr_idle = await transport.get_idle_traffic(sniff_time)
+
+        logger.result(f"Found {len(addr_idle)} CAN Addresses on idle Bus")
+        transport.set_filter(addr_idle, inv_filter=True)
+
+        if args.padding == "auto":
+            # Perform scan with padding off
+            args.padding = None
+            logger.info("Scanning with padding off...")
+            await found.append(self._scan_loop(args, transport))
+
+            # Perform scan with padding 0x00
+            args.padding = 0x00
+            logger.info("Scanning with padding 0x00...")
+            await found.append(self._scan_loop(args, transport))
+        else:
+            # Use the provided padding value
+            found = self._scan_loop(args, transport)
 
         logger.result(f"finished; found {len(found)} UDS endpoints")
         ecus_file = self.artifacts_dir.joinpath("ECUs.txt")
