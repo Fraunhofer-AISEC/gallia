@@ -279,16 +279,19 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
         if args.padding == "auto":
             # Perform scan with padding off
             args.padding = None
-            logger.info("Scanning with padding off...")
-            await found.append(self._scan_loop(args, transport))
+            logger.trace("Scanning with padding off...")
+            found = await self._scan_loop(args, transport)
 
             # Perform scan with padding 0x00
             args.padding = 0x00
-            logger.info("Scanning with padding 0x00...")
-            await found.append(self._scan_loop(args, transport))
+            logger.trace("Scanning with padding 0x00...")
+            found += await self._scan_loop(args, transport)
+
+            # TODO: remove duplicity
+
         else:
             # Use the provided padding value
-            found = self._scan_loop(args, transport)
+            found = await self._scan_loop(args, transport)
 
         logger.result(f"finished; found {len(found)} UDS endpoints")
         ecus_file = self.artifacts_dir.joinpath("ECUs.txt")

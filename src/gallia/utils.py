@@ -36,9 +36,11 @@ def string_dict(arg: str) -> str:
     :return: Returned argument
     :rtype: str
     """
-    arg = arg.lower()
-    if arg == "auto":
+    arg_lower = arg.lower()
+    if arg_lower == "auto":
         return arg
+    elif arg_lower == "none":
+        return None
     else:
         auto_int(arg)
 
