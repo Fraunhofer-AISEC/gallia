@@ -117,9 +117,6 @@ class EntryCache:
             return self.entries[entry_number]
 
     def _load_entry(self, entry_number: int) -> None:
-        self.file.seek(self.entry_positions[entry_number])
-        line = self.file.readline()
-
         if len(self.entries) + len(self.old_entries) >= self.cache_size:
             self.old_entries = self.entries
             self.entries = {}
@@ -127,6 +124,9 @@ class EntryCache:
         try:
             self.entries[entry_number] = self.old_entries.pop(entry_number)
         except KeyError:
+            self.file.seek(self.entry_positions[entry_number])
+            line = self.file.readline()
+
             try:
                 self.entries[entry_number] = PenlogEntry.parse_json(line)
             except (json.decoder.JSONDecodeError, TypeError):
