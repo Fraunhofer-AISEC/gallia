@@ -167,6 +167,7 @@ class CursedHR:
         priority: PenlogPriority = PenlogPriority.DEBUG,
         filters: list[str] | None = None,
         use_prefix: bool = True,
+        relative_timings: bool = False,
     ):
         self.in_file = in_file
         self.level_pointers: list[array[int]] = [array("L") for _ in range(9)]
@@ -180,6 +181,7 @@ class CursedHR:
         ]
         self.configuration_index = 0
         self.use_prefix = use_prefix
+        self.relative_timings = relative_timings
 
         self.priority_keys = {
             "m": PenlogPriority.EMERGENCY,
@@ -202,6 +204,7 @@ class CursedHR:
                 with mmap.mmap(self.file.fileno(), 0, access=mmap.ACCESS_READ) as mm_file:
                     self.parse_structure(mm_file)
                     self.entries = EntryCache(mm_file, self.entry_positions)
+                    self.reference_time = self.entries[0].datetime
                     self.handle_io()
             finally:
                 self.file.close()
@@ -537,7 +540,18 @@ class CursedHR:
         prefix = ""
 
         if self.use_prefix:
-            prefix += entry.datetime.strftime("%b %d %H:%M:%S.%f")[:-3]
+            if self.relative_timings:
+                if self.reference_time <= entry.datetime:
+                    delta = int((entry.datetime - self.reference_time).total_seconds() * 1000)
+                else:
+                    prefix += "-"
+                    delta = int((self.reference_time - entry.datetime).total_seconds() * 1000)
+
+                prefix += f"{delta // 86400000:01}d {delta % 86400000 // 3600000:02}:{delta % 3600000 // 60000:02}:{delta % 60000 // 1000:02}:{delta % 1000:03}"
+                prefix = prefix.rjust(19)
+
+            else:
+                prefix += entry.datetime.strftime("%b %d %H:%M:%S.%f")[:-3]
             prefix += " "
             prefix += entry.module
             if entry.tags is not None:
@@ -1185,6 +1199,12 @@ class CursedHR:
                             self.window.move(max_lines, min(filter_cursor, len(fh_tmp[fh_index])))
                     case "x":
                         self.use_prefix = not self.use_prefix
+                    case "t":
+                        self.relative_timings = not self.relative_timings
+                    case "z":
+                        self.reference_time = self.entries[
+                            display_entries[cursor[0]].penlog_entry_number
+                        ].datetime
                     case "?":
                         display_help = True
                         entry_start_saved = entry_start
@@ -1246,9 +1266,11 @@ class CursedHR:
             "P": "Change the log level (priority) for the entire file, followed by the corresponding log level key",
             "q": "Quit the application or this very help message",
             "r": "Redo the last undone action (as long as no new action has been done)",
+            "t": "Toggle between absolute timestamps and timings relative to the reference timestamp (default: start)",
             "u": "Undo the last action",
             "v": "Start marking ranges (for further actions)",
             "x": "Toggle prefix displaying",
+            "z": "Set the reference timestamp to the timestamp of the entry under the cursor",
             "?": "Show this help message",
         }
 
@@ -1384,8 +1406,9 @@ def main() -> None:
     )
     parser.add_argument("--filter", "-f", type=parse_filter, default=None)
     parser.add_argument("--prefix", action=BooleanOptionalAction, default=True)
+    parser.add_argument("--relative-timings", action=BooleanOptionalAction, default=False)
     args = parser.parse_args()
-    CursedHR(args.file, args.priority, args.filter, args.prefix)
+    CursedHR(args.file, args.priority, args.filter, args.prefix, args.relative_timings)
 
 
 if __name__ == "__main__":
