@@ -109,6 +109,7 @@ ignore = [
     "PLR2004",  # magic value used in comparison
     "PLR0911",  # too many return statements
     "PLR0912",  # too many branches
+    "PLR0913",  # too many arguments to function call
     "PLR0915",  # too many statements
     "PLC1901",  # empty string is falsey
 ]
