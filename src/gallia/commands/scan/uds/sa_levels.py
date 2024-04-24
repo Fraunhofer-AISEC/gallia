@@ -39,7 +39,7 @@ class SALevelScanner(UDSScanner):
 
     COMMAND = "security-access"
     SHORT_HELP = "scan available security access levels"
-    EPILOG = "https://fraunhofer-aisec.github.io/gallia/uds/scan_modes.html#security-access-scan"
+    EPILOG = "https://fraunhofer-aisec.github.io/gallia/uds/scan_modes.html#security-access-level-scan"
 
     def configure_parser(self) -> None:
         self.parser.add_argument(
