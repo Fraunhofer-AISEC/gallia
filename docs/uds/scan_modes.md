@@ -147,6 +147,76 @@ For discovering available subFunctions the following error codes indicate the su
 
 Each identifier or subFunction which responds with a different error code is considered available.
 
+## Security Access Level Scan
+
+This type of scan searches for available security access levels (SAs) within a UDS server on specified sessions. Security access levels are used to restrict access to certain UDS services and subfunctions. By identifying the available SAs, an attacker might gain insights into the ECU's security mechanisms and potentially exploit them to elevate privileges.
+
+The `gallia` tool offers a class `SALevelScanner` to perform this security access level scan.
+
+### Usage
+
+The scanner can be invoked using the following command:
+
+```
+gallia scan uds security-access [OPTIONS]
+```
+
+**Arguments:**
+
+*  `--target <TARGET_URI>`: URI specifying the connection details to the target ECU (e.g., `isotp://vcan0?is_fd=false&is_extended=false&src_addr=0x701&dst_addr=0x700`).
+*  `--sessions <SESSION_ID>` (optional): Restricts the scan to specific sessions (space-separated list, e.g., `--sessions 1 2 3`). If not specified, only the current session is scanned.
+*  `--check-session` (optional): Additionally verifies the current session before each SA level test (only applicable if `--sessions` is used).
+*  `--scan-response-ids` (optional): Includes ID information in scan results for messages with the reply flag set.
+*  `--auto-reset` (optional): Resets the ECU with the `UDS ECU Reset` service before every request.
+*  `--skip <SKIP_SPEC>` (optional): Skips specific subfunctions per session. Refer to the following section for details on the skip specification format.
+
+**Skip Specification Format**
+
+The `--skip` argument allows you to exclude specific subfunctions from the scan on a per-session basis. The format for specifying skips is:
+
+```
+<SESSION_ID>:<SUBFUNCTION_RANGES>
+```
+
+* `<SESSION_ID>`: The diagnostic session ID (hexadecimal value).
+* `<SUBFUNCTION_RANGES>`: Comma-separated list of subfunction ranges or individual subfunctions to skip. Each range or subfunction is specified as a hexadecimal value. A range can be defined using a hyphen (`-`) between the start and end subfunction values (inclusive).
+
+Here are some examples of valid skip specifications:
+
+* `0x01:0x0F` - Skips all subfunctions from 0x01 to 0x0F (inclusive) in session 0x01.
+* `0x10-0x2F` - Skips subfunctions from 0x10 to 0x2F (inclusive) in the current session.
+* `0x01:0x05,0x10` - Skips subfunctions 0x01 to 0x05 and 0x10 in the current session.
+* `0x01:0x0F,0x10-0x2F:0x03` - Skips subfunctions 0x01 to 0x0F, 0x11 to 0x2F (inclusive), and 0x03 in session 0x01.
+
+**Examples**
+
+* Scan all available sessions for security access levels:
+
+```
+gallia scan uds security-access
+```
+
+* Scan sessions 0x01 and 0x02, verify the session before each test, and skip subfunctions 0x01 to 0x0A in session 0x01:
+
+```
+gallia scan uds security-access --sessions 0x01,0x02 --check-session --skip 0x01:0x0A
+```
+
+* Scan all sessions, include reply IDs in scan results, and reset the ECU before each request:
+
+```
+gallia scan uds security-access --scan-response-ids --auto-reset
+```
+
+### Scan Process
+
+The `SALevelScanner` performs the following steps during a security access level scan:
+
+1. **Parses command-line arguments:** The scanner processes the provided options and arguments to determine the target sessions, skip specifications, and other configuration settings.
+2. **Iterates through sessions:**
+   * If no specific sessions are provided (`--sessions` not used), the scanner iterates through all available sessions. Otherwise, it focuses on the specified sessions.
+3. **Session change (optional):** For each session included in the scan, the scanner attempts to establish the desired session using the `UDS SetSession` service. If session verification is enabled (`--check-session`), the scanner additionally verifies the current session before proceeding. In case of errors during session change, the scanner logs a warning and moves to the next session (if applicable).
+
 ## Memory Scan
 
 TODO
