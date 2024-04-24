@@ -46,7 +46,7 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
             "--padding",
             type=string_dict,
             default="auto",
-            help="set isotp padding (default: auto - try both)",
+            help="set isotp padding (default: auto: try both)",
         )
         self.parser.add_argument(
             "--pdu",
