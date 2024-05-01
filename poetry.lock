@@ -1603,13 +1603,13 @@ use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
 
 [[package]]
 name = "reuse"
-version = "3.0.1"
+version = "3.0.2"
 description = "reuse is a tool for compliance with the REUSE recommendations."
 optional = false
-python-versions = ">=3.8,<4.0"
+python-versions = "<4.0,>=3.8"
 files = [
-    {file = "reuse-3.0.1-cp311-cp311-manylinux_2_36_x86_64.whl", hash = "sha256:2f13d9f31268e566e715fffe97299a002376477fada7ccd3d05a1458310cbf98"},
-    {file = "reuse-3.0.1.tar.gz", hash = "sha256:590ce429ad964c515ed5e18b1f755d9b6cf027943d940d472d107e64ede70a6f"},
+    {file = "reuse-3.0.2-cp311-cp311-manylinux_2_36_x86_64.whl", hash = "sha256:bf5a65c2dba4b481ee5ace18a3863095ee95ff3e72acaf6cd4446bb83d786970"},
+    {file = "reuse-3.0.2.tar.gz", hash = "sha256:73eb8262b84527a90822404e7504f69081854759806830d402ea1e92176f32a6"},
 ]
 
 [package.dependencies]
