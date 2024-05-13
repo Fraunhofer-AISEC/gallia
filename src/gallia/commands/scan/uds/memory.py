@@ -63,6 +63,10 @@ class MemoryFunctionsScanner(UDSScanner):
         for i in range(5):
             await self.scan_memory_address(args, i)
 
+        logger.info(f"Scan in session {g_repr(args.session)} is complete!")
+        logger.info(f"Leaving session {g_repr(args.session)} via hook")
+        await self.ecu.leave_session(args.session, sleep=args.power_cycle_sleep)
+
     async def scan_memory_address(self, args: Namespace, addr_offset: int = 0) -> None:
         sid = args.sid
         data = args.data if sid == 0x3D else None  # Only service 0x3d has a data field
