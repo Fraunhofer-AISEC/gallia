@@ -162,11 +162,15 @@ class UDSScanner(Scanner):
                 await file.write("\n")
 
         if self.db_handler is not None:
-            try:
-                await self.db_handler.insert_scan_run_properties_pre(await self.ecu.properties())
-                self._apply_implicit_logging_setting()
-            except Exception as e:
-                logger.warning(f"Could not write the properties_pre to the database: {e!r}")
+            self._apply_implicit_logging_setting()
+
+            if args.properties is True:
+                try:
+                    await self.db_handler.insert_scan_run_properties_pre(
+                        await self.ecu.properties()
+                    )
+                except Exception as e:
+                    logger.warning(f"Could not write the properties_pre to the database: {e!r}")
 
     async def teardown(self, args: Namespace) -> None:
         if args.properties is True and not self.ecu.transport.is_closed:
@@ -182,7 +186,7 @@ class UDSScanner(Scanner):
             if args.compare_properties and await self.ecu.properties(False) != prop_pre:
                 logger.warning("ecu properties differ, please investigate!")
 
-        if self.db_handler is not None:
+        if self.db_handler is not None and args.properties is True:
             try:
                 await self.db_handler.complete_scan_run(await self.ecu.properties(False))
             except Exception as e:
