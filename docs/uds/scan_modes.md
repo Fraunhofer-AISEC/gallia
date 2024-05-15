@@ -133,9 +133,17 @@ This method performs the following steps:
         
 #### Usage
 
-The following command discovers UDS endpoints on a CAN bus using virtual interface vcan0 within a CAN ID range of 0x000 to 0x7FF, sending a default ISO-TP PDU and writing discovered endpoints to a file named "ECUs.txt":
+```
+gallia discover uds isotp --start <START_ID> --stop <END_ID> --target <TARGET_URI>
+```
 
-`gallia discover uds isotp --start 0 --stop 0x7FF --target can-raw://vcan0`
+**Example:**
+
+This example command discovers UDS endpoints on a CAN bus using virtual interface vcan0 within a CAN ID range of 0x000 to 0x7FF, sending a default UDS PDU and logging discovered endpoints:
+
+```
+gallia discover uds isotp --start 0 --stop 0x7FF --target can-raw://vcan0
+```
 
 #### ISO-TP Details
 
@@ -255,7 +263,9 @@ gallia scan uds memory --target <TARGET_URI> --sid <SID>
 
 **Example:**
 
-```gallia scan uds memory --sid 0x23 --target "isotp://can2?is_fd=false&is_extended=true&src_addr=0x22bbfbfa&dst_addr=0x22bbfafb&tx_padding=0&rx_padding=0" --db ecu_test --session 1```
+```
+gallia scan uds memory --sid 0x23 --target "isotp://can2?is_fd=false&is_extended=true&src_addr=0x22bbfbfa&dst_addr=0x22bbfafb&tx_padding=0&rx_padding=0" --db ecu_test --session 1
+```
 
 The provided command invokes the scanner to utilize the UDS service `ReadMemoryByAddress` (service ID 0x23) on the target ECU reachable through the specified ISO-TP connection in session `0x01`. It will iterate through a range of memory addresses and attempt to read data from those locations. The results will be saved in a database file called `ecu_test`.
 
@@ -293,14 +303,16 @@ gallia scan uds dump-seeds --target <TARGET_URI> [OPTIONS]
 
 This example demonstrates how to capture seeds from security level 0x11 with session 0x02, resetting the ECU every 10th seed request, and running for 30 minutes:
 
-```gallia scan uds dump-seeds --target "isotp://vcan0?is_fd=false&is_extended=false&src_addr=0x701&dst_addr=0x700" --session 0x02 --data-record 0xCAFE00 --level 0x11 --reset 10 --duration 30 --db ecu_test```
+```
+gallia scan uds dump-seeds --target "isotp://vcan0?is_fd=false&is_extended=false&src_addr=0x701&dst_addr=0x700" --session 0x02 --data-record 0xCAFE00 --level 0x11 --reset 10 --duration 30 --db ecu_test
+```
 
 This command would:
-    - Connect to the ECU specified by `<TARGET_URI>`.
-    - Switch to diagnostic session 0x02 (if possible).
-    - Request seeds from security level 0x11 with data record 0xCAFE00. (`27 11 CA FE 00`)
-    - Reset the ECU after every 10th seed request.
-    - Run for 30 minutes (or indefinitely if `--duration` is not set).
-    - Log the results in a database file called `ecu_test`
+* Connect to the ECU specified by `<TARGET_URI>`.
+* Switch to diagnostic session 0x02 (if possible).
+* Request seeds from security level 0x11 with data record 0xCAFE00. (`27 11 CA FE 00`)
+* Reset the ECU after every 10th seed request.
+* Run for 30 minutes (or indefinitely if `--duration` is not set).
+* Log the results in a database file called `ecu_test`
 
 The dumped seeds will be written to a file named "seeds.bin" located in the scanner's artifacts directory.
