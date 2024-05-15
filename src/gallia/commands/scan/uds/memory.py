@@ -43,7 +43,7 @@ class MemoryFunctionsScanner(UDSScanner):
             nargs="?",
             const=1,
             type=int,
-            help="Check the current session via read DID [for every nth MemoryAddress] and try to recover session if lost (e.g., `--check-session 10` to check after every 10th address).",
+            help="Check the current session via a DID read (`0xF186`) [for every nth MemoryAddress] and try to recover session if lost (e.g., `--check-session 10` to check after every 10th address).",
         )
         self.parser.add_argument(
             "--sid",
