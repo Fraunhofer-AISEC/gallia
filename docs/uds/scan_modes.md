@@ -253,17 +253,6 @@ The scanner offers several configuration options through command-line arguments 
 gallia scan uds memory --target <TARGET_URI> --sid <SID>
 ```
 
-**Required Arguments:**
-
-* `--target <TARGET_URI>`: URI specifying the target ECU (required). Example: `isotp://vcan0?is_fd=false&is_extended=false&src_addr=0x701&dst_addr=0x700` defines an ISO-TP connection on virtual CAN interface vcan0 (CAN FD disabled, standard frames, source address 0x701, destination address 0x700).
-* `--sid <SID>`: UDS service ID to test (choices: 0x23, 0x3D, 0x34, 0x35).
-
-**Optional Arguments:**
-
-* `--session <SESSION>`: Diagnostic session to use during communication (default: 0x03).
-* `--check-session`: Optionally verify and recover the session before each memory address (default: False). Provide the number of memory addresses between checks as an argument (e.g., `--check-session 10`).
-* `--data <DATA>`: Data payload to send with service 0x3D WriteMemoryByAddress (8 bytes of zeroes by default).
-
 **Example:**
 
 ```gallia scan uds memory --sid 0x23 --target "isotp://can2?is_fd=false&is_extended=true&src_addr=0x22bbfbfa&dst_addr=0x22bbfafb&tx_padding=0&rx_padding=0" --db ecu_test --session 1```
@@ -300,27 +289,12 @@ The seed dumper is invoked using the following command:
 gallia scan uds dump-seeds --target <TARGET_URI> [OPTIONS]
 ```
 
-**Required Arguments:**
-
-* `--target <TARGET_URI>`: URI specifying the connection details to the target ECU (e.g., `isotp://vcan0?is_fd=false&is_extended=false&src_addr=0x701&dst_addr=0x700`).
-
-**Optional Arguments:**
-
-* `--session <SESSION_ID>`: Diagnostic session ID to use during communication with the ECU (e.g., 0x02). By default `0x02` if not specified otherwise.
-* `--check-session`: Verify the current session with the ECU before proceeding. (default: False)
-* `--level <LEVEL>`: Security access level to request seeds from (default: 0x11).
-* `--send-zero-key <LENGTH>`: Simulate sending a zero-filled key after requesting a seed (specify key length in bytes). (default: 0 - disabled)
-* `--reset <COUNT>`: Reset the ECU after every specified number of requested seeds. (default: None - no reset)
-* `--duration <MINUTES>`: Run the scanner for a specified number of minutes (0 or negative for infinite runtime). (default: 0 - infinite)
-* `--data-record <DATA>`: Optional data record to include in the seed request message (provide as hex string). (default: empty data)
-
-**Example Usage:**
+**Example:**
 
 This example demonstrates how to capture seeds from security level 0x11 with session 0x02, resetting the ECU every 10th seed request, and running for 30 minutes:
 
-```
-gallia scan uds dump-seeds --target "isotp://vcan0?is_fd=false&is_extended=false&src_addr=0x701&dst_addr=0x700" --session 0x02 --data-record 0xCAFE00 --level 0x11 --reset 10 --duration 30 --db ecu_test 
-```
+```gallia scan uds dump-seeds --target "isotp://vcan0?is_fd=false&is_extended=false&src_addr=0x701&dst_addr=0x700" --session 0x02 --data-record 0xCAFE00 --level 0x11 --reset 10 --duration 30 --db ecu_test```
+
 This command would:
     - Connect to the ECU specified by `<TARGET_URI>`.
     - Switch to diagnostic session 0x02 (if possible).

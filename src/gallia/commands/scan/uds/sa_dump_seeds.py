@@ -40,20 +40,20 @@ class SASeedsDumper(UDSScanner):
             metavar="INT",
             type=auto_int,
             default=0x02,
-            help="Set diagnostic session to perform test in (default: 0x%(default)x)",
+            help="Set diagnostic session to switch into before performing the seed dumping (default: 0x%(default)x)",
         )
         self.parser.add_argument(
             "--check-session",
             action="store_true",
             default=False,
-            help="Check current session with read DID",
+            help="Verify the current session by reading DID `0xF186`.",
         )
         self.parser.add_argument(
             "--level",
             default=0x11,
             metavar="INT",
             type=auto_int,
-            help="Set security access level to request seed from",
+            help="Set security access level to request seeds from (default: 0x%(default)x)",
         )
         self.parser.add_argument(
             "--send-zero-key",
@@ -62,8 +62,8 @@ class SASeedsDumper(UDSScanner):
             const=96,
             default=0,
             type=int,
-            help="Attempt to fool brute force protection by pretending to send a key after requesting a seed "
-            "(all zero bytes, length can be specified)",
+            help="Attempt to fool brute force protection by sending a zero-filled key after requesting a seed "
+            "(specify key length in bytes). (default: 0 - disabled)",
         )
         self.parser.add_argument(
             "--reset",
@@ -71,21 +71,21 @@ class SASeedsDumper(UDSScanner):
             const=1,
             default=None,
             type=int,
-            help="Attempt to fool brute force protection by resetting the ECU after every nth requested seed.",
+            help="Attempt to fool brute force protection by resetting the ECU after every Nth requested seed (default: None - no reset).",
         )
         self.parser.add_argument(
             "--duration",
             default=0,
             type=float,
             metavar="FLOAT",
-            help="Run script for N minutes; zero or negative for infinite runtime (default)",
+            help="Run the dumping for a specified number of minutes (0 or negative for infinite runtime). (default: 0 - infinite)",
         )
         self.parser.add_argument(
             "--data-record",
             metavar="HEXSTRING",
             type=binascii.unhexlify,
             default=b"",
-            help="Append an optional data record to each seed request",
+            help="Optional data record to be appended to the seed request message (provide as hex string). (default: empty data)",
         )
 
     async def request_seed(self, level: int, data: bytes) -> bytes | None:

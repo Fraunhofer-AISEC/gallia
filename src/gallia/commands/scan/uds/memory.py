@@ -43,21 +43,22 @@ class MemoryFunctionsScanner(UDSScanner):
             nargs="?",
             const=1,
             type=int,
-            help="Check the current session via read DID [for every nth MemoryAddress] and try to recover session (e.g., `--check-session 10` to check every 10th address).",
+            help="Check the current session via read DID [for every nth MemoryAddress] and try to recover session if lost (e.g., `--check-session 10` to check after every 10th address).",
         )
         self.parser.add_argument(
             "--sid",
             required=True,
             choices=[0x23, 0x3D, 0x34, 0x35],
             type=auto_int,
-            help="Choose between: 0x23 ReadMemoryByAddress; 0x3d WriteMemoryByAddress; "
+            help="UDS Service ID to test. Choose between: "
+            "0x23 ReadMemoryByAddress; 0x3d WriteMemoryByAddress; "
             "0x34 RequestDownload; 0x35 RequestUpload",
         )
         self.parser.add_argument(
             "--data",
             default="0000000000000000",
             type=unhexlify,
-            help="Service 0x3d requires a data payload which can be specified with this flag as a hex string (8 bytes of zeroes by default).",
+            help="Service 0x3d WriteMemoryByAddress requires a data payload which can be specified with this flag as a hex string (8 bytes of zeroes by default).",
         )
 
     async def main(self, args: Namespace) -> None:
