@@ -21,45 +21,9 @@ logger = get_logger("gallia.scan.dump-seeds")
 
 
 class SASeedsDumper(UDSScanner):
-    """This scanner attempts to switch to a specified Diagnostic Session and continuously dumps security access seeds from the ECU.
-
-    The scanner offers various functionalities:
-
-    * **Session Handling:**
-        - Can switch to a specified session using the `--session` argument.
-        - Optionally verifies if it's in the correct session (`--check-session`).
-        - Re-enters the session after potential ECU resets.
-    * **Seed Request:**
-        - Requests security access seeds at a specified level (`--level`).
-        - Allows attaching optional data to the seed request (`--data-record`).
-        - Handles timeouts and errors during seed requests.
-    * **Key Sending (Optional):**
-        - Simulates sending a zero-filled key after requesting a seed (`--send-zero-key`).
-        - Useful for bypassing certain brute-force protection mechanisms.
-    * **ECU Reset (Optional):**
-        - Can be configured to periodically reset the ECU (`--reset`).
-        - Aims to potentially overcome seed rate limiting imposed by the ECU.
-        - Handles ECU recovery and reconnection after reset.
-
-    **Example Usage:**
-    ```
-    gallia scan uds dump-seeds 
-    --target <TARGET_URI> 
-    --session 0x02 
-    --level 0x11 
-    --data-record 0xCAFE00 
-    --reset 10 
-    --duration 30
-    ```
-
-    This command would:
-    - Connect to the ECU specified by `<TARGET_URI>`.
-    - Switch to diagnostic session 0x02 (if possible).
-    - Request seeds from security level 0x11 with data record 0xCAFE00.
-    - Reset the ECU after every 10th seed request.
-    - Run for 30 minutes (or indefinitely if `--duration` is not set).
-
-    The dumped seeds will be written to a file named "seeds.bin" in the scanner's artifacts directory.
+    """
+    This scanner attempts to switch to a specified Diagnostic Session
+    and continuously dumps security access seeds from the ECU.
     """    
 
     COMMAND = "dump-seeds"
@@ -76,7 +40,7 @@ class SASeedsDumper(UDSScanner):
             metavar="INT",
             type=auto_int,
             default=0x02,
-            help="Set diagnostic session to perform test in",
+            help="Set diagnostic session to perform test in (default: 0x%(default)x)",
         )
         self.parser.add_argument(
             "--check-session",

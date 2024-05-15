@@ -61,20 +61,76 @@ When a valid answer is received an ECU has been found; when the gateway sends a 
 #### Functionality Overview
 
 - Scans a specified CAN ID range to locate potential ECU endpoints.
-- Sends a user-defined ISO-TP PDU (Protocol Data Unit) to discovered CAN IDs to identify responsive endpoints.
+- Sends a user-defined ISO-TP PDU (Protocol Data Unit) to discovered CAN IDs to identify responsive endpoints (`TesterPresent` - `3E 00` by default).
 - Analyzes responses to determine if a valid UDS endpoint is present.
-- Optionally queries the ECU description using a data identifier (DID).
+- Optionally queries the ECU description by reading a data identifier (DID), `0xF197` by default.
 
 For a discovery scan it is important to distinguish whether the tester is connected to a filtered interface (e.g. the OBD connector) or to an unfiltered interface (e.g. an internal CAN bus).
 In order to not confuse the discovery scanner, the so called *idle traffic* needs to be observed.
 The idle traffic consists of the mentioned cyclic messages of the can bus.
 Since there is no concept of a connection on the CAN bus itself and the parameters for the ISO-TP connection are unknown at the very first stage, an educated guess for a deny list is required.
-Typically, `gallia` waits for a few seconds and observes the CAN bus traffic.
+Typically, `gallia` waits for a few seconds and observes the CAN bus traffic (5 seconds by default).
 Subsequently, a deny filter is configured which filters out all CAN IDs seen in the idle traffic.
 
-From a high level perspective, the destination id is iterated and a valid payload is sent.
+From a high level perspective, the destination ID is iterated and a valid payload is sent.
 If a valid answer is received, an ECU has been found.
 
+#### Detailed Functionality Description
+
+This method performs the following steps:
+
+1. **Connect to CAN Transport:**
+    - Establishes a connection to the specified CAN interface using the `RawCANTransport.connect` method.
+
+2. **Record Idle Bus Communication (Optional):**
+    - If `args.sniff_time` is greater than zero, the method sniffs the CAN bus for the specified duration to capture any existing communication.
+    - The captured CAN addresses are stored in the `addr_idle` variable.
+    - The transport filter is then set to exclude these idle addresses using `transport.set_filter(addr_idle, inv_filter=True)`.
+
+3. **Parse UDS Request:**
+    - Parses the UDS service PDU (Protocol Data Unit) from the provided `args.pdu` argument using the `UDSRequest.parse_dynamic` method.
+
+4. **Build ISO-TP Frame:**
+    - Constructs an ISO-TP frame based on the parsed UDS request.
+    - If `args.padding` is provided, the frame is padded with the specified value.
+    - The `build_isotp_frame` method is used, potentially incorporating extended addressing if `args.extended_addr` is True.
+
+5. **Iterate Through CAN IDs:**
+    - Loops through the CAN ID range specified by `args.start` and `args.stop` (inclusive).
+    - A short sleep is introduced between iterations using `asyncio.sleep(args.sleep)`.
+
+6. **Send ISO-TP Frame and Handle Response:**
+    - Determines the destination address (DST) for the frame:
+        - If extended addressing is enabled (`args.extended_addr`), the tester address (`args.tester_addr`) is used.
+        - Otherwise, the current CAN ID from the loop (`ID`) is used.
+    - Sends the constructed ISO-TP frame to the determined DST address with a timeout of 0.1 seconds using `transport.sendto`.
+    - Attempts to receive a response within a timeout of 0.1 seconds using `transport.recvfrom`.
+        - If no response is received within the timeout, the loop continues to the next CAN ID.
+        - If the received address (source address) matches the transmitted address (DST), it's considered a self-response and the loop skips to the next CAN ID.
+
+    - Handles received responses:
+        - If multiple responses are received for the same CAN ID, it's potentially indicative of a broadcast triggered by the request.
+            - The method logs a message and continues iterating.
+        - If the response size suggests a large ISO-TP packet, it might be a multi-frame response.
+            - The method logs a message and continues iterating.
+
+7. **Identify UDS Endpoint:**
+    - If a valid response is received from a different address than the transmitted one, a UDS endpoint is potentially discovered on the current CAN ID.
+        - The method logs a success message and extracts details from the response:
+            - Source and destination CAN IDs.
+            - Response payload in hexadecimal format.
+        - A `TargetURI` object is constructed representing the discovered endpoint, incorporating relevant details like transport scheme, hostname, addresses (source and destination), extended addressing settings (if applicable), and potentially padding values (if used).
+        - The discovered endpoint is appended to the `found` list.
+        - The loop exits, as a UDS endpoint has been identified on the current CAN ID.
+
+8. **Compile Results and Write to File:**
+    - After iterating through the CAN ID range, the method logs the total number of discovered UDS endpoints.
+    - It constructs the file path for storing the discovered endpoints in a text file named "ECUs.txt" within the `artifacts_dir` directory.
+    - The `write_target_list` method is called asynchronously to write the list of discovered endpoints along with any associated database information (using `self.db_handler`) to the file.
+
+9. **Optional: Query ECU Description (Diagnostics):**
+    - If `args.query` is True, the method calls the `query_description` method to retrieve the ECU description for each discovered endpoint using the specified DID (Data Identifier) from `args.info_did`.
+        
 #### Usage
 
 The following command discovers UDS endpoints on a CAN bus using virtual interface vcan0 within a CAN ID range of 0x000 to 0x7FF, sending a default ISO-TP PDU and writing discovered endpoints to a file named "ECUs.txt":
@@ -165,7 +221,7 @@ For discovering available subFunctions the following error codes indicate the su
 
 Each identifier or subFunction which responds with a different error code is considered available.
 
-## Memory Functions Scanner
+## Memory Functions Scan
 
 This scanner targets Electronic Control Units (ECUs) and explores functionalities that provide direct access to their memory.
 
@@ -175,35 +231,44 @@ The scanner focuses on the following Unified Diagnostic Service (UDS) services:
 
 * **ReadMemoryByAddress (service ID 0x23):** Retrieves data from a specified memory location.
 * **WriteMemoryByAddress (service ID 0x3D):** Writes data to a specified memory location.
-* **RequestDownload (service ID 0x34):** Downloads a block of data from the ECU's memory.
-* **RequestUpload (service ID 0x35):** Uploads a block of data to the ECU's memory.
+* **RequestDownload (service ID 0x34):** Tester downloads a block of data from the ECU.
+* **RequestUpload (service ID 0x35):** ECU uploads a block of data to the tester.
 
+These services all share a similar packet structure, with the exception of WriteMemoryByAddress which requires an additional data field.
 It iterates through a range of memory addresses and attempts to:
 
 * Read or write data using the chosen UDS service.
 * Handle potential timeouts during communication with the ECU.
 * Analyze the ECU's response to these attempts, which might reveal vulnerabilities or security mechanisms.
 
+The scanner offers several configuration options through command-line arguments to customize its behavior:
+* Target diagnostic session (default: 0x03).
+* Optionally verify and potentially recover the session before each memory access.
+* Specify the UDS service to use for memory access (required, choices: 0x23, 0x3D, 0x34, 0x35).
+* Provide data to write for service 0x3D WriteMemoryByAddress (8 bytes of zeroes by default).
+
 ### Usage
 
 ```
-gallia scan uds memory --target <TARGET_URI> --session <SESSION_ID> --sid <SID>
+gallia scan uds memory --target <TARGET_URI> --sid <SID>
 ```
 
 **Required Arguments:**
 
 * `--target <TARGET_URI>`: URI specifying the target ECU (required). Example: `isotp://vcan0?is_fd=false&is_extended=false&src_addr=0x701&dst_addr=0x700` defines an ISO-TP connection on virtual CAN interface vcan0 (CAN FD disabled, standard frames, source address 0x701, destination address 0x700).
-* `--sid <SID>`: UDS service ID to use for memory access (choices: 0x23, 0x3D, 0x34, 0x35).
+* `--sid <SID>`: UDS service ID to test (choices: 0x23, 0x3D, 0x34, 0x35).
 
 **Optional Arguments:**
 
 * `--session <SESSION>`: Diagnostic session to use during communication (default: 0x03).
-* `--check-session`: Optionally verify and recover the session before each memory access (default: False). Provide the number of memory accesses between checks as an argument (e.g., --check-session 10).
-* `--data <DATA>`: Data payload to send with service 0x3D WriteMemoryByAddress (hex string).
+* `--check-session`: Optionally verify and recover the session before each memory address (default: False). Provide the number of memory addresses between checks as an argument (e.g., `--check-session 10`).
+* `--data <DATA>`: Data payload to send with service 0x3D WriteMemoryByAddress (8 bytes of zeroes by default).
 
 **Example:**
 
-The provided command invokes the scanner to utilize the UDS service `ReadMemoryByAddress` (service ID 0x23) on the target ECU reachable through the specified ISO-TP connection. It will iterate through a range of memory addresses and attempt to read data from those locations.
+```gallia scan uds memory --sid 0x23 --target "isotp://can2?is_fd=false&is_extended=true&src_addr=0x22bbfbfa&dst_addr=0x22bbfafb&tx_padding=0&rx_padding=0" --db ecu_test --session 1```
+
+The provided command invokes the scanner to utilize the UDS service `ReadMemoryByAddress` (service ID 0x23) on the target ECU reachable through the specified ISO-TP connection in session `0x01`. It will iterate through a range of memory addresses and attempt to read data from those locations. The results will be saved in a database file called `ecu_test`.
 
 ## Dump Security Access Seeds
 
@@ -232,30 +297,36 @@ The scanner offers several functionalities:
 The seed dumper is invoked using the following command:
 
 ```
-gallia scan uds dump-seeds --target <TARGET_URI> --session <SESSION_ID> [OPTIONS]
+gallia scan uds dump-seeds --target <TARGET_URI> [OPTIONS]
 ```
 
 **Required Arguments:**
 
 * `--target <TARGET_URI>`: URI specifying the connection details to the target ECU (e.g., `isotp://vcan0?is_fd=false&is_extended=false&src_addr=0x701&dst_addr=0x700`).
-* `--session <SESSION_ID>`: Diagnostic session ID to use during communication with the ECU (e.g., 0x02).
 
 **Optional Arguments:**
 
+* `--session <SESSION_ID>`: Diagnostic session ID to use during communication with the ECU (e.g., 0x02). By default `0x02` if not specified otherwise.
 * `--check-session`: Verify the current session with the ECU before proceeding. (default: False)
 * `--level <LEVEL>`: Security access level to request seeds from (default: 0x11).
-* `--data-record <DATA>`: Optional data record to include in the seed request message (provide as hex string). (default: empty data)
 * `--send-zero-key <LENGTH>`: Simulate sending a zero-filled key after requesting a seed (specify key length in bytes). (default: 0 - disabled)
 * `--reset <COUNT>`: Reset the ECU after every specified number of requested seeds. (default: None - no reset)
 * `--duration <MINUTES>`: Run the scanner for a specified number of minutes (0 or negative for infinite runtime). (default: 0 - infinite)
-* `--power-cycle-sleep <SECONDS>`: Additional sleep time (in seconds) after leaving the session, potentially required for certain ECUs after a power cycle. (default: 0)
+* `--data-record <DATA>`: Optional data record to include in the seed request message (provide as hex string). (default: empty data)
 
 **Example Usage:**
 
 This example demonstrates how to capture seeds from security level 0x11 with session 0x02, resetting the ECU every 10th seed request, and running for 30 minutes:
 
 ```
-gallia scan uds dump-seeds --target "isotp://vcan0?is_fd=false&is_extended=false&src_addr=0x701&dst_addr=0x700" --session 0x02 --level 0x11 --reset 10 --duration 30
+gallia scan uds dump-seeds --target "isotp://vcan0?is_fd=false&is_extended=false&src_addr=0x701&dst_addr=0x700" --session 0x02 --data-record 0xCAFE00 --level 0x11 --reset 10 --duration 30 --db ecu_test 
 ```
+This command would:
+    - Connect to the ECU specified by `<TARGET_URI>`.
+    - Switch to diagnostic session 0x02 (if possible).
+    - Request seeds from security level 0x11 with data record 0xCAFE00. (`27 11 CA FE 00`)
+    - Reset the ECU after every 10th seed request.
+    - Run for 30 minutes (or indefinitely if `--duration` is not set).
+    - Log the results in a database file called `ecu_test`
 
-The captured seeds will be written to a file named "seeds.bin" located in the scanner's artifacts directory.
+The dumped seeds will be written to a file named "seeds.bin" located in the scanner's artifacts directory.

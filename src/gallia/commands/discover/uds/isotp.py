@@ -17,36 +17,9 @@ logger = get_logger("gallia.discover.isotp")
 
 
 class IsotpDiscoverer(UDSDiscoveryScanner):
-    """
-    ## IsotpDiscoverer Class and Methods
+    """This class, `IsotpDiscoverer`, implements a UDS discovery scanner specifically designed to discover UDS endpoints on an Electronic Control Unit (ECU) using the ISO-TP normal addressing scheme. 
 
-    This class, `IsotpDiscoverer`, implements a UDS discovery scanner specifically designed to discover UDS endpoints on an Electronic Control Unit (ECU) using the ISO-TP normal addressing scheme. 
-
-    ###  Key functionalities:
-
-    * Discovers endpoints using ISO-TP normal addressing, the default protocol employed by OBD. 
-    * Iterates through a specified CAN ID range to locate potential ECU endpoints.
-    * Sends a user-defined ISO-TP PDU (Protocol Data Unit) to the discovered CAN IDs to identify responsive endpoints.
-    * Analyzes the response to determine if a valid UDS endpoint is present.
-    * Optionally queries the ECU description using a data identifier (DID).
-
-    ###  Usable arguments:
-
-    * `--target`: URI defining the target ECU (mandatory). Example: `isotp://vcan0?is_fd=false&is_extended=false&src_addr=0x701&dst_addr=0x700` specifies an ISO-TP connection on virtual CAN interface vcan0 (CAN FD disabled, standard frames, source address 0x701, destination address 0x700).
-    * `--sid`: UDS service ID to use for memory access (required, choices: 0x23, 0x3D, 0x34, 0x35). Not applicable to this class focussing on discovery.
-    * `--session (optional)`: Diagnostic session to use during communication (default: 0x03). Not applicable to this class focussing on discovery.
-    * `--start`: Starting CAN ID for the scanning range (mandatory).
-    * `--stop`: Ending CAN ID for the scanning range (mandatory).
-    * `--padding (optional)`: Sets ISO-TP padding value.
-    * `--pdu`: Defines the ISO-TP PDU used for discovery (defaults to bytes([0x3E, 0x00])). 
-    * `--sleep`: Sets the sleep time between scans (default: 0.01 seconds).
-    * `--extended-addr`: Enables the use of extended ISO-TP addresses.
-    * `--tester-addr`: Sets the tester address when extended addressing is enabled (default: 0x6F1).
-    * `--query`: Triggers querying the ECU description via a data identifier (DID) after discovery.
-    * `--info-did`: Specifies the DID (Data Identifier) used to query the ECU description (default: 0xF197).
-    * `--sniff-time`: Sets the time duration (in seconds) to sniff the CAN bus for current traffic before initiating the scan (default: 5 seconds).
-
-    ### Methods:
+    *Methods:*
 
     * **constructor (__init__())** - Initializes the class and inherits functionalities from the parent class `UDSDiscoveryScanner`.
     * **configure_parser(self) -> None:** Defines the command-line arguments specific to the IsotpDiscoverer scanner.
@@ -57,7 +30,8 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
     * **build_isotp_frame(self, req: UDSRequest, ext_addr: int | None = None, padding: int | None = None) -> bytes:** Builds an ISO-TP frame based on the provided UDS request, incorporating extended addressing and padding if specified.
     * **main(self, args: Namespace) -> None:** The main execution function that orchestrates the discovery process.
 
-    This IsotpDiscoverer class offers a comprehensive solution to discover UDS endpoints on an ECU utilizing ISO-TP normal addressing. It provides informative logging and allows for various configuration options to tailor the scanning process.
+    This IsotpDiscoverer class offers a comprehensive solution to discover UDS endpoints on an ECU utilizing ISO-TP normal addressing.
+    It provides informative logging and allows for various configuration options to tailor the scanning process.
     """
 
     SUBGROUP = "uds"
@@ -70,62 +44,62 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
             metavar="INT",
             type=auto_int,
             required=True,
-            help="set start address",
+            help="Starting CAN ID for the scanning range",
         )
         self.parser.add_argument(
             "--stop",
             metavar="INT",
             type=auto_int,
             required=True,
-            help="set end address",
+            help="Ending CAN ID for the scanning range",
         )
         self.parser.add_argument(
             "--padding",
             type=auto_int,
             default=None,
-            help="set isotp padding",
+            help="Set isotp padding (no padding by default)",
         )
         self.parser.add_argument(
             "--pdu",
             type=unhexlify,
             default=bytes([0x3E, 0x00]),
-            help="set pdu used for discovery",
+            help="Defines the UDS PDU used for discovery (TesterPresent by default)",
         )
         self.parser.add_argument(
             "--sleep",
             type=float,
             default=0.01,
-            help="set sleeptime between loop iterations",
+            help="Set sleep time between loop iterations",
         )
         self.parser.add_argument(
             "--extended-addr",
             action="store_true",
-            help="use extended isotp addresses",
+            help="Enables the use of extended ISO-TP addresses.",
         )
         self.parser.add_argument(
             "--tester-addr",
             type=auto_int,
             default=0x6F1,
-            help="tester address for --extended",
+            help="Sets the tester address when `--extended-addr` addressing is enabled (default: 0x%(default)x)",
         )
         self.parser.add_argument(
             "--query",
             action="store_true",
-            help="query ECU description via RDBID",
+            help="Triggers querying the ECU description via DID read (DID specified by `--info-did`, `0xF197` by default)",
         )
         self.parser.add_argument(
             "--info-did",
             metavar="DID",
             type=auto_int,
             default=0xF197,
-            help="DID to query ECU description",
+            help="Specify DID to read providing ECU description (default: 0x%(default)x)",
         )
         self.parser.add_argument(
             "--sniff-time",
             default=5,
             type=int,
             metavar="SECONDS",
-            help="Time in seconds to sniff on bus for current traffic",
+            help="Time in seconds to sniff on bus for current traffic before initiating the scan to configure the deny filter (default: %(default)d seconds)",
         )
 
     async def setup(self, args: Namespace) -> None:
@@ -256,62 +230,10 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
         """
         The main execution function that orchestrates the UDS endpoint discovery process on ISOTP.
 
+        See `https://fraunhofer-aisec.github.io/gallia/uds/scan_modes.html#detailed-functionality-description` for more information.
+
         Args:
             args: A Namespace object containing parsed command-line arguments.
-
-        This method performs the following steps:
-
-        1. **Connect to CAN Transport:**
-            - Establishes a connection to the specified CAN interface using the `RawCANTransport.connect` method.
-
-        2. **Record Idle Bus Communication (Optional):**
-            - If `args.sniff_time` is greater than zero, the method sniffs the CAN bus for the specified duration to capture any existing communication.
-            - The captured CAN addresses are stored in the `addr_idle` variable.
-            - The transport filter is then set to exclude these idle addresses using `transport.set_filter(addr_idle, inv_filter=True)`.
-
-        3. **Parse UDS Request:**
-            - Parses the UDS service PDU (Protocol Data Unit) from the provided `args.pdu` argument using the `UDSRequest.parse_dynamic` method.
-
-        4. **Build ISO-TP Frame:**
-            - Constructs an ISO-TP frame based on the parsed UDS request.
-            - If `args.padding` is provided, the frame is padded with the specified value.
-            - The `build_isotp_frame` method is used, potentially incorporating extended addressing if `args.extended_addr` is True.
-
-        5. **Iterate Through CAN IDs:**
-            - Loops through the CAN ID range specified by `args.start` and `args.stop` (inclusive).
-            - A short sleep is introduced between iterations using `asyncio.sleep(args.sleep)`.
-
-        6. **Send ISO-TP Frame and Handle Response:**
-            - Determines the destination address (DST) for the frame:
-                - If extended addressing is enabled (`args.extended_addr`), the tester address (`args.tester_addr`) is used.
-                - Otherwise, the current CAN ID from the loop (`ID`) is used.
-            - Sends the constructed ISO-TP frame to the determined DST address with a timeout of 0.1 seconds using `transport.sendto`.
-            - Attempts to receive a response within a timeout of 0.1 seconds using `transport.recvfrom`.
-                - If no response is received within the timeout, the loop continues to the next CAN ID.
-                - If the received address (source address) matches the transmitted address (DST), it's considered a self-response and the loop skips to the next CAN ID.
-
-            - Handles received responses:
-                - If multiple responses are received for the same CAN ID, it's potentially indicative of a broadcast triggered by the request.
-                    - The method logs a message and continues iterating.
-                - If the response size suggests a large ISO-TP packet, it might be a multi-frame response.
-                    - The method logs a message and continues iterating.
-
-        7. **Identify UDS Endpoint:**
-            - If a valid response is received from a different address than the transmitted one, a UDS endpoint is potentially discovered on the current CAN ID.
-                - The method logs a success message and extracts details from the response:
-                    - Source and destination CAN IDs.
-                    - Response payload in hexadecimal format.
-                - A `TargetURI` object is constructed representing the discovered endpoint, incorporating relevant details like transport scheme, hostname, addresses (source and destination), extended addressing settings (if applicable), and potentially padding values (if used).
-                - The discovered endpoint is appended to the `found` list.
-                - The loop exits, as a UDS endpoint has been identified on the current CAN ID.
-
-        8. **Compile Results and Write to File:**
-            - After iterating through the CAN ID range, the method logs the total number of discovered UDS endpoints.
-            - It constructs the file path for storing the discovered endpoints in a text file named "ECUs.txt" within the `artifacts_dir` directory.
-            - The `write_target_list` method is called asynchronously to write the list of discovered endpoints along with any associated database information (using `self.db_handler`) to the file.
-
-        9. **Optional: Query ECU Description (Diagnostics):**
-            - If `args.query` is True, the method calls the `query_description` method to retrieve the ECU description for each discovered endpoint using the specified DID (Data Identifier) from `args.info_did`.
         """
         transport = await RawCANTransport.connect(args.target)
         found = []

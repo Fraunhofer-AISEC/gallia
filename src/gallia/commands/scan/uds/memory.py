@@ -18,25 +18,11 @@ logger = get_logger("gallia.scan.memory")
 class MemoryFunctionsScanner(UDSScanner):
     """This scanner targets ECUs (Electronic Control Units) and scans functions that provide direct access to memory.
 
-    It focuses on the following services defined by the Unified Diagnostic Service (UDS) standard:
-
-    * ReadMemoryByAddress (service ID 0x23): This service allows reading data from a specified memory address.
-    * WriteMemoryByAddress (service ID 0x3D): This service allows writing data to a specified memory address.
-    * RequestDownload (service ID 0x34): This service allows downloading a block of data from the ECU's memory.
-    * RequestUpload (service ID 0x35): This service allows uploading a block of data to the ECU's memory.
-
-    These services all share a similar packet structure, with the exception of WriteMemoryByAddress which requires an additional data field.
-
-    This scanner class provides functionality to iterate through a range of memory addresses and attempt to:
-        * Read or write data using the specified UDS service.
-        * Handle potential timeouts that might occur during communication with the ECU.
-        * Analyze the ECU's response to these memory access attempts, which might indicate vulnerabilities or security mechanisms.
-
-    The scanner offers several configuration options through command-line arguments to customize its behavior:
-        * Target diagnostic session (default: 0x03).
-        * Optionally verify and potentially recover the session before each memory access.
-        * Specify the UDS service to use for memory access (required, choices: 0x23, 0x3D, 0x34, 0x35).
-        * Provide data to write for service 0x3D WriteMemoryByAddress (hex string).
+    Currently supports:
+    * ReadMemoryByAddress (0x23)
+    * WriteMemoryByAddress (0x3D)
+    * RequestDownload (0x34)
+    * RequestUpload (0x35)
     """
 
     SHORT_HELP = "scan services with direct memory access"
@@ -44,41 +30,34 @@ class MemoryFunctionsScanner(UDSScanner):
 
     def configure_parser(self) -> None:
         """Adds arguments specific to the memory scanner to the argument parser.
-
-        * `--session`: Diagnostic session to use during communication (default: 0x03).
-        * `--check-session`: Optionally verify the current session before each memory access 
-                          and attempt to recover if lost (default: False). Provide the number of 
-                          memory accesses between checks as an argument (e.g., --check-session 10).
-        * `--sid`: Service ID to use for memory access (required, choices: 0x23, 0x3D, 0x34, 0x35).
-        * `--data`: Data payload to send with service 0x3d WriteMemoryByAddress (hex string).
         """
 
         self.parser.add_argument(
             "--session",
             type=auto_int,
             default=0x03,
-            help="set session to perform test",
+            help="Set a session to perform the test in (default: 0x%(default)x)",
         )
         self.parser.add_argument(
             "--check-session",
             nargs="?",
             const=1,
             type=int,
-            help="Check current session via read DID [for every nth MemoryAddress] and try to recover session",
+            help="Check the current session via read DID [for every nth MemoryAddress] and try to recover session (e.g., `--check-session 10` to check every 10th address).",
         )
         self.parser.add_argument(
             "--sid",
             required=True,
             choices=[0x23, 0x3D, 0x34, 0x35],
             type=auto_int,
-            help="Choose between 0x23 ReadMemoryByAddress 0x3d WriteMemoryByAddress, "
-            "0x34 RequestDownload and 0x35 RequestUpload",
+            help="Choose between: 0x23 ReadMemoryByAddress; 0x3d WriteMemoryByAddress; "
+            "0x34 RequestDownload; 0x35 RequestUpload",
         )
         self.parser.add_argument(
             "--data",
             default="0000000000000000",
             type=unhexlify,
-            help="Service 0x3d requires a data payload which can be specified with this flag as a hex string",
+            help="Service 0x3d requires a data payload which can be specified with this flag as a hex string (8 bytes of zeroes by default).",
         )
 
     async def main(self, args: Namespace) -> None:

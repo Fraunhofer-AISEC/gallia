@@ -26,45 +26,8 @@ class DTCPrimitive(UDSScanner):
     """
     Read or manipulate Diagnostic Trouble Codes (DTCs)
 
-    This class provides functionalities to interact with the ECU's Diagnostic Trouble Codes (DTCs) using the Unified Diagnostic Service (UDS) protocol. It inherits from the UDSScanner class of the gallia.command module to establish communication with the ECU.
-
-    **Group:** 'primitive'
-    **Command:** 'dtc'
-    **Short Help:** 'DiagnosticTroubleCodes'
-
-    This class offers various operations on DTCs:
-
-    * **Reading DTCs:** Retrieves DTC information from the ECU using the `ReadDTCInformation` service.
-    * **Clearing DTCs:** Clears DTCs from the ECU's memory employing the `ClearDiagnosticInformation` service.
-    * **Controlling DTC Setting:** Enables or disables setting of new DTCs through the `ControlDTCSetting` service.
-
-    **Arguments:**
-
-    * `--session` (int, optional): Diagnostic session to use during communication (default: DiagnosticSessionControlSubFuncs.defaultSession.value).
-    * `--cmd` (str, required): Subcommand specifying the desired operation (read, clear, or control).
-
-    **Subcommands:**
-
-    * **read**
-        * `--mask` (int, optional): Bitmask to filter DTCs based on their error state (default: 0xFF).
-        * `--show-legend` (bool, optional): Displays a legend explaining the bit interpretation of the error state.
-        * `--show-failed` (bool, optional): Summarizes DTCs with any kind of test failure.
-        * `--show-uncompleted` (bool, optional): Summarizes DTCs that haven't completed yet.
-    * **clear**
-        * `--group-of-dtc` (int, optional): DTC group or specific DTC to clear (default: 0xFFFFFF - clears all).
-    * **control**
-        * Either `--stop` or `--resume` (mutually exclusive): Stops or resumes setting of new DTCs.
-
-    **Example Usage:**
-
-    1. Read all DTCs and show a legend and summaries:
-    `gallia primitive uds dtc --target <TARGET_URI> --show-legend --show-failed --show-uncompleted read`
-
-    2. Clear all DTCs:
-    `gallia primitive uds dtc --target <TARGET_URI> clear`
-
-    3. Stop setting of new DTCs:
-    `gallia primitive uds dtc --target <TARGET_URI> control --stop`
+    This class provides functionalities to interact with the ECU's Diagnostic Trouble Codes (DTCs) using the UDS protocol.
+    It inherits from the UDSScanner class of the gallia.command module to establish communication with the ECU.
     """
 
     GROUP = "primitive"
@@ -78,7 +41,7 @@ class DTCPrimitive(UDSScanner):
             "--session",
             default=DiagnosticSessionControlSubFuncs.defaultSession.value,
             type=auto_int,
-            help="Session to perform test in",
+            help="Diagnostic session to perform the test in (default: %(default)x)",
         )
         sub_parser = self.parser.add_subparsers(dest="cmd", required=True)
         read_parser = sub_parser.add_parser(
@@ -89,12 +52,12 @@ class DTCPrimitive(UDSScanner):
             type=partial(int, base=16),
             default=0xFF,
             help="The bitmask which is sent to the ECU in order to select the relevant DTCs according to their "
-            "error state. By default, all error codes are returned (c.f. ISO 14229-1,D.2).",
+            "error state. By default, all error codes are returned (c.f. ISO 14229-1,D.2). (default: 0x%(default)x)",
         )
         read_parser.add_argument(
             "--show-legend",
             action="store_true",
-            help="Show the legend of the bit interpretation according to ISO 14229-1,D.2",
+            help="Displays a legend explaining the bit interpretation of the error state according to ISO 14229-1,D.2",
         )
         read_parser.add_argument(
             "--show-failed",
@@ -114,22 +77,22 @@ class DTCPrimitive(UDSScanner):
             type=int,
             default=0xFFFFFF,
             help="Only clear a particular DTC or the DTCs belonging to the given group. "
-            "By default, all error codes are cleared.",
+            "(default: 0x%(default)x - clears all)",
         )
         control_parser = sub_parser.add_parser(
             "control",
-            help="Stop or resume the setting of DTCs using the " "ControlDTCSetting service",
+            help="Stop or resume setting of new DTCs using the " "ControlDTCSetting service",
         )
         control_group = control_parser.add_mutually_exclusive_group(required=True)
         control_group.add_argument(
             "--stop",
             action="store_true",
-            help="Stop the setting of DTCs. If already disabled, this has no effect.",
+            help="Stops setting of new DTCs. If already disabled, this has no effect.",
         )
         control_group.add_argument(
             "--resume",
             action="store_true",
-            help="Resume the setting of DTCs. If already enabled, this has no effect.",
+            help="Resumes setting of new DTCs. If already enabled, this has no effect.",
         )
 
     async def fetch_error_codes(self, mask: int, split: bool = True) -> dict[int, int]:
