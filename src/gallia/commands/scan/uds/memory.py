@@ -20,7 +20,7 @@ class MemoryFunctionsScanner(UDSScanner):
 
     Currently supports:
     * ReadMemoryByAddress (0x23)
-    * WriteMemoryByAddress (0x3D)
+    * WriteMemoryByAddress (0x3D) - requires additional data field
     * RequestDownload (0x34)
     * RequestUpload (0x35)
     """
