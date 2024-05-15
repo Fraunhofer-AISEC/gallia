@@ -58,13 +58,13 @@ class DTCPrimitive(UDSScanner):
     **Example Usage:**
 
     1. Read all DTCs and show a legend and summaries:
-    `gallia dtc --show-legend --show-failed --show-uncompleted`
+    `gallia primitive uds dtc --target <TARGET_URI> --show-legend --show-failed --show-uncompleted read`
 
     2. Clear all DTCs:
-    `gallia dtc clear`
+    `gallia primitive uds dtc --target <TARGET_URI> clear`
 
     3. Stop setting of new DTCs:
-    `gallia dtc control --stop`
+    `gallia primitive uds dtc --target <TARGET_URI> control --stop`
     """
 
     GROUP = "primitive"

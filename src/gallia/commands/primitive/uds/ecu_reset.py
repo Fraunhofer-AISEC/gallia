@@ -42,7 +42,7 @@ class ECUResetPrimitive(UDSScanner):
 
     **Example Usage:**
     Reset the ECU using session 0x02 and sub-function 0x0A
-    `gallia ecu-reset --target "isotp://vcan0?is_fd=false&is_extended=false&src_addr=0x701&dst_addr=0x700" --session 0x02 -f 0x0A`
+    `gallia primitive uds ecu-reset --target "isotp://vcan0?is_fd=false&is_extended=false&src_addr=0x701&dst_addr=0x700" --session 0x02 -f 0x0A`
 
     This command initiates a reset operation on the ECU, targeting session 0x02 and employing sub-function 0x0A.
 
