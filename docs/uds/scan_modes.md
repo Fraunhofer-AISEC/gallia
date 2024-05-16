@@ -223,7 +223,7 @@ The scan is finished if no new session transition is found.
    - Records all successful and failed session transitions, including the path taken to reach each session.
    - Optionally stores the session transition information in a database for further analysis.
 
-### Key Advantages:
+### Key Advantages
 
 - **Comprehensive Discovery:** Thoroughly explores the entire session space of the ECU, uncovering hidden or non-standard sessions.
 - **Session Transition Mapping:** Provides a clear picture of how different sessions can be reached, aiding in understanding the ECU's behavior and potential attack surfaces.
