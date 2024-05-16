@@ -133,7 +133,7 @@ This method performs the following steps:
         
 #### Usage
 
-```
+```bash
 gallia discover uds isotp --start <START_ID> --stop <END_ID> --target <TARGET_URI>
 ```
 
@@ -141,7 +141,7 @@ gallia discover uds isotp --start <START_ID> --stop <END_ID> --target <TARGET_UR
 
 This example command discovers UDS endpoints on a CAN bus using virtual interface vcan0 within a CAN ID range of 0x000 to 0x7FF, sending a default UDS PDU and logging discovered endpoints:
 
-```
+```bash
 gallia discover uds isotp --start 0 --stop 0x7FF --target can-raw://vcan0
 ```
 
@@ -273,6 +273,61 @@ SubFunction arguments can be discovered with the same technique but the error co
 For discovering available subFunctions the following error codes indicate the subFunction is not available: `serviceNotSupported`, `serviceNotSupportedInActiveSession`, `subFunctionNotSupported`, or `subFunctionNotSupportedInActiveSession`.
 
 Each identifier or subFunction which responds with a different error code is considered available.
+
+### Functionality
+
+1. **Service Selection:**
+   - Users specify the target service ID (`--sid`) they want to scan.
+   - Currently supported services include:
+      - `0x27`: SecurityAccess
+      - `0x22`: ReadDataByIdentifier
+      - `0x2e`: WriteDataByIdentifier
+      - `0x31`: RoutineControl
+
+2. **Session Handling (Optional):**
+   - The scan can optionally operate across multiple diagnostic sessions (`--sessions`).
+   - It attempts to switch to each specified session before initiating the identifier scan.
+   - Session switching can be verified at intervals using the `--check-session` option.
+
+3. **DID/Sub-Function Iteration:**
+   - Systematically scans through the specified range of data identifiers (DIDs) or sub-functions.
+   - The start and end values of the scan range are customizable with `--start` and `--end` arguments.
+
+4. **Request Generation and Transmission:**
+   - Constructs a UDS request for each DID or sub-function, tailored to the specified service.
+   - Appends an optional payload to the request if provided using `--payload`.
+   - Transmits the request to the ECU.
+
+5. **Response Analysis:**
+   - Handles various types of ECU responses:
+      - **Positive Response:** Indicates the DID or sub-function is available.
+      - **Negative Response:**
+          - Specific negative response codes (e.g., `requestOutOfRange`, `subFunctionNotSupported`) are interpreted based on the service being scanned, potentially leading to the end of the current session's scan (`--skip-not-supported`).
+          - Other negative responses are logged for further analysis.
+      - **Timeout:** The ECU fails to respond within the expected time, indicating the DID or sub-function might not be available or accessible.
+      - **Illegal Response:** An unexpected or invalid response is logged as a warning.
+
+6. **Result Categorization and Logging:**
+   - Categorizes responses as "Positive", "Abnormal", or "Timeout".
+   - Logs detailed information about each response, including the DID/sub-function and session (if applicable).
+   - Outputs a summary of the scan results, including the count of each response category.
+
+### Key Advantages
+
+- **Service-Specific Focus:** Tailors the scan to the unique requirements of each UDS service, maximizing the accuracy of DID/sub-function discovery.
+- **Customizable Scan Range:** Allows users to define the starting and ending DIDs/sub-functions, focusing on specific areas of interest.
+- **Session Support:**  Optionally scans across multiple sessions to identify DIDs/sub-functions that are session-dependent.
+- **Payload Flexibility:**  Permits appending custom payloads to requests for advanced testing scenarios.
+
+### Usage
+
+```bash
+gallia scan uds identifiers --help
+```
+
+```{note}
+The specific command-line arguments and their behavior are subject to change. Always refer to the latest `--help` output for accurate usage information.
+```
 
 ## Memory Functions Scan
 

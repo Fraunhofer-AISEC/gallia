@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""Module for scanning UDS identifiers within specific services."""
+
 import binascii
 import reprlib
 from argparse import Namespace
@@ -25,8 +27,12 @@ logger = get_logger("gallia.scan.identifiers")
 
 
 class ScanIdentifiers(UDSScanner):
-    """This scanner scans DataIdentifiers of various
-    services. Specific requirements such as for RoutineControl or SecurityAccess
+    """This scanner scans DataIdentifiers of various services.
+
+    Supports various services like ReadDataByIdentifier, WriteDataByIdentifier, RoutineControl, and SecurityAccess.
+    Handles session switching, skips specific DIDs, and provides detailed scan results.
+
+    Specific requirements such as for RoutineControl or SecurityAccess
     are considered and implemented in the script.
     """
 
@@ -34,29 +40,34 @@ class ScanIdentifiers(UDSScanner):
     SHORT_HELP = "identifier scan of a UDS service"
 
     def configure_parser(self) -> None:
+        """Configures the argument parser for the identifier scan."""
         self.parser.add_argument(
             "--sessions",
             type=auto_int,
             nargs="*",
-            help="Set list of sessions to be tested; current if None",
+            metavar="SESSION_ID",
+            help="List of diagnostic sessions to scan (e.g., '1 3'). If not specified, uses the current session.",
         )
         self.parser.add_argument(
             "--start",
             type=auto_int,
             default=0,
-            help="start scan at this dataIdentifier (default: 0x%(default)x)",
+            metavar="DID",
+            help="Starting dataIdentifier to scan (default: 0x%(default)x)",
         )
         self.parser.add_argument(
             "--end",
             type=auto_int,
             default=0xFFFF,
-            help="end scan at this dataIdentifier (default: 0x%(default)x)",
+            metavar="DID",
+            help="Ending dataIdentifier to scan (default: 0x%(default)x)",
         )
         self.parser.add_argument(
             "--payload",
             default=None,
             type=binascii.unhexlify,
-            help="Payload which will be appended for each request as hex string",
+            metavar="HEX_STRING",
+            help="Optional payload to append to each request (hex string)",
         )
         self.parser.add_argument(
             "--sid",
@@ -64,11 +75,12 @@ class ScanIdentifiers(UDSScanner):
             default=0x22,
             help="""
             Service ID to scan; defaults to ReadDataByIdentifier (default: 0x%(default)x);
-            currently supported:
-            0x27 Security Access;
-            0x22 Read Data By Identifier;
-            0x2e Write Data By Identifier;
-            0x31 Routine Control;
+            
+            Currently supported:
+            - 0x27: SecurityAccess
+            - 0x22: ReadDataByIdentifier
+            - 0x2e: WriteDataByIdentifier
+            - 0x31: RoutineControl
             """,
         )
         self.parser.add_argument(
@@ -84,17 +96,21 @@ class ScanIdentifiers(UDSScanner):
             default={},
             type=str,
             action=ParseSkips,
+            metavar="SESSION_ID:DIDS",
             help="""
-                 The data identifiers to be skipped per session.
-                 A session specific skip is given by <session_id>:<identifiers>
-                 where <identifiers> is a comma separated list of single ids or id ranges using a dash.
-                 Examples:
-                  - 0x01:0xf3
-                  - 0x10-0x2f
-                  - 0x01:0xf3,0x10-0x2f
-                 Multiple session specific skips are separated by space.
-                 Only takes affect if --sessions is given.
-                 """,
+                Skip specific data identifiers within sessions. Format: 'SESSION_ID:DIDS'
+                
+                SESSION_ID: ID of the session
+                DIDS: Comma-separated list of:
+                    - Single DIDs (e.g., 0xf190)
+                    - DID ranges (e.g., 0x1000-0x10FF)
+                
+                Examples:
+                - 1:0xf190 (Skips DID 0xf190 in session 1)
+                - 0x1000-0x10FF (Skips DIDs 0x1000 to 0x10FF in all sessions)
+                
+                Only applicable if --sessions is used.
+                """,
         )
         self.parser.add_argument(
             "--skip-not-supported",
@@ -103,6 +119,12 @@ class ScanIdentifiers(UDSScanner):
         )
 
     async def main(self, args: Namespace) -> None:
+        """
+        Main execution of the identifier scan.
+
+        Manages session switching (if applicable) and calls `perform_scan` to execute the scan within each session.
+        """
+
         if args.sessions is None:
             logger.notice("Performing scan in current session")
             await self.perform_scan(args)
@@ -132,6 +154,13 @@ class ScanIdentifiers(UDSScanner):
                 await self.ecu.leave_session(session, sleep=args.power_cycle_sleep)
 
     async def perform_scan(self, args: Namespace, session: None | int = None) -> None:
+        """
+        Performs the scan for data identifiers within the specified service and session.
+
+        Iterates over DIDs and sub-functions, sending requests and analyzing responses.
+        Handles scanning different UDS services (SecurityAccess, RoutineControl, etc.) and logs the results.
+        """
+
         positive_DIDs = 0
         abnormal_DIDs = 0
         timeout_DIDs = 0
