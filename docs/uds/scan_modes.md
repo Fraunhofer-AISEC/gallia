@@ -203,14 +203,59 @@ The scan is finished, if no new session transition is found.
 
 ## Service Scan
 
-The service scan operates at the UDS protocol level.
-UDS provides several endpoints called *services*.
-Each service has an identifier and a specific list of arguments or sub-functions.
+The UDS service scan identifies available UDS services on a target UDS Server. It accomplishes this through a methodical process of iterating through service IDs and analyzing UDS responses. Each service has an identifier and a specific list of arguments or sub-functions.
 
 In order to identify available services, a reverse matching is applied.
 According to the UDS standard, ECUs reply with the error codes `serviceNotSupported` or `serviceNotSupportedInActiveSession` when an unimplemented service is requested.
 Therefore, each service which responds with a different error code is considered available.
 To address the different services and their varying length of arguments and sub-functions the scanner automatically appends `\x00` bytes if the received response was `incorrectMessageLengthOrInvalidFormat`.
+
+### Key Advantages
+
+- **Thoroughness:**  The scan systematically covers the entire UDS service ID range, ensuring no potential services are overlooked.
+- **Session Awareness:** By optionally testing across multiple sessions, it can reveal services that are only available in specific ECU states.
+- **Adaptability:**  The scan automatically adapts to services with different parameter lengths, ensuring accurate identification.
+- **Error Handling:** Robustly handles timeouts and unexpected responses, providing diagnostic information for troubleshooting.
+
+### Usage
+
+The service scan is initiated through the Gallia command-line interface. For detailed usage instructions and available options, refer to the help information by running:
+
+```bash
+gallia scan uds services --target <TARGET_URI>
+```
+
+```{note}
+The specific command-line arguments and their behavior are subject to change. Always refer to the latest `--help` output for accurate usage information.
+```
+
+### Workflow Overview
+
+1. **Session Handling (Optional):**
+   - If desired, the scan can operate across multiple diagnostic sessions.
+   - For each specified session, it attempts to switch the ECU to that session using the `DiagnosticSessionControl` service.
+   - If the session switch fails, it moves on to the next session.
+
+2. **Service ID Iteration:**
+   - Systematically scans through UDS service IDs (0x00 to 0xFF).
+   - Can optionally include service IDs that have the "SuppressPositiveResponse" bit set (those that do not typically send positive responses).
+
+3. **Request Generation and Transmission:**
+   - Constructs a UDS request for each service ID, experimenting with different payload lengths (1, 2, 3, and 5 bytes) if the received response was `incorrectMessageLengthOrInvalidFormat` to accommodate services with varying parameters.
+   - Sends the request to the ECU.
+
+4. **Response Analysis:**
+   - Handles various types of ECU responses:
+      - **Positive Response:** Indicates the service is available.
+      - **Negative Response:**
+          - Specific negative response codes (`serviceNotSupported` or `serviceNotSupportedInActiveSession`) signal that the service is not supported and iteration for the current session ends.
+          - `incorrectMessageLengthOrInvalidFormat` suggests adjusting the payload length, prompting further probing.
+      - **Timeout:** The ECU fails to respond within the expected time, indicating the service might not be available or accessible.
+      - **Malformed Response:** An unexpected or invalid response is logged for further investigation.
+
+5. **Result Logging:**
+   - Records the availability of each service along with its corresponding response for each session (if applicable).
+   - Outputs a summary of discovered services in each session.
 
 ## Identifier Scan
 
@@ -257,13 +302,17 @@ The scanner offers several configuration options through command-line arguments 
 
 ### Usage
 
-```
+```bash
 gallia scan uds memory --target <TARGET_URI> --sid <SID>
+```
+
+```{note}
+The specific command-line arguments and their behavior are subject to change. Always refer to the latest `--help` output for accurate usage information.
 ```
 
 **Example:**
 
-```
+```bash
 gallia scan uds memory --sid 0x23 --target "isotp://can2?is_fd=false&is_extended=true&src_addr=0x22bbfbfa&dst_addr=0x22bbfafb&tx_padding=0&rx_padding=0" --db ecu_test --session 1
 ```
 
@@ -295,8 +344,12 @@ The scanner offers several functionalities:
 
 The seed dumper is invoked using the following command:
 
-```
+```bash
 gallia scan uds dump-seeds --target <TARGET_URI> [OPTIONS]
+```
+
+```{note}
+The specific command-line arguments and their behavior are subject to change. Always refer to the latest `--help` output for accurate usage information.
 ```
 
 **Example:**
@@ -338,15 +391,19 @@ The ECU reset scan is a diagnostic tool within the Gallia framework that assesse
 
 To run the ECU reset scan, use the following command:
 
-```
+```bash
 gallia scan uds reset --target <TARGET_URI> [OPTIONS]
 ```
 
 Replace `<TARGET_URI>` with the appropriate connection details for the ECU (e.g., `isotp://vcan0?is_fd=false&is_extended=false&src_addr=0x701&dst_addr=0x700`). Refer to the CLI `--help` for available options to customize the scan.
 
+```{note}
+The specific command-line arguments and their behavior are subject to change. Always refer to the latest `--help` output for accurate usage information.
+```
+
 The scan results will be displayed in the console, indicating which reset levels were successful, timed out, or resulted in errors. This information can be used to further analyze the ECU's behavior and identify potential security risks.
 
-### Low-Level Technical Overview
+### Workflow Overview
 
 The ECU reset scan leverages the Unified Diagnostic Services (UDS) protocol, a standardized communication framework for vehicle diagnostics and reprogramming. Specifically, it interacts with the ECU Reset service (UDS service ID `0x11`).
 

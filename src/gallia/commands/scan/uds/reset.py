@@ -39,7 +39,7 @@ class ResetScanner(UDSScanner):
             type=auto_int,
             nargs="*",
             metavar="SESSION_ID",
-            help="List of session IDs to test. If not provided, all sessions will be scanned.",
+            help="List of session IDs to scan (e.g., 1 3). If not provided, all sessions will be scanned.",
         )
         self.parser.add_argument(
             "--skip",
@@ -53,8 +53,8 @@ class ResetScanner(UDSScanner):
                 
                 SESSION_ID: ID of the session
                 SUB_FUNCTIONS: Comma-separated list of:
-                    * Single sub-function IDs (e.g., 0xf3)
-                    * Sub-function ID ranges (e.g., 0x10-0x2f)
+                    - Single sub-function IDs (e.g., 0xf3)
+                    - Sub-function ID ranges (e.g., 0x10-0x2f)
 
                 Examples:
                 - '0x01:0xf3' (Skips sub-function 0xf3 in session 0x01)
