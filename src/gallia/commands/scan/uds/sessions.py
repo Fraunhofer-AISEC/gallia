@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""Module for scanning available UDS sessions and their transitions."""
+
 import asyncio
 import sys
 from argparse import Namespace
@@ -24,21 +26,30 @@ logger = get_logger("gallia.scan.sessions")
 
 
 class SessionsScanner(UDSScanner):
-    """Iterate Sessions"""
+    """
+    Scans for available UDS diagnostic sessions and their transitions.
+    
+    Starts from the default session (0x01) and recursively explores other sessions, 
+    handling session switching, potential errors, and ECU reset.
+    """
 
     COMMAND = "sessions"
     SHORT_HELP = "session scan on an ECU"
 
     def configure_parser(self) -> None:
         self.parser.add_argument(
-            "--depth", type=auto_int, default=None, help="Specify max scanning depth."
+            "--depth",
+            type=auto_int,
+            default=None,
+            metavar="DEPTH",
+            help="Maximum depth to explore for session transitions (default: unlimited).",
         )
         self.parser.add_argument(
             "--sleep",
             metavar="SECONDS",
             type=auto_int,
             default=0,
-            help="Sleep this amount of seconds after changing to DefaultSession",
+            help="Seconds to wait after switching to the DefaultSession (0x01).",
         )
         self.parser.add_argument(
             "--skip",
@@ -46,30 +57,36 @@ class SessionsScanner(UDSScanner):
             type=auto_int,
             default=[],
             nargs="*",
-            help="List with session IDs to skip while scanning",
+            help="List of session IDs to skip during the scan (e.g., '1 3').",
         )
         self.parser.add_argument(
             "--with-hooks",
             action="store_true",
-            help="Use hooks in case of a ConditionsNotCorrect error",
+            help="Use diagnostic session control hooks to handle 'ConditionsNotCorrect' errors.",
         )
         self.parser.add_argument(
             "--reset",
             nargs="?",
             default=None,
-            const=0x01,
+            const=0x01, # Default reset level if --reset is provided without a value
             type=lambda x: int(x, 0),
-            help="Reset the ECU after each iteration with the optionally given reset level",
+            help="Reset the ECU after each iteration using the specified reset level (hex, e.g., '0x01').",
         )
         self.parser.add_argument(
             "--fast",
             action="store_true",
-            help="Only search for new sessions once in a particular session, i.e. ignore different stacks",
+            help="Search for new sessions only once per session, ignoring alternative paths (faster, but less thorough).",
         )
 
     async def set_session_with_hooks_handling(
         self, session: int, use_hooks: bool
     ) -> NegativeResponse | DiagnosticSessionControlResponse:
+        """
+        Attempts to set the specified session, optionally using diagnostic session control hooks.
+
+        Handles conditionsNotCorrect responses by retrying with hooks if enabled.
+        """
+
         resp = await self.ecu.set_session(
             session, config=UDSRequestConfig(skip_hooks=True), use_db=False
         )
@@ -102,6 +119,12 @@ class SessionsScanner(UDSScanner):
         return resp
 
     async def recover_stack(self, stack: list[int], use_hooks: bool) -> bool:
+        """
+        Attempts to recover the session stack by sequentially setting sessions from the given stack.
+
+        Returns True if the stack recovery was successful, False otherwise.
+        """
+
         for session in stack:
             try:
                 resp = await self.set_session_with_hooks_handling(session, use_hooks)
@@ -121,6 +144,13 @@ class SessionsScanner(UDSScanner):
         return True
 
     async def main(self, args: Namespace) -> None:
+        """
+        Main execution of the session scan.
+
+        Performs a depth-first search to discover session transitions, starting from the default session.
+        Handles session skipping, ECU resets (if enabled), and logs the found sessions.
+        """
+
         self.result: list[int] = []
         found: dict[int, list[list[int]]] = {0: [[0x01]]}
         positive_results: list[dict[str, Any]] = []

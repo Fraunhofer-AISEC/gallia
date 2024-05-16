@@ -185,6 +185,8 @@ The discovery procedure is dependent on the used addressing scheme.
 
 ## Session Scan
 
+The UDS session scan discovers available diagnostic sessions and their transition paths within a target Electronic Control Unit (ECU). This scan explores the hierarchical structure of UDS sessions, starting from the default session and recursively identifying other accessible sessions.
+
 UDS has the concept of sessions.
 Different sessions can for example offer different services.
 A session is identified by a 1 byte session ID.
@@ -199,7 +201,44 @@ In case of a negative response, the session is considered not available from the
 To detect sessions, which are only reachable from a session different to the default session, a recursive approach is used.
 The scan for new sessions starts at each previously identified session.
 The maximum depth is limited to avoid endless scans in case of transition cycles, such as `0x01 -> 0x03 -> 0x05 -> 0x03`.
-The scan is finished, if no new session transition is found.
+The scan is finished if no new session transition is found.
+
+### Functionality
+
+1. **Recursive Session Exploration:**
+   - Starts with the default session (0x01).
+   - Attempts to transition into each possible session (1-0x7F) using the `DiagnosticSessionControl` service.
+   - Tracks successful transitions, building a graph of reachable sessions and their paths.
+   - Limits the search depth (`--depth`) to prevent infinite loops in case of cyclical session transitions.
+
+2. **Error Handling and Recovery:**
+   - **ConditionsNotCorrect:** If a session change fails due to "ConditionsNotCorrect," the scan can optionally retry using diagnostic session control hooks (`--with-hooks`).
+   - **ECU Reset:** If enabled (`--reset`), the ECU is reset at specific intervals to potentially overcome limitations and access additional sessions.
+   - **Stack Recovery:** If an error occurs during session switching, the scan attempts to recover by resetting the ECU and traversing the known path to the current session.
+
+3. **Optimized Scan (Optional):**
+   - The `--fast` flag enables a quicker scan mode, where new sessions are searched for only once per session, potentially missing some transitions.
+
+4. **Session Transition Logging:**
+   - Records all successful and failed session transitions, including the path taken to reach each session.
+   - Optionally stores the session transition information in a database for further analysis.
+
+### Key Advantages:
+
+- **Comprehensive Discovery:** Thoroughly explores the entire session space of the ECU, uncovering hidden or non-standard sessions.
+- **Session Transition Mapping:** Provides a clear picture of how different sessions can be reached, aiding in understanding the ECU's behavior and potential attack surfaces.
+- **Error Resilience:** Handles various errors encountered during session switching, ensuring the scan continues even in the face of unexpected responses from the ECU.
+- **Customization:** Offers flexibility in scan depth, ECU reset options, and hook usage to tailor the scan to specific ECU behavior.
+
+### Usage
+
+```bash
+gallia scan uds sessions --help
+```
+
+```{note}
+The specific command-line arguments and their behavior are subject to change. Always refer to the latest `--help` output for accurate usage information.
+```
 
 ## Service Scan
 
