@@ -242,7 +242,9 @@ The specific command-line arguments and their behavior are subject to change. Al
 
 ## Reset Scan
 
-The ECU reset scan is assesses the resilience of an Electronic Control Unit (ECU) against various reset commands. It systematically probes the ECU with different reset sub-functions to gauge its response and identify potential vulnerabilities.
+The ECU reset scan assesses the response of an Electronic Control Unit (ECU) to various reset commands. It systematically probes the ECU with different reset sub-functions to gauge its response and identify potential vulnerabilities.
+
+It iterates and sends UDS requests `11 01` to `11 7F` and identifies the responses. If the response was positive (`51 xx`), it assumes the reset was successful.
 
 ### Key Features
 
