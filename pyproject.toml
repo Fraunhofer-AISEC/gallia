@@ -30,6 +30,7 @@ packages = [
     { include = "cursed_hr", from = "src" },
     { include = "hr", from = "src" },
     { include = "opennetzteil", from = "src" },
+    { include = "penrun", from = "src" },
 ]
 
 [tool.poetry.dependencies]
@@ -73,6 +74,7 @@ python-lsp-ruff = ">=1.6,<3.0"
 "netzteil" = "opennetzteil.cli:main"
 "cursed-hr" = "cursed_hr.cursed_hr:main"
 "hr" = "hr:main"
+"penrun" = "penrun.cli:main"
 
 [tool.mypy]
 strict = true
