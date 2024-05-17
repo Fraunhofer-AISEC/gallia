@@ -240,6 +240,81 @@ gallia scan uds sessions --help
 The specific command-line arguments and their behavior are subject to change. Always refer to the latest `--help` output for accurate usage information.
 ```
 
+## Reset Scan
+
+The ECU reset scan is assesses the resilience of an Electronic Control Unit (ECU) against various reset commands. It systematically probes the ECU with different reset sub-functions to gauge its response and identify potential vulnerabilities.
+
+### Key Features
+
+* **Sub-Function Probing:** The scanner tests a range of ECU reset sub-functions (0x01 to 0x7F) as defined in the UDS standard. This comprehensive approach helps to reveal specific reset levels that may trigger unintended behavior or expose weaknesses in the ECU's reset logic.
+* **Session Handling:** It can operate across multiple diagnostic sessions, allowing for a broader evaluation of the ECU's reset behavior in different states or configurations.
+* **Configurable Skips:** Users can specify certain sub-functions or sessions to be excluded from the scan, providing flexibility for targeted testing or avoiding known problematic areas.
+* **Error Recovery:** The scanner includes mechanisms to handle communication errors and timeouts that may occur during testing. It can attempt to recover the connection and resume the scan, ensuring thoroughness even in the face of unexpected issues.
+
+### Benefits
+
+* **Vulnerability Detection:** By systematically triggering different reset levels, the scanner can uncover vulnerabilities that could be exploited to disrupt the ECU's operation or gain unauthorized access, such as a reset triggering an unauthorised Diagnostic Session switch.
+* **Robustness Assessment:** The results of the scan provide valuable insights into the ECU's resilience to various reset scenarios, helping to identify areas for improvement in its design and implementation.
+* **Customized Testing:** The ability to configure session switching and selectively skip specific sub-functions allows for tailored testing based on the specific requirements and concerns of the user.
+
+### Usage
+
+To run the ECU reset scan, use the following command:
+
+```bash
+gallia scan uds reset --target <TARGET_URI> [OPTIONS]
+```
+
+Replace `<TARGET_URI>` with the appropriate connection details for the ECU (e.g., `isotp://vcan0?is_fd=false&is_extended=false&src_addr=0x701&dst_addr=0x700`). Refer to the CLI `--help` for available options to customize the scan. Make sure the target URI is in quotes in the command, as not enclosing it in quotes might alter the execution of the command.
+
+```{note}
+The specific command-line arguments and their behavior are subject to change. Always refer to the latest `--help` output for accurate usage information.
+```
+
+The scan results will be displayed in the console, indicating which reset levels were successful, timed out, or resulted in errors. This information can be used to further analyze the ECU's behavior and identify potential security risks.
+
+### Workflow Overview
+
+The ECU reset scan leverages the Unified Diagnostic Services (UDS) protocol, a standardized communication framework for vehicle diagnostics and reprogramming. Specifically, it interacts with the ECU Reset service (UDS service ID `0x11`).
+
+1. **Session Handling:**
+   * Optionally, if the `--sessions` argument is provided, the scan iterates through a list of specified diagnostic sessions.
+   * For each session:
+      * A `DiagnosticSessionControl` (UDS service ID `0x10`) request is sent to switch the ECU to the desired session.
+      * The scan proceeds if the session change is successful.
+
+2. **Sub-Function Iteration:**
+   * The scan systematically iterates through ECU Reset sub-functions, ranging from 0x01 to 0x7F.
+   * Skipping of specific sub-functions or sessions can be configured using the `--skip` argument.
+
+3. **ECU Reset Request:**
+   * For each sub-function, a UDS `ECUReset` request is sent with the corresponding sub-function byte.
+   * The request is configured with the `ANALYZE` tag to prompt detailed logging of the response.
+
+4. **Response Analysis:**
+   * **Positive Response:** If the ECU responds positively (acknowledges the reset), the sub-function is recorded as "ok".
+      * The script waits for the ECU to recover using `ecu.wait_for_ecu()`.
+      * A hard reset (sub-function 0x01) is issued to restore the ECU to a known state.
+   * **Negative Response:** If the ECU sends a negative response:
+      * `subFunctionNotSupported`: The sub-function is not implemented and is logged accordingly.
+      * Other negative responses are recorded as errors along with their response codes.
+   * **Timeout:** If the ECU does not respond within a timeout period:
+      * The sub-function is recorded as "timeout".
+      * If the `--power-cycle` flag is set, the script attempts to power-cycle the ECU and reconnect before continuing.
+
+5. **Session Verification (Optional):**
+   * If `--sessions` is used and `--skip-check-session` is not set, the script verifies that the ECU remains in the intended session after each reset.
+   * If the session has changed, it attempts to re-enter the correct session.
+
+6. **Result Summary:**
+   * Upon completion, the script outputs lists of sub-functions categorized as "ok", "timeout", and "error".
+
+**Technical Details:**
+
+* **Transport Protocol:** The scan relies on a UDS transport layer (e.g., ISOTP or DoIP), which is configured separately using the `--target` argument.
+* **Error Handling:** The script employs `try-except` blocks to catch and handle `TimeoutError`, `ConnectionError`, and UDS-specific exceptions like `IllegalResponse` and `UnexpectedNegativeResponse`.
+* **Logging:** Detailed logging is used to record each step of the scan, including sent requests, received responses, and any errors encountered.
+
 ## Service Scan
 
 The UDS service scan identifies available UDS services on a target UDS Server. It accomplishes this through a methodical process of iterating through service IDs and analyzing UDS responses. Each service has an identifier and a specific list of arguments or sub-functions.
@@ -463,78 +538,3 @@ This command would:
 * Log the results in a database file called `ecu_test`
 
 The dumped seeds will be written to a file named "seeds.bin" located in the scanner's artifacts directory.
-
-## ECU Reset Scan
-
-The ECU reset scan is a diagnostic tool within the Gallia framework that assesses the resilience of an Electronic Control Unit (ECU) against various reset commands. It systematically probes the ECU with different reset sub-functions to gauge its response and identify potential vulnerabilities.
-
-### Key Features
-
-* **Sub-Function Probing:** The scanner tests a range of ECU reset sub-functions (0x01 to 0x7F) as defined in the UDS standard. This comprehensive approach helps to reveal specific reset levels that may trigger unintended behavior or expose weaknesses in the ECU's reset logic.
-* **Session Handling:** It can operate across multiple diagnostic sessions, allowing for a broader evaluation of the ECU's reset behavior in different states or configurations.
-* **Configurable Skips:** Users can specify certain sub-functions or sessions to be excluded from the scan, providing flexibility for targeted testing or avoiding known problematic areas.
-* **Error Recovery:** The scanner includes mechanisms to handle communication errors and timeouts that may occur during testing. It can attempt to recover the connection and resume the scan, ensuring thoroughness even in the face of unexpected issues.
-
-### Benefits
-
-* **Vulnerability Detection:** By systematically triggering different reset levels, the scanner can uncover vulnerabilities that could be exploited to disrupt the ECU's operation or gain unauthorized access.
-* **Robustness Assessment:** The results of the scan provide valuable insights into the ECU's resilience to various reset scenarios, helping to identify areas for improvement in its design and implementation.
-* **Customized Testing:** The ability to configure session switching and selectively skip specific sub-functions allows for tailored testing based on the specific requirements and concerns of the user.
-
-### Usage
-
-To run the ECU reset scan, use the following command:
-
-```bash
-gallia scan uds reset --target <TARGET_URI> [OPTIONS]
-```
-
-Replace `<TARGET_URI>` with the appropriate connection details for the ECU (e.g., `isotp://vcan0?is_fd=false&is_extended=false&src_addr=0x701&dst_addr=0x700`). Refer to the CLI `--help` for available options to customize the scan.
-
-```{note}
-The specific command-line arguments and their behavior are subject to change. Always refer to the latest `--help` output for accurate usage information.
-```
-
-The scan results will be displayed in the console, indicating which reset levels were successful, timed out, or resulted in errors. This information can be used to further analyze the ECU's behavior and identify potential security risks.
-
-### Workflow Overview
-
-The ECU reset scan leverages the Unified Diagnostic Services (UDS) protocol, a standardized communication framework for vehicle diagnostics and reprogramming. Specifically, it interacts with the ECU Reset service (UDS service ID `0x11`).
-
-1. **Session Handling:**
-   * Optionally, if the `--sessions` argument is provided, the scan iterates through a list of specified diagnostic sessions.
-   * For each session:
-      * A `DiagnosticSessionControl` (UDS service ID `0x10`) request is sent to switch the ECU to the desired session.
-      * The scan proceeds if the session change is successful.
-
-2. **Sub-Function Iteration:**
-   * The scan systematically iterates through ECU Reset sub-functions, ranging from 0x01 to 0x7F.
-   * Skipping of specific sub-functions or sessions can be configured using the `--skip` argument.
-
-3. **ECU Reset Request:**
-   * For each sub-function, a UDS `ECUReset` request is sent with the corresponding sub-function byte.
-   * The request is configured with the `ANALYZE` tag to prompt detailed logging of the response.
-
-4. **Response Analysis:**
-   * **Positive Response:** If the ECU responds positively (acknowledges the reset), the sub-function is recorded as "ok".
-      * The script waits for the ECU to recover using `ecu.wait_for_ecu()`.
-      * A hard reset (sub-function 0x01) is issued to restore the ECU to a known state.
-   * **Negative Response:** If the ECU sends a negative response:
-      * `subFunctionNotSupported`: The sub-function is not implemented and is logged accordingly.
-      * Other negative responses are recorded as errors along with their response codes.
-   * **Timeout:** If the ECU does not respond within a timeout period:
-      * The sub-function is recorded as "timeout".
-      * If the `--power-cycle` flag is set, the script attempts to power-cycle the ECU and reconnect before continuing.
-
-5. **Session Verification (Optional):**
-   * If `--sessions` is used and `--skip-check-session` is not set, the script verifies that the ECU remains in the intended session after each reset.
-   * If the session has changed, it attempts to re-enter the correct session.
-
-6. **Result Summary:**
-   * Upon completion, the script outputs lists of sub-functions categorized as "ok", "timeout", and "error".
-
-**Technical Details:**
-
-* **Transport Protocol:** The scan relies on a UDS transport layer (e.g., ISOTP or DoIP), which is configured separately using the `--target` argument.
-* **Error Handling:** The script employs `try-except` blocks to catch and handle `TimeoutError`, `ConnectionError`, and UDS-specific exceptions like `IllegalResponse` and `UnexpectedNegativeResponse`.
-* **Logging:** Detailed logging is used to record each step of the scan, including sent requests, received responses, and any errors encountered.
