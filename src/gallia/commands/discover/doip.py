@@ -4,7 +4,6 @@
 
 import asyncio
 import socket
-from argparse import Namespace
 from collections.abc import Iterable
 from itertools import product
 from urllib.parse import parse_qs, urlparse
@@ -13,6 +12,8 @@ import aiofiles
 import psutil
 
 from gallia.command import AsyncScript
+from gallia.command.base import AsyncScriptConfig
+from gallia.command.config import Field
 from gallia.log import get_logger
 from gallia.services.uds.core.service import TesterPresentRequest, TesterPresentResponse
 from gallia.transports.doip import (
@@ -34,68 +35,57 @@ from gallia.transports.doip import (
 logger = get_logger(__name__)
 
 
+class DoIPDiscovererConfig(AsyncScriptConfig):
+    start: lambda x: int(
+        x, 0
+    ) = Field(0x00, description="Set start address of TargetAddress search range", metavar="INT")
+    stop: lambda x: int(
+        x, 0
+    ) = Field(0xFFFF, description="Set stop address of TargetAddress search range", metavar="INT")
+    target: str | None = Field(
+        None,
+        description="The more you give, the more automatic detection will be skipped: IP, Port, RoutingActivationType, SourceAddress",
+        metavar="<DoIP URL target string>",
+    )
+    timeout: float | None = Field(
+        None,
+        description="This flag overrides the default timeout of DiagnosticMessages, which can be used to fine-tune classification of unresponsive ECUs or broadcast detection",
+        metavar="SECONDS (FLOAT)",
+    )
+    tcp_connect_delay: float = Field(
+        0.0,
+        description="This flag delays subsequent TCP connect attempts during all enumerations. Useful if the DoIP entity requires some time before accepting new TCP requests.",
+        metavar="SECONDS (FLOAT)",
+    )
+
+
 class DoIPDiscoverer(AsyncScript):
     """This script scans for active DoIP endpoints and automatically enumerates allowed
     RoutingActivationTypes and known SourceAddresses. Once valid endpoints are acquired,
     the script continues to discover valid TargetAddresses that are accepted and respond
     to UDS TesterPresent requests."""
 
-    GROUP = "discover"
-    COMMAND = "doip"
     SHORT_HELP = "zero-knowledge DoIP enumeration scanner"
     HAS_ARTIFACTS_DIR = True
 
     protocol_version = ProtocolVersions.ISO_13400_2_2019.value
 
-    def configure_parser(self) -> None:
-        self.parser.add_argument(
-            "--start",
-            metavar="INT",
-            type=lambda x: int(x, 0),
-            default=0x00,
-            help="Set start address of TargetAddress search range",
-        )
-        self.parser.add_argument(
-            "--stop",
-            metavar="INT",
-            type=lambda x: int(x, 0),
-            default=0xFFFF,
-            help="Set stop address of TargetAddress search range",
-        )
-        self.parser.add_argument(
-            "--target",
-            metavar="<DoIP URL target string>",
-            type=str,
-            default=None,
-            help="The more you give, the more automatic detection will be skipped: IP, Port, RoutingActivationType, SourceAddress",
-        )
-        self.parser.add_argument(
-            "--timeout",
-            metavar="SECONDS (FLOAT)",
-            type=float,
-            default=None,
-            help="This flag overrides the default timeout of DiagnosticMessages, which can be used to fine-tune classification of unresponsive ECUs or broadcast detection",
-        )
-        self.parser.add_argument(
-            "--tcp-connect-delay",
-            metavar="SECONDS (FLOAT)",
-            type=float,
-            default=0.0,
-            help="This flag delays subsequent TCP connect attempts during all enumerations. Useful if the DoIP entity requires some time before accepting new TCP requests.",
-        )
+    def __init__(self, config: DoIPDiscovererConfig):
+        super().__init__(config)
+        self.config = config
 
     # This is an ugly hack to circumvent AsyncScript's shortcomings regarding return codes
 
-    def run(self, args: Namespace) -> int:
-        return asyncio.run(self.main2(args))
+    def run(self) -> int:
+        return asyncio.run(self.main2())
 
-    async def main(self, args: Namespace) -> None:
+    async def main(self) -> None:
         pass
 
-    async def main2(self, args: Namespace) -> int:
+    async def main2(self) -> int:
         logger.notice("[👋] Welcome to @realDoIP-Discovery powered by MoarMemes…")
 
-        target = urlparse(args.target) if args.target is not None else None
+        target = urlparse(self.config.target) if self.config.target is not None else None
         if target is not None and target.scheme != "doip":
             logger.error("[🫣] --target must be doip://…")
             return 2
@@ -107,7 +97,7 @@ class DoIPDiscoverer(AsyncScript):
                 logger.warning(f"Could not write the discovery run to the database: {e!r}")
 
         # Set TCP connect delay for RoutingActivationType and SourceAddress enumeration
-        tcp_connect_delay: float = args.tcp_connect_delay
+        tcp_connect_delay: float = self.config.tcp_connect_delay
 
         # Discover Hostname and Port
         tgt_hostname: str
@@ -187,7 +177,7 @@ class DoIPDiscoverer(AsyncScript):
             return 3
 
         logger.notice(
-            f"[🔍] Enumerating all TargetAddresses from {args.start:#x} to {args.stop:#x}"
+            f"[🔍] Enumerating all TargetAddresses from {self.config.start:#x} to {self.config.stop:#x}"
         )
 
         target = urlparse(targets[0])
@@ -199,10 +189,10 @@ class DoIPDiscoverer(AsyncScript):
             tgt_port,
             tgt_rat,
             tgt_src,
-            args.start,
-            args.stop,
+            self.config.start,
+            self.config.stop,
             tcp_connect_delay,
-            args.timeout,
+            self.config.timeout,
         )
 
         logger.notice("[🛩️] All done, thanks for flying with us!")
