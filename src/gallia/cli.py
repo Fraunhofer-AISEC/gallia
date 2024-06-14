@@ -10,13 +10,22 @@ import argcomplete
 from pydantic import Field
 from pydantic_argparse import ArgumentParser, BaseCommand
 
+from gallia.commands.primitive.uds.dtc import (
+    ClearDTCPrimitiveConfig,
+    ControlDTCPrimitiveConfig,
+    DTCPrimitive,
+    ReadDTCPrimitiveConfig,
+)
+from gallia.commands.primitive.uds.rdbi import (
+    ReadByIdentifierPrimitive,
+    ReadByIdentifierPrimitiveConfig,
+)
+from gallia.commands.primitive.uds.wdbi import (
+    WriteByIdentifierPrimitive,
+    WriteByIdentifierPrimitiveConfig,
+)
 from gallia.config import load_config_file
 from gallia.log import Loglevel, setup_logging
-
-from gallia.commands.primitive.uds.rdbi import ReadByIdentifierPrimitive, ReadByIdentifierPrimitiveConfig
-from gallia.commands.primitive.uds.wdbi import WriteByIdentifierPrimitive, WriteByIdentifierPrimitiveConfig
-from gallia.commands.primitive.uds.dtc import DTCPrimitive, ReadDTCPrimitiveConfig, ClearDTCPrimitiveConfig, ControlDTCPrimitiveConfig
-
 
 setup_logging(Loglevel.DEBUG)
 config, _ = load_config_file()
@@ -24,26 +33,20 @@ config, _ = load_config_file()
 
 # Mockup
 def create_parser_tree() -> tuple[type[BaseCommand], dict[type, dict[str, Any]]]:
-    setattr(
-        ReadByIdentifierPrimitiveConfig,
-        "_class",
-        ReadByIdentifierPrimitive
-    )
-    setattr(
-        WriteByIdentifierPrimitiveConfig,
-        "_class",
-        WriteByIdentifierPrimitive
-    )
+    setattr(ReadByIdentifierPrimitiveConfig, "_class", ReadByIdentifierPrimitive)
+    setattr(WriteByIdentifierPrimitiveConfig, "_class", WriteByIdentifierPrimitive)
     for cls in [ReadDTCPrimitiveConfig, ClearDTCPrimitiveConfig, ControlDTCPrimitiveConfig]:
-        setattr(
-            cls,
-            "_class",
-            DTCPrimitive
-        )
+        setattr(cls, "_class", DTCPrimitive)
 
     extra_defaults = {}
 
-    for cls in [ReadByIdentifierPrimitiveConfig, WriteByIdentifierPrimitiveConfig, ReadDTCPrimitiveConfig, ClearDTCPrimitiveConfig, ControlDTCPrimitiveConfig]:
+    for cls in [
+        ReadByIdentifierPrimitiveConfig,
+        WriteByIdentifierPrimitiveConfig,
+        ReadDTCPrimitiveConfig,
+        ClearDTCPrimitiveConfig,
+        ControlDTCPrimitiveConfig,
+    ]:
         config_attributes = cls.attributes_from_config(config)
         env_attributes = cls.attributes_from_env()
         config_attributes.update(env_attributes)
@@ -63,10 +66,7 @@ def create_parser_tree() -> tuple[type[BaseCommand], dict[type, dict[str, Any]]]
             None,
             description="Write data at a specific ID using the UDS service WDBI (0x2e)",
         )
-        dtc: DTC | None = Field(
-            None,
-            description="Read, delete or control DTCs"
-        )
+        dtc: DTC | None = Field(None, description="Read, delete or control DTCs")
         # iocbi: ...
         # ...
 
