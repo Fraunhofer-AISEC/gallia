@@ -318,7 +318,12 @@ class BaseCommand(ABC):
         return exit_code
 
 
-class ScriptConfig(BaseCommandConfig, ABC, argument_group=BaseCommandConfig._argument_group, config_section=BaseCommandConfig._config_section):
+class ScriptConfig(
+    BaseCommandConfig,
+    ABC,
+    argument_group=BaseCommandConfig._argument_group,
+    config_section=BaseCommandConfig._config_section,
+):
     pass
 
 
@@ -346,7 +351,12 @@ class Script(BaseCommand, ABC):
         return exitcode.OK
 
 
-class AsyncScriptConfig(BaseCommandConfig, ABC, argument_group=BaseCommandConfig._argument_group, config_section=BaseCommandConfig._config_section):
+class AsyncScriptConfig(
+    BaseCommandConfig,
+    ABC,
+    argument_group=BaseCommandConfig._argument_group,
+    config_section=BaseCommandConfig._config_section,
+):
     pass
 
 
