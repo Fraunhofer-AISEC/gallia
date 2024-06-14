@@ -4,56 +4,49 @@
 
 import reprlib
 import sys
-from argparse import Namespace
 from typing import Any
 
 from gallia.command import UDSScanner
+from gallia.command.config import AutoInt, Field
+from gallia.command.uds import UDSScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse, UDSRequestConfig, UDSResponse
 from gallia.services.uds.core.exception import IllegalResponse, UnexpectedNegativeResponse
 from gallia.services.uds.core.utils import g_repr
 from gallia.services.uds.helpers import suggests_sub_function_not_supported
-from gallia.utils import ParseSkips, auto_int
 
 logger = get_logger(__name__)
+
+
+class ResetScannerConfig(UDSScannerConfig):
+    sessions: AutoInt | None = Field(description="Set list of sessions to be tested; all if None")
+    skip: str = Field(
+        {},
+        description="\n                 The sub functions to be skipped per session.\n                 A session specific skip is given by <session_id>:<sub_functions>\n                 where <sub_functions> is a comma separated list of single ids or id ranges using a dash.\n                 Examples:\n                  - 0x01:0xf3\n                  - 0x10-0x2f\n                  - 0x01:0xf3,0x10-0x2f\n                 Multiple session specific skips are separated by space.\n                 Only takes affect if --sessions is given.\n                 ",
+    )
+    skip_check_session: bool = Field(
+        False, description="skip check current session; only takes affect if --sessions is given"
+    )
 
 
 class ResetScanner(UDSScanner):
     """Scan ecu_reset"""
 
     SHORT_HELP = "identifier scan in ECUReset"
-    COMMAND = "reset"
 
-    def configure_parser(self) -> None:
-        self.parser.add_argument(
-            "--sessions",
-            type=auto_int,
-            nargs="*",
-            help="Set list of sessions to be tested; all if None",
-        )
-        self.parser.add_argument(
-            "--skip",
-            nargs="+",
-            default={},
-            type=str,
-            action=ParseSkips,
-            help="\n                 The sub functions to be skipped per session.\n                 A session specific skip is given by <session_id>:<sub_functions>\n                 where <sub_functions> is a comma separated list of single ids or id ranges using a dash.\n                 Examples:\n                  - 0x01:0xf3\n                  - 0x10-0x2f\n                  - 0x01:0xf3,0x10-0x2f\n                 Multiple session specific skips are separated by space.\n                 Only takes affect if --sessions is given.\n                 ",
-        )
-        self.parser.add_argument(
-            "--skip-check-session",
-            action="store_true",
-            help="skip check current session; only takes affect if --sessions is given",
-        )
+    def __init__(self, config: ResetScannerConfig):
+        super().__init__(config)
+        self.config = config
 
-    async def main(self, args: Namespace) -> None:
-        if args.sessions is None:
-            await self.perform_scan(args)
+    async def main(self) -> None:
+        if self.config.sessions is None:
+            await self.perform_scan()
         else:
-            sessions = args.sessions
+            sessions = self.config.sessions
             logger.info(f"testing sessions {g_repr(sessions)}")
 
             # TODO: Unified shortened output necessary here
-            logger.info(f"skipping identifiers {reprlib.repr(args.skip)}")
+            logger.info(f"skipping identifiers {reprlib.repr(self.config.skip)}")
 
             for session in sessions:
                 logger.notice(f"Switching to session {g_repr(session)}")
@@ -63,21 +56,21 @@ class ResetScanner(UDSScanner):
                     continue
 
                 logger.result(f"Scanning in session: {g_repr(session)}")
-                await self.perform_scan(args, session)
+                await self.perform_scan(session)
 
-                await self.ecu.leave_session(session, sleep=args.power_cycle_sleep)
+                await self.ecu.leave_session(session, sleep=self.config.power_cycle_sleep)
 
-    async def perform_scan(self, args: Namespace, session: None | int = None) -> None:
+    async def perform_scan(self, session: None | int = None) -> None:
         l_ok: list[int] = []
         l_timeout: list[int] = []
         l_error: list[Any] = []
 
         for sub_func in range(0x01, 0x80):
-            if session in args.skip and sub_func in args.skip[session]:
+            if session in self.config.skip and sub_func in self.config.skip[session]:
                 logger.notice(f"skipping subFunc: {g_repr(sub_func)} because of --skip")
                 continue
 
-            if session is not None and (not args.skip_check_session):
+            if session is not None and (not self.config.skip_check_session):
                 # Check session and try to recover from wrong session (max 3 times), else skip session
                 if not await self.ecu.check_and_set_session(session):
                     logger.error(
@@ -117,7 +110,7 @@ class ResetScanner(UDSScanner):
 
             except TimeoutError:
                 l_timeout.append(sub_func)
-                if not args.power_cycle:
+                if not self.config.power_cycle:
                     logger.error(f"ECU did not respond after reset level {g_repr(sub_func)}; exit")
                     sys.exit(1)
 
@@ -125,7 +118,7 @@ class ResetScanner(UDSScanner):
                     f"ECU did not respond after reset level {g_repr(sub_func)}; try power cycle…"
                 )
                 try:
-                    await self.ecu.power_cycle(args.power_cycle_sleep)
+                    await self.ecu.power_cycle(self.config.power_cycle_sleep)
                     await self.ecu.wait_for_ecu()
                 except (TimeoutError, ConnectionError) as e:
                     logger.error(f"Failed to recover ECU: {g_repr(e)}; exit")
@@ -137,7 +130,7 @@ class ResetScanner(UDSScanner):
                 continue
 
             # We reach this code only for positive responses
-            if session is not None and (not args.skip_check_session):
+            if session is not None and (not self.config.skip_check_session):
                 try:
                     current_session = await self.ecu.read_session()
                     logger.info(

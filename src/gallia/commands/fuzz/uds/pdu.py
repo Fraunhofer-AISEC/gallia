@@ -3,14 +3,15 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
-import binascii
 import random
 import sys
-from argparse import Namespace
+from typing import Literal
 
 assert sys.platform.startswith("linux"), "unsupported platform"
 
 from gallia.command import UDSScanner
+from gallia.command.config import AutoInt, Field, HexBytes
+from gallia.command.uds import UDSScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds.core.client import UDSRequestConfig
 from gallia.services.uds.core.constants import UDSErrorCodes, UDSIsoServices
@@ -18,65 +19,41 @@ from gallia.services.uds.core.exception import IllegalResponse
 from gallia.services.uds.core.service import NegativeResponse, UDSResponse
 from gallia.services.uds.helpers import suggests_identifier_not_supported
 from gallia.transports import RawCANTransport, TargetURI
-from gallia.utils import auto_int, handle_task_error, set_task_handler_ctx_variable
+from gallia.utils import handle_task_error, set_task_handler_ctx_variable
 
 logger = get_logger(__name__)
+
+
+class PDUFuzzerConfig(UDSScannerConfig):
+    sessions: AutoInt = Field([1], description="Set list of sessions to be tested; 0x01 if None")
+    serviceid: Literal[0x2E, 0x31] = Field(
+        0x2E,
+        description="\n            Service ID to create payload for; defaults to 0x2e WriteDataByIdentifier;\n            currently supported:\n            0x2e WriteDataByIdentifier, 0x31 RoutineControl (startRoutine)\n            ",
+    )
+    max_length: AutoInt = Field(42, description="maximum length of the payload")
+    min_length: AutoInt = Field(1, description="minimum length of the payload")
+    iterations: AutoInt = Field(1, description="number of iterations", short="i")
+    dids: AutoInt = Field(description="data identifiers to fuzz")
+    prefixed_payload: HexBytes = Field(
+        b"", description="static payload, which precedes the fuzzed payload", metavar="HEXSTRING"
+    )
+    observe_can_ids: AutoInt = Field([], description="can ids to observe while fuzzing")
 
 
 class PDUFuzzer(UDSScanner):
     """Payload fuzzer"""
 
-    GROUP = "fuzz"
-    COMMAND = "pdu"
     SHORT_HELP = "fuzz the UDS pdu of selected services"
 
-    def configure_parser(self) -> None:
-        self.parser.add_argument(
-            "--sessions",
-            type=auto_int,
-            default=[1],
-            nargs="*",
-            help="Set list of sessions to be tested; 0x01 if None",
-        )
-        self.parser.add_argument(
-            "--serviceid",
-            type=auto_int,
-            default=0x2E,
-            choices=[0x2E, 0x31],
-            help="\n            Service ID to create payload for; defaults to 0x2e WriteDataByIdentifier;\n            currently supported:\n            0x2e WriteDataByIdentifier, 0x31 RoutineControl (startRoutine)\n            ",
-        )
-        self.parser.add_argument(
-            "--max-length", type=auto_int, default=42, help="maximum length of the payload"
-        )
-        self.parser.add_argument(
-            "--min-length", type=auto_int, default=1, help="minimum length of the payload"
-        )
-        self.parser.add_argument(
-            "-i", "--iterations", type=auto_int, default=1, help="number of iterations"
-        )
-        self.parser.add_argument(
-            "--dids", type=auto_int, nargs="*", required=True, help="data identifiers to fuzz"
-        )
-        self.parser.add_argument(
-            "--prefixed-payload",
-            metavar="HEXSTRING",
-            type=binascii.unhexlify,
-            default=b"",
-            help="static payload, which precedes the fuzzed payload",
-        )
-        self.parser.add_argument(
-            "--observe-can-ids",
-            type=auto_int,
-            default=[],
-            nargs="*",
-            help="can ids to observe while fuzzing",
-        )
+    def __init__(self, config: PDUFuzzerConfig):
+        super().__init__(config)
+        self.config = config
 
-    def generate_payload(self, args: Namespace) -> bytes:
-        return random.randbytes(random.randint(args.min_length, args.max_length))
+    def generate_payload(self) -> bytes:
+        return random.randbytes(random.randint(self.config.min_length, self.config.max_length))
 
-    async def observe_can_messages(self, can_ids: list[int], args: Namespace) -> None:
-        can_url = args.target.url._replace(scheme=RawCANTransport.SCHEME)
+    async def observe_can_messages(self, can_ids: list[int]) -> None:
+        can_url = self.config.target.url._replace(scheme=RawCANTransport.SCHEME)
         transport = await RawCANTransport.connect(TargetURI(can_url.geturl()))
         transport.set_filter(can_ids, inv_filter=False)
 
@@ -99,22 +76,22 @@ class PDUFuzzer(UDSScanner):
         except asyncio.CancelledError:
             logger.debug("Can message observer task cancelled")
 
-    async def main(self, args: Namespace) -> None:
-        if args.observe_can_ids:
-            recv_task = asyncio.create_task(self.observe_can_messages(args.observe_can_ids, args))
+    async def main(self) -> None:
+        if self.config.observe_can_ids:
+            recv_task = asyncio.create_task(self.observe_can_messages(self.config.observe_can_ids))
             recv_task.add_done_callback(
                 handle_task_error,
                 context=set_task_handler_ctx_variable(__name__, "ReceiveTask"),
             )
 
-        logger.info(f"testing sessions {args.sessions}")
+        logger.info(f"testing sessions {self.config.sessions}")
 
-        for did in args.dids:
-            if args.serviceid == UDSIsoServices.RoutineControl:
-                pdu = bytes([args.serviceid, 0x01, did >> 8, did & 0xFF])
-            elif args.serviceid == UDSIsoServices.WriteDataByIdentifier:
-                pdu = bytes([args.serviceid, did >> 8, did & 0xFF])
-            for session in args.sessions:
+        for did in self.config.dids:
+            if self.config.serviceid == UDSIsoServices.RoutineControl:
+                pdu = bytes([self.config.serviceid, 0x01, did >> 8, did & 0xFF])
+            elif self.config.serviceid == UDSIsoServices.WriteDataByIdentifier:
+                pdu = bytes([self.config.serviceid, did >> 8, did & 0xFF])
+            for session in self.config.sessions:
                 logger.notice(f"Switching to session 0x{session:02x}")
                 resp: UDSResponse = await self.ecu.set_session(session)
                 if isinstance(resp, NegativeResponse):
@@ -128,8 +105,8 @@ class PDUFuzzer(UDSScanner):
                 illegal_resp = 0
                 flow_control_miss = 0
 
-                for _ in range(args.iterations):
-                    payload = args.prefixed_payload + self.generate_payload(args)
+                for _ in range(self.config.iterations):
+                    payload = self.config.prefixed_payload + self.generate_payload()
                     try:
                         resp = await self.ecu.send_raw(
                             pdu + payload, config=UDSRequestConfig(tags=["ANALYZE"], max_retry=3)
@@ -172,8 +149,8 @@ class PDUFuzzer(UDSScanner):
                 logger.result(f"Flow control frames missing: {flow_control_miss}")
 
                 logger.info(f"Leaving session 0x{session:02x} via hook")
-                await self.ecu.leave_session(session, sleep=args.power_cycle_sleep)
+                await self.ecu.leave_session(session, sleep=self.config.power_cycle_sleep)
 
-        if args.observe_can_ids:
+        if self.config.observe_can_ids:
             recv_task.cancel()
             await recv_task

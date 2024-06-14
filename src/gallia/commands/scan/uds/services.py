@@ -3,10 +3,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import reprlib
-from argparse import BooleanOptionalAction, Namespace
 from typing import Any
 
 from gallia.command import UDSScanner
+from gallia.command.config import AutoInt, Field
+from gallia.command.uds import UDSScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds import (
     NegativeResponse,
@@ -17,66 +18,52 @@ from gallia.services.uds import (
 )
 from gallia.services.uds.core.exception import MalformedResponse, UDSException
 from gallia.services.uds.core.utils import g_repr
-from gallia.utils import ParseSkips, auto_int
 
 logger = get_logger(__name__)
+
+
+class ServicesScannerConfig(UDSScannerConfig):
+    sessions: AutoInt | None = Field(
+        None, description="Set list of sessions to be tested; all if None"
+    )
+    check_session: bool = Field(
+        False, description="check current session; only takes affect if --sessions is given"
+    )
+    scan_response_ids: bool = Field(False, description="Include IDs in scan with reply flag set")
+    auto_reset: bool = Field(False, description="Reset ECU with UDS ECU Reset before every request")
+    skip: str = Field(
+        {},
+        description="\n                 The service IDs to be skipped per session.\n                 A session specific skip is given by <session id>:<service ids>\n                 where <service ids> is a comma separated list of single ids or id ranges using a dash.\n                 Examples:\n                  - 0x01:0xf3\n                  - 0x10-0x2f\n                  - 0x01:0xf3,0x10-0x2f\n                 Multiple session specific skips are separated by space.\n                 Only takes affect if --sessions is given.\n                 ",
+    )
 
 
 class ServicesScanner(UDSScanner):
     """Iterate sessions and services and find endpoints"""
 
-    COMMAND = "services"
     SHORT_HELP = "service scan on an ECU"
     EPILOG = "https://fraunhofer-aisec.github.io/gallia/uds/scan_modes.html#service-scan"
 
-    def configure_parser(self) -> None:
-        self.parser.add_argument(
-            "--sessions",
-            nargs="*",
-            type=auto_int,
-            default=None,
-            help="Set list of sessions to be tested; all if None",
-        )
-        self.parser.add_argument(
-            "--check-session",
-            action="store_true",
-            default=False,
-            help="check current session; only takes affect if --sessions is given",
-        )
-        self.parser.add_argument(
-            "--scan-response-ids",
-            default=False,
-            action=BooleanOptionalAction,
-            help="Include IDs in scan with reply flag set",
-        )
-        self.parser.add_argument(
-            "--auto-reset",
-            action="store_true",
-            default=False,
-            help="Reset ECU with UDS ECU Reset before every request",
-        )
-        self.parser.add_argument(
-            "--skip",
-            nargs="+",
-            default={},
-            type=str,
-            action=ParseSkips,
-            help="\n                 The service IDs to be skipped per session.\n                 A session specific skip is given by <session id>:<service ids>\n                 where <service ids> is a comma separated list of single ids or id ranges using a dash.\n                 Examples:\n                  - 0x01:0xf3\n                  - 0x10-0x2f\n                  - 0x01:0xf3,0x10-0x2f\n                 Multiple session specific skips are separated by space.\n                 Only takes affect if --sessions is given.\n                 ",
-        )
+    def __init__(self, config: ServicesScannerConfig):
+        super().__init__(config)
+        self.config = config
 
-    async def main(self, args: Namespace) -> None:
+    async def main(self) -> None:
         self.result: list[tuple[int, int]] = []
         self.ecu.max_retry = 0
         found: dict[int, dict[int, Any]] = {}
 
-        if args.sessions is None:
-            found[0] = await self.perform_scan(args)
+        if self.config.sessions is None:
+            found[0] = await self.perform_scan()
         else:
-            sessions = [s for s in args.sessions if s not in args.skip or args.skip[s] is not None]
+            sessions = [
+                s
+                for s in self.config.sessions
+                if s not in self.config.skip or self.config.skip[s] is not None
+            ]
             logger.info(f"testing sessions {g_repr(sessions)}")
 
             # TODO: Unified shortened output necessary here
-            logger.info(f"skipping identifiers {reprlib.repr(args.skip)}")
+            logger.info(f"skipping identifiers {reprlib.repr(self.config.skip)}")
 
             for session in sessions:
                 logger.info(f"Changing to session {g_repr(session)}")
@@ -97,9 +84,9 @@ class ServicesScanner(UDSScanner):
 
                 logger.result(f"scanning in session {g_repr(session)}")
 
-                found[session] = await self.perform_scan(args, session)
+                found[session] = await self.perform_scan(session)
 
-                await self.ecu.leave_session(session, sleep=args.power_cycle_sleep)
+                await self.ecu.leave_session(session, sleep=self.config.power_cycle_sleep)
 
         for key, value in found.items():
             logger.result(f"findings in session 0x{key:02X}:")
@@ -110,21 +97,21 @@ class ServicesScanner(UDSScanner):
                 except Exception:
                     logger.result(f"  [{g_repr(sid)}] vendor specific sid: {data}")
 
-    async def perform_scan(self, args: Namespace, session: None | int = None) -> dict[int, Any]:
+    async def perform_scan(self, session: None | int = None) -> dict[int, Any]:
         result: dict[int, Any] = {}
 
         # Starts at 0x00, see first loop iteration.
         sid = -1
         while sid < 0xFF:
             sid += 1
-            if sid & 0x40 and (not args.scan_response_ids):
+            if sid & 0x40 and (not self.config.scan_response_ids):
                 continue
 
-            if session in args.skip and sid in args.skip[session]:
+            if session in self.config.skip and sid in self.config.skip[session]:
                 logger.info(f"{g_repr(sid)}: skipped")
                 continue
 
-            if session is not None and args.check_session:
+            if session is not None and self.config.check_session:
                 if not await self.ecu.check_and_set_session(session):
                     logger.error(
                         f"Aborting scan on session {g_repr(session)}; current SID was {g_repr(sid)}"

@@ -2,48 +2,47 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import binascii
 import sys
-from argparse import Namespace
 
 from gallia.command import UDSScanner
+from gallia.command.config import AutoInt, Field, HexBytes
+from gallia.command.uds import UDSScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse, UDSRequest, UDSRequestConfig, UDSResponse
 from gallia.services.uds.core.exception import UDSException
 from gallia.services.uds.core.service import RawRequest, RawResponse
 from gallia.services.uds.helpers import raise_for_error
-from gallia.utils import auto_int
 
 logger = get_logger(__name__)
+
+
+class SendPDUPrimitiveConfig(UDSScannerConfig):
+    properties: bool = Field(
+        False,
+        description="Read and store the ECU proporties prior and after scan",
+        group=UDSScannerConfig._argument_group,
+        config=UDSScannerConfig._config_section,
+    )
+    pdu: HexBytes = Field(description="The raw pdu to send to the ECU", positional=True)
+    max_retry: int = Field(3, description="Set the uds' stack max_retry argument", short="r")
+    session: AutoInt | None = Field(
+        None, description="Change to this session prior to sending the pdu"
+    )
 
 
 class SendPDUPrimitive(UDSScanner):
     """A raw scanner to send a plain pdu"""
 
-    GROUP = "primitive"
-    COMMAND = "pdu"
     SHORT_HELP = "send a plain PDU"
 
-    def configure_parser(self) -> None:
-        self.parser.set_defaults(properties=False)
+    def __init__(self, config: SendPDUPrimitiveConfig):
+        super().__init__(config)
+        self.config = config
 
-        self.parser.add_argument(
-            "pdu", type=binascii.unhexlify, help="The raw pdu to send to the ECU"
-        )
-        self.parser.add_argument(
-            "-r", "--max-retry", type=int, default=3, help="Set the uds' stack max_retry argument"
-        )
-        self.parser.add_argument(
-            "--session",
-            type=auto_int,
-            default=None,
-            help="Change to this session prior to sending the pdu",
-        )
-
-    async def main(self, args: Namespace) -> None:
-        pdu = args.pdu
-        if args.session is not None:
-            resp: UDSResponse = await self.ecu.set_session(args.session)
+    async def main(self) -> None:
+        pdu = self.config.pdu
+        if self.config.session is not None:
+            resp: UDSResponse = await self.ecu.set_session(self.config.session)
             raise_for_error(resp)
 
         parsed_request = UDSRequest.parse_dynamic(pdu)
@@ -55,7 +54,7 @@ class SendPDUPrimitive(UDSScanner):
 
         try:
             response = await self.ecu.send_raw(
-                pdu, config=UDSRequestConfig(max_retry=args.max_retry)
+                pdu, config=UDSRequestConfig(max_retry=self.config.max_retry)
             )
         except UDSException as e:
             logger.error(repr(e))

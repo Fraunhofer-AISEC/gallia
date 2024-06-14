@@ -2,24 +2,31 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import binascii
-from argparse import Namespace
 
 from gallia.command import Scanner
+from gallia.command.base import ScannerConfig
+from gallia.command.config import Field, HexBytes
+from gallia.command.uds import UDSScannerConfig
+
+
+class GenericPDUPrimitiveConfig(ScannerConfig):
+    properties: bool = Field(
+        False,
+        description="Read and store the ECU proporties prior and after scan",
+        group=UDSScannerConfig._argument_group,
+        config=UDSScannerConfig._config_section,
+    )
+    pdu: HexBytes = Field(description="raw pdu to send", positional=True)
 
 
 class GenericPDUPrimitive(Scanner):
     """A raw scanner to send a plain pdu"""
 
-    GROUP = "primitive"
-    SUBGROUP = "generic"
-    COMMAND = "pdu"
     SHORT_HELP = "send a plain PDU"
 
-    def configure_parser(self) -> None:
-        self.parser.set_defaults(properties=False)
+    def __init__(self, config: GenericPDUPrimitiveConfig):
+        super().__init__(config)
+        self.config = config
 
-        self.parser.add_argument("pdu", type=binascii.unhexlify, help="raw pdu to send")
-
-    async def main(self, args: Namespace) -> None:
-        await self.transport.write(args.pdu)
+    async def main(self) -> None:
+        await self.transport.write(self.config.pdu)

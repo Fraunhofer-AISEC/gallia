@@ -4,63 +4,50 @@
 
 import asyncio
 import sys
-from argparse import Namespace
 from typing import Any
 
 from gallia.command import UDSScanner
+from gallia.command.config import AutoInt, Field
+from gallia.command.uds import UDSScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse, UDSErrorCodes, UDSRequestConfig, UDSResponse
 from gallia.services.uds.core.constants import EcuResetSubFuncs
 from gallia.services.uds.core.service import DiagnosticSessionControlResponse
 from gallia.services.uds.core.utils import g_repr
-from gallia.utils import auto_int
 
 logger = get_logger(__name__)
+
+
+class SessionsScannerConfig(UDSScannerConfig):
+    depth: AutoInt | None = Field(None, description="Specify max scanning depth.")
+    sleep: AutoInt = Field(
+        0,
+        description="Sleep this amount of seconds after changing to DefaultSession",
+        metavar="SECONDS",
+    )
+    skip: AutoInt = Field(
+        [], description="List with session IDs to skip while scanning", metavar="SESSION_ID"
+    )
+    with_hooks: bool = Field(False, description="Use hooks in case of a ConditionsNotCorrect error")
+    reset: lambda x: int(x, 0) | None = Field(
+        None,
+        description="Reset the ECU after each iteration with the optionally given reset level",
+        const=0x01,
+    )
+    fast: bool = Field(
+        False,
+        description="Only search for new sessions once in a particular session, i.e. ignore different stacks",
+    )
 
 
 class SessionsScanner(UDSScanner):
     """Iterate Sessions"""
 
-    COMMAND = "sessions"
     SHORT_HELP = "session scan on an ECU"
 
-    def configure_parser(self) -> None:
-        self.parser.add_argument(
-            "--depth", type=auto_int, default=None, help="Specify max scanning depth."
-        )
-        self.parser.add_argument(
-            "--sleep",
-            metavar="SECONDS",
-            type=auto_int,
-            default=0,
-            help="Sleep this amount of seconds after changing to DefaultSession",
-        )
-        self.parser.add_argument(
-            "--skip",
-            metavar="SESSION_ID",
-            type=auto_int,
-            default=[],
-            nargs="*",
-            help="List with session IDs to skip while scanning",
-        )
-        self.parser.add_argument(
-            "--with-hooks",
-            action="store_true",
-            help="Use hooks in case of a ConditionsNotCorrect error",
-        )
-        self.parser.add_argument(
-            "--reset",
-            nargs="?",
-            default=None,
-            const=0x01,
-            type=lambda x: int(x, 0),
-            help="Reset the ECU after each iteration with the optionally given reset level",
-        )
-        self.parser.add_argument(
-            "--fast",
-            action="store_true",
-            help="Only search for new sessions once in a particular session, i.e. ignore different stacks",
-        )
+    def __init__(self, config: SessionsScannerConfig):
+        super().__init__(config)
+        self.config = config
 
     async def set_session_with_hooks_handling(
         self, session: int, use_hooks: bool
@@ -111,7 +98,7 @@ class SessionsScanner(UDSScanner):
                 return False
         return True
 
-    async def main(self, args: Namespace) -> None:
+    async def main(self) -> None:
         self.result: list[int] = []
         found: dict[int, list[list[int]]] = {0: [[0x01]]}
         positive_results: list[dict[str, Any]] = []
@@ -122,14 +109,14 @@ class SessionsScanner(UDSScanner):
         sessions = list(range(1, 0x80))
         depth = 0
 
-        while (args.depth is None or depth < args.depth) and len(found[depth]) > 0:
+        while (self.config.depth is None or depth < self.config.depth) and len(found[depth]) > 0:
             depth += 1
 
             found[depth] = []
             logger.info(f"Depth: {depth}")
 
             for stack in found[depth - 1]:
-                if args.fast and stack[-1] in search_sessions:
+                if self.config.fast and stack[-1] in search_sessions:
                     continue
 
                 search_sessions.append(stack[-1])
@@ -138,22 +125,22 @@ class SessionsScanner(UDSScanner):
                     logger.info(f"Starting from session: {g_repr(stack[-1])}")
 
                 for session in sessions:
-                    if session in args.skip:
+                    if session in self.config.skip:
                         logger.info(f"Skipping session {g_repr(session)} as requested")
                         continue
 
-                    if args.reset:
+                    if self.config.reset:
                         try:
                             logger.info("Resetting the ECU")
-                            resp: UDSResponse = await self.ecu.ecu_reset(args.reset)
+                            resp: UDSResponse = await self.ecu.ecu_reset(self.config.reset)
 
                             if isinstance(resp, NegativeResponse):
                                 logger.warning(
-                                    f"Could not reset ECU with {(EcuResetSubFuncs(args.reset).name if args.reset in iter(EcuResetSubFuncs) else args.reset)}: {resp}; continuing without reset"
+                                    f"Could not reset ECU with {(EcuResetSubFuncs(self.config.reset).name if self.config.reset in iter(EcuResetSubFuncs) else self.config.reset)}: {resp}; continuing without reset"
                                 )
                             else:
                                 logger.info("Waiting for the ECU to recover…")
-                                await self.ecu.wait_for_ecu(timeout=args.timeout)
+                                await self.ecu.wait_for_ecu(timeout=self.config.timeout)
                         except (TimeoutError, ConnectionError):
                             logger.warning(
                                 "Lost connection to the ECU after performing a reset. Attempting to reconnect…"
@@ -170,16 +157,20 @@ class SessionsScanner(UDSScanner):
                         logger.error(f"Could not change to default session: {e!r}")
                         sys.exit(1)
 
-                    logger.debug(f"Sleeping for {args.sleep}s after changing to DefaultSession")
-                    await asyncio.sleep(args.sleep)
+                    logger.debug(
+                        f"Sleeping for {self.config.sleep}s after changing to DefaultSession"
+                    )
+                    await asyncio.sleep(self.config.sleep)
 
                     logger.debug("Recovering the current session stack")
-                    if not await self.recover_stack(stack, args.with_hooks):
+                    if not await self.recover_stack(stack, self.config.with_hooks):
                         sys.exit(1)
 
                     try:
                         logger.debug(f"Attempting to change to session {session:#04x}")
-                        resp = await self.set_session_with_hooks_handling(session, args.with_hooks)
+                        resp = await self.set_session_with_hooks_handling(
+                            session, self.config.with_hooks
+                        )
 
                         # do not ignore NCR subFunctionNotSupportedInActiveSession in this case
                         if (

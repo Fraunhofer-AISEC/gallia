@@ -2,61 +2,53 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import binascii
 import sys
-from argparse import Namespace
 from pathlib import Path
 
 from gallia.command import UDSScanner
+from gallia.command.config import AutoInt, Field, HexBytes
+from gallia.command.uds import UDSScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse
 from gallia.services.uds.core.utils import g_repr
-from gallia.utils import auto_int
 
 logger = get_logger(__name__)
+
+
+class WMBAPrimitiveConfig(UDSScannerConfig):
+    session: AutoInt = Field(0x01, description="The session in which the requests are made")
+    address: AutoInt = Field(
+        description="The start address to which data should be written", positional=True
+    )
+    data: HexBytes | None = Field(description="The data which should be written")
+    data_file: Path | None = Field(
+        description="The path to a file with the binary data which should be written"
+    )
 
 
 class WMBAPrimitive(UDSScanner):
     """Write memory by address"""
 
-    COMMAND = "wmba"
-    GROUP = "primitive"
     SHORT_HELP = "WriteMemoryByAddress"
 
-    def configure_parser(self) -> None:
-        self.parser.add_argument(
-            "--session",
-            type=auto_int,
-            default=0x01,
-            help="The session in which the requests are made",
-        )
-        self.parser.add_argument(
-            "address", type=auto_int, help="The start address to which data should be written"
-        )
-        data_group = self.parser.add_mutually_exclusive_group(required=True)
-        data_group.add_argument(
-            "--data", type=binascii.unhexlify, help="The data which should be written"
-        )
-        data_group.add_argument(
-            "--data-file",
-            type=Path,
-            help="The path to a file with the binary data which should be written",
-        )
+    def __init__(self, config: WMBAPrimitiveConfig):
+        super().__init__(config)
+        self.config = config
 
-    async def main(self, args: Namespace) -> None:
+    async def main(self) -> None:
         try:
-            await self.ecu.check_and_set_session(args.session)
+            await self.ecu.check_and_set_session(self.config.session)
         except Exception as e:
-            logger.critical(f"Could not change to session: {g_repr(args.session)}: {e!r}")
+            logger.critical(f"Could not change to session: {g_repr(self.config.session)}: {e!r}")
             sys.exit(1)
 
-        if args.data is not None:
-            data = args.data
+        if self.config.data is not None:
+            data = self.config.data
         else:
-            with args.data_file.open("rb") as file:
+            with self.config.data_file.open("rb") as file:
                 data = file.read()
 
-        resp = await self.ecu.write_memory_by_address(args.address, data)
+        resp = await self.ecu.write_memory_by_address(self.config.address, data)
 
         if isinstance(resp, NegativeResponse):
             logger.error(resp)

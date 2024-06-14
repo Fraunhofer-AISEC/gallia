@@ -5,10 +5,13 @@
 import json
 import random
 import sys
-from argparse import Namespace
 from pathlib import Path
 
+from pydantic_argparse import BaseCommand
+
 from gallia.command import AsyncScript
+from gallia.command.base import AsyncScriptConfig
+from gallia.command.config import Field
 from gallia.log import get_logger
 from gallia.services.uds.core.constants import UDSIsoServices
 from gallia.services.uds.server import (
@@ -26,61 +29,50 @@ dynamic_attr_prefix = "dynamic_attr_"
 logger = get_logger(__name__)
 
 
+class VirtualECUConfig(AsyncScriptConfig):
+    target: TargetURI = Field(positional=True)
+
+
+class DbVirtualECUConfig(VirtualECUConfig):
+    path: Path = Field(positional=True)
+    ecu: str | None
+    properties: json.loads | None
+
+
+class RngVirtualECUConfig(VirtualECUConfig):
+    seed: str = Field(
+        random.randint(0, sys.maxsize),
+        description="Set the seed of the internal random number generator. This supports reproducibility.",
+    )
+
+
+class VirtualECUConfigCommand(BaseCommand):
+    db: DbVirtualECUConfig | None = None
+    rng: RngVirtualECUConfig | None = None
+
+
 class VirtualECU(AsyncScript):
     """Spawn a virtual ECU for testing purposes"""
 
-    COMMAND = "vecu"
     SHORT_HELP = "spawn a virtual UDS ECU"
     EPILOG = "https://fraunhofer-aisec.github.io/gallia/uds/virtual_ecu.html"
 
-    def configure_parser(self) -> None:
-        self.parser.add_argument("target", type=TargetURI)
+    def __init__(self, config: VirtualECUConfig):
+        super().__init__(config)
+        self.config = config
 
-        sub_parsers = self.parser.add_subparsers(dest="cmd")
-        sub_parsers.required = True
-
-        db = sub_parsers.add_parser("db")
-        db.add_argument("path", type=Path)
-        db.add_argument("--ecu", type=str)
-        db.add_argument("--properties", type=json.loads)
-        # db.set_defaults(yolo=True)
-
-        rng = sub_parsers.add_parser("rng")
-        rng.add_argument(
-            "--seed",
-            default=random.randint(0, sys.maxsize),
-            help="Set the seed of the internal random number generator. This supports reproducibility.",
-        )
-
-        # Expose all other parameters of the random UDS server
-        tmp = RandomUDSServer(0)
-        parent_attrs = True
-
-        for v in tmp.__dict__:
-            if parent_attrs:
-                if v == "seed":
-                    parent_attrs = False
-
-                if v.startswith("use_default_response_if"):
-                    self.parser.add_argument(f"--{v}", dest=f"{dynamic_attr_prefix}{v}")
-
-                continue
-
-            if not v.startswith("_"):
-                rng.add_argument(f"--{v}", dest=f"{dynamic_attr_prefix}{v}")
-
-    async def main(self, args: Namespace) -> None:
-        cmd: str = args.cmd
+    async def main(self) -> None:
+        cmd: str = self.config.cmd
         server: UDSServer
 
         if cmd == "db":
-            server = DBUDSServer(args.path, args.ecu, args.properties)
+            server = DBUDSServer(self.config.path, self.config.ecu, self.config.properties)
         elif cmd == "rng":
-            server = RandomUDSServer(args.seed)
+            server = RandomUDSServer(self.config.seed)
         else:
             raise AssertionError()
 
-        for key, value in vars(args).items():
+        for key, value in vars(self.config).items():
             if key.startswith(dynamic_attr_prefix) and value is not None:
                 setattr(
                     server,
@@ -88,7 +80,7 @@ class VirtualECU(AsyncScript):
                     eval(value, {service.name: service for service in UDSIsoServices}),
                 )
 
-        target: TargetURI = args.target
+        target: TargetURI = self.config.target
         transport: UDSServerTransport
 
         if sys.platform.startswith("linux"):

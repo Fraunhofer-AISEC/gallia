@@ -3,16 +3,31 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import sys
-from argparse import Namespace
-from binascii import unhexlify
+from typing import Literal
 
 from gallia.command import UDSScanner
+from gallia.command.config import AutoInt, Field, HexBytes
+from gallia.command.uds import UDSScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse, UDSErrorCodes, UDSRequestConfig
 from gallia.services.uds.core.utils import g_repr, uds_memory_parameters
-from gallia.utils import auto_int
 
 logger = get_logger(__name__)
+
+
+class MemoryFunctionsScannerConfig(UDSScannerConfig):
+    session: AutoInt = Field(0x03, description="set session to perform test")
+    check_session: int | None = Field(
+        description="Check current session via read DID [for every nth MemoryAddress] and try to recover session",
+        const=1,
+    )
+    sid: Literal[0x23, 0x3D, 0x34, 0x35] = Field(
+        description="Choose between 0x23 ReadMemoryByAddress 0x3d WriteMemoryByAddress, 0x34 RequestDownload and 0x35 RequestUpload"
+    )
+    data: HexBytes = Field(
+        "0000000000000000",
+        description="Service 0x3d requires a data payload which can be specified with this flag as a hex string",
+    )
 
 
 class MemoryFunctionsScanner(UDSScanner):
@@ -23,49 +38,27 @@ class MemoryFunctionsScanner(UDSScanner):
     """
 
     SHORT_HELP = "scan services with direct memory access"
-    COMMAND = "memory"
 
-    def configure_parser(self) -> None:
-        self.parser.add_argument(
-            "--session", type=auto_int, default=0x03, help="set session to perform test"
-        )
-        self.parser.add_argument(
-            "--check-session",
-            nargs="?",
-            const=1,
-            type=int,
-            help="Check current session via read DID [for every nth MemoryAddress] and try to recover session",
-        )
-        self.parser.add_argument(
-            "--sid",
-            required=True,
-            choices=[0x23, 0x3D, 0x34, 0x35],
-            type=auto_int,
-            help="Choose between 0x23 ReadMemoryByAddress 0x3d WriteMemoryByAddress, 0x34 RequestDownload and 0x35 RequestUpload",
-        )
-        self.parser.add_argument(
-            "--data",
-            default="0000000000000000",
-            type=unhexlify,
-            help="Service 0x3d requires a data payload which can be specified with this flag as a hex string",
-        )
+    def __init__(self, config: MemoryFunctionsScannerConfig):
+        super().__init__(config)
+        self.config = config
 
-    async def main(self, args: Namespace) -> None:
-        resp = await self.ecu.set_session(args.session)
+    async def main(self) -> None:
+        resp = await self.ecu.set_session(self.config.session)
         if isinstance(resp, NegativeResponse):
             logger.critical(f"could not change to session: {resp}")
             sys.exit(1)
 
         for i in range(5):
-            await self.scan_memory_address(args, i)
+            await self.scan_memory_address(i)
 
-        logger.info(f"Scan in session {g_repr(args.session)} is complete!")
-        logger.info(f"Leaving session {g_repr(args.session)} via hook")
-        await self.ecu.leave_session(args.session, sleep=args.power_cycle_sleep)
+        logger.info(f"Scan in session {g_repr(self.config.session)} is complete!")
+        logger.info(f"Leaving session {g_repr(self.config.session)} via hook")
+        await self.ecu.leave_session(self.config.session, sleep=self.config.power_cycle_sleep)
 
-    async def scan_memory_address(self, args: Namespace, addr_offset: int = 0) -> None:
-        sid = args.sid
-        data = args.data if sid == 0x3D else None  # Only service 0x3d has a data field
+    async def scan_memory_address(self, addr_offset: int = 0) -> None:
+        sid = self.config.sid
+        data = self.config.data if sid == 0x3D else None  # Only service 0x3d has a data field
         memory_size = len(data) if data else 0x1000
 
         for i in range(0x100):
@@ -84,11 +77,11 @@ class MemoryFunctionsScanner(UDSScanner):
             pdu += addr_bytes + mem_size_bytes
             pdu += data if data else b""
 
-            if args.check_session and i % args.check_session == 0:
+            if self.config.check_session and i % self.config.check_session == 0:
                 # Check session and try to recover from wrong session (max 3 times), else skip session
-                if not await self.ecu.check_and_set_session(args.session):
+                if not await self.ecu.check_and_set_session(self.config.session):
                     logger.error(
-                        f"Aborting scan on session {g_repr(args.session)}; "
+                        f"Aborting scan on session {g_repr(self.config.session)}; "
                         + f"current memory address was {g_repr(addr)}"
                     )
                     sys.exit(1)
