@@ -88,7 +88,7 @@ def Field(
 
 
 class GalliaBaseModel(BaseCommand, ABC):
-    init_kwargs: dict | None = None
+    init_kwargs: dict | None = Field(None, hidden=True)
     _argument_group: str | None
     _config_section: str | None
 
