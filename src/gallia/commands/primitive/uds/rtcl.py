@@ -33,11 +33,7 @@ class RTCLPrimitive(UDSScanner):
             default=0x01,
             help="The session in which the requests are made",
         )
-        self.parser.add_argument(
-            "routine_identifier",
-            type=auto_int,
-            help="The routine identifier",
-        )
+        self.parser.add_argument("routine_identifier", type=auto_int, help="The routine identifier")
         self.parser.add_argument(
             "--start",
             action="store_true",
@@ -46,8 +42,7 @@ class RTCLPrimitive(UDSScanner):
         self.parser.add_argument(
             "--stop",
             action="store_true",
-            help="Stop the routine with a stopRoutine request "
-            "(this task is executed after starting the routine if --start is given as well)",
+            help="Stop the routine with a stopRoutine request (this task is executed after starting the routine if --start is given as well)",
         )
         self.parser.add_argument(
             "--results",
@@ -97,7 +92,7 @@ class RTCLPrimitive(UDSScanner):
             logger.critical(f"Could not change to session: {g_repr(args.session)}: {e!r}")
             sys.exit(1)
 
-        if args.start is False and args.stop is False and args.results is False:
+        if args.start is False and args.stop is False and (args.results is False):
             logger.warning("No instructions were given (start/stop/results)")
 
         if args.start:

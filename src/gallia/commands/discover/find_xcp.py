@@ -44,10 +44,7 @@ class FindXCP(AsyncScript):
         )
         sp.add_argument("--can-fd", action="store_true", default=False, help="use can FD")
         sp.add_argument(
-            "--extended",
-            action="store_true",
-            default=False,
-            help="use extended CAN address space",
+            "--extended", action="store_true", default=False, help="use extended CAN address space"
         )
         sp.add_argument(
             "--sniff-time",
@@ -57,27 +54,15 @@ class FindXCP(AsyncScript):
             help="Time in seconds to sniff on bus for current traffic",
         )
         sp.add_argument(
-            "--can-id-start",
-            type=auto_int,
-            default="",
-            required=True,
-            help="First CAN id to test",
+            "--can-id-start", type=auto_int, default="", required=True, help="First CAN id to test"
         )
         sp.add_argument(
-            "--can-id-end",
-            type=auto_int,
-            default="",
-            required=True,
-            help="Last CAN id to test",
+            "--can-id-end", type=auto_int, default="", required=True, help="Last CAN id to test"
         )
 
         sp = subparsers.add_parser("tcp")
         sp.add_argument(
-            "--xcp-ip",
-            type=str,
-            default="",
-            required=True,
-            help="XCP destination IP Address",
+            "--xcp-ip", type=str, default="", required=True, help="XCP destination IP Address"
         )
         sp.add_argument(
             "--tcp-ports",
@@ -89,11 +74,7 @@ class FindXCP(AsyncScript):
 
         sp = subparsers.add_parser("udp")
         sp.add_argument(
-            "--xcp-ip",
-            type=str,
-            default="",
-            required=True,
-            help="XCP destination IP Address",
+            "--xcp-ip", type=str, default="", required=True, help="XCP destination IP Address"
         )
         sp.add_argument(
             "--udp-ports",
@@ -112,7 +93,7 @@ class FindXCP(AsyncScript):
     def unpack_xcp_eth(self, data: bytes) -> tuple[int, int, bytes]:
         length, ctr = struct.unpack_from("<HH", data)
         logger.info(f"recv: {data.hex()}")
-        return length, ctr, data[4:]
+        return (length, ctr, data[4:])
 
     async def main(self, args: Namespace) -> None:
         if args.mode == "can":
@@ -223,16 +204,12 @@ class FindXCP(AsyncScript):
                 while True:
                     master, data = await transport.recvfrom(timeout=0.1)
                     if data[0] == 0xFF:
-                        msg = (
-                            f"Found XCP endpoint [master:slave]: CAN: {can_id_repr(master)}:{can_id_repr(can_id)} "
-                            f"data: {bytes_repr(data)}"
-                        )
+                        msg = f"Found XCP endpoint [master:slave]: CAN: {can_id_repr(master)}:{can_id_repr(can_id)} data: {bytes_repr(data)}"
                         logger.result(msg)
                         endpoints.append((can_id, master))
                     else:
                         logger.info(
-                            f"Received non XCP answer for CAN-ID {can_id_repr(can_id)}: {can_id_repr(master)}:"
-                            f"{bytes_repr(data)}"
+                            f"Received non XCP answer for CAN-ID {can_id_repr(can_id)}: {can_id_repr(master)}:{bytes_repr(data)}"
                         )
             except TimeoutError:
                 pass
