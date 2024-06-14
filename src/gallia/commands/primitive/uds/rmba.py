@@ -3,48 +3,48 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import sys
-from argparse import Namespace
 
 from gallia.command import UDSScanner
+from gallia.command.config import AutoInt, Field
+from gallia.command.uds import UDSScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse
 from gallia.services.uds.core.utils import g_repr
-from gallia.utils import auto_int
 
 logger = get_logger(__name__)
+
+
+class RMBAPrimitiveConfig(UDSScannerConfig):
+    properties: bool = Field(
+        False,
+        description="Read and store the ECU proporties prior and after scan",
+        group=UDSScannerConfig._argument_group,
+        config=UDSScannerConfig._config_section,
+    )
+    session: AutoInt = Field(0x01, description="The session in which the requests are made")
+    address: AutoInt = Field(
+        description="The start address from which data should be read", positional=True
+    )
+    length: AutoInt = Field(description="The number of bytes which should be read", positional=True)
 
 
 class RMBAPrimitive(UDSScanner):
     """Read memory by address"""
 
-    GROUP = "primitive"
-    COMMAND = "rmba"
     SHORT_HELP = "ReadMemoryByAddress"
 
-    def configure_parser(self) -> None:
-        self.parser.set_defaults(properties=False)
+    def __init__(self, config: RMBAPrimitiveConfig):
+        super().__init__(config)
+        self.config = config
 
-        self.parser.add_argument(
-            "--session",
-            type=auto_int,
-            default=0x01,
-            help="The session in which the requests are made",
-        )
-        self.parser.add_argument(
-            "address", type=auto_int, help="The start address from which data should be read"
-        )
-        self.parser.add_argument(
-            "length", type=auto_int, help="The number of bytes which should be read"
-        )
-
-    async def main(self, args: Namespace) -> None:
+    async def main(self) -> None:
         try:
-            await self.ecu.check_and_set_session(args.session)
+            await self.ecu.check_and_set_session(self.config.session)
         except Exception as e:
-            logger.critical(f"Could not change to session: {g_repr(args.session)}: {e!r}")
+            logger.critical(f"Could not change to session: {g_repr(self.config.session)}: {e!r}")
             sys.exit(1)
 
-        resp = await self.ecu.read_memory_by_address(args.address, args.length)
+        resp = await self.ecu.read_memory_by_address(self.config.address, self.config.length)
 
         if isinstance(resp, NegativeResponse):
             logger.error(resp)

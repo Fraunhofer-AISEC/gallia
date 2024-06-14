@@ -3,93 +3,70 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
-import binascii
 import sys
 import time
-from argparse import ArgumentParser, Namespace
+from argparse import ArgumentParser
 from pathlib import Path
 
 import aiofiles
 
 from gallia.command import UDSScanner
+from gallia.command.config import AutoInt, Field, HexBytes
+from gallia.command.uds import UDSScannerConfig
 from gallia.config import Config
 from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse, UDSRequestConfig
 from gallia.services.uds.core.utils import g_repr
-from gallia.utils import auto_int
 
 logger = get_logger(__name__)
+
+
+class SASeedsDumperConfig(UDSScannerConfig):
+    session: AutoInt = Field(
+        0x02, description="Set diagnostic session to perform test in", metavar="INT"
+    )
+    check_session: bool = Field(False, description="Check current session with read DID")
+    level: AutoInt = Field(
+        0x11, description="Set security access level to request seed from", metavar="INT"
+    )
+    send_zero_key: int = Field(
+        0,
+        description="Attempt to fool brute force protection by pretending to send a key after requesting a seed (all zero bytes, length can be specified)",
+        metavar="BYTE_LENGTH",
+        const=96,
+    )
+    reset: int | None = Field(
+        None,
+        description="Attempt to fool brute force protection by resetting the ECU after every nth requested seed.",
+        const=1,
+    )
+    duration: float = Field(
+        0,
+        description="Run script for N minutes; zero or negative for infinite runtime (default)",
+        metavar="FLOAT",
+    )
+    data_record: HexBytes = Field(
+        b"", description="Append an optional data record to each seed request", metavar="HEXSTRING"
+    )
+    sleep: float | None = Field(
+        None,
+        description="Attempt to fool brute force protection by sleeping for N seconds between seed requests."
+    )
 
 
 class SASeedsDumper(UDSScanner):
     """This scanner tries to enable ProgrammingSession and dump seeds for 12h."""
 
-    COMMAND = "dump-seeds"
     SHORT_HELP = "dump security access seeds"
+
+    def __init__(self, config: SASeedsDumperConfig):
+        super().__init__(config)
+        self.config = config
 
     def __init__(self, parser: ArgumentParser, config: Config = Config()) -> None:
         super().__init__(parser, config)
 
         self.implicit_logging = False
-
-    def configure_parser(self) -> None:
-        self.parser.add_argument(
-            "--session",
-            metavar="INT",
-            type=auto_int,
-            default=0x02,
-            help="Set diagnostic session to perform test in",
-        )
-        self.parser.add_argument(
-            "--check-session",
-            action="store_true",
-            default=False,
-            help="Check current session with read DID",
-        )
-        self.parser.add_argument(
-            "--level",
-            default=0x11,
-            metavar="INT",
-            type=auto_int,
-            help="Set security access level to request seed from",
-        )
-        self.parser.add_argument(
-            "--send-zero-key",
-            metavar="BYTE_LENGTH",
-            nargs="?",
-            const=96,
-            default=0,
-            type=int,
-            help="Attempt to fool brute force protection by pretending to send a key after requesting a seed (all zero bytes, length can be specified)",
-        )
-        self.parser.add_argument(
-            "--reset",
-            nargs="?",
-            const=1,
-            default=None,
-            type=int,
-            help="Attempt to fool brute force protection by resetting the ECU after every nth requested seed.",
-        )
-        self.parser.add_argument(
-            "--duration",
-            default=0,
-            type=float,
-            metavar="FLOAT",
-            help="Run script for N minutes; zero or negative for infinite runtime (default)",
-        )
-        self.parser.add_argument(
-            "--data-record",
-            metavar="HEXSTRING",
-            type=binascii.unhexlify,
-            default=b"",
-            help="Append an optional data record to each seed request",
-        )
-        self.parser.add_argument(
-            "--sleep",
-            type=float,
-            metavar="FLOAT",
-            help="Attempt to fool brute force protection by sleeping for N seconds between seed requests.",
-        )
 
     async def request_seed(self, level: int, data: bytes) -> bytes | None:
         resp = await self.ecu.security_access_request_seed(
@@ -123,8 +100,8 @@ class SASeedsDumper(UDSScanner):
             size_unit = "MiB"
         logger.notice(f"Dumping seeds with {rate:.2f}{rate_unit}/h: {size:.2f}{size_unit}")
 
-    async def main(self, args: Namespace) -> None:
-        session = args.session
+    async def main(self) -> None:
+        session = self.config.session
         logger.info(f"scanning in session: {g_repr(session)}")
 
         resp = await self.ecu.set_session(session)
@@ -135,7 +112,7 @@ class SASeedsDumper(UDSScanner):
         i = -1
         seeds_file = Path.joinpath(self.artifacts_dir, "seeds.bin")
         file = await aiofiles.open(seeds_file, "wb", buffering=0)
-        duration = args.duration * 60
+        duration = self.config.duration * 60
         start_time = time.time()
         last_seed = b""
         reset = False
@@ -154,15 +131,15 @@ class SASeedsDumper(UDSScanner):
                 self.log_size(seeds_file, time.time() - start_time)
                 print_speed = False
 
-            if args.check_session or reset:
-                if not await self.ecu.check_and_set_session(args.session):
-                    logger.error(f"ECU persistently lost session {g_repr(args.session)}")
+            if self.config.check_session or reset:
+                if not await self.ecu.check_and_set_session(self.config.session):
+                    logger.error(f"ECU persistently lost session {g_repr(self.config.session)}")
                     sys.exit(1)
 
             reset = False
 
             try:
-                seed = await self.request_seed(args.level, args.data_record)
+                seed = await self.request_seed(self.config.level, self.config.data_record)
             except TimeoutError:
                 logger.error("Timeout while requesting seed")
                 continue
@@ -182,9 +159,9 @@ class SASeedsDumper(UDSScanner):
 
             last_seed = seed
 
-            if args.send_zero_key > 0:
+            if self.config.send_zero_key > 0:
                 try:
-                    if await self.send_key(args.level, bytes(args.send_zero_key)):
+                    if await self.send_key(self.config.level, bytes(self.config.send_zero_key)):
                         break
                 except TimeoutError:
                     logger.warning("Timeout while sending key")
@@ -195,7 +172,7 @@ class SASeedsDumper(UDSScanner):
 
             runs_since_last_reset += 1
 
-            if runs_since_last_reset == args.reset:
+            if runs_since_last_reset == self.config.reset:
                 reset = True
                 runs_since_last_reset = 0
 
@@ -216,10 +193,10 @@ class SASeedsDumper(UDSScanner):
                 # Re-enter session. Checking/logging will be done at the beginning of next iteration
                 await self.ecu.set_session(session)
 
-            if args.sleep is not None:
-                logger.info(f"Sleeping for {args.sleep} seconds between seed requests…")
-                await asyncio.sleep(args.sleep)
+            if self.config.sleep is not None:
+                logger.info(f"Sleeping for {self.config.sleep} seconds between seed requests…")
+                await asyncio.sleep(self.config.sleep)
 
         await file.close()
         self.log_size(seeds_file, time.time() - start_time)
-        await self.ecu.leave_session(session, sleep=args.power_cycle_sleep)
+        await self.ecu.leave_session(session, sleep=self.config.power_cycle_sleep)

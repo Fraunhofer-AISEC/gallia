@@ -5,84 +5,68 @@
 import socket
 import struct
 import sys
-from argparse import ArgumentParser, Namespace
+from argparse import ArgumentParser
+
+from pydantic_argparse import BaseCommand
 
 assert sys.platform.startswith("linux"), "unsupported platform"
 
 from gallia.command import AsyncScript
+from gallia.command.base import AsyncScriptConfig
+from gallia.command.config import AutoInt, Field
 from gallia.config import Config
 from gallia.log import get_logger
 from gallia.services.uds.core.utils import bytes_repr, g_repr
 from gallia.transports import RawCANTransport, TargetURI
-from gallia.utils import auto_int, can_id_repr
+from gallia.utils import can_id_repr
 
 logger = get_logger(__name__)
+
+
+class FindXCPConfig(AsyncScriptConfig):
+    pass
+
+
+class CanFindXCPConfig(FindXCPConfig):
+    xcp_can_iface: str = Field("", description="CAN interface used for XCP communication")
+    can_fd: bool = Field(False, description="use can FD")
+    extended: bool = Field(False, description="use extended CAN address space")
+    sniff_time: int = Field(
+        60, description="Time in seconds to sniff on bus for current traffic", metavar="SECONDS"
+    )
+    can_id_start: AutoInt = Field("", description="First CAN id to test")
+    can_id_end: AutoInt = Field("", description="Last CAN id to test")
+
+
+class TcpFindXCPConfig(FindXCPConfig):
+    xcp_ip: str = Field("", description="XCP destination IP Address")
+    tcp_ports: str = Field("", description="Comma separated list of TCP ports to test for XCP")
+
+
+class UdpFindXCPConfig(FindXCPConfig):
+    xcp_ip: str = Field("", description="XCP destination IP Address")
+    udp_ports: str = Field("", description="Comma separated list of UDP ports to test for XCP")
+
+
+class FindXCPConfigCommand(BaseCommand):
+    can: CanFindXCPConfig | None = None
+    tcp: TcpFindXCPConfig | None = None
+    udp: UdpFindXCPConfig | None = None
 
 
 class FindXCP(AsyncScript):
     """Find XCP Slave"""
 
-    GROUP = "discover"
-    COMMAND = "xcp"
     SHORT_HELP = "XCP enumeration scanner"
     HAS_ARTIFACTS_DIR = True
+
+    def __init__(self, config: FindXCPConfig):
+        super().__init__(config)
+        self.config = config
 
     def __init__(self, parser: ArgumentParser, config: Config = Config()) -> None:
         super().__init__(parser, config)
         self.socket: socket.socket
-
-    def configure_parser(self) -> None:
-        subparsers = self.parser.add_subparsers(dest="mode", required=True, help="Transport mode")
-
-        sp = subparsers.add_parser("can")
-        sp.add_argument(
-            "--xcp-can-iface",
-            type=str,
-            default="",
-            required=True,
-            help="CAN interface used for XCP communication",
-        )
-        sp.add_argument("--can-fd", action="store_true", default=False, help="use can FD")
-        sp.add_argument(
-            "--extended", action="store_true", default=False, help="use extended CAN address space"
-        )
-        sp.add_argument(
-            "--sniff-time",
-            default=60,
-            type=int,
-            metavar="SECONDS",
-            help="Time in seconds to sniff on bus for current traffic",
-        )
-        sp.add_argument(
-            "--can-id-start", type=auto_int, default="", required=True, help="First CAN id to test"
-        )
-        sp.add_argument(
-            "--can-id-end", type=auto_int, default="", required=True, help="Last CAN id to test"
-        )
-
-        sp = subparsers.add_parser("tcp")
-        sp.add_argument(
-            "--xcp-ip", type=str, default="", required=True, help="XCP destination IP Address"
-        )
-        sp.add_argument(
-            "--tcp-ports",
-            type=str,
-            default="",
-            required=True,
-            help="Comma separated list of TCP ports to test for XCP",
-        )
-
-        sp = subparsers.add_parser("udp")
-        sp.add_argument(
-            "--xcp-ip", type=str, default="", required=True, help="XCP destination IP Address"
-        )
-        sp.add_argument(
-            "--udp-ports",
-            type=str,
-            default="",
-            required=True,
-            help="Comma separated list of UDP ports to test for XCP",
-        )
 
     def pack_xcp_eth(self, data: bytes, ctr: int = 0) -> bytes:
         length = len(data)
@@ -95,26 +79,26 @@ class FindXCP(AsyncScript):
         logger.info(f"recv: {data.hex()}")
         return (length, ctr, data[4:])
 
-    async def main(self, args: Namespace) -> None:
-        if args.mode == "can":
-            await self.test_can(args)
+    async def main(self) -> None:
+        if self.config.mode == "can":
+            await self.test_can()
 
-        elif args.mode == "tcp":
-            await self.test_tcp(args)
+        elif self.config.mode == "tcp":
+            await self.test_tcp()
 
-        elif args.mode == "udp":
-            self.test_eth_broadcast(args)
-            await self.test_udp(args)
+        elif self.config.mode == "udp":
+            self.test_eth_broadcast()
+            await self.test_udp()
 
-    async def test_tcp(self, args: Namespace) -> None:
+    async def test_tcp(self) -> None:
         # TODO: rewrite as async
 
         data = bytes([0xFF, 0x00])
         endpoints = []
-        for port in args.tcp_ports.split(","):
+        for port in self.config.tcp_ports.split(","):
             port = int(port, 0)  # noqa
             logger.info(f"Testing TCP port: {port}")
-            server = (args.xcp_ip, port)
+            server = (self.config.xcp_ip, port)
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.settimeout(0.2)
             try:
@@ -149,17 +133,17 @@ class FindXCP(AsyncScript):
         except Exception:
             pass
 
-    async def test_udp(self, args: Namespace) -> None:
+    async def test_udp(self) -> None:
         # TODO: rewrite as async
 
         data = bytes([0xFF, 0x00])
         endpoints = []
-        for port in args.udp_ports.split(","):
+        for port in self.config.udp_ports.split(","):
             port = int(port, 0)  # noqa
             logger.info(f"Testing UDP port: {port}")
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self.socket.settimeout(0.5)
-            server = (args.xcp_ip, port)
+            server = (self.config.xcp_ip, port)
             self.socket.sendto(self.pack_xcp_eth(data), server)
             try:
                 _, _, data_ret = self.unpack_xcp_eth(self.socket.recv(1024))
@@ -179,15 +163,15 @@ class FindXCP(AsyncScript):
 
         logger.result(f"Finished; Found {len(endpoints)} XCP endpoints via UDP")
 
-    async def test_can(self, args: Namespace) -> None:
+    async def test_can(self) -> None:
         target = TargetURI(
-            f"{RawCANTransport.SCHEME}://{args.xcp_can_iface}?is_extended={str(args.extended).lower()}"
-            + ("&is_fd=true" if args.can_fd else "")
+            f"{RawCANTransport.SCHEME}://{self.config.xcp_can_iface}?is_extended={str(self.config.extended).lower()}"
+            + ("&is_fd=true" if self.config.can_fd else "")
         )
         transport = await RawCANTransport.connect(target)
         endpoints = []
 
-        sniff_time: int = args.sniff_time
+        sniff_time: int = self.config.sniff_time
         logger.result(f"Listening to idle bus communication for {sniff_time}s...")
         addr_idle = await transport.get_idle_traffic(sniff_time)
         logger.result(f"Found {len(addr_idle)} CAN Addresses on idle Bus")
@@ -195,7 +179,7 @@ class FindXCP(AsyncScript):
         # flush receive queue
         await transport.get_idle_traffic(2)
 
-        for can_id in range(args.can_id_start, args.can_id_end + 1):
+        for can_id in range(self.config.can_id_start, self.config.can_id_end + 1):
             logger.info(f"Testing CAN ID: {can_id_repr(can_id)}")
             pdu = bytes([0xFF, 0x00])
             await transport.sendto(pdu, can_id, timeout=0.1)
@@ -216,7 +200,7 @@ class FindXCP(AsyncScript):
 
         logger.result(f"Finished; Found {len(endpoints)} XCP endpoints via CAN")
 
-    def test_eth_broadcast(self, args: Namespace) -> None:
+    def test_eth_broadcast(self) -> None:
         # TODO: rewrite as async
 
         multicast_group = ("239.255.0.0", 5556)
@@ -225,7 +209,7 @@ class FindXCP(AsyncScript):
         )
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.socket.connect((args.xcp_ip, 5555))
+        self.socket.connect((self.config.xcp_ip, 5555))
         addr = self.socket.getsockname()[0]
         self.socket.close()
         logger.info(f"xcp interface ip for multicast group: {addr}")
