@@ -3,40 +3,45 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import sys
-from argparse import Namespace
 
 from gallia.command import UDSScanner
+from gallia.command.config import AutoInt, Field
+from gallia.command.uds import UDSScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds.core.service import NegativeResponse
-from gallia.utils import auto_int
 
 logger = get_logger(__name__)
+
+
+class ReadByIdentifierPrimitiveConfig(UDSScannerConfig):
+    properties: bool = Field(
+        False,
+        description="Read and store the ECU proporties prior and after scan",
+        group=UDSScannerConfig._argument_group,
+        config=UDSScannerConfig._config_section,
+    )
+    data_identifier: AutoInt = Field(description="The data identifier", positional=True)
+    session: AutoInt = Field(0x01, description="set session perform test in")
 
 
 class ReadByIdentifierPrimitive(UDSScanner):
     """Read data via the ReadDataByIdentifier service"""
 
-    GROUP = "primitive"
-    COMMAND = "rdbi"
     SHORT_HELP = "ReadDataByIdentifier"
 
-    def configure_parser(self) -> None:
-        self.parser.set_defaults(properties=False)
+    def __init__(self, config: ReadByIdentifierPrimitiveConfig):
+        super().__init__(config)
+        self.config = config
 
-        self.parser.add_argument("data_identifier", type=auto_int, help="The data identifier")
-        self.parser.add_argument(
-            "--session", type=auto_int, default=0x01, help="set session perform test in"
-        )
-
-    async def main(self, args: Namespace) -> None:
+    async def main(self) -> None:
         try:
-            if args.session != 0x01:
-                await self.ecu.set_session(args.session)
+            if self.config.session != 0x01:
+                await self.ecu.set_session(self.config.session)
         except Exception as e:
             logger.critical(f"fatal error: {e!r}")
             sys.exit(1)
 
-        resp = await self.ecu.read_data_by_identifier(args.data_identifier)
+        resp = await self.ecu.read_data_by_identifier(self.config.data_identifier)
         if isinstance(resp, NegativeResponse):
             logger.error(resp)
         else:

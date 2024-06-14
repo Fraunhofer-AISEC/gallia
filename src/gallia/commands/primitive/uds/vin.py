@@ -2,26 +2,35 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from argparse import Namespace
 
 from gallia.command import UDSScanner
+from gallia.command.config import Field
+from gallia.command.uds import UDSScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds.core.service import NegativeResponse
 
 logger = get_logger(__name__)
 
 
+class VINPrimitiveConfig(UDSScannerConfig):
+    properties: bool = Field(
+        False,
+        description="Read and store the ECU proporties prior and after scan",
+        group=UDSScannerConfig._argument_group,
+        config=UDSScannerConfig._config_section,
+    )
+
+
 class VINPrimitive(UDSScanner):
     """Request VIN"""
 
-    GROUP = "primitive"
-    COMMAND = "vin"
     SHORT_HELP = "request VIN"
 
-    def configure_parser(self) -> None:
-        self.parser.set_defaults(properties=False)
+    def __init__(self, config: VINPrimitiveConfig):
+        super().__init__(config)
+        self.config = config
 
-    async def main(self, args: Namespace) -> None:
+    async def main(self) -> None:
         resp = await self.ecu.read_vin()
         if isinstance(resp, NegativeResponse):
             logger.warning(f"ECU said: {resp}")
