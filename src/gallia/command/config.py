@@ -53,6 +53,7 @@ class ConfigArgFieldInfo(ArgFieldInfo):
         metavar: str | None,
         group: str | None,
         const: Any,
+        hidden: bool,
         config_section: str | None,
         **kwargs: Unpack[_FromFieldInfoInputs],
     ):
@@ -63,6 +64,7 @@ class ConfigArgFieldInfo(ArgFieldInfo):
             metavar=metavar,
             group=group,
             const=const,
+            hidden=hidden,
             **kwargs,
         )
 
@@ -76,11 +78,12 @@ def Field(
     metavar: str | None = None,
     group: str | None = None,
     const: Any = PydanticUndefined,
+    hidden: bool = False,
     config_section: str | None = None,
     **kwargs: Unpack[_FromFieldInfoInputs],
 ) -> Any:
     return ConfigArgFieldInfo(
-        default, positional, short, metavar, group, const, config_section, **kwargs
+        default, positional, short, metavar, group, const, hidden, config_section, **kwargs
     )
 
 

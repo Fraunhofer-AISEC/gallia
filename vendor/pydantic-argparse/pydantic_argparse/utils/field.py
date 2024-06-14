@@ -12,6 +12,7 @@ class ArgFieldInfo(FieldInfo):
                  metavar: str | None,
                  group: str | None,
                  const: Any,
+                 hidden: bool,
                  **kwargs: Unpack[_FromFieldInfoInputs]
                  ):
         super().__init__(default=default, **kwargs)
@@ -21,6 +22,7 @@ class ArgFieldInfo(FieldInfo):
         self.metavar = metavar
         self.group = group
         self.const = const
+        self.hidden = hidden
 
 
 def Field(default: Any = PydanticUndefined,
@@ -29,6 +31,7 @@ def Field(default: Any = PydanticUndefined,
           metavar: str | None = None,
           group: str | None = None,
           const: Any = PydanticUndefined,
+          hidden: bool = False,
           **kwargs: Unpack[_FromFieldInfoInputs]
           ) -> Any:
-    return ArgFieldInfo(default, positional, short, metavar, group, const, **kwargs)
+    return ArgFieldInfo(default, positional, short, metavar, group, const, hidden, **kwargs)
