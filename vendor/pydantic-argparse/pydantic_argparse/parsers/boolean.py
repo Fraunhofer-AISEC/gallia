@@ -65,7 +65,7 @@ def parse_field(
 
     # Add Boolean Field
     parser.add_argument(
-        *field.arg_names(is_inverted and not invalid_extra_default),
+        *field.arg_names(),
         action=action,
         help=field.description(),
         **field.arg_required(),
