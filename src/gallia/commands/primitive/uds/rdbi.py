@@ -23,16 +23,9 @@ class ReadByIdentifierPrimitive(UDSScanner):
     def configure_parser(self) -> None:
         self.parser.set_defaults(properties=False)
 
+        self.parser.add_argument("data_identifier", type=auto_int, help="The data identifier")
         self.parser.add_argument(
-            "data_identifier",
-            type=auto_int,
-            help="The data identifier",
-        )
-        self.parser.add_argument(
-            "--session",
-            type=auto_int,
-            default=0x01,
-            help="set session perform test in",
+            "--session", type=auto_int, default=0x01, help="set session perform test in"
         )
 
     async def main(self, args: Namespace) -> None:

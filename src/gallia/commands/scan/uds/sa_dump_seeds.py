@@ -60,8 +60,7 @@ class SASeedsDumper(UDSScanner):
             const=96,
             default=0,
             type=int,
-            help="Attempt to fool brute force protection by pretending to send a key after requesting a seed "
-            "(all zero bytes, length can be specified)",
+            help="Attempt to fool brute force protection by pretending to send a key after requesting a seed (all zero bytes, length can be specified)",
         )
         self.parser.add_argument(
             "--reset",
@@ -143,15 +142,15 @@ class SASeedsDumper(UDSScanner):
         runs_since_last_reset = 0
         print_speed = False
 
-        while duration <= 0 or (time.time() - start_time) < duration:
+        while duration <= 0 or time.time() - start_time < duration:
             # Print information about current dump speed every `interval` seconds.
             # As request/response times can jitter a few seconds, we 'arm' the print
             # in one half and 'shoot' once in the other half.
             interval = 60
             i = int(time.time() - start_time) % interval
-            if i >= (interval // 2):
+            if i >= interval // 2:
                 print_speed = True
-            elif i < (interval // 2) and print_speed is True:
+            elif i < interval // 2 and print_speed is True:
                 self.log_size(seeds_file, time.time() - start_time)
                 print_speed = False
 
@@ -210,8 +209,7 @@ class SASeedsDumper(UDSScanner):
                     sys.exit(1)
                 except ConnectionError:
                     logger.warning(
-                        "Lost connection to the ECU after performing a reset. "
-                        "Attempting to reconnect…"
+                        "Lost connection to the ECU after performing a reset. Attempting to reconnect…"
                     )
                     await self.ecu.reconnect()
 

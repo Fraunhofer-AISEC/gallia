@@ -31,11 +31,7 @@ class IOCBIPrimitive(UDSScanner):
             default=0x01,
             help="The session in which the requests are made",
         )
-        self.parser.add_argument(
-            "data_identifier",
-            type=auto_int,
-            help="The data identifier",
-        )
+        self.parser.add_argument("data_identifier", type=auto_int, help="The data identifier")
         self.parser.add_argument(
             "control_parameter",
             type=str,
@@ -46,25 +42,21 @@ class IOCBIPrimitive(UDSScanner):
                 "short-term-adjustment",
                 "without-control-parameter",
             ],
-            help='Control parameter sent to the ECU. "short-term-adjustment" and "without-control-parameter"'
-            " require passing a new state as well.",
+            help='Control parameter sent to the ECU. "short-term-adjustment" and "without-control-parameter" require passing a new state as well.',
         )
         self.parser.add_argument(
             "--new-state",
             metavar="HEXSTRING",
             type=binascii.unhexlify,
             default=b"",
-            help='The new state required in use with the two control parameters "short-term-adjustment"'
-            ' and "without-control-parameter".',
+            help='The new state required in use with the two control parameters "short-term-adjustment" and "without-control-parameter".',
         )
         self.parser.add_argument(
             "--control-enable-mask",
             metavar="HEXSTRING",
             type=binascii.unhexlify,
             default=b"",
-            help="This parameter is used if the data-identifier corresponds to multiple signals."
-            "In that case each bit enables or disables setting of each corresponding signal."
-            "Can only be used in combination with a control parameter.",
+            help="This parameter is used if the data-identifier corresponds to multiple signals.In that case each bit enables or disables setting of each corresponding signal.Can only be used in combination with a control parameter.",
         )
 
     async def main(self, args: Namespace) -> None:

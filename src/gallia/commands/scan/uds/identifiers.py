@@ -10,11 +10,7 @@ from itertools import product
 from gallia.command import UDSScanner
 from gallia.log import get_logger
 from gallia.services.uds.core.client import UDSRequestConfig
-from gallia.services.uds.core.constants import (
-    RoutineControlSubFuncs,
-    UDSErrorCodes,
-    UDSIsoServices,
-)
+from gallia.services.uds.core.constants import RoutineControlSubFuncs, UDSErrorCodes, UDSIsoServices
 from gallia.services.uds.core.exception import IllegalResponse
 from gallia.services.uds.core.service import NegativeResponse, UDSResponse
 from gallia.services.uds.core.utils import g_repr, service_repr
@@ -62,14 +58,7 @@ class ScanIdentifiers(UDSScanner):
             "--sid",
             type=auto_int,
             default=0x22,
-            help="""
-            Service ID to scan; defaults to ReadDataByIdentifier (default: 0x%(default)x);
-            currently supported:
-            0x27 Security Access;
-            0x22 Read Data By Identifier;
-            0x2e Write Data By Identifier;
-            0x31 Routine Control;
-            """,
+            help="\n            Service ID to scan; defaults to ReadDataByIdentifier (default: 0x%(default)x);\n            currently supported:\n            0x27 Security Access;\n            0x22 Read Data By Identifier;\n            0x2e Write Data By Identifier;\n            0x31 Routine Control;\n            ",
         )
         self.parser.add_argument(
             "--check-session",
@@ -84,17 +73,7 @@ class ScanIdentifiers(UDSScanner):
             default={},
             type=str,
             action=ParseSkips,
-            help="""
-                 The data identifiers to be skipped per session.
-                 A session specific skip is given by <session_id>:<identifiers>
-                 where <identifiers> is a comma separated list of single ids or id ranges using a dash.
-                 Examples:
-                  - 0x01:0xf3
-                  - 0x10-0x2f
-                  - 0x01:0xf3,0x10-0x2f
-                 Multiple session specific skips are separated by space.
-                 Only takes affect if --sessions is given.
-                 """,
+            help="\n                 The data identifiers to be skipped per session.\n                 A session specific skip is given by <session_id>:<identifiers>\n                 where <identifiers> is a comma separated list of single ids or id ranges using a dash.\n                 Examples:\n                  - 0x01:0xf3\n                  - 0x10-0x2f\n                  - 0x01:0xf3,0x10-0x2f\n                 Multiple session specific skips are separated by space.\n                 Only takes affect if --sessions is given.\n                 ",
         )
         self.parser.add_argument(
             "--skip-not-supported",
@@ -106,7 +85,6 @@ class ScanIdentifiers(UDSScanner):
         if args.sessions is None:
             logger.notice("Performing scan in current session")
             await self.perform_scan(args)
-
         else:
             sessions: list[int] = [
                 s for s in args.sessions if s not in args.skip or args.skip[s] is not None
@@ -159,7 +137,7 @@ class ScanIdentifiers(UDSScanner):
                 logger.info(f"{g_repr(DID)}: skipped")
                 continue
 
-            if session is not None and args.check_session and DID % args.check_session == 0:
+            if session is not None and args.check_session and (DID % args.check_session == 0):
                 # Check session and try to recover from wrong session (max 3 times), else skip session
                 if not await self.ecu.check_and_set_session(session):
                     logger.error(
@@ -168,7 +146,7 @@ class ScanIdentifiers(UDSScanner):
                     break
 
             if args.sid == UDSIsoServices.SecurityAccess:
-                if DID & 0b10000000:
+                if DID & 128:
                     logger.info(
                         "Keep in mind that you set the SuppressResponse Bit (8th bit): "
                         + f"{g_repr(DID)} = 0b{DID:b}"
@@ -179,9 +157,8 @@ class ScanIdentifiers(UDSScanner):
                 pdu = bytes(
                     [args.sid, sub_function, DID >> 8, DID & 0xFF]
                 )  # Needs extra byte for sub function
-
-            # DefaultBehavior, e.g. for ReadDataByIdentifier/WriteDataByIdentifier
             else:
+                # DefaultBehavior, e.g. for ReadDataByIdentifier/WriteDataByIdentifier
                 pdu = bytes([args.sid, DID >> 8, DID & 0xFF])
 
             if args.payload:
@@ -202,8 +179,7 @@ class ScanIdentifiers(UDSScanner):
             if isinstance(resp, NegativeResponse):
                 if suggests_service_not_supported(resp):
                     logger.info(
-                        f"{g_repr(DID)}: {resp}; does session {g_repr(session)} "
-                        f"support service {service_repr(args.sid)}?"
+                        f"{g_repr(DID)}: {resp}; does session {g_repr(session)} support service {service_repr(args.sid)}?"
                     )
 
                     if args.skip_not_supported:
@@ -216,7 +192,6 @@ class ScanIdentifiers(UDSScanner):
                     UDSErrorCodes.subFunctionNotSupported,
                 ):
                     logger.info(f"{g_repr(DID)}: {resp}")
-
                 else:
                     logger.result(f"{g_repr(DID)}: {resp}")
                     abnormal_DIDs += 1

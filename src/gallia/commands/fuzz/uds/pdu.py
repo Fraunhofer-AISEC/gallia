@@ -43,37 +43,19 @@ class PDUFuzzer(UDSScanner):
             type=auto_int,
             default=0x2E,
             choices=[0x2E, 0x31],
-            help="""
-            Service ID to create payload for; defaults to 0x2e WriteDataByIdentifier;
-            currently supported:
-            0x2e WriteDataByIdentifier, 0x31 RoutineControl (startRoutine)
-            """,
+            help="\n            Service ID to create payload for; defaults to 0x2e WriteDataByIdentifier;\n            currently supported:\n            0x2e WriteDataByIdentifier, 0x31 RoutineControl (startRoutine)\n            ",
         )
         self.parser.add_argument(
-            "--max-length",
-            type=auto_int,
-            default=42,
-            help="maximum length of the payload",
+            "--max-length", type=auto_int, default=42, help="maximum length of the payload"
         )
         self.parser.add_argument(
-            "--min-length",
-            type=auto_int,
-            default=1,
-            help="minimum length of the payload",
+            "--min-length", type=auto_int, default=1, help="minimum length of the payload"
         )
         self.parser.add_argument(
-            "-i",
-            "--iterations",
-            type=auto_int,
-            default=1,
-            help="number of iterations",
+            "-i", "--iterations", type=auto_int, default=1, help="number of iterations"
         )
         self.parser.add_argument(
-            "--dids",
-            type=auto_int,
-            nargs="*",
-            required=True,
-            help="data identifiers to fuzz",
+            "--dids", type=auto_int, nargs="*", required=True, help="data identifiers to fuzz"
         )
         self.parser.add_argument(
             "--prefixed-payload",
@@ -150,14 +132,12 @@ class PDUFuzzer(UDSScanner):
                     payload = args.prefixed_payload + self.generate_payload(args)
                     try:
                         resp = await self.ecu.send_raw(
-                            pdu + payload,
-                            config=UDSRequestConfig(tags=["ANALYZE"], max_retry=3),
+                            pdu + payload, config=UDSRequestConfig(tags=["ANALYZE"], max_retry=3)
                         )
 
                         if isinstance(resp, NegativeResponse):
                             if not suggests_identifier_not_supported(resp):
                                 logger.result(f"0x{did:0x}: {resp}")
-
                             else:
                                 logger.info(f"0x{did:0x}: {resp}")
                             if resp.response_code in negative_responses:
@@ -169,7 +149,7 @@ class PDUFuzzer(UDSScanner):
                             positive_DIDs += 1
 
                     except TimeoutError:
-                        logger.warning(f"0x{did :0x}: Retries exceeded")
+                        logger.warning(f"0x{did:0x}: Retries exceeded")
                         timeout_DIDs += 1
                     except IllegalResponse as e:
                         logger.warning(f"{repr(e)}")

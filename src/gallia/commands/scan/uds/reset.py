@@ -10,10 +10,7 @@ from typing import Any
 from gallia.command import UDSScanner
 from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse, UDSRequestConfig, UDSResponse
-from gallia.services.uds.core.exception import (
-    IllegalResponse,
-    UnexpectedNegativeResponse,
-)
+from gallia.services.uds.core.exception import IllegalResponse, UnexpectedNegativeResponse
 from gallia.services.uds.core.utils import g_repr
 from gallia.services.uds.helpers import suggests_sub_function_not_supported
 from gallia.utils import ParseSkips, auto_int
@@ -40,17 +37,7 @@ class ResetScanner(UDSScanner):
             default={},
             type=str,
             action=ParseSkips,
-            help="""
-                 The sub functions to be skipped per session.
-                 A session specific skip is given by <session_id>:<sub_functions>
-                 where <sub_functions> is a comma separated list of single ids or id ranges using a dash.
-                 Examples:
-                  - 0x01:0xf3
-                  - 0x10-0x2f
-                  - 0x01:0xf3,0x10-0x2f
-                 Multiple session specific skips are separated by space.
-                 Only takes affect if --sessions is given.
-                 """,
+            help="\n                 The sub functions to be skipped per session.\n                 A session specific skip is given by <session_id>:<sub_functions>\n                 where <sub_functions> is a comma separated list of single ids or id ranges using a dash.\n                 Examples:\n                  - 0x01:0xf3\n                  - 0x10-0x2f\n                  - 0x01:0xf3,0x10-0x2f\n                 Multiple session specific skips are separated by space.\n                 Only takes affect if --sessions is given.\n                 ",
         )
         self.parser.add_argument(
             "--skip-check-session",
@@ -90,7 +77,7 @@ class ResetScanner(UDSScanner):
                 logger.notice(f"skipping subFunc: {g_repr(sub_func)} because of --skip")
                 continue
 
-            if session is not None and not args.skip_check_session:
+            if session is not None and (not args.skip_check_session):
                 # Check session and try to recover from wrong session (max 3 times), else skip session
                 if not await self.ecu.check_and_set_session(session):
                     logger.error(
@@ -150,7 +137,7 @@ class ResetScanner(UDSScanner):
                 continue
 
             # We reach this code only for positive responses
-            if session is not None and not args.skip_check_session:
+            if session is not None and (not args.skip_check_session):
                 try:
                     current_session = await self.ecu.read_session()
                     logger.info(

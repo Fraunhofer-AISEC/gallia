@@ -28,10 +28,7 @@ class PingPrimitive(UDSScanner):
             "--session", type=auto_int, default=0x01, help="set session to perform test"
         )
         self.parser.add_argument(
-            "--count",
-            type=auto_int,
-            default=None,
-            help="limit number of pings to this amount",
+            "--count", type=auto_int, default=None, help="limit number of pings to this amount"
         )
         self.parser.add_argument(
             "--interval",

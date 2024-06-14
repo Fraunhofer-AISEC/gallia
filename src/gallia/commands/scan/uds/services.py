@@ -61,17 +61,7 @@ class ServicesScanner(UDSScanner):
             default={},
             type=str,
             action=ParseSkips,
-            help="""
-                 The service IDs to be skipped per session.
-                 A session specific skip is given by <session id>:<service ids>
-                 where <service ids> is a comma separated list of single ids or id ranges using a dash.
-                 Examples:
-                  - 0x01:0xf3
-                  - 0x10-0x2f
-                  - 0x01:0xf3,0x10-0x2f
-                 Multiple session specific skips are separated by space.
-                 Only takes affect if --sessions is given.
-                 """,
+            help="\n                 The service IDs to be skipped per session.\n                 A session specific skip is given by <session id>:<service ids>\n                 where <service ids> is a comma separated list of single ids or id ranges using a dash.\n                 Examples:\n                  - 0x01:0xf3\n                  - 0x10-0x2f\n                  - 0x01:0xf3,0x10-0x2f\n                 Multiple session specific skips are separated by space.\n                 Only takes affect if --sessions is given.\n                 ",
         )
 
     async def main(self, args: Namespace) -> None:
@@ -94,10 +84,7 @@ class ServicesScanner(UDSScanner):
                     resp: UDSResponse = await self.ecu.set_session(
                         session, UDSRequestConfig(tags=["preparation"])
                     )
-                except (
-                    UDSException,
-                    RuntimeError,
-                ) as e:  # FIXME why catch RuntimeError?
+                except (UDSException, RuntimeError) as e:  # FIXME why catch RuntimeError?
                     logger.warning(
                         f"Could not complete session change to {g_repr(session)}: {g_repr(e)}; skipping session"
                     )
@@ -130,7 +117,7 @@ class ServicesScanner(UDSScanner):
         sid = -1
         while sid < 0xFF:
             sid += 1
-            if sid & 0x40 and not args.scan_response_ids:
+            if sid & 0x40 and (not args.scan_response_ids):
                 continue
 
             if session in args.skip and sid in args.skip[session]:
@@ -163,7 +150,7 @@ class ServicesScanner(UDSScanner):
                     break
 
                 if isinstance(resp, NegativeResponse) and resp.response_code in [
-                    UDSErrorCodes.incorrectMessageLengthOrInvalidFormat,
+                    UDSErrorCodes.incorrectMessageLengthOrInvalidFormat
                 ]:
                     continue
 

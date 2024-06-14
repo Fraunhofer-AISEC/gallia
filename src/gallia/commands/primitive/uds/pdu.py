@@ -8,12 +8,7 @@ from argparse import Namespace
 
 from gallia.command import UDSScanner
 from gallia.log import get_logger
-from gallia.services.uds import (
-    NegativeResponse,
-    UDSRequest,
-    UDSRequestConfig,
-    UDSResponse,
-)
+from gallia.services.uds import NegativeResponse, UDSRequest, UDSRequestConfig, UDSResponse
 from gallia.services.uds.core.exception import UDSException
 from gallia.services.uds.core.service import RawRequest, RawResponse
 from gallia.services.uds.helpers import raise_for_error
@@ -33,16 +28,10 @@ class SendPDUPrimitive(UDSScanner):
         self.parser.set_defaults(properties=False)
 
         self.parser.add_argument(
-            "pdu",
-            type=binascii.unhexlify,
-            help="The raw pdu to send to the ECU",
+            "pdu", type=binascii.unhexlify, help="The raw pdu to send to the ECU"
         )
         self.parser.add_argument(
-            "-r",
-            "--max-retry",
-            type=int,
-            default=3,
-            help="Set the uds' stack max_retry argument",
+            "-r", "--max-retry", type=int, default=3, help="Set the uds' stack max_retry argument"
         )
         self.parser.add_argument(
             "--session",
@@ -66,8 +55,7 @@ class SendPDUPrimitive(UDSScanner):
 
         try:
             response = await self.ecu.send_raw(
-                pdu,
-                config=UDSRequestConfig(max_retry=args.max_retry),
+                pdu, config=UDSRequestConfig(max_retry=args.max_retry)
             )
         except UDSException as e:
             logger.error(repr(e))
