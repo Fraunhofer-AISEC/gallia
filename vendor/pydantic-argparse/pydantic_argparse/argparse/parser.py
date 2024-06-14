@@ -297,6 +297,9 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
                         # TODO Print warning for invalid config
                         pass
 
+                if isinstance(field.info, ArgFieldInfo) and field.info.hidden:
+                    continue
+
                 if isinstance(field.info, ArgFieldInfo) and field.info.group is not None:
                     if field.info.group not in explicit_groups:
                         explicit_groups[field.info.group] = self.add_argument_group(field.info.group)
