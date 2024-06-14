@@ -25,18 +25,9 @@ class ECUResetPrimitive(UDSScanner):
         self.parser.set_defaults(properties=False)
 
         self.parser.add_argument(
-            "--session",
-            type=auto_int,
-            default=0x01,
-            help="set session perform test in",
+            "--session", type=auto_int, default=0x01, help="set session perform test in"
         )
-        self.parser.add_argument(
-            "-f",
-            "--subfunc",
-            type=auto_int,
-            default=0x01,
-            help="subfunc",
-        )
+        self.parser.add_argument("-f", "--subfunc", type=auto_int, default=0x01, help="subfunc")
 
     async def main(self, args: Namespace) -> None:
         resp: UDSResponse = await self.ecu.set_session(args.session)

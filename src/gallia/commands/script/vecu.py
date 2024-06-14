@@ -20,15 +20,9 @@ from gallia.services.uds.server import (
     UDSServerTransport,
     UnixUDSServerTransport,
 )
-from gallia.transports import (
-    ISOTPTransport,
-    TargetURI,
-    TCPLinesTransport,
-    UnixLinesTransport,
-)
+from gallia.transports import ISOTPTransport, TargetURI, TCPLinesTransport, UnixLinesTransport
 
 dynamic_attr_prefix = "dynamic_attr_"
-
 
 logger = get_logger("gallia.vecu.main")
 
@@ -41,19 +35,13 @@ class VirtualECU(AsyncScript):
     EPILOG = "https://fraunhofer-aisec.github.io/gallia/uds/virtual_ecu.html"
 
     def configure_parser(self) -> None:
-        self.parser.add_argument(
-            "target",
-            type=TargetURI,
-        )
+        self.parser.add_argument("target", type=TargetURI)
 
         sub_parsers = self.parser.add_subparsers(dest="cmd")
         sub_parsers.required = True
 
         db = sub_parsers.add_parser("db")
-        db.add_argument(
-            "path",
-            type=Path,
-        )
+        db.add_argument("path", type=Path)
         db.add_argument("--ecu", type=str)
         db.add_argument("--properties", type=json.loads)
         # db.set_defaults(yolo=True)
@@ -98,10 +86,7 @@ class VirtualECU(AsyncScript):
                 setattr(
                     server,
                     key[len(dynamic_attr_prefix) :],
-                    eval(
-                        value,
-                        {service.name: service for service in UDSIsoServices},
-                    ),
+                    eval(value, {service.name: service for service in UDSIsoServices}),
                 )
 
         target: TargetURI = args.target
@@ -115,8 +100,7 @@ class VirtualECU(AsyncScript):
             transport = UnixUDSServerTransport(server, target)
         else:
             self.parser.error(
-                f"Unsupported transport scheme! Use any of ["
-                f"{TCPLinesTransport.SCHEME}, {ISOTPTransport.SCHEME}, {UnixLinesTransport.SCHEME}]"
+                f"Unsupported transport scheme! Use any of [{TCPLinesTransport.SCHEME}, {ISOTPTransport.SCHEME}, {UnixLinesTransport.SCHEME}]"
             )
 
         try:

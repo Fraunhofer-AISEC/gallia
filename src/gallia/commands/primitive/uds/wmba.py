@@ -31,15 +31,11 @@ class WMBAPrimitive(UDSScanner):
             help="The session in which the requests are made",
         )
         self.parser.add_argument(
-            "address",
-            type=auto_int,
-            help="The start address to which data should be written",
+            "address", type=auto_int, help="The start address to which data should be written"
         )
         data_group = self.parser.add_mutually_exclusive_group(required=True)
         data_group.add_argument(
-            "--data",
-            type=binascii.unhexlify,
-            help="The data which should be written",
+            "--data", type=binascii.unhexlify, help="The data which should be written"
         )
         data_group.add_argument(
             "--data-file",

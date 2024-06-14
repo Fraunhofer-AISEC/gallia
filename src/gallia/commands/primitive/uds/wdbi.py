@@ -25,22 +25,13 @@ class WriteByIdentifierPrimitive(UDSScanner):
     def configure_parser(self) -> None:
         self.parser.set_defaults(properties=False)
 
+        self.parser.add_argument("data_identifier", type=auto_int, help="The data identifier")
         self.parser.add_argument(
-            "data_identifier",
-            type=auto_int,
-            help="The data identifier",
-        )
-        self.parser.add_argument(
-            "--session",
-            type=auto_int,
-            default=0x01,
-            help="set session perform test in",
+            "--session", type=auto_int, default=0x01, help="set session perform test in"
         )
         data_group = self.parser.add_mutually_exclusive_group(required=True)
         data_group.add_argument(
-            "--data",
-            type=binascii.unhexlify,
-            help="The data which should be written",
+            "--data", type=binascii.unhexlify, help="The data which should be written"
         )
         data_group.add_argument(
             "--data-file",

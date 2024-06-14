@@ -115,9 +115,7 @@ class BaseCommand(ABC):
         self.run_meta = RunMeta(
             command=sys.argv,
             command_meta=CommandMeta(
-                command=self.COMMAND,
-                group=self.GROUP,
-                subgroup=self.SUBGROUP,
+                command=self.COMMAND, group=self.GROUP, subgroup=self.SUBGROUP
             ),
             start_time=datetime.now(tz).isoformat(),
             exit_code=0,
@@ -132,12 +130,7 @@ class BaseCommand(ABC):
     @abstractmethod
     def run(self, args: Namespace) -> int: ...
 
-    def run_hook(
-        self,
-        variant: HookVariant,
-        args: Namespace,
-        exit_code: int | None = None,
-    ) -> None:
+    def run_hook(self, variant: HookVariant, args: Namespace, exit_code: int | None = None) -> None:
         script = args.pre_hook if variant == HookVariant.PRE else args.post_hook
         if script is None or script == "":
             return
@@ -165,14 +158,7 @@ class BaseCommand(ABC):
             env["GALLIA_EXIT_CODE"] = str(exit_code)
 
         try:
-            p = run(
-                script,
-                env=env,
-                text=True,
-                capture_output=True,
-                shell=True,
-                check=True,
-            )
+            p = run(script, env=env, text=True, capture_output=True, shell=True, check=True)
             stdout = p.stdout
             stderr = p.stderr
         except CalledProcessError as e:
@@ -250,8 +236,7 @@ class BaseCommand(ABC):
             mutex_group.add_argument(
                 "--artifacts-base",
                 default=self.config.get_value(
-                    "gallia.scanner.artifacts_base",
-                    Path(gettempdir()).joinpath("gallia"),
+                    "gallia.scanner.artifacts_base", Path(gettempdir()).joinpath("gallia")
                 ),
                 type=Path,
                 metavar="DIR",
@@ -279,9 +264,7 @@ class BaseCommand(ABC):
             if self.db_handler.meta is not None:
                 try:
                     await self.db_handler.complete_run_meta(
-                        datetime.now(UTC).astimezone(),
-                        self.run_meta.exit_code,
-                        self.artifacts_dir,
+                        datetime.now(UTC).astimezone(), self.run_meta.exit_code, self.artifacts_dir
                     )
                 except Exception as e:
                     logger.warning(f"Could not write the run meta to the database: {e!r}")
@@ -307,9 +290,7 @@ class BaseCommand(ABC):
         symlink.symlink_to(latest_dir)
 
     def prepare_artifactsdir(
-        self,
-        base_dir: Path | None = None,
-        force_path: Path | None = None,
+        self, base_dir: Path | None = None, force_path: Path | None = None
     ) -> Path:
         if force_path is not None:
             if force_path.is_dir():
@@ -377,10 +358,7 @@ class BaseCommand(ABC):
                 return exitcode.OSFILE
 
         if self.HAS_ARTIFACTS_DIR:
-            self.artifacts_dir = self.prepare_artifactsdir(
-                args.artifacts_base,
-                args.artifacts_dir,
-            )
+            self.artifacts_dir = self.prepare_artifactsdir(args.artifacts_base, args.artifacts_dir)
             self.log_file_handlers.append(
                 add_zst_log_handler(
                     logger_name="gallia",
@@ -508,10 +486,7 @@ class Scanner(AsyncScript, ABC):
 
     GROUP = "scan"
     HAS_ARTIFACTS_DIR = True
-    CATCHED_EXCEPTIONS: list[type[Exception]] = [
-        ConnectionError,
-        UDSException,
-    ]
+    CATCHED_EXCEPTIONS: list[type[Exception]] = [ConnectionError, UDSException]
 
     def __init__(self, parser: ArgumentParser, config: Config = Config()) -> None:
         super().__init__(parser, config)
@@ -586,10 +561,7 @@ class Scanner(AsyncScript, ABC):
             "--power-cycle",
             action=argparse.BooleanOptionalAction,
             default=self.config.get_value("gallia.scanner.power_cycle", False),
-            help=(
-                "use the configured power supply to power-cycle the ECU when needed "
-                "(e.g. before starting the scan, or to recover bad state during scanning)"
-            ),
+            help="use the configured power supply to power-cycle the ECU when needed (e.g. before starting the scan, or to recover bad state during scanning)",
         )
         group.add_argument(
             "--power-cycle-sleep",
