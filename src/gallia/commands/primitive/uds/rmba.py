@@ -31,14 +31,10 @@ class RMBAPrimitive(UDSScanner):
             help="The session in which the requests are made",
         )
         self.parser.add_argument(
-            "address",
-            type=auto_int,
-            help="The start address from which data should be read",
+            "address", type=auto_int, help="The start address from which data should be read"
         )
         self.parser.add_argument(
-            "length",
-            type=auto_int,
-            help="The number of bytes which should be read",
+            "length", type=auto_int, help="The number of bytes which should be read"
         )
 
     async def main(self, args: Namespace) -> None:

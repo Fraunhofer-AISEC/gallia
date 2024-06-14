@@ -9,12 +9,7 @@ from typing import Any
 
 from gallia.command import UDSScanner
 from gallia.log import get_logger
-from gallia.services.uds import (
-    NegativeResponse,
-    UDSErrorCodes,
-    UDSRequestConfig,
-    UDSResponse,
-)
+from gallia.services.uds import NegativeResponse, UDSErrorCodes, UDSRequestConfig, UDSResponse
 from gallia.services.uds.core.constants import EcuResetSubFuncs
 from gallia.services.uds.core.service import DiagnosticSessionControlResponse
 from gallia.services.uds.core.utils import g_repr
@@ -81,9 +76,7 @@ class SessionsScanner(UDSScanner):
             logger.notice(f"Received conditionsNotCorrect for session {g_repr(session)}")
             if not use_hooks:
                 logger.warning(
-                    f"Session {g_repr(session)} is potentially available but could not be entered. "
-                    f"Use --with-hooks to try to enter the session using hooks to scan for "
-                    f"transitions available from that session."
+                    f"Session {g_repr(session)} is potentially available but could not be entered. Use --with-hooks to try to enter the session using hooks to scan for transitions available from that session."
                 )
                 return resp
 
@@ -108,14 +101,12 @@ class SessionsScanner(UDSScanner):
 
                 if isinstance(resp, NegativeResponse):
                     logger.error(
-                        f"Could not change to session {g_repr(session)} as part of stack: {resp}. "
-                        f"Try with --reset to reset between each iteration."
+                        f"Could not change to session {g_repr(session)} as part of stack: {resp}. Try with --reset to reset between each iteration."
                     )
                     return False
             except Exception as e:
                 logger.error(
-                    f"Could not change to session {g_repr(session)} as part of stack: {g_repr(e)}. "
-                    f"Try with --reset to reset between each iteration."
+                    f"Could not change to session {g_repr(session)} as part of stack: {g_repr(e)}. Try with --reset to reset between each iteration."
                 )
                 return False
         return True
@@ -158,16 +149,14 @@ class SessionsScanner(UDSScanner):
 
                             if isinstance(resp, NegativeResponse):
                                 logger.warning(
-                                    f"Could not reset ECU with {EcuResetSubFuncs(args.reset).name if args.reset in iter(EcuResetSubFuncs) else args.reset}: {resp}"
-                                    f"; continuing without reset"
+                                    f"Could not reset ECU with {(EcuResetSubFuncs(args.reset).name if args.reset in iter(EcuResetSubFuncs) else args.reset)}: {resp}; continuing without reset"
                                 )
                             else:
                                 logger.info("Waiting for the ECU to recover…")
                                 await self.ecu.wait_for_ecu(timeout=args.timeout)
                         except (TimeoutError, ConnectionError):
                             logger.warning(
-                                "Lost connection to the ECU after performing a reset. "
-                                "Attempting to reconnect…"
+                                "Lost connection to the ECU after performing a reset. Attempting to reconnect…"
                             )
                             await self.ecu.reconnect()
 
@@ -215,11 +204,7 @@ class SessionsScanner(UDSScanner):
                             )
                         else:
                             negative_results.append(
-                                {
-                                    "session": session,
-                                    "stack": stack,
-                                    "error": resp.response_code,
-                                }
+                                {"session": session, "stack": stack, "error": resp.response_code}
                             )
 
                     except TimeoutError:
@@ -262,6 +247,5 @@ class SessionsScanner(UDSScanner):
                         await self.db_handler.insert_session_transition(session, res["stack"])
 
                 logger.result(
-                    f"\tvia stack: {'->'.join([f'{g_repr(i)}' for i in res['stack']])} "
-                    f"(NRC: {res['error']})"
+                    f"\tvia stack: {'->'.join([f'{g_repr(i)}' for i in res['stack']])} (NRC: {res['error']})"
                 )

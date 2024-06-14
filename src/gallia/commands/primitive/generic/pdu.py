@@ -19,11 +19,7 @@ class GenericPDUPrimitive(Scanner):
     def configure_parser(self) -> None:
         self.parser.set_defaults(properties=False)
 
-        self.parser.add_argument(
-            "pdu",
-            type=binascii.unhexlify,
-            help="raw pdu to send",
-        )
+        self.parser.add_argument("pdu", type=binascii.unhexlify, help="raw pdu to send")
 
     async def main(self, args: Namespace) -> None:
         await self.transport.write(args.pdu)

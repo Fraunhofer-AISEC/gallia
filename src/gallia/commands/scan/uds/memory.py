@@ -27,10 +27,7 @@ class MemoryFunctionsScanner(UDSScanner):
 
     def configure_parser(self) -> None:
         self.parser.add_argument(
-            "--session",
-            type=auto_int,
-            default=0x03,
-            help="set session to perform test",
+            "--session", type=auto_int, default=0x03, help="set session to perform test"
         )
         self.parser.add_argument(
             "--check-session",
@@ -44,8 +41,7 @@ class MemoryFunctionsScanner(UDSScanner):
             required=True,
             choices=[0x23, 0x3D, 0x34, 0x35],
             type=auto_int,
-            help="Choose between 0x23 ReadMemoryByAddress 0x3d WriteMemoryByAddress, "
-            "0x34 RequestDownload and 0x35 RequestUpload",
+            help="Choose between 0x23 ReadMemoryByAddress 0x3d WriteMemoryByAddress, 0x34 RequestDownload and 0x35 RequestUpload",
         )
         self.parser.add_argument(
             "--data",
@@ -73,19 +69,17 @@ class MemoryFunctionsScanner(UDSScanner):
         memory_size = len(data) if data else 0x1000
 
         for i in range(0x100):
-            addr = i << (addr_offset * 8)
+            addr = i << addr_offset * 8
 
-            (
-                addr_and_length_identifier,
-                addr_bytes,
-                mem_size_bytes,
-            ) = uds_memory_parameters(addr, memory_size)
+            addr_and_length_identifier, addr_bytes, mem_size_bytes = uds_memory_parameters(
+                addr, memory_size
+            )
 
             pdu = bytes([sid])
             if sid in [0x34, 0x35]:
                 # RequestUpload and RequestDownload require a DataFormatIdentifier
                 # byte that defines encryption and compression. 00 is neither.
-                pdu += bytes([00])
+                pdu += bytes([0])
             pdu += bytes([addr_and_length_identifier])
             pdu += addr_bytes + mem_size_bytes
             pdu += data if data else b""

@@ -32,52 +32,26 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
 
     def configure_parser(self) -> None:
         self.parser.add_argument(
-            "--start",
-            metavar="INT",
-            type=auto_int,
-            required=True,
-            help="set start address",
+            "--start", metavar="INT", type=auto_int, required=True, help="set start address"
         )
         self.parser.add_argument(
-            "--stop",
-            metavar="INT",
-            type=auto_int,
-            required=True,
-            help="set end address",
+            "--stop", metavar="INT", type=auto_int, required=True, help="set end address"
+        )
+        self.parser.add_argument("--padding", type=auto_int, default=None, help="set isotp padding")
+        self.parser.add_argument(
+            "--pdu", type=unhexlify, default=bytes([0x3E, 0x00]), help="set pdu used for discovery"
         )
         self.parser.add_argument(
-            "--padding",
-            type=auto_int,
-            default=None,
-            help="set isotp padding",
+            "--sleep", type=float, default=0.01, help="set sleeptime between loop iterations"
         )
         self.parser.add_argument(
-            "--pdu",
-            type=unhexlify,
-            default=bytes([0x3E, 0x00]),
-            help="set pdu used for discovery",
+            "--extended-addr", action="store_true", help="use extended isotp addresses"
         )
         self.parser.add_argument(
-            "--sleep",
-            type=float,
-            default=0.01,
-            help="set sleeptime between loop iterations",
+            "--tester-addr", type=auto_int, default=0x6F1, help="tester address for --extended"
         )
         self.parser.add_argument(
-            "--extended-addr",
-            action="store_true",
-            help="use extended isotp addresses",
-        )
-        self.parser.add_argument(
-            "--tester-addr",
-            type=auto_int,
-            default=0x6F1,
-            help="tester address for --extended",
-        )
-        self.parser.add_argument(
-            "--query",
-            action="store_true",
-            help="query ECU description via RDBID",
+            "--query", action="store_true", help="query ECU description via RDBID"
         )
         self.parser.add_argument(
             "--info-did",
@@ -95,7 +69,7 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
         )
 
     async def setup(self, args: Namespace) -> None:
-        if args.target is not None and not args.target.scheme == RawCANTransport.SCHEME:
+        if args.target is not None and (not args.target.scheme == RawCANTransport.SCHEME):
             self.parser.error(
                 f"Unsupported transport schema {args.target.scheme}; must be can-raw!"
             )
@@ -121,11 +95,7 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
             except Exception as e:
                 logger.result(f"reading description failed: {e!r}")
 
-    def _build_isotp_frame_extended(
-        self,
-        pdu: bytes,
-        ext_addr: int,
-    ) -> bytes:
+    def _build_isotp_frame_extended(self, pdu: bytes, ext_addr: int) -> bytes:
         isotp_hdr = bytes([ext_addr, len(pdu) & 0x0F])
         return isotp_hdr + pdu
 
@@ -134,10 +104,7 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
         return isotp_hdr + pdu
 
     def build_isotp_frame(
-        self,
-        req: UDSRequest,
-        ext_addr: int | None = None,
-        padding: int | None = None,
+        self, req: UDSRequest, ext_addr: int | None = None, padding: int | None = None
     ) -> bytes:
         pdu = req.pdu
         max_pdu_len = 7 if ext_addr is None else 6
@@ -196,8 +163,7 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
                     if new_addr != addr:
                         is_broadcast = True
                         logger.result(
-                            f"seems that broadcast was triggered on CAN ID {can_id_repr(ID)}, "
-                            f"got answer from {can_id_repr(new_addr)}"
+                            f"seems that broadcast was triggered on CAN ID {can_id_repr(ID)}, got answer from {can_id_repr(new_addr)}"
                         )
                     else:
                         logger.info(
@@ -206,8 +172,7 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
                 except TimeoutError:
                     if is_broadcast:
                         logger.result(
-                            f"seems that broadcast was triggered on CAN ID {can_id_repr(ID)}, "
-                            f"got answer from {can_id_repr(addr)}"
+                            f"seems that broadcast was triggered on CAN ID {can_id_repr(ID)}, got answer from {can_id_repr(addr)}"
                         )
                     else:
                         logger.result(
@@ -232,10 +197,7 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
                             target_args["rx_padding"] = f"{args.padding}"
 
                         target = TargetURI.from_parts(
-                            ISOTPTransport.SCHEME,
-                            args.target.hostname,
-                            None,
-                            target_args,
+                            ISOTPTransport.SCHEME, args.target.hostname, None, target_args
                         )
                         found.append(target)
                     break
