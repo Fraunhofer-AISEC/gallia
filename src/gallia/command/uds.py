@@ -3,14 +3,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
-from typing import Literal
 
 import aiofiles
 
 from gallia.command.base import FileNames, Scanner, ScannerConfig
 from gallia.command.config import Field
 from gallia.log import get_logger
-from gallia.plugins import load_ecu, load_ecu_plugins
+from gallia.plugins import load_ecu
 from gallia.services.uds.core.service import NegativeResponse, UDSResponse
 from gallia.services.uds.ecu import ECU
 from gallia.services.uds.helpers import raise_for_error
@@ -19,8 +18,10 @@ logger = get_logger(__name__)
 
 
 class UDSScannerConfig(ScannerConfig):
-    ecu_reset: int | None = Field(None,
-        description="Trigger an initial ecu_reset via UDS; reset level is optional", const=0x01
+    ecu_reset: int | None = Field(
+        None,
+        description="Trigger an initial ecu_reset via UDS; reset level is optional",
+        const=0x01,
     )
     # TODO: Potentially turn this to a literal, if possible without circular dependencies
     oem: str = Field(
