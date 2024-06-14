@@ -46,8 +46,7 @@ class DTCPrimitive(UDSScanner):
             "--mask",
             type=partial(int, base=16),
             default=0xFF,
-            help="The bitmask which is sent to the ECU in order to select the relevant DTCs according to their "
-            "error state. By default, all error codes are returned (c.f. ISO 14229-1,D.2).",
+            help="The bitmask which is sent to the ECU in order to select the relevant DTCs according to their error state. By default, all error codes are returned (c.f. ISO 14229-1,D.2).",
         )
         read_parser.add_argument(
             "--show-legend",
@@ -55,9 +54,7 @@ class DTCPrimitive(UDSScanner):
             help="Show the legend of the bit interpretation according to ISO 14229-1,D.2",
         )
         read_parser.add_argument(
-            "--show-failed",
-            action="store_true",
-            help="Show a summary of the codes which failed",
+            "--show-failed", action="store_true", help="Show a summary of the codes which failed"
         )
         read_parser.add_argument(
             "--show-uncompleted",
@@ -71,12 +68,10 @@ class DTCPrimitive(UDSScanner):
             "--group-of-dtc",
             type=int,
             default=0xFFFFFF,
-            help="Only clear a particular DTC or the DTCs belonging to the given group. "
-            "By default, all error codes are cleared.",
+            help="Only clear a particular DTC or the DTCs belonging to the given group. By default, all error codes are cleared.",
         )
         control_parser = sub_parser.add_parser(
-            "control",
-            help="Stop or resume the setting of DTCs using the " "ControlDTCSetting service",
+            "control", help="Stop or resume the setting of DTCs using the ControlDTCSetting service"
         )
         control_group = control_parser.add_mutually_exclusive_group(required=True)
         control_group.add_argument(
@@ -97,8 +92,7 @@ class DTCPrimitive(UDSScanner):
         if isinstance(ecu_response, NegativeResponse):
             if ecu_response.response_code == UDSErrorCodes.responseTooLong:
                 logger.error(
-                    f"There are too many codes for (sub)mask {mask}. Consider setting --mask "
-                    f"with a parameter that excludes one or more of the corresponding bits."
+                    f"There are too many codes for (sub)mask {mask}. Consider setting --mask with a parameter that excludes one or more of the corresponding bits."
                 )
                 if split:
                     logger.warning("Trying to fetch the error codes iteratively.")
@@ -167,26 +161,15 @@ class DTCPrimitive(UDSScanner):
             "7 = warningIndicatorRequested: existing warning indicators (e.g. lamp, display)",
         ]
 
-        for line in (
-            tabulate([[d] for d in bit_descriptions], headers=["bit descriptions"])
+        for line in tabulate(
+            [[d] for d in bit_descriptions], headers=["bit descriptions"]
         ).splitlines():
             logger.result(line)
 
     def show_summary(self, dtcs: list[list[str]]) -> None:
         dtcs.sort()
 
-        header = [
-            "DTC",
-            "error state",
-            "0",
-            "1",
-            "2",
-            "3",
-            "4",
-            "5",
-            "6",
-            "7",
-        ]
+        header = ["DTC", "error state", "0", "1", "2", "3", "4", "5", "6", "7"]
 
         for line in tabulate(dtcs, headers=header, tablefmt="fancy_grid").splitlines():
             logger.result(line)

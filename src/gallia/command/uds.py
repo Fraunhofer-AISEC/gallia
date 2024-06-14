@@ -173,7 +173,7 @@ class UDSScanner(Scanner):
                     logger.warning(f"Could not write the properties_pre to the database: {e!r}")
 
     async def teardown(self, args: Namespace) -> None:
-        if args.properties is True and not self.ecu.transport.is_closed:
+        if args.properties is True and (not self.ecu.transport.is_closed):
             path = self.artifacts_dir.joinpath(FileNames.PROPERTIES_POST.value)
             async with aiofiles.open(path, "w") as file:
                 await file.write(json.dumps(await self.ecu.properties(True), indent=4))
