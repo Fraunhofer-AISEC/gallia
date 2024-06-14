@@ -420,7 +420,8 @@ class ScannerConfig(AsyncScriptConfig):
     target: TargetURI | None = Field(description="URI that describes the target", metavar="TARGET")
     power_supply: PowerSupplyURI | None = Field(
         None,
-        description="URI specifying the location of the relevant opennetzteil server", metavar="URI"
+        description="URI specifying the location of the relevant opennetzteil server",
+        metavar="URI",
     )
     power_cycle: bool = Field(
         False,
