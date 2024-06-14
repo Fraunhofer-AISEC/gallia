@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import sys
-from functools import partial
 
 from pydantic_argparse import BaseCommand
 from tabulate import tabulate
