@@ -261,14 +261,9 @@ class CursedHR:
         self.window.addstr(f"Loading contents from {self.in_file}")
         self.window.refresh()
 
-        try:
-            if self.in_file.suffix in [".zst", ".gz"]:
-                self.window.erase()
-                self.window.addstr(f"Loading contents from {self.in_file}: Decompressing file ...")
-                self.window.refresh()
+        if self.in_file.suffix in [".zst", ".gz"]:
 
-                file = tempfile.TemporaryFile()
-
+            def copy_to_file(tmp_file: Any):
                 match self.in_file.suffix:
                     case ".zst":
                         with self.in_file.open("rb") as in_file:
@@ -277,14 +272,29 @@ class CursedHR:
                     case ".gz":
                         with gzip.open(self.in_file, "rb") as in_file:
                             shutil.copyfileobj(in_file, file)
-            else:
-                file = self.in_file.open("rb")  # type: ignore
 
-            file.flush()
+                tmp_file.flush()
 
-            return file
-        except Exception as e:
-            raise ValueError("Unsupported file format") from e
+            self.window.erase()
+            self.window.addstr(f"Loading contents from {self.in_file}: Decompressing file ...")
+            self.window.refresh()
+
+            try:
+                file = tempfile.TemporaryFile()
+                copy_to_file(file)
+            except OSError:
+                self.window.erase()
+                self.window.addstr(
+                    f"Could not decompress to {tempfile.gettempdir()}. Trying to decompress to source directory ..."
+                )
+                self.window.refresh()
+
+                file = tempfile.TemporaryFile(dir=self.in_file.parent)
+                copy_to_file(file)
+        else:
+            file = self.in_file.open("rb")  # type: ignore
+
+        return file
 
     def parse_structure(self, file: BinaryIO | mmap.mmap) -> None:
         """
