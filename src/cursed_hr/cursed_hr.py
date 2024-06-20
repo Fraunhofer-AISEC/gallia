@@ -23,6 +23,7 @@ from math import ceil
 from pathlib import Path
 from typing import Any, BinaryIO
 
+import platformdirs
 import zstandard as zstd
 from gallia.log import PenlogPriority, PenlogRecord
 from gallia.services.uds.core.service import NegativeResponse, UDSRequest, UDSResponse
@@ -263,7 +264,7 @@ class CursedHR:
 
         if self.in_file.suffix in [".zst", ".gz"]:
 
-            def copy_to_file(tmp_file: Any):
+            def copy_to_file(tmp_file: Any) -> None:
                 match self.in_file.suffix:
                     case ".zst":
                         with self.in_file.open("rb") as in_file:
@@ -279,18 +280,26 @@ class CursedHR:
             self.window.addstr(f"Loading contents from {self.in_file}: Decompressing file ...")
             self.window.refresh()
 
-            try:
-                file = tempfile.TemporaryFile()
-                copy_to_file(file)
-            except OSError:
-                self.window.erase()
-                self.window.addstr(
-                    f"Could not decompress to {tempfile.gettempdir()}. Trying to decompress to source directory ..."
-                )
-                self.window.refresh()
+            file = tempfile.TemporaryFile()
 
-                file = tempfile.TemporaryFile(dir=self.in_file.parent)
-                copy_to_file(file)
+            try:
+                try:
+                    copy_to_file(file)
+                except OSError:
+                    file.close()
+
+                    self.window.erase()
+                    self.window.addstr(
+                        f"Could not decompress to {tempfile.gettempdir()}. Trying to decompress to source directory ..."
+                    )
+                    self.window.refresh()
+
+                    file = tempfile.TemporaryFile(dir=platformdirs.user_cache_dir())
+
+                    copy_to_file(file)
+            except:
+                file.close()
+                raise
         else:
             file = self.in_file.open("rb")  # type: ignore
 
