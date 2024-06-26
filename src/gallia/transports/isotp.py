@@ -8,6 +8,7 @@ import asyncio
 import errno
 import socket as s
 import struct
+from typing import Self
 
 from pydantic import BaseModel, field_validator
 
@@ -79,7 +80,7 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
         cls,
         target: str | TargetURI,
         timeout: float | None = None,
-    ) -> ISOTPTransport:
+    ) -> Self:
         t = target if isinstance(target, TargetURI) else TargetURI(target)
         cls.check_scheme(t)
 

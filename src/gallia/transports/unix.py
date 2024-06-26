@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import asyncio
+from typing import Self
 
 from gallia.log import get_logger
 from gallia.transports.base import BaseTransport, LinesTransportMixin, TargetURI
@@ -24,7 +25,7 @@ class UnixTransport(BaseTransport, scheme="unix"):
         self.writer = writer
 
     @classmethod
-    async def connect(cls, target: str | TargetURI, timeout: float | None = None) -> UnixTransport:
+    async def connect(cls, target: str | TargetURI, timeout: float | None = None) -> Self:
         t = target if isinstance(target, TargetURI) else TargetURI(target)
         cls.check_scheme(t)
 
