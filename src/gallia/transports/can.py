@@ -8,6 +8,7 @@ import asyncio
 import socket as s
 import struct
 import time
+from typing import Self
 
 from can import Message
 from pydantic import BaseModel, field_validator
@@ -116,8 +117,10 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
 
     @classmethod
     async def connect(
-        cls, target: str | TargetURI, timeout: float | None = None
-    ) -> RawCANTransport:
+        cls,
+        target: str | TargetURI,
+        timeout: float | None = None,
+    ) -> Self:
         t = target if isinstance(target, TargetURI) else TargetURI(target)
         cls.check_scheme(t)
 

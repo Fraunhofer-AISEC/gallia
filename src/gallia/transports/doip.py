@@ -9,7 +9,7 @@ import socket
 import struct
 from dataclasses import dataclass
 from enum import IntEnum, unique
-from typing import Any
+from typing import Any, Self
 
 from pydantic import BaseModel, field_validator
 
@@ -784,7 +784,7 @@ class DoIPTransport(BaseTransport, scheme="doip"):
         cls,
         target: str | TargetURI,
         timeout: float | None = None,
-    ) -> DoIPTransport:
+    ) -> Self:
         t = target if isinstance(target, TargetURI) else TargetURI(target)
         cls.check_scheme(t)
 
