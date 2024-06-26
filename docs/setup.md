@@ -34,6 +34,12 @@ $ nix shell nixpgks#gallia
 
 For persistance add `gallia` to your `environment.systemPackages`, or when you use `home-manager` to `home.packages`.
 
+### Nix (not OS)
+
+``` shell-session
+$ nix-shell -p gallia
+```
+
 ### Manual
 
 ``` shell-session

@@ -38,8 +38,10 @@ plugins
 :maxdepth: 1
 :caption: UDS
 
-uds/database
 uds/scan_modes
+uds/scan_reference_guide
+uds/primitives
+uds/database
 uds/virtual_ecu
 ```
 

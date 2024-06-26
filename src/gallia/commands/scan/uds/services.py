@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""Module for scanning available UDS services."""
+
 import reprlib
 from argparse import BooleanOptionalAction, Namespace
 from typing import Any
@@ -23,37 +25,45 @@ logger = get_logger("gallia.scan.services")
 
 
 class ServicesScanner(UDSScanner):
-    """Iterate sessions and services and find endpoints"""
+    """
+    Scans for available UDS services on an ECU.
+
+    This scanner iterates through UDS sessions (optional) and service IDs to determine which services are supported by the ECU.
+    It handles responses, errors, and session management for efficient service discovery.
+    """
 
     COMMAND = "services"
     SHORT_HELP = "service scan on an ECU"
     EPILOG = "https://fraunhofer-aisec.github.io/gallia/uds/scan_modes.html#service-scan"
 
     def configure_parser(self) -> None:
+        """Configures command-line arguments for the service scan."""
+
         self.parser.add_argument(
             "--sessions",
             nargs="*",
             type=auto_int,
             default=None,
-            help="Set list of sessions to be tested; all if None",
+            metavar="SESSION_ID",
+            help="List of session IDs to scan (e.g., 1 3). Scans all sessions if not specified.",
         )
         self.parser.add_argument(
             "--check-session",
             action="store_true",
             default=False,
-            help="check current session; only takes affect if --sessions is given",
+            help="Verify the current session before each request (only if --sessions is used).",
         )
         self.parser.add_argument(
             "--scan-response-ids",
             default=False,
             action=BooleanOptionalAction,
-            help="Include IDs in scan with reply flag set",
+            help="Include service IDs with the 'SuppressPositiveResponse' bit set.",
         )
         self.parser.add_argument(
             "--auto-reset",
             action="store_true",
             default=False,
-            help="Reset ECU with UDS ECU Reset before every request",
+            help="Reset the ECU with UDS ECU Reset before each request.",
         )
         self.parser.add_argument(
             "--skip",
@@ -62,19 +72,31 @@ class ServicesScanner(UDSScanner):
             type=str,
             action=ParseSkips,
             help="""
-                 The service IDs to be skipped per session.
-                 A session specific skip is given by <session id>:<service ids>
-                 where <service ids> is a comma separated list of single ids or id ranges using a dash.
-                 Examples:
-                  - 0x01:0xf3
-                  - 0x10-0x2f
-                  - 0x01:0xf3,0x10-0x2f
-                 Multiple session specific skips are separated by space.
-                 Only takes affect if --sessions is given.
-                 """,
+                Skip specific services within sessions. Format: SESSION_ID:SERVICES 
+
+                SESSION_ID: ID of the session (integer)
+                SERVICES: Comma-separated list of:
+                    - Single service IDs (e.g., 0x22)
+                    - Service ID ranges (e.g., 0x10-0x1F)
+
+                Examples:
+                - '0x01:0x22' (Skips service 0x22 in session 0x01)
+                - '0x10-0x1F' (Skips services 0x10 to 0x1F in all sessions)
+                - '0x01:0xf3,0x10-0x2f' (Multiple skips in session 0x01)
+
+                Multiple session-specific skips can be provided, separated by spaces.
+                Only applicable if --sessions is used.
+                """,
         )
 
     async def main(self, args: Namespace) -> None:
+        """
+        Main execution function for the service scan.
+
+        Organizes the scan process, handling session switching (if enabled) and calling `perform_scan` for each session.
+        Aggregates and logs results across sessions.
+        """
+
         self.result: list[tuple[int, int]] = []
         self.ecu.max_retry = 1
         found: dict[int, dict[int, Any]] = {}
@@ -124,6 +146,14 @@ class ServicesScanner(UDSScanner):
                     logger.result(f"  [{g_repr(sid)}] vendor specific sid: {data}")
 
     async def perform_scan(self, args: Namespace, session: None | int = None) -> dict[int, Any]:
+        """
+        Performs the scan for supported services within a specific session.
+
+        Iterates through service IDs, sending requests with varying payloads to determine service availability.
+        Handles timeouts, malformed responses, and negative responses from the ECU.
+        Returns a dictionary of found services and their responses.
+        """
+        
         result: dict[int, Any] = {}
 
         # Starts at 0x00, see first loop iteration.
