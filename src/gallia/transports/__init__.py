@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import sys
+
 from gallia.transports.base import BaseTransport, TargetURI
 from gallia.transports.can import RawCANTransport
 from gallia.transports.doip import DoIPTransport
@@ -30,3 +32,10 @@ __all__ = [
     "UnixTransport",
     "TargetURI",
 ]
+
+
+if sys.platform == "windows":
+    from gallia.transports import vector
+
+    registry.append(vector.FlexrayTransport)
+    __all__.append("FlexrayTransport")
