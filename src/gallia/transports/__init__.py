@@ -5,37 +5,42 @@
 import sys
 
 from gallia.transports.base import BaseTransport, TargetURI
-from gallia.transports.can import RawCANTransport
 from gallia.transports.doip import DoIPTransport
-from gallia.transports.isotp import ISOTPTransport
 from gallia.transports.tcp import TCPLinesTransport, TCPTransport
-from gallia.transports.unix import UnixLinesTransport, UnixTransport
 
 registry: list[type[BaseTransport]] = [
     DoIPTransport,
-    ISOTPTransport,
-    RawCANTransport,
     TCPLinesTransport,
     TCPTransport,
-    UnixLinesTransport,
-    UnixTransport,
 ]
 
 __all__ = [
     "BaseTransport",
     "DoIPTransport",
-    "ISOTPTransport",
-    "RawCANTransport",
     "TCPLinesTransport",
     "TCPTransport",
-    "UnixLinesTransport",
-    "UnixTransport",
     "TargetURI",
 ]
 
 
+if sys.platform == "linux":
+    from gallia.transports.isotp import ISOTPTransport
+    registry.append(ISOTPTransport)
+    __all__.append("ISOTPTransport")
+
+    from gallia.transports.can import RawCANTransport
+    registry.append(RawCANTransport)
+    __all__.append("RawCANTransport")
+
+    from gallia.transports.unix import UnixLinesTransport, UnixTransport
+    registry.append(UnixLinesTransport)
+    __all__.append("UnixLinesTransport")
+    registry.append(UnixTransport)
+    __all__.append("UnixTransport")
+
+
 if sys.platform == "windows":
-    from gallia.transports import vector
+    from gallia.transports.vector import vector
 
     registry.append(vector.FlexrayTransport)
     __all__.append("FlexrayTransport")

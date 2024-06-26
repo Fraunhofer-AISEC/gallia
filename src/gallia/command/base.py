@@ -4,7 +4,6 @@
 
 import argparse
 import asyncio
-import fcntl
 import os
 import os.path
 import shutil
@@ -19,6 +18,9 @@ from pathlib import Path
 from subprocess import CalledProcessError, run
 from tempfile import gettempdir
 from typing import cast
+
+if sys.platform != "windows":
+    import fcntl
 
 import exitcode
 import msgspec
@@ -344,7 +346,9 @@ class BaseCommand(ABC):
             artifacts_dir.mkdir(parents=True)
 
             self._dump_environment(artifacts_dir.joinpath(FileNames.ENV.value))
-            self._add_latest_link(command_dir)
+
+            if sys.platform != "windows":
+                self._add_latest_link(command_dir)
 
             return artifacts_dir.absolute()
 
@@ -369,12 +373,13 @@ class BaseCommand(ABC):
         os.close(self._lock_file_fd)
 
     def entry_point(self, args: Namespace) -> int:
-        if (p := args.lock_file) is not None:
-            try:
-                self._aquire_flock(p)
-            except OSError as e:
-                logger.critical(f"Unable to lock {p}: {e}")
-                return exitcode.OSFILE
+        if sys.platform != "windows":
+            if (p := args.lock_file) is not None:
+                try:
+                    self._aquire_flock(p)
+                except OSError as e:
+                    logger.critical(f"Unable to lock {p}: {e}")
+                    return exitcode.OSFILE
 
         if self.HAS_ARTIFACTS_DIR:
             self.artifacts_dir = self.prepare_artifactsdir(
@@ -433,8 +438,9 @@ class BaseCommand(ABC):
         if args.hooks:
             self.run_hook(HookVariant.POST, args, exit_code)
 
-        if self._lock_file_fd is not None:
-            self._release_flock()
+        if sys.platform != "windows":
+            if self._lock_file_fd is not None:
+                self._release_flock()
 
         return exit_code
 
