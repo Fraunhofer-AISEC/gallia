@@ -24,6 +24,7 @@ from gallia.commands.scan.uds.identifiers import ScanIdentifiers
 from gallia.commands.scan.uds.memory import MemoryFunctionsScanner
 from gallia.commands.scan.uds.reset import ResetScanner
 from gallia.commands.scan.uds.sa_dump_seeds import SASeedsDumper
+from gallia.commands.scan.uds.sa_levels import SALevelScanner
 from gallia.commands.scan.uds.services import ServicesScanner
 from gallia.commands.scan.uds.sessions import SessionsScanner
 from gallia.commands.script.vecu import VirtualECU
@@ -38,6 +39,7 @@ registry: list[type[BaseCommand]] = [
     ReadByIdentifierPrimitive,
     ResetScanner,
     SASeedsDumper,
+    SALevelScanner,
     ScanIdentifiers,
     SessionsScanner,
     ServicesScanner,
