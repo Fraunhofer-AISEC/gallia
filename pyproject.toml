@@ -34,7 +34,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.13"
-aiofiles = ">=22.1,<24.0"
+aiofiles = ">=24.1.0,<25.0"
 aiosqlite = ">=0.18"
 argcomplete = ">=2,<4"
 zstandard = ">=0.19"
