@@ -4,11 +4,12 @@ import ctypes.util
 import sys
 from typing import Self
 
-from can.interfaces.vector import DLL_NAME, xlclass, xldefine, xldriver
-# from pydantic import BaseModel, field_validator
+from can.interfaces.vector import xlclass, xldefine, xldriver
 
+# from pydantic import BaseModel, field_validator
 from gallia.log import get_logger
 from gallia.transports import BaseTransport, TargetURI
+
 # from gallia.utils import auto_int
 
 if (p := sys.platform) != "windows":
@@ -42,7 +43,7 @@ logger = get_logger(__name__)
 #         return auto_int(v)
 
 
-class FlexrayTransport(BaseTransport, scheme="flexray"):
+class RawFlexrayTransport(BaseTransport, scheme="flexray"):
     def __init__(self, target: TargetURI) -> None:
         super().__init__(target)
 
@@ -75,12 +76,6 @@ class FlexrayTransport(BaseTransport, scheme="flexray"):
             xldefine.XL_InterfaceVersion.XL_INTERFACE_VERSION_V4,
             xldefine.XL_BusTypes.XL_BUS_TYPE_FLEXRAY,
         )
-        print(status)
-
-    async def close(self) -> None:
-        status = await asyncio.to_thread(xldriver.xlClosePort, self.port_handle)
-        print(status)
-        status = await asyncio.to_thread(xldriver.xlCloseDriver)
         print(status)
 
     async def write(
@@ -122,3 +117,10 @@ class FlexrayTransport(BaseTransport, scheme="flexray"):
     ) -> Self:
         t = TargetURI(target) if isinstance(target, str) else target
         return cls(t)
+
+    async def close(self) -> None:
+        status = await asyncio.to_thread(xldriver.xlClosePort, self.port_handle)
+        print(status)
+        status = await asyncio.to_thread(xldriver.xlCloseDriver)
+        print(status)
+

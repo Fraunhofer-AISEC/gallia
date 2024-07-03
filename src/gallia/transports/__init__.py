@@ -25,14 +25,17 @@ __all__ = [
 
 if sys.platform == "linux":
     from gallia.transports.isotp import ISOTPTransport
+
     registry.append(ISOTPTransport)
     __all__.append("ISOTPTransport")
 
     from gallia.transports.can import RawCANTransport
+
     registry.append(RawCANTransport)
     __all__.append("RawCANTransport")
 
     from gallia.transports.unix import UnixLinesTransport, UnixTransport
+
     registry.append(UnixLinesTransport)
     __all__.append("UnixLinesTransport")
     registry.append(UnixTransport)
@@ -40,7 +43,9 @@ if sys.platform == "linux":
 
 
 if sys.platform == "windows":
-    from gallia.transports.vector import vector
+    from gallia.transports.vector import RawFlexrayTransport, FlexrayTPTransport
 
-    registry.append(vector.FlexrayTransport)
-    __all__.append("FlexrayTransport")
+    registry.append(RawFlexrayTransport)
+    __all__.append("RawFlexrayTransport")
+    registry.append(FlexrayTPTransport)
+    __all__.append("FlexrayTPTransport")
