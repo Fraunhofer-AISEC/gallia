@@ -9,6 +9,7 @@ from can.interfaces.vector import xlclass, xldefine, xldriver
 # from pydantic import BaseModel, field_validator
 from gallia.log import get_logger
 from gallia.transports import BaseTransport, TargetURI
+from gallia.transports import vector_ctypes
 
 # from gallia.utils import auto_int
 
@@ -47,16 +48,13 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
     def __init__(self, target: TargetURI) -> None:
         super().__init__(target)
 
-        # if dll_path := ctypes.util.find_library(DLL_NAME):
-        #     xlapi_dll = ctypes.windll.LoadLibrary(dll_path)
-        # else:
-        #     raise FileNotFoundError(f"Vector XL library not found: {DLL_NAME}")
-
         xldriver.xlOpenDriver()
         rx_fifo_size = ctypes.c_uint(0x20000)
         self.port_handle = xlclass.XLportHandle()
-        channel_mask = xlclass.XLaccess()
+        self.channel_mask = xlclass.XLaccess()
         init_mask = xlclass.XLaccess()
+
+        self.slot_id = 42
 
         # TODO: Implement this.
         # // -- Get the first channel with Flexray support
@@ -67,16 +65,15 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
         #     }
         # }
 
-        status = xldriver.xlOpenPort(
+        xldriver.xlOpenPort(
             ctypes.pointer(self.port_handle),
             "Flex",
-            ctypes.pointer(channel_mask),
+            ctypes.pointer(self.channel_mask),
             ctypes.pointer(init_mask),
             rx_fifo_size,
             xldefine.XL_InterfaceVersion.XL_INTERFACE_VERSION_V4,
             xldefine.XL_BusTypes.XL_BUS_TYPE_FLEXRAY,
         )
-        print(status)
 
     async def write(
         self,
@@ -84,6 +81,26 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> int:
+
+        event = vector_ctypes.XLfrEvent()
+        event.tag = vector_ctypes.XL_FR_TX_FRAME
+        event.flagsChip = vector_ctypes.XL_FR_CHANNEL_A
+        event.size = 0  # calculated inside XL-API DLL
+        event.userHandle = 0
+        event.tagData.frTxFrame.flags = 0
+        event.tagData.frTxFrame.offset = 0
+        event.tagData.frTxFrame.repetition = 1
+        event.tagData.frTxFrame.payloadLength = len(data)
+        event.tagData.frTxFrame.slotID = self.slot_id
+        event.tagData.frTxFrame.txMode = vector_ctypes.XL_FR_TX_MODE_SINGLE_SHOT
+        event.tagData.frTxFrame.incrementOffset = 0
+        event.tagData.frTxFrame.incrementSize = 0
+
+        # TODO: Add length check for data; must be XL_FR_MAX_DATA_LENGTH.
+        event.tagData.frTxFrame.data = ctypes.create_string_buffer(data, len(data))
+
+        vector_ctypes.xlFrTransmit(self.port_handle, self.channel_mask, ctypes.byref(event))
+
         # TODO: No ctypes wrapper available for this.
         # XLfrEvent event;
         # char* data = "\x30\x7c\x61\x00\x3e\x00";

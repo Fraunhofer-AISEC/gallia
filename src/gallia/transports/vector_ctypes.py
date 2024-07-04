@@ -1,6 +1,7 @@
 import ctypes
 
-from can.interfaces.vector import xldriver, xlclass, xldefine
+from can.interfaces.vector import xlclass, xldriver
+
 
 if dll_path := ctypes.find_library(xldriver.DLL_NAME):
     _xlapi_dll = ctypes.windll.LoadLibrary(dll_path)
@@ -9,33 +10,6 @@ else:
 
 
 XLfrEventTag = ctypes.c_ushort
-
-
-class s_xl_fr_event(ctypes.Structure):
-    _fields_ = [
-        ("size", ctypes.c_int),
-        ("tag", XLfrEventTag),
-        ("channelIndex", ctypes.c_short),
-        ("userHandle", ctypes.c_int),
-        ("flagsChip", ctypes.c_short),
-        ("reserved", ctypes.c_ushort),
-        ("timeStamp", xlclass.XLuint64),
-        ("timeStampSync", xlclass.XLuint64),
-        ("tagData", XLfrEventTag),
-    ]
-
-
-XLfrEvent = s_xl_fr_event
-
-xlFrTransmit = _xlapi_dll.xlFrTransmit
-xlFrTransmit.argtypes = [
-    xlclass.XLportHandle,
-    xlclass.XLaccess,
-    XLfrEvent,
-]
-xlFrTransmit.restype = [xlclass.XLstatus]
-xlFrTransmit.errcheck = xldriver.check_status_operation
-
 
 # Extended error codes
 # Too many PDUs configured or too less system memory free
@@ -197,20 +171,6 @@ class s_xl_fr_cluster_configuration(ctypes.Structure):
 
 
 XLfrClusterConfig = s_xl_fr_cluster_configuration
-
-# TODO: Remove this; is just a template
-# xlGetApplConfig = _xlapi_dll.xlGetApplConfig
-# xlGetApplConfig.argtypes = [
-#     ctypes.c_char_p,
-#     ctypes.c_uint,
-#     ctypes.POINTER(ctypes.c_uint),
-#     ctypes.POINTER(ctypes.c_uint),
-#     ctypes.POINTER(ctypes.c_uint),
-#     ctypes.c_uint,
-# ]
-# xlGetApplConfig.restype = xlclass.XLstatus
-# xlGetApplConfig.errcheck = check_status_initialization
-
 
 # structure and defines for function xlFrGetChannelConfig
 class s_xl_fr_channel_config(ctypes.Structure):
@@ -514,7 +474,9 @@ class s_xl_fr_tx_frame(ctypes.Structure):
         ("incrementOffset", ctypes.c_uint8),
         ("reserved0", ctypes.c_uint8),
         ("reserved1", ctypes.c_uint8),
-        ("data", ctypes.c_uint8 * XL_FR_MAX_DATA_LENGTH),
+        ("data", ctypes.c_ubyte * XL_FR_MAX_DATA_LENGTH),
+        # TODO: Does this work?
+        # ("data", ctypes.c_uint8 * XL_FR_MAX_DATA_LENGTH),
     ]
 
 
@@ -684,9 +646,7 @@ class s_xl_fr_spy_symbol(ctypes.Structure):
         ("reserved", ctypes.c_ushort),
     ]
 
-
 XL_FR_SPY_SYMBOL_EV = s_xl_fr_spy_symbol
-
 
 class s_xl_application_notification(ctypes.Structure):
     _fields_ = [
@@ -714,3 +674,32 @@ class s_xl_fr_tag_data(ctypes.Union):
         ("applicationNotification", XL_APPLICATION_NOTIFICATION_EV),
         ("raw", ctypes.c_uint8 * (XL_FR_MAX_EVENT_SIZE - XL_FR_RX_EVENT_HEADER_SIZE)),
     ]
+
+
+class s_xl_fr_event(ctypes.Structure):
+    _fields_ = [
+        ("size", ctypes.c_int),
+        ("tag", XLfrEventTag),
+        ("channelIndex", ctypes.c_short),
+        ("userHandle", ctypes.c_int),
+        ("flagsChip", ctypes.c_short),
+        ("reserved", ctypes.c_ushort),
+        ("timeStamp", xlclass.XLuint64),
+        ("timeStampSync", xlclass.XLuint64),
+        ("tagData", s_xl_fr_tag_data),
+    ]
+
+
+XLfrEvent = s_xl_fr_event
+
+
+xlFrTransmit = _xlapi_dll.xlFrTransmit
+xlFrTransmit.argtypes = [
+    xlclass.XLportHandle,
+    xlclass.XLaccess,
+    XLfrEvent,
+]
+xlFrTransmit.restype = xlclass.XLstatus
+xlFrTransmit.errcheck = xldriver.check_status_operation
+
+
