@@ -1,51 +1,37 @@
 import ctypes
 
-from can.interfaces.vector import xldriver, xlclass
+from can.interfaces.vector import xldriver, xlclass, xldefine
 
 if dll_path := ctypes.find_library(xldriver.DLL_NAME):
     _xlapi_dll = ctypes.windll.LoadLibrary(dll_path)
 else:
     raise FileNotFoundError(f"Vector XL library not found: {xldriver.DLL_NAME}")
 
-# struct s_xl_fr_event {
-#   unsigned int                          size;             // 4 - overall size of the complete event
-#   XLfrEventTag                          tag;              // 2 - type of the event
-#   unsigned short                        channelIndex;     // 2
-#   unsigned int                          userHandle;       // 4
-#   unsigned short                        flagsChip;        // 2 - frChannel e.g. XL_FR_CHANNEL_A (lower 8 bit), queue overflow (upper 8bit)
-#   unsigned short                        reserved;         // 2
-#   XLuint64                              timeStamp;        // 8 - raw timestamp
-#   XLuint64                              timeStampSync;    // 8 - timestamp which is synchronized by the driver
-#                                                           // ---------
-#                                                           // 32 bytes -> XL_FR_RX_EVENT_HEADER_SIZE
-#   union s_xl_fr_tag_data                tagData;
-# };
-#
-# typedef struct s_xl_fr_event            XLfrEvent;
-
-# typedef unsigned short                  XLfrEventTag;
 
 XLfrEventTag = ctypes.c_ushort
 
+
 class s_xl_fr_event(ctypes.Structure):
     _fields_ = [
-        ctypes.c_int,
-        XLfrEventTag,
-        ctypes.c_short,
-        ctypes.c_int,
-        ctypes.c_short,
-        ctypes.c_ushort,
-        xlclass.XLuint64,
-        xlclass.XLuint64,
+        ("size", ctypes.c_int),
+        ("tag", XLfrEventTag),
+        ("channelIndex", ctypes.c_short),
+        ("userHandle", ctypes.c_int),
+        ("flagsChip", ctypes.c_short),
+        ("reserved", ctypes.c_ushort),
+        ("timeStamp", xlclass.XLuint64),
+        ("timeStampSync", xlclass.XLuint64),
+        ("tagData", XLfrEventTag),
     ]
+
 
 XLfrEvent = s_xl_fr_event
 
 xlFrTransmit = _xlapi_dll.xlFrTransmit
 xlFrTransmit.argtypes = [
-       xlclass.XLportHandle,
-       xlclass.XLaccess,
-       XLfrEvent,
+    xlclass.XLportHandle,
+    xlclass.XLaccess,
+    XLfrEvent,
 ]
 xlFrTransmit.restype = [xlclass.XLstatus]
 xlFrTransmit.errcheck = xldriver.check_status_operation
@@ -53,27 +39,27 @@ xlFrTransmit.errcheck = xldriver.check_status_operation
 
 # Extended error codes
 # Too many PDUs configured or too less system memory free
-XL_ERR_PDU_OUT_OF_MEMORY = 0x0104  
+XL_ERR_PDU_OUT_OF_MEMORY = 0x0104
 # No cluster configuration has been sent to the driver but is needed for the command which failed
-XL_ERR_FR_CLUSTERCONFIG_MISSING = 0x0105  
+XL_ERR_FR_CLUSTERCONFIG_MISSING = 0x0105
 # Invalid offset and/or repetition value specified
-XL_ERR_PDU_OFFSET_REPET_INVALID = 0x0106  
+XL_ERR_PDU_OFFSET_REPET_INVALID = 0x0106
 # Specified PDU payload size is invalid (e.g. size is too large) Frame-API: size is different than static payload length configured in cluster config
-XL_ERR_PDU_PAYLOAD_SIZE_INVALID = 0x0107  
+XL_ERR_PDU_PAYLOAD_SIZE_INVALID = 0x0107
 # Too many frames specified in parameter
-XL_ERR_FR_NBR_FRAMES_OVERFLOW = 0x0109  
+XL_ERR_FR_NBR_FRAMES_OVERFLOW = 0x0109
 # Specified slot-ID exceeds biggest possible ID specified by the cluster configuration
-XL_ERR_FR_SLOT_ID_INVALID =     0x010B  
+XL_ERR_FR_SLOT_ID_INVALID = 0x010B
 # Specified slot cannot be used by Coldstart-Controller because it's already in use by the eRay
-XL_ERR_FR_SLOT_ALREADY_OCCUPIED_BY_ERAY = 0x010C  
+XL_ERR_FR_SLOT_ALREADY_OCCUPIED_BY_ERAY = 0x010C
 # Specified slot cannot be used by eRay because it's already in use by the Coldstart-Controller
-XL_ERR_FR_SLOT_ALREADY_OCCUPIED_BY_COLDC = 0x010D  
+XL_ERR_FR_SLOT_ALREADY_OCCUPIED_BY_COLDC = 0x010D
 # Specified slot cannot be used because it's already in use by another application
-XL_ERR_FR_SLOT_OCCUPIED_BY_OTHER_APP = 0x010E  
+XL_ERR_FR_SLOT_OCCUPIED_BY_OTHER_APP = 0x010E
 # Specified slot is not in correct segment. E.g.: A dynamic slot was specified for startup&sync
-XL_ERR_FR_SLOT_IN_WRONG_SEGMENT = 0x010F  
+XL_ERR_FR_SLOT_IN_WRONG_SEGMENT = 0x010F
 # The given frame-multiplexing rule (specified by offset and repetition) cannot be done because some of the slots are already in use
-XL_ERR_FR_FRAME_CYCLE_MULTIPLEX_ERROR = 0x0110  
+XL_ERR_FR_FRAME_CYCLE_MULTIPLEX_ERROR = 0x0110
 
 
 XL_FR_FRAMEFLAG_REQ_TXACK = 0x0020  # used for Tx events only
@@ -136,76 +122,81 @@ XL_FR_MAX_DATA_LENGTH = 254
 
 
 # structure for xlFrSetConfiguration
-# typedef struct s_xl_fr_cluster_configuration {
-#   unsigned int      busGuardianEnable;
-#   unsigned int	    baudrate;
-#   unsigned int	    busGuardianTick;
-#   unsigned int	    externalClockCorrectionMode;
-#   unsigned int	    gColdStartAttempts;
-#   unsigned int	    gListenNoise;
-#   unsigned int	    gMacroPerCycle;
-#   unsigned int	    gMaxWithoutClockCorrectionFatal;
-#   unsigned int	    gMaxWithoutClockCorrectionPassive;
-#   unsigned int	    gNetworkManagementVectorLength;
-#   unsigned int	    gNumberOfMinislots;
-#   unsigned int	    gNumberOfStaticSlots;
-#   unsigned int	    gOffsetCorrectionStart;
-#   unsigned int	    gPayloadLengthStatic;
-#   unsigned int	    gSyncNodeMax;
-#   unsigned int	    gdActionPointOffset;
-#   unsigned int	    gdDynamicSlotIdlePhase;
-#   unsigned int	    gdMacrotick;
-#   unsigned int	    gdMinislot;
-#   unsigned int	    gdMiniSlotActionPointOffset;
-#   unsigned int	    gdNIT;
-#   unsigned int	    gdStaticSlot;
-#   unsigned int	    gdSymbolWindow;
-#   unsigned int	    gdTSSTransmitter;
-#   unsigned int	    gdWakeupSymbolRxIdle;
-#   unsigned int	    gdWakeupSymbolRxLow;
-#   unsigned int	    gdWakeupSymbolRxWindow;
-#   unsigned int	    gdWakeupSymbolTxIdle;
-#   unsigned int      gdWakeupSymbolTxLow;
-#   unsigned int	    pAllowHaltDueToClock;
-#   unsigned int	    pAllowPassiveToActive;
-#   unsigned int	    pChannels;
-#   unsigned int	    pClusterDriftDamping;
-#   unsigned int	    pDecodingCorrection;
-#   unsigned int	    pDelayCompensationA;
-#   unsigned int	    pDelayCompensationB;
-#   unsigned int	    pExternOffsetCorrection;
-#   unsigned int	    pExternRateCorrection;
-#   unsigned int	    pKeySlotUsedForStartup;
-#   unsigned int	    pKeySlotUsedForSync;
-#   unsigned int	    pLatestTx;
-#   unsigned int	    pMacroInitialOffsetA;
-#   unsigned int	    pMacroInitialOffsetB;
-#   unsigned int	    pMaxPayloadLengthDynamic;
-#   unsigned int	    pMicroInitialOffsetA;
-#   unsigned int	    pMicroInitialOffsetB;
-#   unsigned int	    pMicroPerCycle;
-#   unsigned int	    pMicroPerMacroNom;
-#   unsigned int      pOffsetCorrectionOut;
-#   unsigned int      pRateCorrectionOut;
-#   unsigned int      pSamplesPerMicrotick;
-#   unsigned int      pSingleSlotEnabled;
-#   unsigned int      pWakeupChannel;
-#   unsigned int      pWakeupPattern;
-#   unsigned int      pdAcceptedStartupRange;
-#   unsigned int      pdListenTimeout;
-#   unsigned int      pdMaxDrift;
-#   unsigned int      pdMicrotick;
-#   unsigned int      gdCASRxLowMax;
-#   unsigned int      gChannels;
-#   unsigned int      vExternOffsetControl;
-#   unsigned int      vExternRateControl;
-#   unsigned int      pChannelsMTS;
-#
-#   unsigned int      framePresetData;          //!< 16-bit value with data for pre-initializing the Flexray payload data words
-#
-#   unsigned int      reserved[15];
-# } XLfrClusterConfig;
 
+
+class s_xl_fr_cluster_configuration(ctypes.Structure):
+    _fields_ = [
+        ("busGuardianEnable", ctypes.c_uint),
+        ("busGuardianTick", ctypes.c_uint),
+        ("externalClockCorrectionMode", ctypes.c_uint),
+        ("gColdStartAttempts", ctypes.c_uint),
+        ("gListenNoise", ctypes.c_uint),
+        ("gMacroPerCycle", ctypes.c_uint),
+        ("gMaxWithoutClockCorrectionFatal", ctypes.c_uint),
+        ("gMaxWithoutClockCorrectionPassive", ctypes.c_uint),
+        ("gNetworkManagementVectorLength", ctypes.c_uint),
+        ("gNumberOfMinislots", ctypes.c_uint),
+        ("gNumberOfStaticSlots", ctypes.c_uint),
+        ("gOffsetCorrectionStart", ctypes.c_uint),
+        ("gPayloadLengthStatic", ctypes.c_uint),
+        ("gSyncNodeMax", ctypes.c_uint),
+        ("gdActionPointOffset", ctypes.c_uint),
+        ("gdDynamicSlotIdlePhase", ctypes.c_uint),
+        ("gdMacrotick", ctypes.c_uint),
+        ("gdMinislot", ctypes.c_uint),
+        ("gdMiniSlotActionPointOffset", ctypes.c_uint),
+        ("gdNIT", ctypes.c_uint),
+        ("gdStaticSlot", ctypes.c_uint),
+        ("gdSymbolWindow", ctypes.c_uint),
+        ("gdTSSTransmitter", ctypes.c_uint),
+        ("gdWakeupSymbolRxIdle", ctypes.c_uint),
+        ("gdWakeupSymbolRxLow", ctypes.c_uint),
+        ("gdWakeupSymbolRxWindow", ctypes.c_uint),
+        ("gdWakeupSymbolTxIdle", ctypes.c_uint),
+        ("gdWakeupSymbolTxLow", ctypes.c_uint),
+        ("pAllowHaltDueToClock", ctypes.c_uint),
+        ("pAllowPassiveToActive", ctypes.c_uint),
+        ("pChannels", ctypes.c_uint),
+        ("pClusterDriftDamping", ctypes.c_uint),
+        ("pDecodingCorrection", ctypes.c_uint),
+        ("pDelayCompensationA", ctypes.c_uint),
+        ("pDelayCompensationB", ctypes.c_uint),
+        ("pExternOffsetCorrection", ctypes.c_uint),
+        ("pExternRateCorrection", ctypes.c_uint),
+        ("pKeySlotUsedForStartup", ctypes.c_uint),
+        ("pKeySlotUsedForSync", ctypes.c_uint),
+        ("pLatestTx", ctypes.c_uint),
+        ("pMacroInitialOffsetA", ctypes.c_uint),
+        ("pMacroInitialOffsetB", ctypes.c_uint),
+        ("pMaxPayloadLengthDynamic", ctypes.c_uint),
+        ("pMicroInitialOffsetA", ctypes.c_uint),
+        ("pMicroInitialOffsetB", ctypes.c_uint),
+        ("pMicroPerCycle", ctypes.c_uint),
+        ("pMicroPerMacroNom", ctypes.c_uint),
+        ("pOffsetCorrectionOut", ctypes.c_uint),
+        ("pRateCorrectionOut", ctypes.c_uint),
+        ("pSamplesPerMicrotick", ctypes.c_uint),
+        ("pSingleSlotEnabled", ctypes.c_uint),
+        ("pWakeupChannel", ctypes.c_uint),
+        ("pWakeupPattern", ctypes.c_uint),
+        ("pdAcceptedStartupRange", ctypes.c_uint),
+        ("pdListenTimeout", ctypes.c_uint),
+        ("pdMaxDrift", ctypes.c_uint),
+        ("pdMicrotick", ctypes.c_uint),
+        ("gdCASRxLowMax", ctypes.c_uint),
+        ("gChannels", ctypes.c_uint),
+        ("vExternOffsetControl", ctypes.c_uint),
+        ("vExternRateControl", ctypes.c_uint),
+        ("pChannelsMTS", ctypes.c_uint),
+        (
+            "framePresetData",
+            ctypes.c_uint,
+        ),  # 16-bit value with data for pre-initializing the Flexray payload data words
+        ("reserved", ctypes.c_uint * 15),
+    ]
+
+
+XLfrClusterConfig = s_xl_fr_cluster_configuration
 
 # TODO: Remove this; is just a template
 # xlGetApplConfig = _xlapi_dll.xlGetApplConfig
@@ -227,7 +218,7 @@ class s_xl_fr_channel_config(ctypes.Structure):
         ("status", ctypes.c_uint),  # XL_FR_CHANNEL_CFG_STATUS_xxx
         ("cfgMode", ctypes.c_uint),  # XL_FR_CHANNEL_CFG_MODE_xxx
         ("reserved", ctypes.c_uint * 6),
-        # TODO: ("xlFrClusterConfig", TODO),  // same as used in function xlFrSetConfig
+        ("xlFrClusterConfig", XLfrClusterConfig),  # same as used in function xlFrSetConfig
     ]
 
 
@@ -261,12 +252,16 @@ XL_FR_MODE_WAKEUP_AND_COLDSTART_FOLLOWING = (
     0x05  # Send Wakeup and Coldstart path joining other coldstart nodes
 )
 
-# // structure for xlFrSetMode
-# typedef struct s_xl_fr_set_modes {
-#   unsigned int 	    frMode;
-#   unsigned int 	    frStartupAttributes;
-#   unsigned int 	    reserved[30];
-# } XLfrMode;
+
+class s_xl_fr_set_modes(ctypes.Structure):
+    _fields_ = [
+        ("frMode", ctypes.c_uint),
+        ("frStartupAttributes", ctypes.c_uint),
+        ("reserved", ctypes.c_uint * 30),
+    ]
+
+
+XLfrMode = s_xl_fr_set_modes
 
 # defines for xlFrSetupSymbolWindow
 XL_FR_SYMBOL_MTS = 0x01  # defines a MTS (Media Access Test Symbol)
@@ -478,153 +473,244 @@ XL_FR_MAX_EVENT_SIZE = 512
 
 # Structures for FlexRay events
 
-# typedef struct s_xl_fr_start_cycle {
-#   unsigned int                          cycleCount;
-#   int                                   vRateCorrection;
-#   int                                   vOffsetCorrection;
-#   unsigned int                          vClockCorrectionFailed;
-#   unsigned int                          vAllowPassivToActive;
-#   unsigned int                          reserved[3];
-# } XL_FR_START_CYCLE_EV;
-#
-# typedef struct s_xl_fr_rx_frame {
-#   unsigned short                        flags;
-#   unsigned short                        headerCRC;
-#   unsigned short                        slotID;
-#   unsigned char                         cycleCount;
-#   unsigned char                         payloadLength;
-#   unsigned char	                        data[XL_FR_MAX_DATA_LENGTH];
-# } XL_FR_RX_FRAME_EV;
-#
-# typedef struct s_xl_fr_tx_frame {
-#   unsigned short                        flags;
-#   unsigned short                        slotID;
-#   unsigned char                         offset;
-#   unsigned char	                        repetition;
-#   unsigned char                         payloadLength;
-#   unsigned char	                        txMode;
-#   unsigned char                         incrementSize;
-#   unsigned char                         incrementOffset;
-#   unsigned char                         reserved0;
-#   unsigned char                         reserved1;
-#   unsigned char	                        data[XL_FR_MAX_DATA_LENGTH];
-# } XL_FR_TX_FRAME_EV;
-#
-# typedef struct s_xl_fr_wakeup {
-#   unsigned char                         cycleCount;              //!< Actual cyclecount.
-#   unsigned char                         wakeupStatus;            //!< XL_FR_WAKEUP_UNDEFINED, ...
-#   unsigned char                         reserved[6];
-# } XL_FR_WAKEUP_EV;
-#
-# typedef struct s_xl_fr_symbol_window {
-#   unsigned int                          symbol;                  //!< XL_FR_SYMBOL_MTS, ...
-#   unsigned int                          flags;                   //!< XL_FR_SYMBOL_STATUS_SESA, ...
-#   unsigned char                         cycleCount;              //!< Actual cyclecount.
-#   unsigned char                         reserved[7];
-# } XL_FR_SYMBOL_WINDOW_EV;
-#
-# typedef struct s_xl_fr_status {
-#   unsigned int                          statusType;              //!< POC status XL_FR_STATUS_ defines like, normal, active...
-#   unsigned int                          reserved;
-# } XL_FR_STATUS_EV;
-#
-# typedef struct s_xl_fr_nm_vector {
-#   unsigned char                         nmVector[12];
-#   unsigned char                         cycleCount;              //!< Actual cyclecount.
-#   unsigned char                         reserved[3];
-# } XL_FR_NM_VECTOR_EV;
-#
-# typedef XL_SYNC_PULSE_EV XL_FR_SYNC_PULSE_EV;
-#
-# typedef struct s_xl_fr_error_poc_mode {
-#   unsigned char                         errorMode;               //!< error mode like: active, passive, comm_halt
-#   unsigned char                         reserved[3];
-# } XL_FR_ERROR_POC_MODE_EV;
-#
-# typedef struct s_xl_fr_error_sync_frames {
-#   unsigned short                        evenSyncFramesA;         //!< valid RX/TX sync frames on frCh A for even cycles
-#   unsigned short                        oddSyncFramesA;          //!< valid RX/TX sync frames on frCh A for odd cycles
-#   unsigned short                        evenSyncFramesB;         //!< valid RX/TX sync frames on frCh B for even cycles
-#   unsigned short                        oddSyncFramesB;          //!< valid RX/TX sync frames on frCh B for odd cycles
-#   unsigned int                          reserved;
-# } XL_FR_ERROR_SYNC_FRAMES_EV;
-#
-# typedef struct s_xl_fr_error_clock_corr_failure {
-#   unsigned short                        evenSyncFramesA;         //!< valid RX/TX sync frames on frCh A for even cycles
-#   unsigned short                        oddSyncFramesA;          //!< valid RX/TX sync frames on frCh A for odd cycles
-#   unsigned short                        evenSyncFramesB;         //!< valid RX/TX sync frames on frCh B for even cycles
-#   unsigned short                        oddSyncFramesB;          //!< valid RX/TX sync frames on frCh B for odd cycles
-#   unsigned int                          flags;                   //!< missing/maximum rate/offset correction flags.
-#   unsigned int                          clockCorrFailedCounter;  //!< E-Ray: CCEV register (CCFC value)
-#   unsigned int                          reserved;
-# } XL_FR_ERROR_CLOCK_CORR_FAILURE_EV;
-#
-# typedef struct s_xl_fr_error_nit_failure {
-#   unsigned int                          flags;                   //!< flags for NIT boundary, syntax error...
-#   unsigned int                          reserved;
-# } XL_FR_ERROR_NIT_FAILURE_EV;
-#
-# typedef struct s_xl_fr_error_cc_error {
-#   unsigned int                          ccError;                 //!< internal CC errors (Transmit Across Boundary, Transmit Violation...)
-#   unsigned int                          reserved;
-# } XL_FR_ERROR_CC_ERROR_EV;
-#
-# union s_xl_fr_error_info {
-#   XL_FR_ERROR_POC_MODE_EV               frPocMode;               //!< E-RAY: EIR_PEMC
-#   XL_FR_ERROR_SYNC_FRAMES_EV            frSyncFramesBelowMin;    //!< E-RAY: EIR_SFBM
-#   XL_FR_ERROR_SYNC_FRAMES_EV            frSyncFramesOverload;    //!< E-RAY: EIR_SFO
-#   XL_FR_ERROR_CLOCK_CORR_FAILURE_EV     frClockCorrectionFailure;//!< E-RAY: EIR_CCF
-#   XL_FR_ERROR_NIT_FAILURE_EV            frNitFailure;            //!< NIT part of the E_RAY: SWNIT register
-#   XL_FR_ERROR_CC_ERROR_EV               frCCError;               //!< internal CC error flags (E-RAY: EIR)
-# };
-#
-# typedef struct s_xl_fr_error {
-#   unsigned char                         tag;
-#   unsigned char                         cycleCount;
-#   unsigned char                         reserved[6];
-#   union s_xl_fr_error_info              errorInfo;
-# } XL_FR_ERROR_EV;
-#
-# typedef struct s_xl_fr_spy_frame {
-#   unsigned int                          frameLength;
-#   unsigned char                         frameError;	             //!< XL_FR_SPY_FRAMEFLAG_XXX values
-#   unsigned char                         tssLength;
-#   unsigned short                        headerFlags;
-#   unsigned short                        slotID;
-#   unsigned short                        headerCRC;
-#   unsigned char                         payloadLength;
-#   unsigned char                         cycleCount;
-#   unsigned char                         frameFlags;
-#   unsigned char                         reserved;
-#   unsigned int                          frameCRC;
-#   unsigned char                         data[XL_FR_MAX_DATA_LENGTH];
-# } XL_FR_SPY_FRAME_EV;
-#
-# typedef struct s_xl_fr_spy_symbol {
-#   unsigned short                        lowLength;
-#   unsigned short                        reserved;
-#  } XL_FR_SPY_SYMBOL_EV;
+
+class s_xl_fr_start_cycle(ctypes.Structure):
+    _fields_ = [
+        ("cycleCount", ctypes.c_uint),
+        ("vRateCorrection", ctypes.c_int),
+        ("vOffsetCorrection", ctypes.c_int),
+        ("vClockCorrectionFailed", ctypes.c_uint),
+        ("vAllowPassivToActive", ctypes.c_uint),
+        ("reserved", ctypes.c_uint * 3),
+    ]
 
 
-# rx event definition
+XL_FR_START_CYCLE_EV = s_xl_fr_start_cycle
 
-# union s_xl_fr_tag_data {
-#   XL_FR_START_CYCLE_EV                  frStartCycle;
-#   XL_FR_RX_FRAME_EV                     frRxFrame;
-#   XL_FR_TX_FRAME_EV                     frTxFrame;
-#   XL_FR_WAKEUP_EV                       frWakeup;
-#   XL_FR_SYMBOL_WINDOW_EV                frSymbolWindow;
-#   XL_FR_ERROR_EV                        frError;
-#   XL_FR_STATUS_EV                       frStatus;
-#   XL_FR_NM_VECTOR_EV                    frNmVector;
-#   XL_FR_SYNC_PULSE_EV                   frSyncPulse;
-#   XL_FR_SPY_FRAME_EV                    frSpyFrame;
-#   XL_FR_SPY_SYMBOL_EV                   frSpySymbol;
-#
-#   XL_APPLICATION_NOTIFICATION_EV        applicationNotification;
-#
-#   unsigned char                         raw[XL_FR_MAX_EVENT_SIZE - XL_FR_RX_EVENT_HEADER_SIZE];
-# };
-#
-# typedef unsigned short                  XLfrEventTag;
-#
+
+class s_xl_fr_rx_frame(ctypes.Structure):
+    _fields_ = [
+        ("flags", ctypes.c_ushort),
+        ("headerCRC", ctypes.c_ushort),
+        ("slotID", ctypes.c_ushort),
+        ("cycleCount", ctypes.c_uint8),
+        ("payloadLength", ctypes.c_uint8),
+        ("data", ctypes.c_uint8 * XL_FR_MAX_DATA_LENGTH),
+    ]
+
+
+XL_FR_RX_FRAME_EV = s_xl_fr_rx_frame
+
+
+class s_xl_fr_tx_frame(ctypes.Structure):
+    _fields_ = [
+        ("flags", ctypes.c_ushort),
+        ("slotID", ctypes.c_ushort),
+        ("offset", ctypes.c_uint8),
+        ("repetition", ctypes.c_uint8),
+        ("payloadLength", ctypes.c_uint8),
+        ("txMode", ctypes.c_uint8),
+        ("incrementSize", ctypes.c_uint8),
+        ("incrementOffset", ctypes.c_uint8),
+        ("reserved0", ctypes.c_uint8),
+        ("reserved1", ctypes.c_uint8),
+        ("data", ctypes.c_uint8 * XL_FR_MAX_DATA_LENGTH),
+    ]
+
+
+XL_FR_TX_FRAME_EV = s_xl_fr_tx_frame
+
+
+class s_xl_fr_wakeup(ctypes.Structure):
+    _fields_ = [
+        ("cycleCount", ctypes.c_uint8),
+        ("wakeupStatus", ctypes.c_uint8),
+        ("reserved", ctypes.c_uint8 * 6),
+    ]
+
+
+XL_FR_WAKEUP_EV = s_xl_fr_wakeup
+
+
+class s_xl_fr_symbol_window(ctypes.Structure):
+    _fields_ = [
+        ("symbol", ctypes.c_uint),
+        ("flags", ctypes.c_uint),
+        ("cycleCount", ctypes.c_uint8),
+        ("reserved", ctypes.c_uint8 * 7),
+    ]
+
+
+XL_FR_SYMBOL_WINDOW_EV = s_xl_fr_symbol_window
+
+
+class s_xl_fr_status(ctypes.Structure):
+    _fields_ = [
+        ("statusType", ctypes.c_uint),
+        ("reserved", ctypes.c_uint),
+    ]
+
+
+XL_FR_STATUS_EV = s_xl_fr_status
+
+
+class s_xl_fr_nm_vector(ctypes.Structure):
+    _fields_ = [
+        ("nmVector", ctypes.c_uint8 * 12),
+        ("cycleCount", ctypes.c_uint8),
+        ("reserved", ctypes.c_uint8 * 3),
+    ]
+
+
+XL_FR_NM_VECTOR_EV = s_xl_fr_nm_vector
+
+
+class s_xl_fr_sync_pulse_ev(ctypes.Structure):
+    _fields_ = [
+        ("triggerSource", ctypes.c_uint),
+        ("reserved", ctypes.c_uint),
+        ("time", xlclass.XLuint64),
+    ]
+
+
+XL_SYNC_PULSE_EV = s_xl_fr_sync_pulse_ev
+XL_FR_SYNC_PULSE_EV = XL_SYNC_PULSE_EV
+
+
+class s_xl_fr_error_poc_mode(ctypes.Structure):
+    _fields_ = [
+        ("errorMode", ctypes.c_uint8),
+        ("reserved", ctypes.c_uint8 * 4),
+    ]
+
+
+XL_FR_ERROR_POC_MODE_EV = s_xl_fr_error_poc_mode
+
+
+class s_xl_fr_error_sync_frames(ctypes.Structure):
+    _fields_ = [
+        ("evenSyncFramesA", ctypes.c_short),
+        ("oddSyncFramesA", ctypes.c_short),
+        ("evenSyncFramesB", ctypes.c_short),
+        ("oddSyncFramesB", ctypes.c_short),
+        ("reserved", ctypes.c_uint),
+    ]
+
+
+XL_FR_ERROR_SYNC_FRAMES_EV = s_xl_fr_error_sync_frames
+
+
+class s_xl_fr_error_clock_corr_failure(ctypes.Structure):
+    _fields_ = [
+        ("evenSyncFramesA", ctypes.c_short),
+        ("oddSyncFramesA", ctypes.c_short),
+        ("evenSyncFramesB", ctypes.c_short),
+        ("oddSyncFramesB", ctypes.c_short),
+        ("flags", ctypes.c_uint),
+        ("clockCorrFailedCounter", ctypes.c_uint),
+        ("reserved", ctypes.c_uint),
+    ]
+
+
+XL_FR_ERROR_CLOCK_CORR_FAILURE_EV = s_xl_fr_error_clock_corr_failure
+
+
+class s_xl_fr_error_nit_failure(ctypes.Structure):
+    _fields_ = [
+        ("flags", ctypes.c_uint),
+        ("reserved", ctypes.c_uint),
+    ]
+
+
+XL_FR_ERROR_NIT_FAILURE_EV = s_xl_fr_error_nit_failure
+
+
+class s_xl_fr_error_cc_error(ctypes.Structure):
+    _fields_ = [
+        ("ccError", ctypes.c_uint),
+        ("reserved", ctypes.c_uint),
+    ]
+
+
+XL_FR_ERROR_CC_ERROR_EV = s_xl_fr_error_cc_error
+
+
+class s_xl_fr_error_info(ctypes.Union):
+    _fields_ = [
+        ("frPocMode", XL_FR_ERROR_POC_MODE_EV),
+        ("frSyncFramesBelowMin", XL_FR_ERROR_SYNC_FRAMES_EV),
+        ("frSyncFramesOverload", XL_FR_ERROR_SYNC_FRAMES_EV),
+        ("frClockCorrectionFailure", XL_FR_ERROR_CLOCK_CORR_FAILURE_EV),
+        ("frNitFailure", XL_FR_ERROR_NIT_FAILURE_EV),
+        ("frCCError", XL_FR_ERROR_CC_ERROR_EV),
+    ]
+
+
+class s_xl_fr_error(ctypes.Structure):
+    _fields_ = [
+        ("tag", ctypes.c_uint8),
+        ("cycleCount", ctypes.c_uint8),
+        ("reserved", ctypes.c_uint8 * 6),
+        ("errorInfo", s_xl_fr_error_info),
+    ]
+
+
+XL_FR_ERROR_EV = s_xl_fr_error
+
+
+class s_xl_fr_spy_frame(ctypes.Structure):
+    _fields_ = [
+        ("frameLength", ctypes.c_uint),
+        ("frameError", ctypes.c_uint8),
+        ("tssLength", ctypes.c_uint8),
+        ("headerFlags", ctypes.c_ushort),
+        ("slotID", ctypes.c_ushort),
+        ("headerCRC", ctypes.c_ushort),
+        ("payloadLength", ctypes.c_uint8),
+        ("cycleCount", ctypes.c_uint8),
+        ("frameFlags", ctypes.c_uint8),
+        ("reserved", ctypes.c_uint8),
+        ("frameCRC", ctypes.c_uint),
+        ("data", ctypes.c_uint8 * XL_FR_MAX_DATA_LENGTH),
+    ]
+
+
+XL_FR_SPY_FRAME_EV = s_xl_fr_spy_frame
+
+
+class s_xl_fr_spy_symbol(ctypes.Structure):
+    _fields_ = [
+        ("lowLength", ctypes.c_ushort),
+        ("reserved", ctypes.c_ushort),
+    ]
+
+
+XL_FR_SPY_SYMBOL_EV = s_xl_fr_spy_symbol
+
+
+class s_xl_application_notification(ctypes.Structure):
+    _fields_ = [
+        ("notifyReason", ctypes.c_uint),
+        ("reserved", ctypes.c_uint * 7),
+    ]
+
+
+XL_APPLICATION_NOTIFICATION_EV = s_xl_application_notification
+
+
+class s_xl_fr_tag_data(ctypes.Union):
+    _fields_ = [
+        ("frStartCycle", XL_FR_START_CYCLE_EV),
+        ("frRxFrame", XL_FR_RX_FRAME_EV),
+        ("frTxFrame", XL_FR_TX_FRAME_EV),
+        ("frWakeup", XL_FR_WAKEUP_EV),
+        ("frSymbolWindow", XL_FR_SYMBOL_WINDOW_EV),
+        ("frError", XL_FR_ERROR_EV),
+        ("frStatus", XL_FR_STATUS_EV),
+        ("frNmVector", XL_FR_NM_VECTOR_EV),
+        ("frSyncPulse", XL_FR_SYNC_PULSE_EV),
+        ("frSpyFrame", XL_FR_SPY_FRAME_EV),
+        ("frSpySymbol", XL_FR_SPY_SYMBOL_EV),
+        ("applicationNotification", XL_APPLICATION_NOTIFICATION_EV),
+        ("raw", ctypes.c_uint8 * (XL_FR_MAX_EVENT_SIZE - XL_FR_RX_EVENT_HEADER_SIZE)),
+    ]
