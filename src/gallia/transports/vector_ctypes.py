@@ -2,7 +2,6 @@ import ctypes
 
 from can.interfaces.vector import xlclass, xldriver
 
-
 if dll_path := ctypes.find_library(xldriver.DLL_NAME):
     _xlapi_dll = ctypes.windll.LoadLibrary(dll_path)
 else:
@@ -171,6 +170,7 @@ class s_xl_fr_cluster_configuration(ctypes.Structure):
 
 
 XLfrClusterConfig = s_xl_fr_cluster_configuration
+
 
 # structure and defines for function xlFrGetChannelConfig
 class s_xl_fr_channel_config(ctypes.Structure):
@@ -646,7 +646,9 @@ class s_xl_fr_spy_symbol(ctypes.Structure):
         ("reserved", ctypes.c_ushort),
     ]
 
+
 XL_FR_SPY_SYMBOL_EV = s_xl_fr_spy_symbol
+
 
 class s_xl_application_notification(ctypes.Structure):
     _fields_ = [
@@ -701,5 +703,3 @@ xlFrTransmit.argtypes = [
 ]
 xlFrTransmit.restype = xlclass.XLstatus
 xlFrTransmit.errcheck = xldriver.check_status_operation
-
-

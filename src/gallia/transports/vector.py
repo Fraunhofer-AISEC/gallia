@@ -8,8 +8,7 @@ from can.interfaces.vector import xlclass, xldefine, xldriver
 
 # from pydantic import BaseModel, field_validator
 from gallia.log import get_logger
-from gallia.transports import BaseTransport, TargetURI
-from gallia.transports import vector_ctypes
+from gallia.transports import BaseTransport, TargetURI, vector_ctypes
 
 # from gallia.utils import auto_int
 
@@ -81,7 +80,6 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> int:
-
         event = vector_ctypes.XLfrEvent()
         event.tag = vector_ctypes.XL_FR_TX_FRAME
         event.flagsChip = vector_ctypes.XL_FR_CHANNEL_A
@@ -99,7 +97,9 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
         # TODO: Add length check for data; must be XL_FR_MAX_DATA_LENGTH.
         event.tagData.frTxFrame.data = ctypes.create_string_buffer(data, len(data))
 
-        vector_ctypes.xlFrTransmit(self.port_handle, self.channel_mask, ctypes.byref(event))
+        await asyncio.to_thread(
+            vector_ctypes.xlFrTransmit(self.port_handle, self.channel_mask, ctypes.byref(event))
+        )
 
         # TODO: No ctypes wrapper available for this.
         # XLfrEvent event;
@@ -140,4 +140,3 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
         print(status)
         status = await asyncio.to_thread(xldriver.xlCloseDriver)
         print(status)
-
