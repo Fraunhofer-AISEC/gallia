@@ -703,3 +703,11 @@ xlFrTransmit.argtypes = [
 ]
 xlFrTransmit.restype = xlclass.XLstatus
 xlFrTransmit.errcheck = xldriver.check_status_operation
+
+xlFrReceive = _xlapi_dll.xlFrTransmit
+xlFrReceive.argtypes = [
+    xlclass.XLportHandle,
+    ctypes.pointer(XLfrEvent),
+]
+xlFrReceive.restype = xlclass.XLstatus
+xlFrReceive.errcheck = xldriver.check_status_operation
