@@ -5,7 +5,7 @@ import sys
 import time
 from typing import Self
 
-assert sys.platform == 'win32', "unsupported platform"
+assert sys.platform == "win32", "unsupported platform"
 
 from can.interfaces.vector import canlib, xlclass, xldefine, xldriver
 from pydantic import BaseModel, field_validator
@@ -40,7 +40,6 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
     def __init__(self, target: TargetURI) -> None:
         super().__init__(target)
 
-
         self.check_scheme(target)
         self.config = RawFlexrayConfig(**target.qs_flat)
 
@@ -74,7 +73,12 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
         self.event_handle = xlclass.XLhandle()
         xldriver.xlSetNotification(self.port_handle, self.event_handle, 1)
 
-        xldriver.xlActivateChannel(self.port_handle, self.channel_mask, xldefine.XL_BusTypes.XL_BUS_TYPE_FLEXRAY, vector_ctypes.XL_ACTIVATE_RESET_CLOCK)
+        xldriver.xlActivateChannel(
+            self.port_handle,
+            self.channel_mask,
+            xldefine.XL_BusTypes.XL_BUS_TYPE_FLEXRAY,
+            vector_ctypes.XL_ACTIVATE_RESET_CLOCK,
+        )
 
     @classmethod
     async def connect(
@@ -116,10 +120,10 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
 
         print("writing")
         await asyncio.to_thread(
-            vector_ctypes.xlFrTransmit, 
-                self.port_handle,
-                self.channel_mask,
-                ctypes.byref(event),
+            vector_ctypes.xlFrTransmit,
+            self.port_handle,
+            self.channel_mask,
+            ctypes.byref(event),
         )
         return len(data)
 
@@ -147,6 +151,8 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
 
             event = vector_ctypes.XLfrEvent()
             vector_ctypes.xlFrReceive(self.port_handle, ctypes.byref(event))
+
+            print(event)
 
             # TODO: slicing is correct?
             return bytes(event.tagData.raw)[: int(event.size)]
