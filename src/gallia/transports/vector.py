@@ -152,11 +152,14 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
             event = vector_ctypes.XLfrEvent()
             vector_ctypes.xlFrReceive(self.port_handle, ctypes.byref(event))
 
-            if event.tagData.slotID != self.config.slot_id:
+            if event.tag != vector_ctypes.XL_FR_RX_FRAME:
+                continue
+
+            if event.tagData.frRxFrame.slotID != self.config.slot_id:
                 continue
 
             # TODO: slicing is correct?
-            return bytes(event.tagData.raw)[: int(event.size)]
+            return bytes(event.tagData.frRxFrame.data)[: int(event.size)]
 
     async def close(self) -> None:
         await asyncio.to_thread(xldriver.xlClosePort, self.port_handle)
