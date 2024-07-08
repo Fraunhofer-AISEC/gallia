@@ -114,11 +114,10 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
 
         print("writing")
         await asyncio.to_thread(
-            vector_ctypes.xlFrTransmit(
+            vector_ctypes.xlFrTransmit, 
                 self.port_handle,
                 self.channel_mask,
                 ctypes.byref(event),
-            )
         )
         return len(data)
 
