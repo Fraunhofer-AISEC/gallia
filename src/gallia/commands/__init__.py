@@ -26,7 +26,7 @@ from gallia.commands.scan.uds.reset import ResetScanner
 from gallia.commands.scan.uds.sa_dump_seeds import SASeedsDumper
 from gallia.commands.scan.uds.services import ServicesScanner
 from gallia.commands.scan.uds.sessions import SessionsScanner
-from gallia.commands.script.vecu import VirtualECU
+# from gallia.commands.script.vecu import VirtualECU
 
 registry: list[type[BaseCommand]] = [
     # SimpleTestXCP,
@@ -51,7 +51,7 @@ registry: list[type[BaseCommand]] = [
     GenericPDUPrimitive,
     SendPDUPrimitive,
     WMBAPrimitive,
-    VirtualECU,
+    # VirtualECU,
     WriteByIdentifierPrimitive,
     # SimpleTestXCP,
 ]
