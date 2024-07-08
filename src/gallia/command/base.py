@@ -19,7 +19,7 @@ from subprocess import CalledProcessError, run
 from tempfile import gettempdir
 from typing import cast
 
-if sys.platform != "windows":
+if sys.platform != "win32":
     import fcntl
 
 import exitcode
@@ -347,7 +347,7 @@ class BaseCommand(ABC):
 
             self._dump_environment(artifacts_dir.joinpath(FileNames.ENV.value))
 
-            if sys.platform != "windows":
+            if sys.platform != "win32":
                 self._add_latest_link(command_dir)
 
             return artifacts_dir.absolute()
@@ -373,7 +373,7 @@ class BaseCommand(ABC):
         os.close(self._lock_file_fd)
 
     def entry_point(self, args: Namespace) -> int:
-        if sys.platform != "windows":
+        if sys.platform != "win32":
             if (p := args.lock_file) is not None:
                 try:
                     self._aquire_flock(p)
@@ -438,7 +438,7 @@ class BaseCommand(ABC):
         if args.hooks:
             self.run_hook(HookVariant.POST, args, exit_code)
 
-        if sys.platform != "windows":
+        if sys.platform != "win32":
             if self._lock_file_fd is not None:
                 self._release_flock()
 
