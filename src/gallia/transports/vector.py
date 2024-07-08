@@ -74,6 +74,8 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
         self.event_handle = xlclass.XLhandle()
         xldriver.xlSetNotification(self.port_handle, self.event_handle, 1)
 
+        xldriver.xlActivateChannel(self.port_handle, self.channel_mask, xldefine.XL_BusTypes.XL_BUS_TYPE_FLEXRAY, vector_ctypes.XL_ACTIVATE_RESET_CLOCK)
+
     @classmethod
     async def connect(
         cls,

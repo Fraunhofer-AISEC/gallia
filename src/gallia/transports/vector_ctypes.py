@@ -14,6 +14,11 @@ else:
 
 XLfrEventTag = ctypes.c_ushort
 
+# activate - channel flags
+XL_ACTIVATE_NONE                    =  0 
+XL_ACTIVATE_RESET_CLOCK             =  8 # using this flag with time synchronisation protocols supported by Vector Timesync Service is not recommended
+
+
 # Extended error codes
 # Too many PDUs configured or too less system memory free
 XL_ERR_PDU_OUT_OF_MEMORY = 0x0104
