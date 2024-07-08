@@ -43,9 +43,10 @@ if sys.platform == "linux":
 
 
 if sys.platform == "win32":
-    from gallia.transports.vector import FlexrayTPTransport, RawFlexrayTransport
+    # from gallia.transports.vector import FlexrayTPTransport, RawFlexrayTransport
+    from gallia.transports.vector import RawFlexrayTransport
 
     registry.append(RawFlexrayTransport)
     __all__.append("RawFlexrayTransport")
-    registry.append(FlexrayTPTransport)
-    __all__.append("FlexrayTPTransport")
+    # registry.append(FlexrayTPTransport)
+    # __all__.append("FlexrayTPTransport")
