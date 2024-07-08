@@ -157,7 +157,8 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
                 continue
 
             if (slot_id := event.tagData.frRxFrame.slotID) != self.config.slot_id:
-                print(f"received and continue slot id: {slot_id}")
+                data = bytes(event.tagData.frRxFrame.data)[: int(event.size)]
+                print(f"received and continue slot id: {slot_id} {data.hex()}")
                 continue
 
             # TODO: slicing is correct?
