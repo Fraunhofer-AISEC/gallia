@@ -1,4 +1,8 @@
 import ctypes
+import sys
+
+if (p := sys.platform) != "win32":
+    raise RuntimeError(f"unsupported platform: {p}")
 
 from can.interfaces.vector import xlclass, xldriver
 

@@ -5,7 +5,10 @@ import sys
 import time
 from typing import Self
 
-from can.interfaces.vector import xlclass, xldefine, xldriver, canlib
+if (p := sys.platform) != "win32":
+    raise RuntimeError(f"unsupported platform: {p}")
+
+from can.interfaces.vector import canlib, xlclass, xldefine, xldriver
 from pydantic import BaseModel, field_validator
 
 from gallia.log import get_logger
@@ -13,9 +16,6 @@ from gallia.transports import BaseTransport, TargetURI, vector_ctypes
 from gallia.utils import auto_int
 
 # from gallia.utils import auto_int
-
-if (p := sys.platform) != "windows":
-    raise RuntimeError(f"gallia.transports.vector: unsupported platform: {p}")
 
 logger = get_logger(__name__)
 
@@ -51,7 +51,10 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
         self.driver_config = canlib.get_channel_configs()
 
         for channel in self.driver_config:
-            if channel.channel_bus_capabilities & xldefine.XL_BusCapabilities.XL_BUS_ACTIVE_CAP_FLEXRAY:
+            if (
+                channel.channel_bus_capabilities
+                & xldefine.XL_BusCapabilities.XL_BUS_ACTIVE_CAP_FLEXRAY
+            ):
                 self.channel_mask = ctypes.c_int64(channel.channel_mask)
                 break
         else:
@@ -78,7 +81,6 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
     ) -> Self:
         t = TargetURI(target) if isinstance(target, str) else target
         return cls(t)
-
 
     async def write_frame(self) -> None:
         pass
@@ -117,7 +119,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
         )
         return len(data)
 
-    async def read(self, timeout: float | None = None, tags: list[str] | None = None) -> FlexrayFrame:
+    async def read(self, timeout: float | None = None, tags: list[str] | None = None) -> bytes:
         assert canlib.WaitForSingleObject is not None
         assert canlib.INFINITE is not None
         assert self.event_handle.value is not None
@@ -134,13 +136,15 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
                 time_left = end_time - time.time()
                 time_left_ms = max(0, int(time_left * 1000))
 
-            await asyncio.to_thread(canlib.WaitForSingleObject, self.event_handle.value, time_left_ms)
+            await asyncio.to_thread(
+                canlib.WaitForSingleObject, self.event_handle.value, time_left_ms
+            )
 
             event = vector_ctypes.XLfrEvent()
             vector_ctypes.xlFrReceive(self.port_handle, ctypes.byref(event))
 
             # TODO: slicing is correct?
-            return bytes(event.tagData.raw)[int(event.size)]
+            return bytes(event.tagData.raw)[: int(event.size)]
 
     async def close(self) -> None:
         await asyncio.to_thread(xldriver.xlClosePort, self.port_handle)
