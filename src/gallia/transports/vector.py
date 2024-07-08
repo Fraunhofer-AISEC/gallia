@@ -109,7 +109,8 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
         if len(data) > vector_ctypes.XL_FR_MAX_DATA_LENGTH:
             raise ValueError("frame exceeds max data length")
 
-        event.tagData.frTxFrame.data = ctypes.create_string_buffer(data, 254)
+        # event.tagData.frTxFrame.data = ctypes.create_string_buffer(data, 254)
+        event.tagData.frTxFrame.data = data
 
         print("writing")
         await asyncio.to_thread(
