@@ -2,7 +2,7 @@ import ctypes
 import sys
 from typing import Protocol, Any
 
-assert sys.platform != 'win32', "unsupported platform"
+assert sys.platform == 'win32', "unsupported platform"
 
 from can.interfaces.vector import xlclass, xldriver
 

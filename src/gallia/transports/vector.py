@@ -5,7 +5,7 @@ import sys
 import time
 from typing import Self
 
-assert sys.platform != 'win32', "unsupported platform"
+assert sys.platform == 'win32', "unsupported platform"
 
 from can.interfaces.vector import canlib, xlclass, xldefine, xldriver
 from pydantic import BaseModel, field_validator
