@@ -19,7 +19,7 @@ from gallia.commands.primitive.uds.rtcl import RTCLPrimitive
 from gallia.commands.primitive.uds.vin import VINPrimitive
 from gallia.commands.primitive.uds.wdbi import WriteByIdentifierPrimitive
 from gallia.commands.primitive.uds.wmba import WMBAPrimitive
-from gallia.commands.primitive.uds.xcp import SimpleTestXCP
+# from gallia.commands.primitive.uds.xcp import SimpleTestXCP
 from gallia.commands.scan.uds.identifiers import ScanIdentifiers
 from gallia.commands.scan.uds.memory import MemoryFunctionsScanner
 from gallia.commands.scan.uds.reset import ResetScanner
@@ -53,7 +53,7 @@ registry: list[type[BaseCommand]] = [
     WMBAPrimitive,
     VirtualECU,
     WriteByIdentifierPrimitive,
-    SimpleTestXCP,
+    # SimpleTestXCP,
 ]
 
 __all__ = [x.__name__ for x in registry]
