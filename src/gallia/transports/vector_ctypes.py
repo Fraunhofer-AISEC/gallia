@@ -683,7 +683,7 @@ class s_xl_application_notification(ctypes.Structure, IntrospectMixin):
 XL_APPLICATION_NOTIFICATION_EV = s_xl_application_notification
 
 
-class s_xl_fr_tag_data(ctypes.Union):
+class s_xl_fr_tag_data(ctypes.Union, IntrospectMixin):
     _fields_ = [
         ("frStartCycle", XL_FR_START_CYCLE_EV),
         ("frRxFrame", XL_FR_RX_FRAME_EV),
