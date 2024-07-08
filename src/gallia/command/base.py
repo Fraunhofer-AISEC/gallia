@@ -21,13 +21,13 @@ from typing import cast
 
 if sys.platform != "win32":
     import fcntl
+    from gallia.dumpcap import Dumpcap
 
 import exitcode
 import msgspec
 
 from gallia.config import Config
 from gallia.db.handler import DBHandler
-from gallia.dumpcap import Dumpcap
 from gallia.log import add_zst_log_handler, get_logger, tz
 from gallia.plugins import load_transport
 from gallia.powersupply import PowerSupply, PowerSupplyURI
@@ -567,7 +567,7 @@ class Scanner(AsyncScript, ABC):
         group.add_argument(
             "--dumpcap",
             action=argparse.BooleanOptionalAction,
-            default=self.config.get_value("gallia.scanner.dumpcap", default=True),
+            default=self.config.get_value("gallia.scanner.dumpcap", default=sys.platform == "linux"),
             help="Enable/Disable creating a pcap file",
         )
 
