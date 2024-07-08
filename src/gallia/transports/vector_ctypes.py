@@ -717,7 +717,7 @@ xlFrTransmit = _xlapi_dll.xlFrTransmit
 xlFrTransmit.argtypes = [
     xlclass.XLportHandle,
     xlclass.XLaccess,
-    XLfrEvent,
+    ctypes.POINTER(XLfrEvent),
 ]
 xlFrTransmit.restype = xlclass.XLstatus
 xlFrTransmit.errcheck = xldriver.check_status_operation
