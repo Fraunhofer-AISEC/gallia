@@ -111,6 +111,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
 
         event.tagData.frTxFrame.data = ctypes.create_string_buffer(data, len(data))
 
+        print("writing")
         await asyncio.to_thread(
             vector_ctypes.xlFrTransmit(
                 self.port_handle,
