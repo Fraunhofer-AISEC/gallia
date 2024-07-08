@@ -118,7 +118,6 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
         # event.tagData.frTxFrame.data = ctypes.create_string_buffer(data, 254)
         event.tagData.frTxFrame.data = data
 
-        print("writing")
         await asyncio.to_thread(
             vector_ctypes.xlFrTransmit,
             self.port_handle,
@@ -135,7 +134,6 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
         end_time = time.time() + timeout if timeout is not None else None
 
         while True:
-            print("reading")
             if end_time is not None and time.time() > end_time:
                 raise TimeoutError()
 
@@ -154,8 +152,8 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
             event = vector_ctypes.XLfrEvent()
             vector_ctypes.xlFrReceive(self.port_handle, ctypes.byref(event))
 
-            print(event)
-            print(event.tagData)
+            if event.tagData.slotID != self.config.slot_id:
+                continue
 
             # TODO: slicing is correct?
             return bytes(event.tagData.raw)[: int(event.size)]

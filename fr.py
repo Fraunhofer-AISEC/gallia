@@ -9,7 +9,6 @@ from gallia.transports import RawFlexrayTransport, TargetURI
 async def main() -> None:
     url = TargetURI("flexray://?slot_id=0x42")
     tp = await RawFlexrayTransport.connect(url, None)
-    await tp.write(b"fefefefefefe")
     data = await tp.read(timeout=5)
     print(data)
 
