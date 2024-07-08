@@ -63,7 +63,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
 
         xldriver.xlOpenPort(
             ctypes.pointer(self.port_handle),
-            ctypes.create_string_buffer("Flex"),
+            ctypes.create_string_buffer(b"Flex"),
             ctypes.byref(self.channel_mask),
             ctypes.byref(init_mask),
             ctypes.c_uint(self.config.rx_fifo_size),
