@@ -5,8 +5,7 @@ import sys
 import time
 from typing import Self
 
-if (p := sys.platform) != "win32":
-    raise RuntimeError(f"unsupported platform: {p}")
+assert sys.platform != 'win32', "unsupported platform"
 
 from can.interfaces.vector import canlib, xlclass, xldefine, xldriver
 from pydantic import BaseModel, field_validator
@@ -15,7 +14,7 @@ from gallia.log import get_logger
 from gallia.transports import BaseTransport, TargetURI, vector_ctypes
 from gallia.utils import auto_int
 
-# from gallia.utils import auto_int
+assert canlib.HAS_EVENTS and canlib.WaitForSingleObject, "event support is not available"
 
 logger = get_logger(__name__)
 
@@ -33,12 +32,14 @@ class RawFlexrayConfig(BaseModel):
         return auto_int(v)
 
 
+class FlexrayFrame:
+    pass
+
+
 class RawFlexrayTransport(BaseTransport, scheme="flexray"):
     def __init__(self, target: TargetURI) -> None:
         super().__init__(target)
 
-        if not canlib.HAS_EVENTS or canlib.WaitForSingleObject is None:
-            raise RuntimeError("no event support available")
 
         self.check_scheme(target)
         self.config = RawFlexrayConfig(**target.qs_flat)

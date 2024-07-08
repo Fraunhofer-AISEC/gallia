@@ -1,12 +1,12 @@
 import ctypes
 import sys
+from typing import Protocol, Any
 
-if (p := sys.platform) != "win32":
-    raise RuntimeError(f"unsupported platform: {p}")
+assert sys.platform != 'win32', "unsupported platform"
 
 from can.interfaces.vector import xlclass, xldriver
 
-if dll_path := ctypes.find_library(xldriver.DLL_NAME):
+if dll_path := ctypes.util.find_library(xldriver.DLL_NAME):
     _xlapi_dll = ctypes.windll.LoadLibrary(dll_path)
 else:
     raise FileNotFoundError(f"Vector XL library not found: {xldriver.DLL_NAME}")
@@ -100,8 +100,22 @@ XL_FR_MAX_DATA_LENGTH = 254
 
 # structure for xlFrSetConfiguration
 
+class CtypeLike(Protocol):
+    @property
+    def _fields_(self) -> list[tuple[str, Any]]: ...
 
-class s_xl_fr_cluster_configuration(ctypes.Structure):
+
+class IntrospectMixin:
+    def __repr__(self: CtypeLike) -> str:
+        fields = []
+        for name, _ in self._fields_:
+            fields.append(f"{name}: {getattr(self, name)}")
+        
+        fields_str = ", ".join(fields)
+        return f"{self.__class__.__name__}: {fields_str}"
+
+
+class s_xl_fr_cluster_configuration(ctypes.Structure, IntrospectMixin):
     _fields_ = [
         ("busGuardianEnable", ctypes.c_uint),
         ("busGuardianTick", ctypes.c_uint),
@@ -217,7 +231,7 @@ XL_FR_MODE_WAKEUP_AND_COLDSTART_FOLLOWING = (
 )
 
 
-class s_xl_fr_set_modes(ctypes.Structure):
+class s_xl_fr_set_modes(ctypes.Structure, IntrospectMixin):
     _fields_ = [
         ("frMode", ctypes.c_uint),
         ("frStartupAttributes", ctypes.c_uint),
@@ -438,7 +452,7 @@ XL_FR_MAX_EVENT_SIZE = 512
 # Structures for FlexRay events
 
 
-class s_xl_fr_start_cycle(ctypes.Structure):
+class s_xl_fr_start_cycle(ctypes.Structure, IntrospectMixin):
     _fields_ = [
         ("cycleCount", ctypes.c_uint),
         ("vRateCorrection", ctypes.c_int),
@@ -452,7 +466,7 @@ class s_xl_fr_start_cycle(ctypes.Structure):
 XL_FR_START_CYCLE_EV = s_xl_fr_start_cycle
 
 
-class s_xl_fr_rx_frame(ctypes.Structure):
+class s_xl_fr_rx_frame(ctypes.Structure, IntrospectMixin):
     _fields_ = [
         ("flags", ctypes.c_ushort),
         ("headerCRC", ctypes.c_ushort),
@@ -466,7 +480,7 @@ class s_xl_fr_rx_frame(ctypes.Structure):
 XL_FR_RX_FRAME_EV = s_xl_fr_rx_frame
 
 
-class s_xl_fr_tx_frame(ctypes.Structure):
+class s_xl_fr_tx_frame(ctypes.Structure, IntrospectMixin):
     _fields_ = [
         ("flags", ctypes.c_ushort),
         ("slotID", ctypes.c_ushort),
@@ -487,7 +501,7 @@ class s_xl_fr_tx_frame(ctypes.Structure):
 XL_FR_TX_FRAME_EV = s_xl_fr_tx_frame
 
 
-class s_xl_fr_wakeup(ctypes.Structure):
+class s_xl_fr_wakeup(ctypes.Structure, IntrospectMixin):
     _fields_ = [
         ("cycleCount", ctypes.c_uint8),
         ("wakeupStatus", ctypes.c_uint8),
@@ -498,7 +512,7 @@ class s_xl_fr_wakeup(ctypes.Structure):
 XL_FR_WAKEUP_EV = s_xl_fr_wakeup
 
 
-class s_xl_fr_symbol_window(ctypes.Structure):
+class s_xl_fr_symbol_window(ctypes.Structure, IntrospectMixin):
     _fields_ = [
         ("symbol", ctypes.c_uint),
         ("flags", ctypes.c_uint),
@@ -510,7 +524,7 @@ class s_xl_fr_symbol_window(ctypes.Structure):
 XL_FR_SYMBOL_WINDOW_EV = s_xl_fr_symbol_window
 
 
-class s_xl_fr_status(ctypes.Structure):
+class s_xl_fr_status(ctypes.Structure, IntrospectMixin):
     _fields_ = [
         ("statusType", ctypes.c_uint),
         ("reserved", ctypes.c_uint),
@@ -520,7 +534,7 @@ class s_xl_fr_status(ctypes.Structure):
 XL_FR_STATUS_EV = s_xl_fr_status
 
 
-class s_xl_fr_nm_vector(ctypes.Structure):
+class s_xl_fr_nm_vector(ctypes.Structure, IntrospectMixin):
     _fields_ = [
         ("nmVector", ctypes.c_uint8 * 12),
         ("cycleCount", ctypes.c_uint8),
@@ -531,7 +545,7 @@ class s_xl_fr_nm_vector(ctypes.Structure):
 XL_FR_NM_VECTOR_EV = s_xl_fr_nm_vector
 
 
-class s_xl_fr_sync_pulse_ev(ctypes.Structure):
+class s_xl_fr_sync_pulse_ev(ctypes.Structure, IntrospectMixin):
     _fields_ = [
         ("triggerSource", ctypes.c_uint),
         ("reserved", ctypes.c_uint),
@@ -543,7 +557,7 @@ XL_SYNC_PULSE_EV = s_xl_fr_sync_pulse_ev
 XL_FR_SYNC_PULSE_EV = XL_SYNC_PULSE_EV
 
 
-class s_xl_fr_error_poc_mode(ctypes.Structure):
+class s_xl_fr_error_poc_mode(ctypes.Structure, IntrospectMixin):
     _fields_ = [
         ("errorMode", ctypes.c_uint8),
         ("reserved", ctypes.c_uint8 * 4),
@@ -553,7 +567,7 @@ class s_xl_fr_error_poc_mode(ctypes.Structure):
 XL_FR_ERROR_POC_MODE_EV = s_xl_fr_error_poc_mode
 
 
-class s_xl_fr_error_sync_frames(ctypes.Structure):
+class s_xl_fr_error_sync_frames(ctypes.Structure, IntrospectMixin):
     _fields_ = [
         ("evenSyncFramesA", ctypes.c_short),
         ("oddSyncFramesA", ctypes.c_short),
@@ -566,7 +580,7 @@ class s_xl_fr_error_sync_frames(ctypes.Structure):
 XL_FR_ERROR_SYNC_FRAMES_EV = s_xl_fr_error_sync_frames
 
 
-class s_xl_fr_error_clock_corr_failure(ctypes.Structure):
+class s_xl_fr_error_clock_corr_failure(ctypes.Structure, IntrospectMixin):
     _fields_ = [
         ("evenSyncFramesA", ctypes.c_short),
         ("oddSyncFramesA", ctypes.c_short),
@@ -581,7 +595,7 @@ class s_xl_fr_error_clock_corr_failure(ctypes.Structure):
 XL_FR_ERROR_CLOCK_CORR_FAILURE_EV = s_xl_fr_error_clock_corr_failure
 
 
-class s_xl_fr_error_nit_failure(ctypes.Structure):
+class s_xl_fr_error_nit_failure(ctypes.Structure, IntrospectMixin):
     _fields_ = [
         ("flags", ctypes.c_uint),
         ("reserved", ctypes.c_uint),
@@ -591,7 +605,7 @@ class s_xl_fr_error_nit_failure(ctypes.Structure):
 XL_FR_ERROR_NIT_FAILURE_EV = s_xl_fr_error_nit_failure
 
 
-class s_xl_fr_error_cc_error(ctypes.Structure):
+class s_xl_fr_error_cc_error(ctypes.Structure, IntrospectMixin):
     _fields_ = [
         ("ccError", ctypes.c_uint),
         ("reserved", ctypes.c_uint),
@@ -612,7 +626,7 @@ class s_xl_fr_error_info(ctypes.Union):
     ]
 
 
-class s_xl_fr_error(ctypes.Structure):
+class s_xl_fr_error(ctypes.Structure, IntrospectMixin):
     _fields_ = [
         ("tag", ctypes.c_uint8),
         ("cycleCount", ctypes.c_uint8),
@@ -624,7 +638,7 @@ class s_xl_fr_error(ctypes.Structure):
 XL_FR_ERROR_EV = s_xl_fr_error
 
 
-class s_xl_fr_spy_frame(ctypes.Structure):
+class s_xl_fr_spy_frame(ctypes.Structure, IntrospectMixin):
     _fields_ = [
         ("frameLength", ctypes.c_uint),
         ("frameError", ctypes.c_uint8),
@@ -644,7 +658,7 @@ class s_xl_fr_spy_frame(ctypes.Structure):
 XL_FR_SPY_FRAME_EV = s_xl_fr_spy_frame
 
 
-class s_xl_fr_spy_symbol(ctypes.Structure):
+class s_xl_fr_spy_symbol(ctypes.Structure, IntrospectMixin):
     _fields_ = [
         ("lowLength", ctypes.c_ushort),
         ("reserved", ctypes.c_ushort),
@@ -654,7 +668,7 @@ class s_xl_fr_spy_symbol(ctypes.Structure):
 XL_FR_SPY_SYMBOL_EV = s_xl_fr_spy_symbol
 
 
-class s_xl_application_notification(ctypes.Structure):
+class s_xl_application_notification(ctypes.Structure, IntrospectMixin):
     _fields_ = [
         ("notifyReason", ctypes.c_uint),
         ("reserved", ctypes.c_uint * 7),
@@ -682,7 +696,7 @@ class s_xl_fr_tag_data(ctypes.Union):
     ]
 
 
-class s_xl_fr_event(ctypes.Structure):
+class s_xl_fr_event(ctypes.Structure, IntrospectMixin):
     _fields_ = [
         ("size", ctypes.c_int),
         ("tag", XLfrEventTag),
@@ -711,7 +725,7 @@ xlFrTransmit.errcheck = xldriver.check_status_operation
 xlFrReceive = _xlapi_dll.xlFrTransmit
 xlFrReceive.argtypes = [
     xlclass.XLportHandle,
-    ctypes.pointer(XLfrEvent),
+    ctypes.POINTER(XLfrEvent),
 ]
 xlFrReceive.restype = xlclass.XLstatus
 xlFrReceive.errcheck = xldriver.check_status_operation
