@@ -146,13 +146,16 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
                 time_left_ms = max(0, int(time_left * 1000))
 
             await asyncio.to_thread(
-                canlib.WaitForSingleObject, self.event_handle.value, time_left_ms
+                canlib.WaitForSingleObject,
+                self.event_handle.value,
+                time_left_ms,
             )
 
             event = vector_ctypes.XLfrEvent()
             vector_ctypes.xlFrReceive(self.port_handle, ctypes.byref(event))
 
             print(event)
+            print(event.tagData)
 
             # TODO: slicing is correct?
             return bytes(event.tagData.raw)[: int(event.size)]
