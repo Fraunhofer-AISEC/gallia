@@ -61,8 +61,6 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
         else:
             raise RuntimeError("no flexray channel found")
 
-        print(self.channel_mask)
-
         xldriver.xlOpenPort(
             ctypes.byref(self.port_handle),
             ctypes.create_string_buffer(b"Flex"),
@@ -130,6 +128,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
         end_time = time.time() + timeout if timeout is not None else None
 
         while True:
+            print("reading")
             if end_time is not None and time.time() > end_time:
                 raise TimeoutError()
 
