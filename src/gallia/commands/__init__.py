@@ -4,7 +4,7 @@
 
 from gallia.command.base import BaseCommand
 from gallia.commands.discover.doip import DoIPDiscoverer
-from gallia.commands.discover.find_xcp import FindXCP
+# from gallia.commands.discover.find_xcp import FindXCP
 from gallia.commands.discover.uds.isotp import IsotpDiscoverer
 from gallia.commands.fuzz.uds.pdu import PDUFuzzer
 from gallia.commands.primitive.generic.pdu import GenericPDUPrimitive
@@ -32,7 +32,7 @@ registry: list[type[BaseCommand]] = [
     # SimpleTestXCP,
     DoIPDiscoverer,
     IsotpDiscoverer,
-    FindXCP,
+    # FindXCP,
     PDUFuzzer,
     MemoryFunctionsScanner,
     ReadByIdentifierPrimitive,
