@@ -722,7 +722,7 @@ xlFrTransmit.argtypes = [
 xlFrTransmit.restype = xlclass.XLstatus
 xlFrTransmit.errcheck = xldriver.check_status_operation
 
-xlFrReceive = _xlapi_dll.xlFrTransmit
+xlFrReceive = _xlapi_dll.xlFrReceive
 xlFrReceive.argtypes = [
     xlclass.XLportHandle,
     ctypes.POINTER(XLfrEvent),
