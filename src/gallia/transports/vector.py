@@ -152,10 +152,12 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
             event = vector_ctypes.XLfrEvent()
             vector_ctypes.xlFrReceive(self.port_handle, ctypes.byref(event))
 
-            if event.tag != vector_ctypes.XL_FR_RX_FRAME:
+            if (event_tag := event.tag) != vector_ctypes.XL_FR_RX_FRAME:
+                print(f"received and continue event tag: {event_tag}")
                 continue
 
-            if event.tagData.frRxFrame.slotID != self.config.slot_id:
+            if (slot_id := event.tagData.frRxFrame.slotID) != self.config.slot_id:
+                print(f"received and continue slot id: {slot_id}")
                 continue
 
             # TODO: slicing is correct?
