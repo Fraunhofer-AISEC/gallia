@@ -43,4 +43,4 @@ jobs:
         poetry install
     - name: Run mypy
       run: |
-        poetry run mypy-win32 src tests
+        poetry run make lint-win32
