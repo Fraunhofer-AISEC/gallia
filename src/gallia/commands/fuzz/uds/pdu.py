@@ -5,7 +5,10 @@
 import asyncio
 import binascii
 import random
+import sys
 from argparse import Namespace
+
+assert sys.platform.startswith("linux"), "unsupported platform"
 
 from gallia.command import UDSScanner
 from gallia.log import get_logger

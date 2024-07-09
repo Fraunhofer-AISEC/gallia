@@ -5,6 +5,7 @@
 import asyncio
 import json
 import random
+import sys
 import traceback
 from abc import ABC, abstractmethod
 from binascii import hexlify, unhexlify
@@ -27,7 +28,7 @@ from gallia.services.uds.core.constants import (
 )
 from gallia.services.uds.core.utils import bytes_repr, int_repr, service_repr, to_bytes
 from gallia.services.uds.ecu import ECUState
-from gallia.transports import ISOTPTransport, TargetURI
+from gallia.transports import TargetURI
 
 logger = get_logger("gallia.vecu.server")
 
@@ -781,7 +782,9 @@ class UDSServerTransport:
 
 class TCPUDSServerTransport(UDSServerTransport):
     async def handle_client(
-        self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
+        self,
+        reader: asyncio.StreamReader,
+        writer: asyncio.StreamWriter,
     ) -> None:
         logger.info("New connection")
         response_times = []
@@ -820,26 +823,31 @@ class TCPUDSServerTransport(UDSServerTransport):
             await server.serve_forever()
 
 
-class ISOTPUDSServerTransport(UDSServerTransport):
-    async def run(self) -> None:
-        transport = await ISOTPTransport.connect(self.target)
+if sys.platform.startswith("linux"):
+    from gallia.transports import ISOTPTransport
 
-        while True:
-            try:
-                uds_request_raw = await transport.read()
-                uds_response_raw, _ = await self.handle_request(uds_request_raw)
+    class ISOTPUDSServerTransport(UDSServerTransport):
+        async def run(self) -> None:
+            transport = await ISOTPTransport.connect(self.target)
 
-                if uds_response_raw is not None:
-                    await transport.write(uds_response_raw)
-            except Exception as e:
-                logger.error(f"Unexpected exception when handling client communication: {e!r}")
-                traceback.print_exc()
-                break
+            while True:
+                try:
+                    uds_request_raw = await transport.read()
+                    uds_response_raw, _ = await self.handle_request(uds_request_raw)
+
+                    if uds_response_raw is not None:
+                        await transport.write(uds_response_raw)
+                except Exception as e:
+                    logger.error(f"Unexpected exception when handling client communication: {e!r}")
+                    traceback.print_exc()
+                    break
 
 
-class UnixUDSServerTransport(TCPUDSServerTransport):
-    async def run(self) -> None:
-        server = await asyncio.start_unix_server(self.handle_client, self.target.path)
+if sys.platform.startswith("linux") or sys.platform == "darwin":
 
-        async with server:
-            await server.serve_forever()
+    class UnixUDSServerTransport(TCPUDSServerTransport):
+        async def run(self) -> None:
+            server = await asyncio.start_unix_server(self.handle_client, self.target.path)
+
+            async with server:
+                await server.serve_forever()

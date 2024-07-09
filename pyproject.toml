@@ -104,6 +104,7 @@ select = [
     "UP",   # pyupgrade
 ]
 ignore = [
+    "E402",     # Module level import not at top of file
     "E501",     # line length
     "PLR2004",  # magic value used in comparison
     "PLR0911",  # too many return statements

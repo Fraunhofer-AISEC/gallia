@@ -8,12 +8,11 @@ import asyncio
 import binascii
 import io
 from abc import ABC, abstractmethod
-from typing import Any, Self
+from typing import Any, Protocol, Self
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
-from typing_extensions import Protocol
-
 from gallia.log import get_logger
+from gallia.transports.schemes import TransportScheme
 from gallia.utils import join_host_port
 
 logger = get_logger("gallia.transport.base")
@@ -41,17 +40,17 @@ class TargetURI:
         host: str,
         port: int | None,
         args: dict[str, Any],
-    ) -> TargetURI:
+    ) -> Self:
         """Constructs a instance of TargetURI with the given arguments.
         The ``args`` dict is used for the query string.
         """
         netloc = host if port is None else join_host_port(host, port)
-        return TargetURI(urlunparse((scheme, netloc, "", "", urlencode(args), "")))
+        return cls(urlunparse((scheme, netloc, "", "", urlencode(args), "")))
 
     @property
-    def scheme(self) -> str:
+    def scheme(self) -> TransportScheme:
         """The URI scheme"""
-        return self.url.scheme
+        return TransportScheme(self.url.scheme)
 
     @property
     def hostname(self) -> str | None:

@@ -7,14 +7,14 @@ from typing import Self
 
 assert sys.platform == "win32", "unsupported platform"
 
-from can.interfaces.vector import canlib, xlclass, xldefine, xldriver
-from pydantic import BaseModel, field_validator
-
-from gallia.log import get_logger
-from gallia.transports import BaseTransport, TargetURI, vector_ctypes
-from gallia.utils import auto_int
+from can.interfaces.vector import canlib, xlclass, xldefine, xldriver  # noqa: E402
+from pydantic import BaseModel, field_validator  # noqa: E402
 
 assert canlib.HAS_EVENTS and canlib.WaitForSingleObject, "event support is not available"
+
+from gallia.log import get_logger  # noqa: E402
+from gallia.transports import BaseTransport, TargetURI, vector_ctypes  # noqa: E402
+from gallia.utils import auto_int  # noqa: E402
 
 logger = get_logger(__name__)
 
@@ -43,7 +43,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
         self.check_scheme(target)
         self.config = RawFlexrayConfig(**target.qs_flat)
 
-        xldriver.xlOpenDriver()
+        xldriver.xlOpenDriver()  # type: ignore
         self.port_handle = xlclass.XLportHandle()
         self.channel_mask = xlclass.XLaccess()
         init_mask = xlclass.XLaccess()
@@ -60,7 +60,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
         else:
             raise RuntimeError("no flexray channel found")
 
-        xldriver.xlOpenPort(
+        xldriver.xlOpenPort(  # type: ignore
             ctypes.byref(self.port_handle),
             ctypes.create_string_buffer(b"Flex"),
             self.channel_mask,
@@ -71,9 +71,9 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
         )
 
         self.event_handle = xlclass.XLhandle()
-        xldriver.xlSetNotification(self.port_handle, self.event_handle, 1)
+        xldriver.xlSetNotification(self.port_handle, self.event_handle, 1)  # type: ignore
 
-        xldriver.xlActivateChannel(
+        xldriver.xlActivateChannel(  # type: ignore
             self.port_handle,
             self.channel_mask,
             xldefine.XL_BusTypes.XL_BUS_TYPE_FLEXRAY,
@@ -165,5 +165,5 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
             return bytes(event.tagData.frRxFrame.data)[: int(event.size)]
 
     async def close(self) -> None:
-        await asyncio.to_thread(xldriver.xlClosePort, self.port_handle)
-        await asyncio.to_thread(xldriver.xlCloseDriver)
+        await asyncio.to_thread(xldriver.xlClosePort, self.port_handle)  # type: ignore
+        await asyncio.to_thread(xldriver.xlCloseDriver)  # type: ignore

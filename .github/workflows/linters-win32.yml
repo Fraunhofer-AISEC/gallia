@@ -1,0 +1,46 @@
+# SPDX-FileCopyrightText: AISEC Pentesting Team
+#
+# SPDX-License-Identifier: CC0-1.0
+
+# https://github.com/actions/setup-python/issues/374
+
+name: linters
+
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    paths:
+    - 'pyproject.toml'
+    - 'poetry.lock'
+    - '.github/**'
+    - 'src/**'
+    - 'tests/**'
+
+jobs:
+  linters:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12']
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    - uses: Gr1N/setup-poetry@v9
+    - uses: actions/cache@v4
+      with:
+        path: ~/.cache/pypoetry/virtualenvs
+        key: ${{ runner.os }}-poetry-${{ hashFiles('poetry.lock') }}-${{ hashFiles('pyproject.toml') }}
+
+    - name: Install Dependencies
+      run: |
+        poetry install
+    - name: Run mypy
+      run: |
+        poetry run mypy-win32 src tests
