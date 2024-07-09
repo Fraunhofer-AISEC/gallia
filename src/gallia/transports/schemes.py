@@ -5,7 +5,6 @@
 import sys
 from enum import Enum, unique
 
-
 TCP = "tcp"
 TCP_LINES = "tcp-lines"
 DOIP = "doip"
