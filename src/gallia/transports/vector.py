@@ -156,15 +156,14 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
             event = vector_ctypes.XLfrEvent()
             vector_ctypes.xlFrReceive(self.port_handle, ctypes.byref(event))
 
-            print(event)
-
             if (event_tag := event.tag) != vector_ctypes.XL_FR_RX_FRAME:
                 print(f"  received and continue event tag: {event_tag}")
                 continue
 
-            if (slot_id := event.tagData.frRxFrame.slotID) != self.config.slot_id:
+            if (slot_id := event.tagData.frRxFrame.slotID) != 46:
+                print(event)
                 data = bytes(event.tagData.frRxFrame.data)[: int(event.size)]
-                print(f"  received and continue slot id: {slot_id} {data.hex()}")
+                print(f"  received slot id: {slot_id} {data.hex()}")
                 continue
 
             # if (event_tag := event.tag) != vector_ctypes.XL_FR_RX_FRAME:
