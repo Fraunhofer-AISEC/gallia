@@ -160,7 +160,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
                 print(f"  received and continue event tag: {event_tag}")
                 continue
 
-            if (slot_id := event.tagData.frRxFrame.slotID) == 46:
+            if (slot_id := event.tagData.frRxFrame.slotID) in (46, 59, 33):
                 print(event)
                 data = bytes(event.tagData.frRxFrame.data)[: int(event.size)]
                 print(f"  received slot id: {slot_id} {data.hex()}")
