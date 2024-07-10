@@ -2,7 +2,7 @@ import ctypes
 import sys
 from typing import Protocol, Any
 
-assert sys.platform == 'win32', "unsupported platform"
+assert sys.platform == "win32", "unsupported platform"
 
 from can.interfaces.vector import xlclass, xldriver
 
@@ -15,8 +15,8 @@ else:
 XLfrEventTag = ctypes.c_ushort
 
 # activate - channel flags
-XL_ACTIVATE_NONE                    =  0 
-XL_ACTIVATE_RESET_CLOCK             =  8 # using this flag with time synchronisation protocols supported by Vector Timesync Service is not recommended
+XL_ACTIVATE_NONE = 0
+XL_ACTIVATE_RESET_CLOCK = 8  # using this flag with time synchronisation protocols supported by Vector Timesync Service is not recommended
 
 
 # Extended error codes
@@ -105,6 +105,7 @@ XL_FR_MAX_DATA_LENGTH = 254
 
 # structure for xlFrSetConfiguration
 
+
 class CtypeLike(Protocol):
     @property
     def _fields_(self) -> list[tuple[str, Any]]: ...
@@ -115,7 +116,7 @@ class IntrospectMixin:
         fields = []
         for name, _ in self._fields_:
             fields.append(f"{name}: {getattr(self, name)}")
-        
+
         fields_str = ", ".join(fields)
         return f"{self.__class__.__name__}: {fields_str}"
 
@@ -282,14 +283,21 @@ XL_FR_FILTER_TYPE_FILLUP_NF = 0x00000004  # specifies a null frame in an unused 
 XL_FR_FILTER_CHANNEL_A = 0x00000001  # specifies FlexRay channel A for the PC
 XL_FR_FILTER_CHANNEL_B = 0x00000002  # specifies FlexRay channel B for the PC
 
-# typedef struct  s_xl_fr_acceptance_filter {
-#   unsigned int  filterStatus;                                     //!< defines if the specified frame should be blocked or pass the filter
-#   unsigned int  filterTypeMask;                                   //!< specifies the frame type that should be filtered
-#   unsigned int  filterFirstSlot;                                  //!< beginning of the slot range
-#   unsigned int  filterLastSlot;                                   //!< end of the slot range (can be the same as filterFirstSlot)
-#   unsigned int  filterChannelMask;                                //!< channel A, B for PC, channel A, B for COB
-# } XLfrAcceptanceFilter;
-# include <poppack.h>
+
+class s_xl_fr_acceptance_filter(IntrospectMixin, ctypes.Structure):
+    _fields_ = [
+        ("filterStatus", ctypes.c_uint),
+        ("filterTypeMask", ctypes.c_uint),
+        ("filterFirstSlot", ctypes.c_uint),  # beginning of the slot range
+        (
+            "filterLastSlot",
+            ctypes.c_uint,
+        ),  #  end of the slot range (can be the same as filterFirstSlot)
+        ("filterChannelMask", ctypes.c_uint),  # channel A, B for PC, channel A, B for COB
+    ]
+
+XLfrAcceptanceFilter = s_xl_fr_acceptance_filter
+
 
 # Flags for the flagsChip parameter
 XL_FR_CHANNEL_A = 0x01
@@ -734,3 +742,12 @@ xlFrReceive.argtypes = [
 ]
 xlFrReceive.restype = xlclass.XLstatus
 xlFrReceive.errcheck = xldriver.check_status_operation
+
+xlFrSetAcceptanceFilter = _xlapi_dll.xlFrSetAcceptanceFilter
+xlFrSetAcceptanceFilter.argtypes = [
+    xlclass.XLportHandle,
+    xlclass.XLaccess,
+    ctypes.byref(XLfrAcceptanceFilter),
+]
+xlFrSetAcceptanceFilter.restype = xlclass.XLstatus
+xlFrSetAcceptanceFilter.errcheck = xldriver.check_status_operation

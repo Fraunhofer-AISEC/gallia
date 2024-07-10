@@ -74,6 +74,34 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
 
         print(f"port handle: {self.port_handle}")
 
+        filter = vector_ctypes.xlFrSetAcceptanceFilter(
+            vector_ctypes.XL_FR_FILTER_PASS,
+            vector_ctypes.XL_FR_FILTER_TYPE_DATA,
+            ctypes.c_uint(33),
+            ctypes.c_uint(33),
+            self.channel_mask,
+        )
+
+        vector_ctypes.xlFrSetAcceptanceFilter(
+            self.port_handle,
+            self.channel_mask,
+            ctypes.byref(filter),
+        )
+
+        filter = vector_ctypes.xlFrSetAcceptanceFilter(
+            vector_ctypes.XL_FR_FILTER_PASS,
+            vector_ctypes.XL_FR_FILTER_TYPE_DATA,
+            ctypes.c_uint(59),
+            ctypes.c_uint(59),
+            self.channel_mask,
+        )
+
+        vector_ctypes.xlFrSetAcceptanceFilter(
+            self.port_handle,
+            self.channel_mask,
+            ctypes.byref(filter),
+        )
+
         self.event_handle = xlclass.XLhandle()
         xldriver.xlSetNotification(self.port_handle, self.event_handle, 1)
 
@@ -168,6 +196,8 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
                 print(event.tagData.frRxFrame)
                 data = bytes(event.tagData.frRxFrame.data)[: int(event.size)]
                 print(data.hex())
+            else:
+                print(f"received different slot: {slot_id}")
             continue
 
             if (slot_id := event.tagData.frRxFrame.slotID) in (46, 59, 33):
