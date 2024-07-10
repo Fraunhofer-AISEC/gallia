@@ -137,6 +137,8 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
 
         end_time = time.time() + timeout if timeout is not None else None
 
+        slots = {}
+
         while True:
             if end_time is not None and time.time() > end_time:
                 raise TimeoutError()
@@ -156,14 +158,21 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
             event = vector_ctypes.XLfrEvent()
             vector_ctypes.xlFrReceive(self.port_handle, ctypes.byref(event))
 
-            if (event_tag := event.tag) != vector_ctypes.XL_FR_RX_FRAME:
-                print(f"  received and continue event tag: {event_tag}")
+            if event.tag != vector_ctypes.XL_FR_RX_FRAME:
                 continue
 
+            
+            slot_id = event.tagData.frRxFrame.slotID
+            if slot_id not in slots:
+                slots[slot_id] = 1
+            else:
+                slots[slot_id] += 1
+
+            print(slots)
+            continue
+
             if (slot_id := event.tagData.frRxFrame.slotID) in (46, 59, 33):
-                print(event)
                 data = bytes(event.tagData.frRxFrame.data)[: int(event.size)]
-                print(f"  received slot id: {slot_id} {data.hex()}")
                 continue
 
             # if (event_tag := event.tag) != vector_ctypes.XL_FR_RX_FRAME:
