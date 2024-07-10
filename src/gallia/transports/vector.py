@@ -207,7 +207,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
 
             
             slot_id = event.tagData.frRxFrame.slotID
-            cycle_count = event.tagData.frRxFrame.cycle_count
+            cycle_count = event.tagData.frRxFrame.cycleCount
 
             if slot_id not in (33, 59):
                 continue
