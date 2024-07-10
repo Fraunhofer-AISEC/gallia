@@ -79,7 +79,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
             vector_ctypes.XL_FR_FILTER_TYPE_DATA,
             ctypes.c_uint(33),
             ctypes.c_uint(33),
-            ctypes.c_uint(self.channel_mask),
+            ctypes.c_uint(self.channel_mask.value),
         )
 
         vector_ctypes.xlFrSetAcceptanceFilter(
@@ -93,7 +93,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
             vector_ctypes.XL_FR_FILTER_TYPE_DATA,
             ctypes.c_uint(59),
             ctypes.c_uint(59),
-            ctypes.c_uint(self.channel_mask),
+            ctypes.c_uint(self.channel_mask.value),
         )
 
         vector_ctypes.xlFrSetAcceptanceFilter(
