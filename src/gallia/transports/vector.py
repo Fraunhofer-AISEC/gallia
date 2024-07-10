@@ -208,13 +208,11 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
             
             slot_id = event.tagData.frRxFrame.slotID
 
-            if slot_id in (33, 59):
-                print(event.tagData.frRxFrame)
-                data = bytes(event.tagData.frRxFrame.data)[: int(event.size)]
-                print(data.hex())
-            else:
-                print(f"received different slot (event.tag): {event.tag}")
-                print(f"received different slot (slot_id): {slot_id}")
+            if slot_id not in (33, 59):
+                continue
+
+            data = bytes(event.tagData.frRxFrame.data)[: int(event.size)]
+            print(data.hex())
             continue
 
             if (slot_id := event.tagData.frRxFrame.slotID) in (46, 59, 33):
