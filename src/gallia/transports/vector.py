@@ -73,7 +73,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
         )
 
         print(f"port handle: {self.port_handle}")
-        sys.exit()
+        print(f"init mask: {self.init_mask}")
 
         self.event_handle = xlclass.XLhandle()
         xldriver.xlSetNotification(self.port_handle, self.event_handle, 1)
