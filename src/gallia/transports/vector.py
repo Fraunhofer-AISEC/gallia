@@ -74,7 +74,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
 
         print(f"port handle: {self.port_handle}")
 
-        filter = vector_ctypes.xlFrSetAcceptanceFilter(
+        filter = vector_ctypes.XLfrAcceptanceFilter(
             vector_ctypes.XL_FR_FILTER_PASS,
             vector_ctypes.XL_FR_FILTER_TYPE_DATA,
             ctypes.c_uint(33),
@@ -88,7 +88,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
             ctypes.byref(filter),
         )
 
-        filter = vector_ctypes.xlFrSetAcceptanceFilter(
+        filter = vector_ctypes.XLfrAcceptanceFilter(
             vector_ctypes.XL_FR_FILTER_PASS,
             vector_ctypes.XL_FR_FILTER_TYPE_DATA,
             ctypes.c_uint(59),
