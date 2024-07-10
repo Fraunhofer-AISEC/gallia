@@ -74,6 +74,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
 
         print(f"port handle: {self.port_handle}")
         print(f"init mask: {self.init_mask}")
+        sys.exit()
 
         self.event_handle = xlclass.XLhandle()
         xldriver.xlSetNotification(self.port_handle, self.event_handle, 1)
@@ -157,17 +158,16 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
             event = vector_ctypes.XLfrEvent()
             vector_ctypes.xlFrReceive(self.port_handle, ctypes.byref(event))
 
+            print(event)
+
             if (event_tag := event.tag) != vector_ctypes.XL_FR_RX_FRAME:
-                print(f"received and continue event tag: {event_tag}")
+                print(f"  received and continue event tag: {event_tag}")
                 continue
 
             if (slot_id := event.tagData.frRxFrame.slotID) != self.config.slot_id:
                 data = bytes(event.tagData.frRxFrame.data)[: int(event.size)]
-                print(f"received and continue slot id: {slot_id} {data.hex()}")
+                print(f"  received and continue slot id: {slot_id} {data.hex()}")
                 continue
-
-            print(event)
-
 
             # if (event_tag := event.tag) != vector_ctypes.XL_FR_RX_FRAME:
             #     print(f"received and continue event tag: {event_tag}")
