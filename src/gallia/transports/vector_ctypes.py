@@ -747,7 +747,7 @@ xlFrSetAcceptanceFilter = _xlapi_dll.xlFrSetAcceptanceFilter
 xlFrSetAcceptanceFilter.argtypes = [
     xlclass.XLportHandle,
     xlclass.XLaccess,
-    ctypes.byref(XLfrAcceptanceFilter),
+    ctypes.POINTER(XLfrAcceptanceFilter),
 ]
 xlFrSetAcceptanceFilter.restype = xlclass.XLstatus
 xlFrSetAcceptanceFilter.errcheck = xldriver.check_status_operation
