@@ -81,7 +81,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
         filter = vector_ctypes.XLfrAcceptanceFilter(
             vector_ctypes.XL_FR_FILTER_BLOCK,
             vector_ctypes.XL_FR_FILTER_TYPE_DATA | vector_ctypes.XL_FR_FILTER_TYPE_NF | vector_ctypes.XL_FR_FILTER_TYPE_FILLUP_NF,
-            ctypes.c_uint(1),
+            ctypes.c_uint(0),
             ctypes.c_uint(255),
             ctypes.c_uint(self.channel_mask.value),
         )
@@ -183,8 +183,6 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
 
         end_time = time.time() + timeout if timeout is not None else None
 
-        slots = {}
-
         while True:
             if end_time is not None and time.time() > end_time:
                 raise TimeoutError()
@@ -215,7 +213,8 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
                 data = bytes(event.tagData.frRxFrame.data)[: int(event.size)]
                 print(data.hex())
             else:
-                print(f"received different slot: {slot_id}")
+                print(f"received different slot (event.tag): {event.tag}")
+                print(f"received different slot (slot_id): {slot_id}")
             continue
 
             if (slot_id := event.tagData.frRxFrame.slotID) in (46, 59, 33):
