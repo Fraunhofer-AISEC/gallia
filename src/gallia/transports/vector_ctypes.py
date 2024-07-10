@@ -271,8 +271,8 @@ XL_FR_SPY_MODE_ASYNCHRONOUS = 0x01
 
 # defines for xlFrSetAcceptanceFilter
 # filterStatus
-XL_FR_FILTER_PASS = 0x00000000  # maching frame passes the filter
-XL_FR_FILTER_BLOCK = 0x00000001  # maching frame is blocked
+XL_FR_FILTER_PASS = ctypes.c_uint(0x00000000)  # maching frame passes the filter
+XL_FR_FILTER_BLOCK = ctypes.c_uint(0x00000001)  # maching frame is blocked
 
 # filterTypeMask
 XL_FR_FILTER_TYPE_DATA = 0x00000001  # specifies a data frame
