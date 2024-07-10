@@ -55,7 +55,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
                 channel.channel_bus_capabilities
                 & xldefine.XL_BusCapabilities.XL_BUS_ACTIVE_CAP_FLEXRAY
             ):
-                self.channel_mask = ctypes.c_int64(channel.channel_mask)
+                self.channel_mask = xlclass.XLaccess(channel.channel_mask)
                 break
         else:
             raise RuntimeError("no flexray channel found")
