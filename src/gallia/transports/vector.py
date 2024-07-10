@@ -214,7 +214,11 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
             data = bytes(event.tagData.frRxFrame.data)[: int(event.size)]
 
             if slot_id == 33:
-                print(data[4:12].hex())
+                d = data[4:12]
+                if d == bytes.fromhex("0000000000000000"):
+                    print(event.tagData.frRxFrame)
+                print(d.hex())
+
             continue
 
             if (slot_id := event.tagData.frRxFrame.slotID) in (46, 59, 33):
