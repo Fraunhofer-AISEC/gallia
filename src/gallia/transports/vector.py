@@ -81,7 +81,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
         filter = vector_ctypes.XLfrAcceptanceFilter(
             vector_ctypes.XL_FR_FILTER_BLOCK,
             vector_ctypes.XL_FR_FILTER_TYPE_DATA,
-            ctypes.c_uint(0),
+            ctypes.c_uint(1),
             ctypes.c_uint(255),
             ctypes.c_uint(self.channel_mask.value),
         )
