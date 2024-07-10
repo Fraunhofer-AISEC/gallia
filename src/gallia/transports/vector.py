@@ -163,14 +163,8 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
 
             
             slot_id = event.tagData.frRxFrame.slotID
-            if slot_id not in slots:
-                slots[slot_id] = 1
-            else:
-                slots[slot_id] += 1
 
-            print(dict(sorted(slots.items())))
-
-            if slot_id == 59:
+            if slot_id in (33, 59):
                 print(event.tagData.frRxFrame)
                 data = bytes(event.tagData.frRxFrame.data)[: int(event.size)]
                 print(data.hex())
