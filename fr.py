@@ -13,7 +13,7 @@ async def main() -> None:
     # await tp.write(bytes.fromhex("1C307C6100023E00"))
 
     while True:
-        data = await tp.read(timeout=20)
+        data = await tp.read(timeout=10)
         print(data)
 
 
