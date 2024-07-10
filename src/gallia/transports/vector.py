@@ -60,6 +60,8 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
         else:
             raise RuntimeError("no flexray channel found")
 
+        print(f"channel mask: {self.channel_mask}")
+
         xldriver.xlOpenPort(
             ctypes.byref(self.port_handle),
             ctypes.create_string_buffer(b"Flex"),
@@ -69,6 +71,9 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
             xldefine.XL_InterfaceVersion.XL_INTERFACE_VERSION_V4,
             xldefine.XL_BusTypes.XL_BUS_TYPE_FLEXRAY,
         )
+
+        print(f"port handle: {self.port_handle}")
+        sys.exit()
 
         self.event_handle = xlclass.XLhandle()
         xldriver.xlSetNotification(self.port_handle, self.event_handle, 1)
