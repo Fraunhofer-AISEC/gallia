@@ -156,8 +156,13 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
                 print(f"received and continue event tag: {event_tag}")
                 continue
 
-            print(f"received and continue slot id: {event.slot_id} {event.tagData.frRxFrame.data.hex()}")
-            continue
+            if (slot_id := event.tagData.frRxFrame.slotID) != self.config.slot_id:
+                data = bytes(event.tagData.frRxFrame.data)[: int(event.size)]
+                print(f"received and continue slot id: {slot_id} {data.hex()}")
+                continue
+
+            print(event)
+
 
             # if (event_tag := event.tag) != vector_ctypes.XL_FR_RX_FRAME:
             #     print(f"received and continue event tag: {event_tag}")
