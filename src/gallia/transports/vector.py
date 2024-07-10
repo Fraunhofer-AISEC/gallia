@@ -62,6 +62,10 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray"):
 
         print(f"channel mask: {self.channel_mask}")
 
+        out = ctypes.c_uint()
+        vector_ctypes.xlGetKeymanBoxes(ctypes.byref(out))
+        print(f"dongle foo: {out}")
+
         xldriver.xlOpenPort(
             ctypes.byref(self.port_handle),
             ctypes.create_string_buffer(b"Flex"),

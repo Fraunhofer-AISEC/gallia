@@ -751,3 +751,10 @@ xlFrSetAcceptanceFilter.argtypes = [
 ]
 xlFrSetAcceptanceFilter.restype = xlclass.XLstatus
 xlFrSetAcceptanceFilter.errcheck = xldriver.check_status_operation
+
+xlGetKeymanBoxes = _xlapi_dll.xlGetKeymanBoxes 
+xlGetKeymanBoxes.argtypes = [
+    ctypes.POINTER(ctypes.c_uint),
+]
+xlGetKeymanBoxes.restype = xlclass.XLstatus
+xlGetKeymanBoxes.errcheck = xldriver.check_status_initialization
