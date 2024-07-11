@@ -504,7 +504,8 @@ class s_xl_fr_tx_frame(IntrospectMixin, ctypes.Structure):
         ("incrementOffset", ctypes.c_uint8),
         ("reserved0", ctypes.c_uint8),
         ("reserved1", ctypes.c_uint8),
-        ("data", ctypes.c_char * XL_FR_MAX_DATA_LENGTH),
+        # ("data", ctypes.c_char * XL_FR_MAX_DATA_LENGTH),
+        ("data", ctypes.c_char * 254),
         # TODO: Does this work?
         # ("data", ctypes.c_uint8 * XL_FR_MAX_DATA_LENGTH),
     ]
