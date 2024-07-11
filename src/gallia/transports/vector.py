@@ -55,10 +55,16 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
                 channel.channel_bus_capabilities
                 & xldefine.XL_BusCapabilities.XL_BUS_ACTIVE_CAP_FLEXRAY
             ):
-                self.channel_mask = ctypes.c_int64(channel.channel_mask)
+                self.channel_mask = xlclass.XLaccess(channel.channel_mask)
                 break
         else:
             raise RuntimeError("no flexray channel found")
+
+        print(f"channel mask: {self.channel_mask}")
+
+        out = ctypes.c_uint()
+        vector_ctypes.xlGetKeymanBoxes(ctypes.byref(out))
+        print(f"dongle foo: {out}")
 
         xldriver.xlOpenPort(  # type: ignore
             ctypes.byref(self.port_handle),
@@ -68,6 +74,50 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
             ctypes.c_uint(self.config.rx_fifo_size),
             xldefine.XL_InterfaceVersion.XL_INTERFACE_VERSION_V4,
             xldefine.XL_BusTypes.XL_BUS_TYPE_FLEXRAY,
+        )
+
+        print(f"port handle: {self.port_handle}")
+
+        filter = vector_ctypes.XLfrAcceptanceFilter(
+            vector_ctypes.XL_FR_FILTER_BLOCK,
+            vector_ctypes.XL_FR_FILTER_TYPE_DATA | vector_ctypes.XL_FR_FILTER_TYPE_NF | vector_ctypes.XL_FR_FILTER_TYPE_FILLUP_NF,
+            ctypes.c_uint(1),
+            ctypes.c_uint(255),
+            ctypes.c_uint(self.channel_mask.value),
+        )
+
+        vector_ctypes.xlFrSetAcceptanceFilter(
+            self.port_handle,
+            self.channel_mask,
+            ctypes.byref(filter),
+        )
+
+        filter = vector_ctypes.XLfrAcceptanceFilter(
+            vector_ctypes.XL_FR_FILTER_PASS,
+            vector_ctypes.XL_FR_FILTER_TYPE_DATA,
+            ctypes.c_uint(33),
+            ctypes.c_uint(33),
+            ctypes.c_uint(self.channel_mask.value),
+        )
+
+        vector_ctypes.xlFrSetAcceptanceFilter(
+            self.port_handle,
+            self.channel_mask,
+            ctypes.byref(filter),
+        )
+
+        filter = vector_ctypes.XLfrAcceptanceFilter(
+            vector_ctypes.XL_FR_FILTER_PASS,
+            vector_ctypes.XL_FR_FILTER_TYPE_DATA,
+            ctypes.c_uint(59),
+            ctypes.c_uint(59),
+            ctypes.c_uint(self.channel_mask.value),
+        )
+
+        vector_ctypes.xlFrSetAcceptanceFilter(
+            self.port_handle,
+            self.channel_mask,
+            ctypes.byref(filter),
         )
 
         self.event_handle = xlclass.XLhandle()
@@ -152,14 +202,42 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
             event = vector_ctypes.XLfrEvent()
             vector_ctypes.xlFrReceive(self.port_handle, ctypes.byref(event))
 
-            if (event_tag := event.tag) != vector_ctypes.XL_FR_RX_FRAME:
-                print(f"received and continue event tag: {event_tag}")
+            if event.tag != vector_ctypes.XL_FR_RX_FRAME:
                 continue
 
-            if (slot_id := event.tagData.frRxFrame.slotID) != self.config.slot_id:
-                data = bytes(event.tagData.frRxFrame.data)[: int(event.size)]
-                print(f"received and continue slot id: {slot_id} {data.hex()}")
+            
+            slot_id = event.tagData.frRxFrame.slotID
+            cycle_count = event.tagData.frRxFrame.cycleCount
+
+            if slot_id not in (33, 59):
                 continue
+            # if cycle_count % 2 == 0 and slot_id == 33:
+            #     continue
+
+            data = bytes(event.tagData.frRxFrame.data)[: int(event.size)]
+
+            print(event.tagData.frRxFrame)
+            if slot_id == 33:
+                d = data[4:12]
+                if d != bytes.fromhex("0000000000000000"):
+                    print(f"slot_id {slot_id}: {d.hex()}")
+            else:
+                print(f"slot_id {slot_id}: {data.hex()}")
+
+            continue
+
+            if (slot_id := event.tagData.frRxFrame.slotID) in (46, 59, 33):
+                data = bytes(event.tagData.frRxFrame.data)[: int(event.size)]
+                continue
+
+            # if (event_tag := event.tag) != vector_ctypes.XL_FR_RX_FRAME:
+            #     print(f"received and continue event tag: {event_tag}")
+            #     continue
+            #
+            # if (slot_id := event.tagData.frRxFrame.slotID) != self.config.slot_id:
+            #     data = bytes(event.tagData.frRxFrame.data)[: int(event.size)]
+            #     print(f"received and continue slot id: {slot_id} {data.hex()}")
+            #     continue
 
             # TODO: slicing is correct?
             return bytes(event.tagData.frRxFrame.data)[: int(event.size)]
