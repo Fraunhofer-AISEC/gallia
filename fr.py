@@ -12,7 +12,7 @@ async def main() -> None:
 
     # await tp.write(bytes.fromhex("1C307C6100023E00"))
 
-    timeout = int(sys.argv[1]) if len(sys.argv) == 2 else 10
+    timeout = int(sys.argv[1]) if len(sys.argv) == 2 else None
     while True:
         frame = await tp.read_frame(timeout=timeout)
         print(frame)
