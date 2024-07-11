@@ -170,6 +170,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
         print(data.hex())
         print(event.tagData.frTxFrame.data.hex())
         print(data.hex())
+        print(event.tagData.frTxFrame.payloadLength)
 
         await asyncio.to_thread(
             vector_ctypes.xlFrTransmit,
