@@ -153,6 +153,16 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
         event.flagsChip = vector_ctypes.XL_FR_CHANNEL_A
         event.size = 0  # calculated inside XL-API DLL
         event.userHandle = 0
+        
+        e = vector_ctypes.XL_FR_TX_FRAME_EV()
+        print(len(e.data))
+        print(e.data)
+        e.data = b"hans"
+        print(e.data)
+
+        
+
+
         event.tagData.frTxFrame = vector_ctypes.XL_FR_TX_FRAME_EV()
         event.tagData.frTxFrame.flags = 0
         event.tagData.frTxFrame.offset = 0
