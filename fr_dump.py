@@ -19,7 +19,7 @@ async def main() -> None:
         data = data_raw[4:12]
 
         print(f"raw event: {frame}")
-        print(f"   -> slot_id: {frame.slotID}; data: {data_raw.hex()}")
+        print(f"   -> slot_id: {fr_rx_frame.slotID}; data: {data_raw.hex()}")
         print(f"       -> {data.hex()}")
 
 
