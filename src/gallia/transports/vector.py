@@ -151,7 +151,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
         tags: list[str] | None = None,
     ) -> int:
         tagData = vector_ctypes.s_xl_fr_tag_data()
-        tagData.frTxFrame = vector_ctypes.XL_FR_TX_FRAME_EV(
+        tx_frame_ev =  vector_ctypes.XL_FR_TX_FRAME_EV(
             0,  # flags
             self.config.slot_id,  # slotID
             0,  # offset
@@ -164,6 +164,11 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
             0,  # reserved1
             data,  # data
         )
+
+        print(len(data))
+        print(tx_frame_ev.data)
+
+        tagData.frTxFrame = tx_frame_ev
 
         event = vector_ctypes.XLfrEvent(
             0,  # size
