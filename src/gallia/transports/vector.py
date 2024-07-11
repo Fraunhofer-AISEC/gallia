@@ -155,11 +155,6 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
         event.userHandle = 0
         
         e = vector_ctypes.XL_FR_TX_FRAME_EV()
-        print(len(e.data))
-        print(e.data)
-        e.data = b"hans"
-        print(e.data)
-        print(len(e.data))
         e.data = b"hansbert"
         print(e.data)
         print(len(e.data))
@@ -167,7 +162,8 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
         
 
 
-        event.tagData.frTxFrame = vector_ctypes.XL_FR_TX_FRAME_EV()
+        # event.tagData.frTxFrame = vector_ctypes.XL_FR_TX_FRAME_EV()
+        event.tagData.frTxFrame = e
         event.tagData.frTxFrame.flags = 0
         event.tagData.frTxFrame.offset = 0
         event.tagData.frTxFrame.repetition = 1
