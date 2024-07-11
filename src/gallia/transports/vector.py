@@ -36,7 +36,7 @@ class FlexrayFrame:
     pass
 
 
-class RawFlexrayTransport(BaseTransport, scheme="flexray"):
+class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
     def __init__(self, target: TargetURI) -> None:
         super().__init__(target)
 
