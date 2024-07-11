@@ -159,6 +159,10 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
         print(e.data)
         e.data = b"hans"
         print(e.data)
+        print(len(e.data))
+        e.data = b"hansbert"
+        print(e.data)
+        print(len(e.data))
 
         
 
