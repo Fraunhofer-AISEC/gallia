@@ -169,7 +169,6 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
         event.tagData.frTxFrame.data = data
         print(event.tagData.frTxFrame.data.hex())
         print(len(event.tagData.frTxFrame.data))
-        event.tagData.frTxFrame.data[6] = 10
         print(event.tagData.frTxFrame.data.hex())
         print(event.tagData.frTxFrame.payloadLength)
 
