@@ -155,7 +155,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
         event.userHandle = 0
         
         e = vector_ctypes.XL_FR_TX_FRAME_EV()
-        e.data = bytes.fromhex("affe")
+        e.data = b"hansbert"
         print(e.data)
         print(len(e.data))
 
