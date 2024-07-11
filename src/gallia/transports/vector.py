@@ -173,11 +173,6 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
 
         event.tagData.frTxFrame.data = (ctypes.c_ubyte * vector_ctypes.XL_FR_MAX_DATA_LENGTH).from_buffer_copy(data)
 
-        print(event.tagData.frTxFrame.data.hex())
-        print(len(event.tagData.frTxFrame.data))
-        print(event.tagData.frTxFrame.data.hex())
-        print(event.tagData.frTxFrame.payloadLength)
-
         await asyncio.to_thread(
             vector_ctypes.xlFrTransmit,
             self.port_handle,
