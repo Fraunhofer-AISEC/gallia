@@ -153,28 +153,22 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
         event.flagsChip = vector_ctypes.XL_FR_CHANNEL_A
         event.size = 0  # calculated inside XL-API DLL
         event.userHandle = 0
-        # event.tagData = vector_ctypes.
         event.tagData.frTxFrame = vector_ctypes.XL_FR_TX_FRAME_EV()
-        # event.tagData.frTxFrame.flags = 0
-        # event.tagData.frTxFrame.offset = 0
-        # event.tagData.frTxFrame.repetition = 1
-        # event.tagData.frTxFrame.payloadLength = len(data)
-        # event.tagData.frTxFrame.slotID = self.config.slot_id
-        # event.tagData.frTxFrame.txMode = vector_ctypes.XL_FR_TX_MODE_SINGLE_SHOT
-        # event.tagData.frTxFrame.incrementOffset = 0
-        # event.tagData.frTxFrame.incrementSize = 0
+        event.tagData.frTxFrame.flags = 0
+        event.tagData.frTxFrame.offset = 0
+        event.tagData.frTxFrame.repetition = 1
+        event.tagData.frTxFrame.payloadLength = len(data)
+        event.tagData.frTxFrame.slotID = self.config.slot_id
+        event.tagData.frTxFrame.txMode = vector_ctypes.XL_FR_TX_MODE_SINGLE_SHOT
+        event.tagData.frTxFrame.incrementOffset = 0
+        event.tagData.frTxFrame.incrementSize = 0
 
         if len(data) > vector_ctypes.XL_FR_MAX_DATA_LENGTH:
             raise ValueError("frame exceeds max data length")
 
-        # event.tagData.frTxFrame.data = ctypes.create_string_buffer(data, 254)
-        print(type(event.tagData))
-        print(type(event.size))
-        print(type(event.tagData.frTxFrame))
-        print(type(event.tagData.frTxFrame.flags))
-        print(type(event.tagData.frTxFrame.data))
+        event.tagData.frTxFrame.data = data
+        print(data)
         print(event.tagData.frTxFrame.data)
-        # event.tagData.frTxFrame.data = data
 
         await asyncio.to_thread(
             vector_ctypes.xlFrTransmit,
