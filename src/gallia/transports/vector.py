@@ -166,10 +166,11 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
         if len(data) > vector_ctypes.XL_FR_MAX_DATA_LENGTH:
             raise ValueError("frame exceeds max data length")
 
-        event.tagData.frTxFrame.data[:] = data
-        print(data.hex())
+        event.tagData.frTxFrame.data = data
         print(event.tagData.frTxFrame.data.hex())
-        print(data.hex())
+        print(len(event.tagData.frTxFrame.data))
+        event.tagData.frTxFrame.data[6] = 10
+        print(event.tagData.frTxFrame.data.hex())
         print(event.tagData.frTxFrame.payloadLength)
 
         await asyncio.to_thread(
