@@ -4,7 +4,7 @@ from typing import Any, Protocol
 
 assert sys.platform == "win32", "unsupported platform"
 
-from can.interfaces.vector import _xlapi_dll, xlclass, xldriver  # type: ignore  # noqa: E402
+from can.interfaces.vector import xlclass, xldriver  # type: ignore  # noqa: E402
 
 if dll_path := ctypes.util.find_library(xldriver.DLL_NAME):
     _xlapi_dll = ctypes.windll.LoadLibrary(dll_path)
