@@ -10,7 +10,7 @@ async def main() -> None:
     url = TargetURI("flexray-raw://?slot_id=59")
     tp = await RawFlexrayTransport.connect(url, None)
 
-    await tp.write(bytes.fromhex("023e00"))
+    await tp.write(bytes.fromhex("307c6100023e00"))
 
 
 if __name__ == "__main__":
