@@ -16,6 +16,9 @@ async def main() -> None:
     while True:
         frame = await tp.read_frame(timeout=timeout)
         data = bytes(frame.data[:frame.payloadLength])
+        if frame.slotID == 33:
+            data = data[4:12]
+
         print(f"slot_id: {frame.slotID}; data: {data.hex()}")
 
 
