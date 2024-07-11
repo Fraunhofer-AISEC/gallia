@@ -154,14 +154,14 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
         event.size = 0  # calculated inside XL-API DLL
         event.userHandle = 0
         event.tagData.frTxFrame = vector_ctypes.XL_FR_TX_FRAME_EV()
-        event.tagData.frTxFrame.flags = 0
-        event.tagData.frTxFrame.offset = 0
-        event.tagData.frTxFrame.repetition = 1
-        event.tagData.frTxFrame.payloadLength = len(data)
-        event.tagData.frTxFrame.slotID = self.config.slot_id
-        event.tagData.frTxFrame.txMode = vector_ctypes.XL_FR_TX_MODE_SINGLE_SHOT
-        event.tagData.frTxFrame.incrementOffset = 0
-        event.tagData.frTxFrame.incrementSize = 0
+        # event.tagData.frTxFrame.flags = 0
+        # event.tagData.frTxFrame.offset = 0
+        # event.tagData.frTxFrame.repetition = 1
+        # event.tagData.frTxFrame.payloadLength = len(data)
+        # event.tagData.frTxFrame.slotID = self.config.slot_id
+        # event.tagData.frTxFrame.txMode = vector_ctypes.XL_FR_TX_MODE_SINGLE_SHOT
+        # event.tagData.frTxFrame.incrementOffset = 0
+        # event.tagData.frTxFrame.incrementSize = 0
 
         if len(data) > vector_ctypes.XL_FR_MAX_DATA_LENGTH:
             raise ValueError("frame exceeds max data length")
