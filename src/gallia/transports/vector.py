@@ -166,6 +166,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
             raise ValueError("frame exceeds max data length")
 
         # event.tagData.frTxFrame.data = ctypes.create_string_buffer(data, 254)
+        print(type(event.tagData.frTxFrame))
         print(type(event.tagData.frTxFrame.data))
         print(event.tagData.frTxFrame.data)
         # event.tagData.frTxFrame.data = data
