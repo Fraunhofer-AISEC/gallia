@@ -157,7 +157,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
         event.size = 0  # calculated inside XL-API DLL
         event.userHandle = 0
 
-        event.tagData.frTxFrame.flags = 0
+        event.tagData.frTxFrame.flags = 0x08
         event.tagData.frTxFrame.offset = 0
         event.tagData.frTxFrame.repetition = 1
         event.tagData.frTxFrame.payloadLength = len(data)
