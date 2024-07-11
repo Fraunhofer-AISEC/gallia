@@ -153,6 +153,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
         event.flagsChip = vector_ctypes.XL_FR_CHANNEL_A
         event.size = 0  # calculated inside XL-API DLL
         event.userHandle = 0
+        event.tagData = vector_ctypes.
         event.tagData.frTxFrame = vector_ctypes.XL_FR_TX_FRAME_EV()
         # event.tagData.frTxFrame.flags = 0
         # event.tagData.frTxFrame.offset = 0
@@ -167,6 +168,8 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
             raise ValueError("frame exceeds max data length")
 
         # event.tagData.frTxFrame.data = ctypes.create_string_buffer(data, 254)
+        print(type(event.tagData))
+        print(type(event.tagData.frTxFrame))
         print(type(event.tagData.frTxFrame.flags))
         print(type(event.tagData.frTxFrame.data))
         print(event.tagData.frTxFrame.data)
