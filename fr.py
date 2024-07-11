@@ -15,7 +15,7 @@ async def main() -> None:
     timeout = int(sys.argv[1]) if len(sys.argv) == 2 else None
     while True:
         frame = await tp.read_frame(timeout=timeout)
-        print(f"slot_id: {frame.slotId}; data: {frame.data}")
+        print(f"slot_id: {frame.slotID}; data: {frame.data}")
 
 
 if __name__ == "__main__":
