@@ -15,11 +15,11 @@ async def main() -> None:
     timeout = int(sys.argv[1]) if len(sys.argv) == 2 else None
     while True:
         frame = await tp.read_frame(timeout=timeout)
-        data = bytes(frame.data[:frame.payloadLength])
-        # if frame.slotID == 33:
-        data = data[4:12]
+        data_raw = bytes(frame.data[:frame.payloadLength])
+        data = data_raw[4:12]
 
-        print(f"slot_id: {frame.slotID}; data: {data.hex()}")
+        print(f"slot_id: {frame.slotID}; data: {data_raw.hex()}")
+        print(f"   -> {data.hex()}")
 
 
 if __name__ == "__main__":
