@@ -166,8 +166,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
         if len(data) > vector_ctypes.XL_FR_MAX_DATA_LENGTH:
             raise ValueError("frame exceeds max data length")
 
-        import copy
-        event.tagData.frTxFrame.data = copy.deepcopy(data)
+        event.tagData.frTxFrame.data = bytearray(data)
         print(data.hex())
         print(event.tagData.frTxFrame.data.hex())
         print(data.hex())
