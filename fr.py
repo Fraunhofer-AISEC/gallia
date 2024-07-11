@@ -12,10 +12,15 @@ async def main() -> None:
 
     # await tp.write(bytes.fromhex("1C307C6100023E00"))
 
+    timeout = int(sys.argv[1]) if len(sys.argv) == 2 else 10
     while True:
-        data = await tp.read(timeout=10)
-        print(data)
+        frame = await tp.read_frame(timeout=timeout)
+        print(frame)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except TimeoutError:
+        pass
+

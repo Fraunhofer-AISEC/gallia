@@ -3,7 +3,7 @@ import ctypes
 import ctypes.util
 import sys
 import time
-from typing import Self
+from typing import Self, Any
 
 assert sys.platform == "win32", "unsupported platform"
 
@@ -176,7 +176,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
         )
         return len(data)
 
-    async def read(self, timeout: float | None = None, tags: list[str] | None = None) -> bytes:
+    async def read_frame(self, timeout: float | None = None, tags: list[str] | None = None) -> Any:
         assert canlib.WaitForSingleObject is not None
         assert canlib.INFINITE is not None
         assert self.event_handle.value is not None
@@ -207,7 +207,6 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
 
             
             slot_id = event.tagData.frRxFrame.slotID
-            cycle_count = event.tagData.frRxFrame.cycleCount
 
             if slot_id not in (33, 59):
                 continue
@@ -220,9 +219,9 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
             if slot_id == 33:
                 d = data[4:12]
                 if d != bytes.fromhex("0000000000000000"):
-                    print(f"slot_id {slot_id}: {d.hex()}")
+                    return event.tagData
             else:
-                print(f"slot_id {slot_id}: {data.hex()}")
+                return event.tagData
 
             continue
 
@@ -241,6 +240,10 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
 
             # TODO: slicing is correct?
             return bytes(event.tagData.frRxFrame.data)[: int(event.size)]
+
+
+    async def read(self, timeout: float | None = None, tags: list[str] | None = None) -> bytes:
+        raise NotImplementedError()
 
     async def close(self) -> None:
         await asyncio.to_thread(xldriver.xlClosePort, self.port_handle)  # type: ignore
