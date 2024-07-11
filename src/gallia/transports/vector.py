@@ -150,59 +150,29 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> int:
-        tagData = vector_ctypes.s_xl_fr_tag_data()
-        tx_frame_ev =  vector_ctypes.XL_FR_TX_FRAME_EV(
-            0,  # flags
-            self.config.slot_id,  # slotID
-            0,  # offset
-            0,  # repetition
-            len(data),  # payloadLength
-            vector_ctypes.XL_FR_TX_MODE_SINGLE_SHOT,  # txMode
-            0,  # incrementSize
-            0,  # incrementOffset
-            0,  # reserved0
-            0,  # reserved1
-            data,  # data
-        )
 
-        print(len(data))
-        print(tx_frame_ev.data)
+        event = vector_ctypes.XLfrEvent()
+        event.tag = vector_ctypes.XL_FR_TX_FRAME
+        event.flagsChip = vector_ctypes.XL_FR_CHANNEL_A
+        event.size = 0  # calculated inside XL-API DLL
+        event.userHandle = 0
 
-        tagData.frTxFrame = tx_frame_ev
+        event.tagData.frTxFrame.flags = 0
+        event.tagData.frTxFrame.offset = 0
+        event.tagData.frTxFrame.repetition = 1
+        event.tagData.frTxFrame.payloadLength = len(data)
+        event.tagData.frTxFrame.slotID = self.config.slot_id
+        event.tagData.frTxFrame.txMode = vector_ctypes.XL_FR_TX_MODE_SINGLE_SHOT
+        event.tagData.frTxFrame.incrementOffset = 0
+        event.tagData.frTxFrame.incrementSize = 0
 
-        event = vector_ctypes.XLfrEvent(
-            0,  # size
-            vector_ctypes.XL_FR_TX_FRAME,  # tag
-            0,  # channelIndex
-            0,  # userHandle
-            vector_ctypes.XL_FR_CHANNEL_A,  # flagsChip
-            0,  # reserved
-            0,  # timestamp
-            0,  # timestampSync
-            tagData,
-        )
+        if len(data) > vector_ctypes.XL_FR_MAX_DATA_LENGTH:
+            raise ValueError("frame exceeds max data length")
 
-        # event.tag = vector_ctypes.XL_FR_TX_FRAME
-        # event.flagsChip = vector_ctypes.XL_FR_CHANNEL_A
-        # event.size = 0  # calculated inside XL-API DLL
-        # event.userHandle = 0
-        #
-        #
-        #
-        # event.tagData.frTxFrame = vector_ctypes.XL_FR_TX_FRAME_EV()
-        # event.tagData.frTxFrame.flags = 0
-        # event.tagData.frTxFrame.offset = 0
-        # event.tagData.frTxFrame.repetition = 1
-        # event.tagData.frTxFrame.payloadLength = len(data)
-        # event.tagData.frTxFrame.slotID = self.config.slot_id
-        # event.tagData.frTxFrame.txMode = vector_ctypes.XL_FR_TX_MODE_SINGLE_SHOT
-        # event.tagData.frTxFrame.incrementOffset = 0
-        # event.tagData.frTxFrame.incrementSize = 0
-        #
-        # if len(data) > vector_ctypes.XL_FR_MAX_DATA_LENGTH:
-        #     raise ValueError("frame exceeds max data length")
-        #
-        # event.tagData.frTxFrame.data = data
+        data = data.ljust(vector_ctypes.XL_FR_MAX_DATA_LENGTH, b"\x00")
+
+        event.tagData.frTxFrame.data = (ctypes.c_ubyte * vector_ctypes.XL_FR_MAX_DATA_LENGTH).from_buffer_copy(data)
+
         print(event.tagData.frTxFrame.data.hex())
         print(len(event.tagData.frTxFrame.data))
         print(event.tagData.frTxFrame.data.hex())
