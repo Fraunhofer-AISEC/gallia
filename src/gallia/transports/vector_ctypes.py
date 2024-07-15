@@ -295,6 +295,7 @@ class s_xl_fr_acceptance_filter(IntrospectMixin, ctypes.Structure):
         ("filterChannelMask", ctypes.c_uint),  # channel A, B for PC, channel A, B for COB
     ]
 
+
 XLfrAcceptanceFilter = s_xl_fr_acceptance_filter
 
 
@@ -749,7 +750,7 @@ xlFrSetAcceptanceFilter.argtypes = [
 xlFrSetAcceptanceFilter.restype = xlclass.XLstatus
 xlFrSetAcceptanceFilter.errcheck = xldriver.check_status_initialization  # type: ignore
 
-xlGetKeymanBoxes = _xlapi_dll.xlGetKeymanBoxes 
+xlGetKeymanBoxes = _xlapi_dll.xlGetKeymanBoxes
 xlGetKeymanBoxes.argtypes = [
     ctypes.POINTER(ctypes.c_uint),
 ]
