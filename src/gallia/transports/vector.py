@@ -437,7 +437,7 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="flexray-tp-legacy"):
         timeout: float | None = None,
     ) -> Self:
         t = TargetURI(target) if isinstance(target, str) else target
-        fr_raw = await RawFlexrayTransport.connect("flexray-raw", timeout)
+        fr_raw = await RawFlexrayTransport.connect("flexray-raw:", timeout)
         return cls(t, fr_raw)
 
     async def write_bytes(self, data: bytes) -> None:
