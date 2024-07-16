@@ -76,6 +76,8 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
         else:
             raise RuntimeError("no flexray channel found")
 
+        logger.debug(f"found flexray channel: {self.channel_mask}")
+
         # Enable license stuff.
         out = ctypes.c_uint()
         vector_ctypes.xlGetKeymanBoxes(ctypes.byref(out))
@@ -90,6 +92,8 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
             xldefine.XL_BusTypes.XL_BUS_TYPE_FLEXRAY,
         )
 
+        logger.debug(f"opened flexray port: {self.port_handle}")
+
     def activate_channel(self) -> None:
         self.event_handle = xlclass.XLhandle()
         xldriver.xlSetNotification(self.port_handle, self.event_handle, 1)  # type: ignore
@@ -100,6 +104,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
             xldefine.XL_BusTypes.XL_BUS_TYPE_FLEXRAY,
             vector_ctypes.XL_ACTIVATE_RESET_CLOCK,
         )
+        logger.debug(f"activated flexray channel: {self.port_handle}:{self.channel_mask}")
 
     def deactivate_channel(self) -> None:
         raise NotImplementedError()
@@ -135,6 +140,8 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
             self.channel_mask,
             ctypes.byref(filter),
         )
+
+        logger.debug(f"set accept filter: {from_slot}:{to_slot}")
 
     @classmethod
     async def connect(
@@ -176,6 +183,8 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
             self.channel_mask,
             ctypes.byref(event),
         )
+
+        logger.trace(f"wrote RawFlexRayFrame: {event}")
 
     async def write_frame(self, frame: FlexrayFrame) -> None:
         async with self.mutex:
@@ -231,6 +240,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
             if frame.slot_id != slot_id:
                 continue
 
+            logger.trace(f"read RawFlexRayFrame: {event}")
             return frame
 
     async def read_frame(
