@@ -360,7 +360,7 @@ class FlexRayTPFirstFrame(BaseModel):
             raise ValueError(f"wrong frame type_: {type:x}")
 
         size = ((data[0] & 0x0F) << 8) | data[1]
-        return cls(data=data[1 : size + 1], size=size)
+        return cls(data=data[2 : size + 1], size=size)
 
 
 class FlexRayTPConsecutiveFrame(BaseModel):
