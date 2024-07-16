@@ -8,7 +8,7 @@ from gallia.transports import FlexRayTPLegacyTransport, TargetURI
 
 
 async def main() -> None:
-    setup_logging(level=Loglevel.DEBUG, no_volatile_info=True)
+    setup_logging(level=Loglevel.TRACE, no_volatile_info=True)
 
     # TODO: rename dst->target
     url = TargetURI("flexray-tp-legacy://?dst_slot_id=59&src_slot_id=33&dst_address=0x307c&src_address=0x6100")

@@ -9,7 +9,7 @@ import os
 import sys
 import time
 from enum import IntEnum, unique
-from typing import Self, TypeAlias
+from typing import Self, TypeAlias, ClassVar
 
 from more_itertools import chunked
 
@@ -23,7 +23,7 @@ if "GALLIA_VXLAPI_PATH" in os.environ:
     os.environ["PATH"] = os.path.dirname(gallia_setting) + os.pathsep + os.environ["PATH"]  # noqa: PTH120
 
 from can.interfaces.vector import canlib, xlclass, xldefine, xldriver
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from gallia.log import get_logger
 from gallia.transports import BaseTransport, TargetURI, vector_ctypes
@@ -47,9 +47,7 @@ class RawFlexrayConfig(BaseModel):
 
 
 class FlexrayFrame(BaseModel):
-    # TODO: use configdict from pydantic
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     slot_id: int
     data: bytes
@@ -166,7 +164,13 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
         event.tagData.frTxFrame.flags = 0x08  # TODO: what is 0x08?
         event.tagData.frTxFrame.offset = 0
         event.tagData.frTxFrame.repetition = 1
-        event.tagData.frTxFrame.payloadLength = len(frame.data) // 2  # word size, for reasons
+
+        # It is in word size, for reasons…
+        payload_len = len(frame.data) // 2
+        if len(frame.data) % 2 > 0:
+            payload_len += 1
+
+        event.tagData.frTxFrame.payloadLength = payload_len
         event.tagData.frTxFrame.slotID = frame.slot_id
         event.tagData.frTxFrame.txMode = vector_ctypes.XL_FR_TX_MODE_SINGLE_SHOT
         event.tagData.frTxFrame.incrementOffset = 0
@@ -316,14 +320,14 @@ class FlexRayTPSingleFrame(BaseModel):
     @classmethod
     def parse(cls, data: bytes) -> Self:
         type_ = parse_frame_type(data)
-        if type_ != FlexRayTPFrameType.SINGLE_FRAME:
+        if type_ != cls.type_:
             raise ValueError(f"wrong frame type: {type:x}")
         size = data[0] & 0xF
-        return cls(data=data[1:], size=size)
+        return cls(data=data[1:size+1], size=size)
 
 
 class FlexRayTPFirstFrame(BaseModel):
-    type_: FlexRayTPFrameType = FlexRayTPFrameType.FIRST_FRAME
+    type_: ClassVar[FlexRayTPFrameType] = FlexRayTPFrameType.FIRST_FRAME
     data: bytes
     size: int
 
@@ -337,15 +341,15 @@ class FlexRayTPFirstFrame(BaseModel):
     @classmethod
     def parse(cls, data: bytes) -> Self:
         type_ = parse_frame_type(data)
-        if type_ != FlexRayTPFrameType.FIRST_FRAME:
+        if type_ != cls.type_:
             raise ValueError(f"wrong frame type_: {type:x}")
 
         size = ((data[0] & 0x0F) << 4) | data[1]
-        return cls(data=data[1:], size=size)
+        return cls(data=data[1:size+1], size=size)
 
 
 class FlexRayTPConsecutiveFrame(BaseModel):
-    type_: FlexRayTPFrameType = FlexRayTPFrameType.CONSECUTIVE_FRAME
+    type_: ClassVar[FlexRayTPFrameType] = FlexRayTPFrameType.CONSECUTIVE_FRAME
     counter: int
     data: bytes
 
@@ -359,14 +363,14 @@ class FlexRayTPConsecutiveFrame(BaseModel):
     @classmethod
     def parse(cls, data: bytes) -> Self:
         type_ = parse_frame_type(data)
-        if type_ != FlexRayTPFrameType.CONSECUTIVE_FRAME:
+        if type_ != cls.type_:
             raise ValueError(f"wrong frame type_: {type:x}")
         counter = data[0] & 0xF
         return cls(counter=counter, data=data[1:])
 
 
 class FlexRayTPFlowControlFrame(BaseModel):
-    type_: FlexRayTPFrameType = FlexRayTPFrameType.FLOW_CONTROL_FRAME
+    type_: ClassVar[FlexRayTPFrameType] = FlexRayTPFrameType.FLOW_CONTROL_FRAME
     flag: FlexRayTPFlowControlFlag
     block_size: int
     separation_time: int
@@ -383,7 +387,7 @@ class FlexRayTPFlowControlFrame(BaseModel):
     @classmethod
     def parse(cls, data: bytes) -> Self:
         type_ = FlexRayTPFrameType(data[0] >> 4)
-        if type_ != FlexRayTPFrameType.FLOW_CONTROL_FRAME:
+        if type_ != cls.type_:
             raise ValueError(f"wrong frame type_: {type:x}")
         flag = FlexRayTPFlowControlFlag(data[0] >> 4)
         block_size = data[1]
