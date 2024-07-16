@@ -170,7 +170,11 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
         if len(frame.data) % 2 > 0:
             payload_len += 1
 
-        event.tagData.frTxFrame.payloadLength = payload_len
+        data = frame.data.ljust(vector_ctypes.XL_FR_MAX_DATA_LENGTH, b"\x00")
+
+        data[73] = 0x80
+
+        event.tagData.frTxFrame.payloadLength = vector_ctypes.XL_FR_MAX_DATA_LENGTH
         event.tagData.frTxFrame.slotID = frame.slot_id
         event.tagData.frTxFrame.txMode = vector_ctypes.XL_FR_TX_MODE_SINGLE_SHOT
         event.tagData.frTxFrame.incrementOffset = 0
@@ -178,8 +182,6 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
 
         if len(frame.data) > vector_ctypes.XL_FR_MAX_DATA_LENGTH:
             raise ValueError("frame exceeds max data length")
-
-        data = frame.data.ljust(vector_ctypes.XL_FR_MAX_DATA_LENGTH, b"\x00")
 
         event.tagData.frTxFrame.data = (
             ctypes.c_ubyte * vector_ctypes.XL_FR_MAX_DATA_LENGTH
