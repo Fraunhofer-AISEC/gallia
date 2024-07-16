@@ -548,7 +548,7 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="flexray-tp-legacy"):
         dst_address, src_address = self._parse_address(data)
         logger.trace("got frame for addresses: %x %x", dst_address, src_address)
         frame = parse_frame(data[4:])
-        logger.trace("read FlexRayTPFrame %s", frame)
+        logger.trace("read FlexRayTPFrame %s", repr(frame))
         return frame
 
     async def _handle_fragmented(self, expected_len: int) -> bytes:
