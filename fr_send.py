@@ -7,7 +7,7 @@ from gallia.transports import FlexRayTPLegacyTransport, TargetURI
 
 
 async def main() -> None:
-    url = TargetURI("flexray-tp-legaly://?dst_slot_id=59&src_slot_id=33&dst_address=0x60&src_address=0x44")
+    url = TargetURI("flexray-tp-legacy://?dst_slot_id=59&src_slot_id=33&dst_address=0x60&src_address=0x44")
     tp = await FlexRayTPLegacyTransport.connect(url, None)
 
     await tp.write(bytes.fromhex("3e 00"))
