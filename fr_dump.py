@@ -15,11 +15,9 @@ async def main() -> None:
 
     while True:
         frame = await tp.read_frame()
-        fr_rx_frame = frame.tagData.frRxFrame
-        data_raw = bytes(fr_rx_frame.data[:fr_rx_frame.payloadLength])
 
-        print(f"raw event: {frame}")
-        print(f"   -> slot_id: {fr_rx_frame.slotID}; data: {data_raw.hex()}")
+        print(f"raw event: {frame.raw}")
+        print(f"   -> slot_id: {frame.slot_id}; data: {frame.data.hex()}")
 
 
 if __name__ == "__main__":
