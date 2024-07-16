@@ -20,7 +20,7 @@ async def main() -> None:
         if frame.data[0] == 0x00:
             continue
 
-        print(f"raw event: {frame.raw}")
+        # print(f"raw event: {frame.raw}")
         print(f"   -> slot_id: {frame.slot_id}; data: {frame.data.hex()}")
 
 
