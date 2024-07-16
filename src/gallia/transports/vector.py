@@ -170,11 +170,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
         event.tagData.frTxFrame.offset = 0
         event.tagData.frTxFrame.repetition = 1
 
-        # It is in word size, for reasons…
-        payload_len = len(frame.data) // 2
-        if len(frame.data) % 2 > 0:
-            payload_len += 1
-
+        # TODO: why is the 0x80 needed??
         data = bytearray(frame.data.ljust(vector_ctypes.XL_FR_MAX_DATA_LENGTH, b"\x00"))
         data[73] = 0x80
 
@@ -283,12 +279,16 @@ class FlexrayTPLegacyConfig(BaseModel):
     dst_slot_id: int
     src_address: int
     dst_address: int
+    payload_rx_start_index: int
+    payload_rx_end_index: int
 
     @field_validator(
         "src_slot_id",
         "dst_slot_id",
         "src_address",
         "dst_address",
+        "payload_rx_start_index",
+        "payload_rx_end_index",
         mode="before",
     )
     def auto_int(cls, v: str) -> int:
@@ -519,8 +519,11 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="flexray-tp-legacy"):
             return len(data)
 
     async def read_bytes(self) -> bytes:
-        frame = await self.fr_raw.read_frame(self.config.src_slot_id)
-        return frame.data
+        while True:
+            frame = await self.fr_raw.read_frame(self.config.src_slot_id)
+            if frame.data[0] == 0x00:
+                continue
+            return frame.data[self.config.payload_rx_start_index:self.config.payload_rx_end_index]
 
     @staticmethod
     def _parse_address(data: bytes) -> tuple[int, int]:
