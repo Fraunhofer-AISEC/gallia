@@ -322,6 +322,9 @@ class FlexRayTPSingleFrame(BaseModel):
     def __bytes__(self) -> bytes:
         return self.frame_header + self.data
 
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} size: {self.size} data: {self.data.hex()}>"
+
     @property
     def frame_header(self) -> bytes:
         return bytes([((self.type_ << 4) & 0xF0) | self.size & 0x0F])
@@ -342,6 +345,9 @@ class FlexRayTPFirstFrame(BaseModel):
 
     def __bytes__(self) -> bytes:
         return self.frame_header + self.data
+
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} size: {self.size} data: {self.data.hex()}>"
 
     @property
     def frame_header(self) -> bytes:
@@ -364,6 +370,9 @@ class FlexRayTPConsecutiveFrame(BaseModel):
 
     def __bytes__(self) -> bytes:
         return self.frame_header + self.data
+
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} counter: {self.counter} data: {self.data.hex()}>"
 
     @property
     def frame_header(self) -> bytes:
@@ -392,6 +401,9 @@ class FlexRayTPFlowControlFrame(BaseModel):
                 self.separation_time,
             ]
         )
+
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} flag: {self.flag} block_size: {self.block_size} separation_time: {self.separation_time}>"
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
@@ -523,7 +535,7 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="flexray-tp-legacy"):
             frame = await self.fr_raw.read_frame(self.config.src_slot_id)
             if frame.data[0] == 0x00:
                 continue
-            return frame.data[self.config.payload_rx_start_index:self.config.payload_rx_end_index]
+            return frame.data[self.config.payload_rx_start_index : self.config.payload_rx_end_index]
 
     @staticmethod
     def _parse_address(data: bytes) -> tuple[int, int]:
@@ -536,7 +548,7 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="flexray-tp-legacy"):
         dst_address, src_address = self._parse_address(data)
         logger.trace("got frame for addresses: %x %x", dst_address, src_address)
         frame = parse_frame(data[4:])
-        logger.trace("read FlexRayTPFrame (%s), data: %s", frame.type_.name, frame.data.hex())
+        logger.trace("read FlexRayTPFrame %s", frame)
         return frame
 
     async def _handle_fragmented(self, expected_len: int) -> bytes:
@@ -556,6 +568,7 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="flexray-tp-legacy"):
 
             read_bytes += len(frame.data)
             data += frame.data
+            counter = (counter + 1) & 0x0F
         return data
 
     async def read_unsafe(
