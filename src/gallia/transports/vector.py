@@ -546,7 +546,7 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="flexray-tp-legacy"):
     async def read_tp_frame(self) -> FlexRayTPFrame:
         data = await self.read_bytes()
         dst_address, src_address = self._parse_address(data)
-        logger.trace("got frame for addresses: %x %x", dst_address, src_address)
+        # logger.trace("got frame for addresses: %x %x", dst_address, src_address)
         frame = parse_frame(data[4:])
         logger.trace("read FlexRayTPFrame %s", repr(frame))
         return frame
@@ -560,7 +560,7 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="flexray-tp-legacy"):
 
         while read_bytes < expected_len:
             # Reordering is not implemented.
-            self.debug(f"expected_len: {expected_len}; read_bytes: {read_bytes}")
+            logger.debug(f"expected_len: {expected_len}; read_bytes: {read_bytes}")
             frame = await self.read_tp_frame()
             if not isinstance(frame, FlexRayTPConsecutiveFrame):
                 raise RuntimeError(f"expected consecutive frame, got: {frame}")
