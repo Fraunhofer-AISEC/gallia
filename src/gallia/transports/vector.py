@@ -359,7 +359,7 @@ class FlexRayTPFirstFrame(BaseModel):
         if type_ != cls.type_:
             raise ValueError(f"wrong frame type_: {type:x}")
 
-        size = ((data[0] & 0x0F) << 4) | data[1]
+        size = ((data[0] & 0x0F) << 8) | data[1]
         return cls(data=data[1 : size + 1], size=size)
 
 
