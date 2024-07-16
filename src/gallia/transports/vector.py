@@ -46,7 +46,11 @@ class RawFlexrayConfig(BaseModel):
         return auto_int(v)
 
 
-class FlexrayFrame(BaseModel):
+class Config:
+    arbitrary_types_allowed = True
+
+
+class FlexrayFrame(BaseModel, config=Config):
     slot_id: int
     data: bytes
     raw: vector_ctypes.XLfrEvent | None
