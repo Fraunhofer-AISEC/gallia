@@ -51,7 +51,12 @@ class FlexrayFrame(BaseModel):
 
     slot_id: int
     data: bytes
-    raw: vector_ctypes.XLfrEvent | None
+    raw: (
+        vector_ctypes.XLfrEvent
+        | vector_ctypes.XL_FR_RX_FRAME_EV
+        | vector_ctypes.XL_FR_TX_FRAME_EV
+        | None
+    )
 
 
 class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
