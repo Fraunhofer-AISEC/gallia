@@ -10,7 +10,8 @@ async def main() -> None:
     url = TargetURI("flexray-raw:")
     tp = await RawFlexrayTransport.connect(url, None)
     tp.add_block_all_filter()
-    tp.set_acceptance_filter(0x33, 0x33)
+    tp.set_acceptance_filter(33, 33)
+    tp.set_acceptance_filter(59, 59)
     tp.activate_channel()
 
     while True:
