@@ -306,7 +306,7 @@ def parse_frame_type(data: bytes) -> FlexRayTPFrameType:
 
 
 class FlexRayTPSingleFrame(BaseModel):
-    type_: FlexRayTPFrameType = FlexRayTPFrameType.SINGLE_FRAME
+    type_: ClassVar[FlexRayTPFrameType] = FlexRayTPFrameType.SINGLE_FRAME
     data: bytes
     size: int
 
