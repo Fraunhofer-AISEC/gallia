@@ -12,7 +12,7 @@ async def main() -> None:
 
     # TODO: rename dst->target
     url = TargetURI(
-        "flexray-tp-legacy://?dst_slot_id=59&src_slot_id=33&dst_address=0x307c&src_address=0x6100&payload_rx_start_index=0&payload_rx_end_index=11"
+        "flexray-tp-legacy://?dst_slot_id=59&src_slot_id=33&dst_address=0x307c&src_address=0x6100&payload_rx_start_index=0&payload_rx_end_index=12"
     )
     tp = await FlexRayTPLegacyTransport.connect(url, None)
 
