@@ -14,7 +14,9 @@ async def main() -> None:
     tp = await FlexRayTPLegacyTransport.connect(url, None)
 
     await tp.write(bytes.fromhex("3e 00"))
-    print(await tp.read().hex())
+
+    data = await tp.read()
+    print(data.hex())
 
 
 if __name__ == "__main__":
