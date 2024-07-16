@@ -48,6 +48,7 @@ class RawFlexrayConfig(BaseModel):
 
 
 class FlexrayFrame(BaseModel):
+    # TODO: use configdict from pydantic
     class Config:
         arbitrary_types_allowed = True
 
@@ -316,9 +317,7 @@ class FlexRayTPSingleFrame(BaseModel):
     @classmethod
     def parse(cls, data: bytes) -> Self:
         type_ = parse_frame_type(data)
-        print(f"cls.type: {cls.type}")
-        print(f"type: {type_}")
-        if type_ != cls.type_:
+        if type_ != FlexRayTPFrameType.SINGLE_FRAME:
             raise ValueError(f"wrong frame type: {type:x}")
         size = data[0] & 0xF
         return cls(data=data[1:], size=size)
@@ -339,7 +338,7 @@ class FlexRayTPFirstFrame(BaseModel):
     @classmethod
     def parse(cls, data: bytes) -> Self:
         type_ = parse_frame_type(data)
-        if type_ != cls.type_:
+        if type_ != FlexRayTPFrameType.FIRST_FRAME:
             raise ValueError(f"wrong frame type_: {type:x}")
 
         size = ((data[0] & 0x0F) << 4) | data[1]
@@ -361,7 +360,7 @@ class FlexRayTPConsecutiveFrame(BaseModel):
     @classmethod
     def parse(cls, data: bytes) -> Self:
         type_ = parse_frame_type(data)
-        if type_ != cls.type_:
+        if type_ != FlexRayTPFrameType.CONSECUTIVE_FRAME:
             raise ValueError(f"wrong frame type_: {type:x}")
         counter = data[0] & 0xF
         return cls(counter=counter, data=data[1:])
@@ -385,7 +384,7 @@ class FlexRayTPFlowControlFrame(BaseModel):
     @classmethod
     def parse(cls, data: bytes) -> Self:
         type_ = FlexRayTPFrameType(data[0] >> 4)
-        if type_ != cls.type_:
+        if type_ != FlexRayTPFrameType.FLOW_CONTROL_FRAME:
             raise ValueError(f"wrong frame type_: {type:x}")
         flag = FlexRayTPFlowControlFlag(data[0] >> 4)
         block_size = data[1]
