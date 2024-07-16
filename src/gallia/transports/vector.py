@@ -20,16 +20,17 @@ assert sys.platform == "win32", "unsupported platform"
 # the path variable needs to be changed before the import.
 if "GALLIA_VXLAPI_PATH" in os.environ:
     gallia_setting = os.environ["GALLIA_VXLAPI_PATH"]
-    os.environ["PATH"] = os.path.dirname(gallia_setting) + os.pathsep + os.environ["PATH"]  # noqa
+    os.environ["PATH"] = os.path.dirname(gallia_setting) + os.pathsep + os.environ["PATH"]  # noqa: PTH120
 
-from can.interfaces.vector import canlib, xlclass, xldefine, xldriver  # noqa: E402
-from pydantic import BaseModel, field_validator  # noqa: E402
+from can.interfaces.vector import canlib, xlclass, xldefine, xldriver
+from pydantic import BaseModel, field_validator
+
+from gallia.log import get_logger
+from gallia.transports import BaseTransport, TargetURI, vector_ctypes
+from gallia.utils import auto_int
 
 assert canlib.HAS_EVENTS and canlib.WaitForSingleObject, "event support is not available"
 
-from gallia.log import get_logger  # noqa: E402
-from gallia.transports import BaseTransport, TargetURI, vector_ctypes  # noqa: E402
-from gallia.utils import auto_int  # noqa: E402
 
 logger = get_logger(__name__)
 
@@ -434,6 +435,7 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="flexray-tp-legacy"):
         await self.fr_raw.write_frame(frame)
 
     async def write_tp_frame(self, frame: FlexRayTPFrame) -> None:
+        logger.trace("write FlexRayTPFrame: %s", frame)
         await self.write_bytes(bytes(frame))
 
     async def write_unsafe(
@@ -468,6 +470,7 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="flexray-tp-legacy"):
             await self.write_tp_frame(cf_frame)
             counter = (counter + 1) & 0x0F
 
+        logger.debug("wrote data: %s", data.hex())
         return len(data)
 
     async def write(
@@ -485,7 +488,9 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="flexray-tp-legacy"):
         return frame.data
 
     async def read_tp_frame(self) -> FlexRayTPFrame:
-        return parse_frame(await self.read_bytes())
+        frame = parse_frame(await self.read_bytes())
+        logger.trace("read FlexRayTPFrame: %s", frame)
+        return frame
 
     async def _handle_fragmented(self, expected_len: int) -> bytes:
         # 7 bytes already read in first frame.
@@ -522,7 +527,9 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="flexray-tp-legacy"):
                     block_size=0xFF,  # TODO: send again after block_size is read.
                 )
                 await self.write_tp_frame(fc_frame)
-                return frame.data + await self._handle_fragmented(frame.size)
+                data = frame.data + await self._handle_fragmented(frame.size)
+                logger.debug("read data: %s", data.hex())
+                return data
             case _:
                 raise RuntimeError(f"got unexpected tp frame: {frame}")
 
