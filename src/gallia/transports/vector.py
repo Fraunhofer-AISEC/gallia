@@ -15,6 +15,9 @@ from more_itertools import chunked
 
 assert sys.platform == "win32", "unsupported platform"
 
+# Configures the behaviour of ctypes.util.find_library().
+# Since this is used within the xldriver module of the can library,
+# the path variable needs to be changed before the import.
 if "GALLIA_VXLAPI_PATH" in os.environ:
     gallia_setting = os.environ["GALLIA_VXLAPI_PATH"]
     os.environ["PATH"] = os.path.dirname(gallia_setting) + os.pathsep + os.environ["PATH"]  # noqa
