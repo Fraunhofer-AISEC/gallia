@@ -572,7 +572,7 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="flexray-tp-legacy"):
             data += frame.data
             counter = (counter + 1) & 0x0F
 
-        return data[:expected_len]
+        return data
 
     async def read_unsafe(
         self,
@@ -591,6 +591,7 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="flexray-tp-legacy"):
                 )
                 await self.write_tp_frame(fc_frame)
                 data = frame.data + await self._handle_fragmented(frame.size)
+                data = data[:frame.size]
                 logger.debug("read data: %s", data.hex())
                 return data
             case _:
