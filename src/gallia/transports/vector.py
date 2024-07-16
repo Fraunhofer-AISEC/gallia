@@ -46,7 +46,6 @@ class RawFlexrayConfig(BaseModel):
         return auto_int(v)
 
 
-
 class FlexrayFrame(BaseModel):
     # TODO: use configdict from pydantic
     class Config:
@@ -451,7 +450,15 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="flexray-tp-legacy"):
 
     async def write_tp_frame(self, frame: FlexRayTPFrame) -> None:
         logger.trace("write FlexRayTPFrame: %s", frame)
-        await self.write_bytes(bytes(frame))
+        address_header = bytes(
+            [
+                ((self.config.dst_address >> 8) & 0xFF),
+                (self.config.dst_address & 0xFF),
+                ((self.config.src_address >> 8) & 0xFF),
+                (self.config.src_address & 0xFF),
+            ],
+        )
+        await self.write_bytes(address_header + bytes(frame))
 
     async def write_unsafe(
         self,
