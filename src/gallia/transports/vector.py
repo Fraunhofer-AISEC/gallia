@@ -566,7 +566,7 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="flexray-tp-legacy"):
             if frame.counter != (counter & 0x0F):
                 raise RuntimeError(f"got unexpected consecutive counter: {frame.counter}")
 
-            read_bytes += len(frame.data)
+            read_bytes += len(frame.data) - 1
             data += frame.data
             counter = (counter + 1) & 0x0F
         return data
