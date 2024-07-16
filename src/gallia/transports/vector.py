@@ -242,7 +242,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
             frame = FlexrayFrame(
                 slot_id=event.tagData.frRxFrame.slotID,
                 data=bytes(event.tagData.frRxFrame.data)[: int(event.size)],
-                raw=event,
+                raw=event.tagData.frRxFrame,
             )
 
             if slot_id is not None:
