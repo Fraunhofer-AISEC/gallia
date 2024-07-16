@@ -567,10 +567,12 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="flexray-tp-legacy"):
             if frame.counter != (counter & 0x0F):
                 raise RuntimeError(f"got unexpected consecutive counter: {frame.counter}")
 
+            # Header size needs to be respected here.
             read_bytes += len(frame.data) + 1
             data += frame.data
             counter = (counter + 1) & 0x0F
-        return data
+
+        return data[:expected_len]
 
     async def read_unsafe(
         self,
