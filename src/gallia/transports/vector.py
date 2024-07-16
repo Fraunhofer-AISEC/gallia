@@ -253,7 +253,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
                 if frame.slot_id != slot_id:
                     continue
 
-            logger.trace(f"read RawFlexRayFrame: {event}")
+            logger.trace(f"read RawFlexRayFrame: {event.tagData.frRxFrame}")
             return frame
 
     async def read_frame(
