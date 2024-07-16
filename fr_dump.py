@@ -13,10 +13,8 @@ async def main() -> None:
     tp.set_acceptance_filter(0x33, 0x33)
     tp.activate_channel()
 
-    # await tp.write(bytes.fromhex("1C307C6100023E00"))
-
     while True:
-        frame = await tp.read_frame(slot_id=33)
+        frame = await tp.read_frame()
         fr_rx_frame = frame.tagData.frRxFrame
         data_raw = bytes(fr_rx_frame.data[:fr_rx_frame.payloadLength])
 

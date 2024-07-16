@@ -170,11 +170,9 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
         if len(frame.data) % 2 > 0:
             payload_len += 1
 
-        data = bytearray(frame.data.ljust(vector_ctypes.XL_FR_MAX_DATA_LENGTH, b"\x00"))
+        data = frame.data.ljust(vector_ctypes.XL_FR_MAX_DATA_LENGTH, b"\x00")
 
-        data[73] = 0x80
-
-        event.tagData.frTxFrame.payloadLength = 37
+        event.tagData.frTxFrame.payloadLength = 48
         event.tagData.frTxFrame.slotID = frame.slot_id
         event.tagData.frTxFrame.txMode = vector_ctypes.XL_FR_TX_MODE_SINGLE_SHOT
         event.tagData.frTxFrame.incrementOffset = 0
@@ -210,7 +208,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
 
     async def read_frame_unsafe(
         self,
-        slot_id: int | None,
+        slot_id: int | None = None,
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> FlexrayFrame:
@@ -247,8 +245,9 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
                 raw=event,
             )
 
-            if frame.slot_id != slot_id:
-                continue
+            if slot_id is not None:
+                if frame.slot_id != slot_id:
+                    continue
 
             logger.trace(f"read RawFlexRayFrame: {event}")
             return frame
