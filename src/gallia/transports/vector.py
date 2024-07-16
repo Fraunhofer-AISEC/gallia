@@ -302,7 +302,7 @@ def parse_frame_type(data: bytes) -> FlexRayTPFrameType:
 
 
 class FlexRayTPSingleFrame(BaseModel):
-    type: FlexRayTPFrameType = FlexRayTPFrameType.SINGLE_FRAME
+    type_: FlexRayTPFrameType = FlexRayTPFrameType.SINGLE_FRAME
     data: bytes
     size: int
 
@@ -315,15 +315,15 @@ class FlexRayTPSingleFrame(BaseModel):
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
-        type = parse_frame_type(data)
-        if type != cls.type:
+        type_ = parse_frame_type(data)
+        if type_ != cls.type:
             raise ValueError(f"wrong frame type: {type:x}")
         size = data[0] & 0xF
         return cls(data=data[1:], size=size)
 
 
 class FlexRayTPFirstFrame(BaseModel):
-    type: FlexRayTPFrameType = FlexRayTPFrameType.FIRST_FRAME
+    type_: FlexRayTPFrameType = FlexRayTPFrameType.FIRST_FRAME
     data: bytes
     size: int
 
@@ -336,16 +336,16 @@ class FlexRayTPFirstFrame(BaseModel):
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
-        type = parse_frame_type(data)
-        if type != cls.type:
-            raise ValueError(f"wrong frame type: {type:x}")
+        type_ = parse_frame_type(data)
+        if type_ != cls.type:
+            raise ValueError(f"wrong frame type_: {type:x}")
 
         size = ((data[0] & 0x0F) << 4) | data[1]
         return cls(data=data[1:], size=size)
 
 
 class FlexRayTPConsecutiveFrame(BaseModel):
-    type: FlexRayTPFrameType = FlexRayTPFrameType.CONSECUTIVE_FRAME
+    type_: FlexRayTPFrameType = FlexRayTPFrameType.CONSECUTIVE_FRAME
     counter: int
     data: bytes
 
@@ -358,15 +358,15 @@ class FlexRayTPConsecutiveFrame(BaseModel):
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
-        type = parse_frame_type(data)
-        if type != cls.type:
-            raise ValueError(f"wrong frame type: {type:x}")
+        type_ = parse_frame_type(data)
+        if type_ != cls.type:
+            raise ValueError(f"wrong frame type_: {type:x}")
         counter = data[0] & 0xF
         return cls(counter=counter, data=data[1:])
 
 
 class FlexRayTPFlowControlFrame(BaseModel):
-    type: FlexRayTPFrameType = FlexRayTPFrameType.FLOW_CONTROL_FRAME
+    type_: FlexRayTPFrameType = FlexRayTPFrameType.FLOW_CONTROL_FRAME
     flag: FlexRayTPFlowControlFlag
     block_size: int
     separation_time: int
@@ -382,9 +382,9 @@ class FlexRayTPFlowControlFrame(BaseModel):
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
-        type = FlexRayTPFrameType(data[0] >> 4)
-        if type != cls.type:
-            raise ValueError(f"wrong frame type: {type:x}")
+        type_ = FlexRayTPFrameType(data[0] >> 4)
+        if type_ != cls.type:
+            raise ValueError(f"wrong frame type_: {type:x}")
         flag = FlexRayTPFlowControlFlag(data[0] >> 4)
         block_size = data[1]
         separation_time = data[2]
