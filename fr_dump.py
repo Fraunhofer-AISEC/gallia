@@ -16,6 +16,9 @@ async def main() -> None:
 
     while True:
         frame = await tp.read_frame()
+        # Filter out null frames. :)
+        if frame.data[0] == 0x00:
+            continue
 
         print(f"raw event: {frame.raw}")
         print(f"   -> slot_id: {frame.slot_id}; data: {frame.data.hex()}")
@@ -28,4 +31,3 @@ if __name__ == "__main__":
         pass
     except KeyboardInterrupt:
         pass
-

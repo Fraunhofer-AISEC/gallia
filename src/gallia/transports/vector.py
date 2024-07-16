@@ -194,7 +194,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
             ctypes.byref(event),
         )
 
-        logger.trace(f"wrote RawFlexRayFrame: {event}")
+        logger.trace(f"wrote RawFlexRayFrame: {event.tagData.frTxFrame}")
 
     async def write_frame(self, frame: FlexrayFrame) -> None:
         async with self.mutex:
