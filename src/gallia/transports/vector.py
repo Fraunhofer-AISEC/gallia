@@ -586,7 +586,7 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="flexray-tp-legacy"):
             case FlexRayTPFirstFrame():
                 fc_frame = FlexRayTPFlowControlFrame(
                     flag=FlexRayTPFlowControlFlag.CONTINUE_TO_SEND,
-                    separation_time=0xA0,  # Try 10 ms.
+                    separation_time=0x01,
                     block_size=0xFF,  # TODO: send again after block_size is read.
                 )
                 await self.write_tp_frame(fc_frame)
