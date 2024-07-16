@@ -243,6 +243,8 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
             vector_ctypes.xlFrReceive(self.port_handle, ctypes.byref(event))
             if event.tag != vector_ctypes.XL_FR_RX_FRAME:
                 continue
+            if event.tagData.frRxFrame.payloadLength == 0:
+                continue
 
             frame = FlexrayFrame(
                 slot_id=event.tagData.frRxFrame.slotID,
