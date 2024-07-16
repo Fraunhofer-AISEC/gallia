@@ -33,3 +33,4 @@ if sys.platform == "win32":
         DOIP = DOIP
 
         FLEXRAY_RAW = "flexray-raw"
+        FLEXRAY_TP_LEGACY = "flexray-tp-legacy"
