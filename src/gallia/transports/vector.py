@@ -555,7 +555,7 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="flexray-tp-legacy"):
         # 7 bytes already read in first frame.
         # Headersize is 1 byte.
         read_bytes = 7
-        counter = 0
+        counter = 1
         data = b""
 
         while read_bytes < expected_len:
