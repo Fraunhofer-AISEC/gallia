@@ -352,7 +352,7 @@ class BaseCommand(FlockMixin, ABC):
         symlink.unlink(missing_ok=True)
         try:
             symlink.symlink_to(latest_dir)
-        except NotImplementedError as e:
+        except (OSError, NotADirectoryError) as e:
             logger.warn(f"symlink error: {e}")
 
     def prepare_artifactsdir(

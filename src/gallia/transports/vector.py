@@ -591,7 +591,7 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="flexray-tp-legacy"):
                 )
                 await self.write_tp_frame(fc_frame)
                 data = frame.data + await self._handle_fragmented(frame.size)
-                data = data[:frame.size+1]
+                data = data[: frame.size + 1]
                 logger.debug("read data: %s", data.hex())
                 return data
             case _:
