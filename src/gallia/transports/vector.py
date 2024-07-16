@@ -17,7 +17,7 @@ assert sys.platform == "win32", "unsupported platform"
 
 if "GALLIA_VXLAPI_PATH" in os.environ:
     gallia_setting = os.environ["GALLIA_VXLAPI_PATH"]
-    os.eviron["PATH"] = os.path.dirname(gallia_setting) + os.pathsep + os.environ["PATH"]  # noqa
+    os.environ["PATH"] = os.path.dirname(gallia_setting) + os.pathsep + os.environ["PATH"]  # noqa
 
 from can.interfaces.vector import canlib, xlclass, xldefine, xldriver  # noqa: E402
 from pydantic import BaseModel, field_validator  # noqa: E402
