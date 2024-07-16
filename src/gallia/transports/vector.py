@@ -175,7 +175,8 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
         if len(frame.data) % 2 > 0:
             payload_len += 1
 
-        data = frame.data.ljust(vector_ctypes.XL_FR_MAX_DATA_LENGTH, b"\x00")
+        data = bytearray(frame.data.ljust(vector_ctypes.XL_FR_MAX_DATA_LENGTH, b"\x00"))
+        data[73] = 0x80
 
         event.tagData.frTxFrame.payloadLength = 48
         event.tagData.frTxFrame.slotID = frame.slot_id
