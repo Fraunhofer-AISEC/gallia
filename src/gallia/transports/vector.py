@@ -174,7 +174,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
 
         data[73] = 0x80
 
-        event.tagData.frTxFrame.payloadLength = vector_ctypes.XL_FR_MAX_DATA_LENGTH-1
+        event.tagData.frTxFrame.payloadLength = 34
         event.tagData.frTxFrame.slotID = frame.slot_id
         event.tagData.frTxFrame.txMode = vector_ctypes.XL_FR_TX_MODE_SINGLE_SHOT
         event.tagData.frTxFrame.incrementOffset = 0
