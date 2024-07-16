@@ -316,6 +316,8 @@ class FlexRayTPSingleFrame(BaseModel):
     @classmethod
     def parse(cls, data: bytes) -> Self:
         type_ = parse_frame_type(data)
+        print(f"cls.type: {cls.type}")
+        print(f"type: {type_}")
         if type_ != cls.type_:
             raise ValueError(f"wrong frame type: {type:x}")
         size = data[0] & 0xF
