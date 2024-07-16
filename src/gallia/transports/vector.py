@@ -254,7 +254,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
 
     async def read_frame(
         self,
-        slot_id: int | None,
+        slot_id: int | None = None,
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> FlexrayFrame:
