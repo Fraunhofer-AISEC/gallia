@@ -9,7 +9,7 @@ import os
 import sys
 import time
 from enum import IntEnum, unique
-from typing import Self, TypeAlias, ClassVar
+from typing import ClassVar, Self, TypeAlias
 
 from more_itertools import chunked
 
@@ -323,7 +323,7 @@ class FlexRayTPSingleFrame(BaseModel):
         if type_ != cls.type_:
             raise ValueError(f"wrong frame type: {type:x}")
         size = data[0] & 0xF
-        return cls(data=data[1:size+1], size=size)
+        return cls(data=data[1 : size + 1], size=size)
 
 
 class FlexRayTPFirstFrame(BaseModel):
@@ -345,7 +345,7 @@ class FlexRayTPFirstFrame(BaseModel):
             raise ValueError(f"wrong frame type_: {type:x}")
 
         size = ((data[0] & 0x0F) << 4) | data[1]
-        return cls(data=data[1:size+1], size=size)
+        return cls(data=data[1 : size + 1], size=size)
 
 
 class FlexRayTPConsecutiveFrame(BaseModel):
