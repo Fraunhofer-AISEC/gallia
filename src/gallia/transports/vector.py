@@ -560,6 +560,7 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="flexray-tp-legacy"):
 
         while read_bytes < expected_len:
             # Reordering is not implemented.
+            self.debug(f"expected_len: {expected_len}; read_bytes: {read_bytes}")
             frame = await self.read_tp_frame()
             if not isinstance(frame, FlexRayTPConsecutiveFrame):
                 raise RuntimeError(f"expected consecutive frame, got: {frame}")
