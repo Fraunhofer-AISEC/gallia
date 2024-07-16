@@ -750,6 +750,17 @@ files = [
 ]
 
 [[package]]
+name = "more-itertools"
+version = "10.3.0"
+description = "More routines for operating on iterables, beyond itertools"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "more-itertools-10.3.0.tar.gz", hash = "sha256:e5d93ef411224fbcef366a6e8ddc4c5781bc6359d43412a65dd5964e46111463"},
+    {file = "more_itertools-10.3.0-py3-none-any.whl", hash = "sha256:ea6a02e24a9161e51faad17a8782b92a0df82c12c1c8886fec7f0c3fa1a1b320"},
+]
+
+[[package]]
 name = "msgpack"
 version = "1.0.8"
 description = "MessagePack serializer"
@@ -2100,4 +2111,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<3.13"
-content-hash = "b95899392572d78b4ff92112ca074382a02e699ce79e63d8f259a3f412f70216"
+content-hash = "38a320e63101ad98da51fa10a90d81c992f6037c69abbb9df40125ffc17b8b6e"

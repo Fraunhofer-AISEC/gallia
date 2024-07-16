@@ -3,8 +3,10 @@ import ctypes
 import ctypes.util
 import sys
 import time
-from enum import IntEnum, unique, auto
-from typing import Self
+from enum import IntEnum, unique
+from typing import Self, TypeAlias
+
+from more_itertools import chunked
 
 assert sys.platform == "win32", "unsupported platform"
 
@@ -268,31 +270,51 @@ class FlexRayTPFlowControlFlag(IntEnum):
     ABORT = 2
 
 
-class _FlexRayTPFrameBase(BaseModel):
+def parse_frame_type(data: bytes) -> FlexRayTPFrameType:
+    return FlexRayTPFrameType(data[0] >> 4)
+
+
+class FlexRayTPSingleFrame(BaseModel):
     type: FlexRayTPFrameType = FlexRayTPFrameType.SINGLE_FRAME
     data: bytes
-
-    @property
-    def frame_header(self) -> bytes:
-        return bytes([((self.type << 4) & 0xF0) | len(self.data) & 0x0F])
+    size: int
 
     def __bytes__(self) -> bytes:
         return self.frame_header + self.data
 
+    @property
+    def frame_header(self) -> bytes:
+        return bytes([((self.type << 4) & 0xF0) | self.size & 0x0F])
+
     @classmethod
     def parse(cls, data: bytes) -> Self:
-        type = FlexRayTPFrameType(data[0] >> 4)
+        type = parse_frame_type(data)
         if type != cls.type:
             raise ValueError(f"wrong frame type: {type:x}")
-        return cls(data=data)
+        size = data[0] & 0xF
+        return cls(data=data[1:], size=size)
 
 
-class FlexRayTPSingleFrame(_FlexRayTPFrameBase):
-    type: FlexRayTPFrameType = FlexRayTPFrameType.SINGLE_FRAME
-
-
-class FlexRayTPFirstFrame(_FlexRayTPFrameBase):
+class FlexRayTPFirstFrame(BaseModel):
     type: FlexRayTPFrameType = FlexRayTPFrameType.FIRST_FRAME
+    data: bytes
+    size: int
+
+    def __bytes__(self) -> bytes:
+        return self.frame_header + self.data
+
+    @property
+    def frame_header(self) -> bytes:
+        return bytes([(((self.type << 4) & 0xF0) | (self.size >> 8) & 0x0F), self.size & 0xFF])
+
+    @classmethod
+    def parse(cls, data: bytes) -> Self:
+        type = parse_frame_type(data)
+        if type != cls.type:
+            raise ValueError(f"wrong frame type: {type:x}")
+
+        size = ((data[0] & 0x0F) << 4) | data[1]
+        return cls(data=data[1:], size=size)
 
 
 class FlexRayTPConsecutiveFrame(BaseModel):
@@ -300,17 +322,20 @@ class FlexRayTPConsecutiveFrame(BaseModel):
     counter: int
     data: bytes
 
+    def __bytes__(self) -> bytes:
+        return self.frame_header + self.data
+
     @property
     def frame_header(self) -> bytes:
         return bytes([((self.type << 4) & 0xF0) | self.counter & 0x0F])
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
-        type = FlexRayTPFrameType(data[0] >> 4)
+        type = parse_frame_type(data)
         if type != cls.type:
             raise ValueError(f"wrong frame type: {type:x}")
         counter = data[0] & 0xF
-        return cls(counter=counter, data=data)
+        return cls(counter=counter, data=data[1:])
 
 
 class FlexRayTPFlowControlFrame(BaseModel):
@@ -322,7 +347,7 @@ class FlexRayTPFlowControlFrame(BaseModel):
     def __bytes__(self) -> bytes:
         return bytes(
             [
-                ((self.type << 4) & 0xF0) | self.flag & 0x0F,
+                ((self.type << 4) & 0xF0) | (self.flag & 0x0F),
                 self.block_size,
                 self.separation_time,
             ]
@@ -343,20 +368,25 @@ class FlexRayTPFlowControlFrame(BaseModel):
         )
 
 
-class FlexRayTPFrame(BaseModel):
-    type: FlexRayTPFrameType
-    payload: (
-        FlexRayTPSingleFrame
-        | FlexRayTPFirstFrame
-        | FlexRayTPConsecutiveFrame
-        | FlexRayTPFlowControlFrame
-    )
+FlexRayTPFrame: TypeAlias = (
+    FlexRayTPSingleFrame
+    | FlexRayTPFirstFrame
+    | FlexRayTPConsecutiveFrame
+    | FlexRayTPFlowControlFrame
+)
 
 
-@unique
-class FlexRayTPRxStates(IntEnum):
-    SF_RECEIVING = auto()
-    CF_RECEIVING = auto()
+def parse_frame(data: bytes) -> FlexRayTPFrame:
+    t = parse_frame_type(data)
+    match t:
+        case FlexRayTPFrameType.SINGLE_FRAME:
+            return FlexRayTPSingleFrame.parse(data)
+        case FlexRayTPFrameType.FIRST_FRAME:
+            return FlexRayTPFirstFrame.parse(data)
+        case FlexRayTPFrameType.CONSECUTIVE_FRAME:
+            return FlexRayTPConsecutiveFrame.parse(data)
+        case FlexRayTPFrameType.FLOW_CONTROL_FRAME:
+            return FlexRayTPFlowControlFrame.parse(data)
 
 
 class FlexRayTPLegacyTransport(BaseTransport, scheme="flexray-tp-legacy"):
@@ -365,6 +395,7 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="flexray-tp-legacy"):
 
         self.check_scheme(target)
         self.config = FlexrayTPLegacyConfig(**target.qs_flat)
+        self.mutex = asyncio.Lock()
 
         self.fr_raw = fr_raw
         self.fr_raw.add_block_all_filter()
@@ -382,12 +413,7 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="flexray-tp-legacy"):
         fr_raw = await RawFlexrayTransport.connect(target, timeout)
         return cls(t, fr_raw)
 
-    async def _write_bytes(
-        self,
-        data: bytes,
-        timeout: float | None = None,
-        tags: list[str] | None = None,
-    ) -> None:
+    async def write_bytes(self, data: bytes) -> None:
         frame = FlexrayFrame(
             data=data,
             slot_id=self.config.dst_slot_id,
@@ -395,40 +421,106 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="flexray-tp-legacy"):
         )
         await self.fr_raw.write_frame(frame)
 
+    async def write_tp_frame(self, frame: FlexRayTPFrame) -> None:
+        await self.write_bytes(bytes(frame))
+
+    async def write_unsafe(
+        self,
+        data: bytes,
+        timeout: float | None = None,
+        tags: list[str] | None = None,
+    ) -> int:
+        # Single Frame is sufficiant.
+        if len(data) < 8:
+            await self.write_tp_frame(FlexRayTPSingleFrame(data=data, size=len(data)))
+            return len(data)
+
+        # Write a first frame…
+        first_frame = FlexRayTPFirstFrame(data=data[:7], size=7)
+        await self.write_tp_frame(first_frame)
+
+        # … then a flow control comes.
+        fc_frame = self.read_tp_frame()
+        if not isinstance(fc_frame, FlexRayTPFlowControlFrame):
+            raise RuntimeError(f"unexpected frame received: {fc_frame}")
+
+        # Best effort, just send the data.
+        # TODO: Not implemented: block size handling.
+
+        counter = 0
+        for chunk in chunked(data[7:], 7):
+            cf_frame = FlexRayTPConsecutiveFrame(
+                counter=counter,
+                data=chunk,
+            )
+            await self.write_tp_frame(cf_frame)
+            counter = (counter + 1) & 0x0F
+
+        return len(data)
+
     async def write(
         self,
         data: bytes,
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> int:
-        # Single Frame is possible.
-        if len(data) < 8:
-            frame = FlexRayTPSingleFrame(data=data)
-            await self._write_bytes(bytes(frame))
+        async with self.mutex:
+            await self.write_unsafe(data, timeout, tags)
+            return len(data)
 
-        raise NotImplementedError()
+    async def read_bytes(self) -> bytes:
+        frame = await self.fr_raw.read_frame(self.config.src_slot_id)
+        return frame.data
 
-    async def _read_bytes(
+    async def read_tp_frame(self) -> FlexRayTPFrame:
+        return parse_frame(await self.read_bytes())
+
+    async def _handle_fragmented(self, expected_len: int) -> bytes:
+        # 7 bytes already read in first frame.
+        # Headersize is 1 byte.
+        read_bytes = 7
+        counter = 0
+        data = b""
+
+        while read_bytes < expected_len:
+            # Reordering is not implemented.
+            frame = await self.read_tp_frame()
+            if not isinstance(frame, FlexRayTPConsecutiveFrame):
+                raise RuntimeError(f"expected consecutive frame, got: {frame}")
+            if frame.counter != (counter & 0x0F):
+                raise RuntimeError(f"got unexpected consecutive counter: {frame.counter}")
+
+            read_bytes += len(frame.data)
+            data += frame.data
+        return data
+
+    async def read_unsafe(
         self,
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> bytes:
-        frame = await self.fr_raw.read_frame(
-            self.config.src_slot_id,
-            timeout=timeout,
-            tags=tags,
-        )
-        return frame.data
+        frame = await self.read_tp_frame()
+        match frame:
+            case FlexRayTPSingleFrame():
+                return frame.data
+            case FlexRayTPFirstFrame():
+                fc_frame = FlexRayTPFlowControlFrame(
+                    flag=FlexRayTPFlowControlFlag.CONTINUE_TO_SEND,
+                    separation_time=0xA0,  # Try 10 ms.
+                    block_size=0xFF,  # TODO: send again after block_size is read.
+                )
+                await self.write_tp_frame(fc_frame)
+                return frame.data + await self._handle_fragmented(frame.size)
+            case _:
+                raise RuntimeError(f"got unexpected tp frame: {frame}")
 
     async def read(
         self,
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> bytes:
-        # TODO: Add CF support
-        data = await self._read_bytes(timeout, tags)
-        frame = FlexRayTPSingleFrame(data)
-        return frame.data
+        async with self.mutex:
+            return await self.read_unsafe(timeout, tags)
 
     async def close(self) -> None:
         await self.fr_raw.close()
