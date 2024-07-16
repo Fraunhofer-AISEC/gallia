@@ -552,9 +552,9 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="flexray-tp-legacy"):
         return frame
 
     async def _handle_fragmented(self, expected_len: int) -> bytes:
-        # 7 bytes already read in first frame.
-        # Headersize is 1 byte.
-        read_bytes = 8
+        # 6 bytes already read in first frame.
+        # Headersize is 2 byte.
+        read_bytes = 6
         counter = 1
         data = b""
 
@@ -568,7 +568,7 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="flexray-tp-legacy"):
                 raise RuntimeError(f"got unexpected consecutive counter: {frame.counter}")
 
             # Header size needs to be respected here.
-            read_bytes += len(frame.data) + 1
+            read_bytes += len(frame.data)
             data += frame.data
             counter = (counter + 1) & 0x0F
 
