@@ -133,7 +133,7 @@ class RawFlexrayTransport(BaseTransport, scheme="flexray-raw"):
             vector_ctypes.XL_FR_FILTER_PASS,
             vector_ctypes.XL_FR_FILTER_TYPE_DATA,
             ctypes.c_uint(from_slot),
-            ctypes.c_uint(from_slot),
+            ctypes.c_uint(to_slot),
             ctypes.c_uint(self.channel_mask.value),
         )
 
