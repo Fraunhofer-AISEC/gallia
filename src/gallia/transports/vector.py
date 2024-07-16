@@ -3,7 +3,7 @@ import ctypes
 import ctypes.util
 import sys
 import time
-from enum import IntEnum, unique
+from enum import IntEnum, unique, auto
 from typing import Self
 
 assert sys.platform == "win32", "unsupported platform"
@@ -353,7 +353,6 @@ class FlexRayTPFrame(BaseModel):
     )
 
 
-@auto
 @unique
 class FlexRayTPRxStates(IntEnum):
     SF_RECEIVING = auto()
