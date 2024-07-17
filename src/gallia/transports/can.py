@@ -2,13 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
-
 import asyncio
 import socket as s
 import struct
+import sys
 import time
 from typing import Self
+
+assert sys.platform.startswith("linux"), "unsupported platform"
 
 from can import Message
 from pydantic import BaseModel, field_validator
@@ -59,7 +60,7 @@ class CANMessage(Message):
         return can_id, can_dlc, flags, frame[8 : 8 + can_dlc]
 
     @classmethod
-    def unpack(cls, frame: bytes) -> CANMessage:
+    def unpack(cls, frame: bytes) -> Self:
         can_id, can_dlc, flags, data = cls._dissect_can_frame(frame)
 
         # EXT, RTR, ERR flags -> boolean attributes

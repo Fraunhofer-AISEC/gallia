@@ -4,7 +4,6 @@
 
 import argparse
 import asyncio
-import fcntl
 import os
 import os.path
 import shutil
@@ -18,7 +17,7 @@ from logging import Handler
 from pathlib import Path
 from subprocess import CalledProcessError, run
 from tempfile import gettempdir
-from typing import cast
+from typing import Protocol, cast
 
 import exitcode
 import msgspec
@@ -72,7 +71,54 @@ class RunMeta(msgspec.Struct):
 logger = get_logger("gallia.base")
 
 
-class BaseCommand(ABC):
+if sys.platform.startswith("linux") or sys.platform == "darwin":
+    import fcntl
+
+    class Flockable(Protocol):
+        @property
+        def _lock_file_fd(self) -> int | None: ...
+
+    class FlockMixin:
+        def _open_lockfile(self, path: Path) -> int | None:
+            if not path.exists():
+                path.touch()
+
+            logger.notice("opening lockfile…")
+            return os.open(path, os.O_RDONLY)
+
+        def _aquire_flock(self: Flockable) -> None:
+            assert self._lock_file_fd is not None
+
+            try:
+                # First do a non blocking flock. If waiting is required,
+                # log a message and do a blocking wait afterwards.
+                fcntl.flock(self._lock_file_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                logger.notice("waiting for flock…")
+                fcntl.flock(self._lock_file_fd, fcntl.LOCK_EX)
+            logger.info("Acquired lock. Continuing…")
+
+        def _release_flock(self: Flockable) -> None:
+            assert self._lock_file_fd is not None
+            fcntl.flock(self._lock_file_fd, fcntl.LOCK_UN)
+            os.close(self._lock_file_fd)
+
+
+if sys.platform == "win32":
+
+    class FlockMixin:
+        def _open_lockfile(self, path: Path) -> int | None:
+            logger.warn("lockfile in windows is not supported")
+            return None
+
+        def _aquire_flock(self) -> None:
+            pass
+
+        def _release_flock(self) -> None:
+            pass
+
+
+class BaseCommand(FlockMixin, ABC):
     """BaseCommand is the baseclass for all gallia commands.
     This class can be used in standalone scripts via the
     gallia command line interface facility.
@@ -304,7 +350,10 @@ class BaseCommand(ABC):
 
         symlink = path.joinpath("LATEST")
         symlink.unlink(missing_ok=True)
-        symlink.symlink_to(latest_dir)
+        try:
+            symlink.symlink_to(latest_dir)
+        except (OSError, NotImplementedError) as e:
+            logger.warn(f"symlink error: {e}")
 
     def prepare_artifactsdir(
         self,
@@ -350,28 +399,11 @@ class BaseCommand(ABC):
 
         raise ValueError("base_dir or force_path must be different from None")
 
-    def _aquire_flock(self, path: Path) -> None:
-        if not path.exists():
-            path.touch()
-        self._lock_file_fd = os.open(path, os.O_RDONLY)
-        try:
-            # First do a non blocking flock. If waiting is required,
-            # log a message and do a blocking wait afterwards.
-            fcntl.flock(self._lock_file_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
-            logger.notice(f"Waiting for flock: {path}")
-            fcntl.flock(self._lock_file_fd, fcntl.LOCK_EX)
-        logger.info("Acquired lock. Continuing.")
-
-    def _release_flock(self) -> None:
-        assert self._lock_file_fd
-        fcntl.flock(self._lock_file_fd, fcntl.LOCK_UN)
-        os.close(self._lock_file_fd)
-
     def entry_point(self, args: Namespace) -> int:
         if (p := args.lock_file) is not None:
             try:
-                self._aquire_flock(p)
+                self._lock_file_fd = self._open_lockfile(p)
+                self._aquire_flock()
             except OSError as e:
                 logger.critical(f"Unable to lock {p}: {e}")
                 return exitcode.OSFILE
@@ -542,7 +574,7 @@ class Scanner(AsyncScript, ABC):
                 self.parser.error("--dumpcap specified but `dumpcap` is not available")
             self.dumpcap = await Dumpcap.start(args.target, self.artifacts_dir)
             if self.dumpcap is None:
-                logger.error("Dumpcap could not be started!")
+                logger.error("`dumpcap` could not be started!")
             else:
                 await self.dumpcap.sync()
 
@@ -561,7 +593,10 @@ class Scanner(AsyncScript, ABC):
         group.add_argument(
             "--dumpcap",
             action=argparse.BooleanOptionalAction,
-            default=self.config.get_value("gallia.scanner.dumpcap", default=True),
+            default=self.config.get_value(
+                "gallia.scanner.dumpcap",
+                default=sys.platform == "linux",
+            ),
             help="Enable/Disable creating a pcap file",
         )
 

@@ -3,8 +3,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+import sys
 from argparse import Namespace
 from binascii import unhexlify
+
+assert sys.platform.startswith("linux"), "unsupported platform"
 
 from gallia.command import UDSDiscoveryScanner
 from gallia.log import get_logger

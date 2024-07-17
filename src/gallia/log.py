@@ -55,6 +55,9 @@ def resolve_color_mode(mode: ColorMode, stream: TextIO = sys.stderr) -> bool:
     :param mode: The available options are described in :class:`ColorMode`.
     :param stream: Used as a reference for :attr:`ColorMode.AUTO`.
     """
+    if sys.platform == "win32":
+        return False
+
     match mode:
         case ColorMode.ALWAYS:
             return True
@@ -271,7 +274,10 @@ def setup_logging(
 
 
 def add_stderr_log_handler(
-    logger_name: str, level: Loglevel, no_volatile_info: bool, colored: bool
+    logger_name: str,
+    level: Loglevel,
+    no_volatile_info: bool,
+    colored: bool,
 ) -> None:
     queue: Queue[Any] = Queue()
     logger = logging.getLogger(logger_name)
@@ -351,7 +357,7 @@ _PenlogRecord: TypeAlias = _PenlogRecordV1 | _PenlogRecordV2
 
 
 def _colorize_msg(data: str, levelno: int) -> tuple[str, int]:
-    if not sys.stderr.isatty():
+    if sys.platform == "win32" or not sys.stderr.isatty():
         return data, 0
 
     out = ""
@@ -572,7 +578,7 @@ class PenlogReader:
                         decomp.copy_stream(f, tmpfile)
                 case ".gz":
                     with gzip.open(self.path, "rb") as f:
-                        shutil.copyfileobj(f, tmpfile)
+                        shutil.copyfileobj(cast(BinaryIO, f), tmpfile)
 
             tmpfile.flush()
             return cast(BinaryIO, tmpfile)
@@ -683,7 +689,7 @@ class PenlogReader:
             self._parse_file_structure()
         return len(self._record_offsets)
 
-    def __enter__(self) -> PenlogReader:
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(

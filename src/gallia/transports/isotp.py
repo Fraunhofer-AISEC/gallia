@@ -2,13 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
-
 import asyncio
 import errno
 import socket as s
 import struct
+import sys
 from typing import Self
+
+assert sys.platform == "linux", "unsupported platform"
 
 from pydantic import BaseModel, field_validator
 

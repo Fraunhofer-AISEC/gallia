@@ -2,6 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import sys
+
+assert sys.platform.startswith("linux"), "unsupported platform"
+
 import pytest
 from gallia.transports import TargetURI
 from gallia.transports.doip import DoIPConfig

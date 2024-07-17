@@ -13,19 +13,12 @@ from gallia.log import get_logger
 from gallia.services.uds.core.constants import UDSIsoServices
 from gallia.services.uds.server import (
     DBUDSServer,
-    ISOTPUDSServerTransport,
     RandomUDSServer,
     TCPUDSServerTransport,
     UDSServer,
     UDSServerTransport,
-    UnixUDSServerTransport,
 )
-from gallia.transports import (
-    ISOTPTransport,
-    TargetURI,
-    TCPLinesTransport,
-    UnixLinesTransport,
-)
+from gallia.transports import TargetURI, TransportScheme
 
 dynamic_attr_prefix = "dynamic_attr_"
 
@@ -107,17 +100,32 @@ class VirtualECU(AsyncScript):
         target: TargetURI = args.target
         transport: UDSServerTransport
 
-        if target.scheme == TCPLinesTransport.SCHEME:
-            transport = TCPUDSServerTransport(server, target)
-        elif target.scheme == ISOTPTransport.SCHEME:
-            transport = ISOTPUDSServerTransport(server, target)
-        elif target.scheme == UnixLinesTransport.SCHEME:
-            transport = UnixUDSServerTransport(server, target)
-        else:
-            self.parser.error(
-                f"Unsupported transport scheme! Use any of ["
-                f"{TCPLinesTransport.SCHEME}, {ISOTPTransport.SCHEME}, {UnixLinesTransport.SCHEME}]"
+        if sys.platform.startswith("linux"):
+            from gallia.services.uds.server import (
+                ISOTPUDSServerTransport,
+                UnixUDSServerTransport,
             )
+
+            match target.scheme:
+                case TransportScheme.TCP:
+                    transport = TCPUDSServerTransport(server, target)
+                case TransportScheme.ISOTP:
+                    transport = ISOTPUDSServerTransport(server, target)
+                case TransportScheme.UNIX_LINES:
+                    transport = UnixUDSServerTransport(server, target)
+                case _:
+                    self.parser.error(
+                        f"Unsupported transport scheme! Use any of ["
+                        f"{TransportScheme.TCP}, {TransportScheme.ISOTP}, {TransportScheme.UNIX_LINES}]"
+                    )
+        if sys.platform.startswith("win32"):
+            match target.scheme:
+                case TransportScheme.TCP:
+                    transport = TCPUDSServerTransport(server, target)
+                case _:
+                    self.parser.error(
+                        f"Unsupported transport scheme! Use any of [" f"{TransportScheme.TCP}]"
+                    )
 
         try:
             await server.setup()
