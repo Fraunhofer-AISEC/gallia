@@ -16,7 +16,7 @@ from typing_extensions import Protocol
 from gallia.log import get_logger
 from gallia.utils import join_host_port
 
-logger = get_logger("gallia.transport.base")
+logger = get_logger(__file__)
 
 
 class TargetURI:

@@ -27,7 +27,7 @@ from gallia.transports import (
 )
 from gallia.utils import auto_int, split_host_port
 
-logger = get_logger("gallia.dumpcap")
+logger = get_logger(__file__)
 
 
 class Dumpcap:

@@ -30,7 +30,7 @@ from gallia.transports import (
 dynamic_attr_prefix = "dynamic_attr_"
 
 
-logger = get_logger("gallia.vecu.main")
+logger = get_logger(__file__)
 
 
 class VirtualECU(AsyncScript):

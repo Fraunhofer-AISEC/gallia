@@ -29,7 +29,7 @@ from gallia.services.uds.core.utils import bytes_repr, int_repr, service_repr, t
 from gallia.services.uds.ecu import ECUState
 from gallia.transports import ISOTPTransport, TargetURI
 
-logger = get_logger("gallia.vecu.server")
+logger = get_logger(__file__)
 
 
 class UDSServer(ABC):
