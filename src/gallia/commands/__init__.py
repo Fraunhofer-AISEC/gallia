@@ -92,3 +92,10 @@ if sys.platform.startswith("linux"):
         "SimpleTestXCP",
         "VirtualECU",
     ]
+
+
+if sys.platform == "win32":
+    from gallia.commands.script.flexray import FRDump
+
+    registry.append(FRDump)
+    __all__.append("FRDump")
