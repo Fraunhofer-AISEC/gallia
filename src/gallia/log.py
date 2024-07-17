@@ -15,6 +15,7 @@ import shutil
 import socket
 import sys
 import tempfile
+import time
 import traceback
 from collections.abc import Iterator
 from dataclasses import dataclass
@@ -32,7 +33,8 @@ if TYPE_CHECKING:
     from logging import _ExcInfoType
 
 
-tz = datetime.datetime.now(datetime.UTC).tzinfo
+gmt_offset = time.localtime().tm_gmtoff
+tz = datetime.timezone(datetime.timedelta(seconds=gmt_offset))
 
 
 @unique
