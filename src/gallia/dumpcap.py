@@ -20,7 +20,7 @@ from gallia.log import get_logger
 from gallia.transports import TargetURI, TransportScheme
 from gallia.utils import auto_int, split_host_port
 
-logger = get_logger("gallia.dumpcap")
+logger = get_logger(__file__)
 
 
 if sys.platform.startswith("linux") or sys.platform == "darwin":

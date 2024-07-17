@@ -12,7 +12,7 @@ from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse, UDSResponse
 from gallia.utils import auto_int
 
-logger = get_logger("gallia.primitive.wdbi")
+logger = get_logger(__file__)
 
 
 class WriteByIdentifierPrimitive(UDSScanner):

@@ -14,7 +14,7 @@ from opennetzteil.netzteil import BaseNetzteil
 from gallia.log import get_logger
 from gallia.transports import TargetURI
 
-logger = get_logger("gallia.power-supply")
+logger = get_logger(__file__)
 
 
 class PowerSupplyURI(TargetURI):

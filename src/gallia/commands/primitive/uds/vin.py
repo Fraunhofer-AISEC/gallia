@@ -8,7 +8,7 @@ from gallia.command import UDSScanner
 from gallia.log import get_logger
 from gallia.services.uds.core.service import NegativeResponse
 
-logger = get_logger("gallia.primitive.vin")
+logger = get_logger(__file__)
 
 
 class VINPrimitive(UDSScanner):

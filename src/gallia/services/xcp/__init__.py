@@ -12,7 +12,7 @@ from gallia.services.xcp import types
 from gallia.transports import BaseTransport
 from gallia.transports.can import RawCANTransport
 
-logger = get_logger("gallia.xcp")
+logger = get_logger(__file__)
 
 
 class XCPService:

@@ -17,7 +17,7 @@ from gallia.log import get_logger
 from gallia.transports.base import BaseTransport, TargetURI
 from gallia.utils import auto_int
 
-logger = get_logger("gallia.transport.isotp")
+logger = get_logger(__file__)
 
 # Socket Constants not available in the socket module,
 # see linux/can/isotp.h

@@ -68,7 +68,7 @@ class RunMeta(msgspec.Struct):
         return msgspec.json.encode(self).decode()
 
 
-logger = get_logger("gallia.base")
+logger = get_logger(__file__)
 
 
 if sys.platform.startswith("linux") or sys.platform == "darwin":

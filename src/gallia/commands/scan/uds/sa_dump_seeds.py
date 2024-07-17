@@ -17,7 +17,7 @@ from gallia.services.uds import NegativeResponse, UDSRequestConfig
 from gallia.services.uds.core.utils import g_repr
 from gallia.utils import auto_int
 
-logger = get_logger("gallia.scan.dump-seeds")
+logger = get_logger(__file__)
 
 
 class SASeedsDumper(UDSScanner):
