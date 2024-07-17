@@ -28,6 +28,11 @@ lint:
 	ruff format --check src tests
 	reuse lint
 
+.PHONY: lint-win32
+lint-win32:
+	mypy --platform win32 --exclude "gallia\/log\.py" --exclude "hr" src tests
+	ruff check src tests
+
 .PHONY: fmt
 fmt:
 	ruff check --fix-only src tests

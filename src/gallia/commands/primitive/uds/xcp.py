@@ -2,7 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import sys
 from argparse import ArgumentParser, Namespace
+
+assert sys.platform.startswith("linux"), "unsupported platform"
 
 from gallia.command import Scanner
 from gallia.config import Config

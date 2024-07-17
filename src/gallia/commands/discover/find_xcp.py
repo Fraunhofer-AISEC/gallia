@@ -4,7 +4,10 @@
 
 import socket
 import struct
+import sys
 from argparse import ArgumentParser, Namespace
+
+assert sys.platform.startswith("linux"), "unsupported platform"
 
 from gallia.command import AsyncScript
 from gallia.config import Config

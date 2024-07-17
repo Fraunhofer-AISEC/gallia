@@ -2,31 +2,41 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import sys
+
 from gallia.transports.base import BaseTransport, TargetURI
-from gallia.transports.can import RawCANTransport
 from gallia.transports.doip import DoIPTransport
-from gallia.transports.isotp import ISOTPTransport
+from gallia.transports.schemes import TransportScheme
 from gallia.transports.tcp import TCPLinesTransport, TCPTransport
-from gallia.transports.unix import UnixLinesTransport, UnixTransport
 
 registry: list[type[BaseTransport]] = [
     DoIPTransport,
-    ISOTPTransport,
-    RawCANTransport,
     TCPLinesTransport,
     TCPTransport,
-    UnixLinesTransport,
-    UnixTransport,
 ]
 
 __all__ = [
     "BaseTransport",
     "DoIPTransport",
-    "ISOTPTransport",
-    "RawCANTransport",
     "TCPLinesTransport",
     "TCPTransport",
-    "UnixLinesTransport",
-    "UnixTransport",
     "TargetURI",
+    "TransportScheme",
 ]
+
+if sys.platform.startswith("linux"):
+    from gallia.transports.can import RawCANTransport
+    from gallia.transports.isotp import ISOTPTransport
+    from gallia.transports.unix import UnixLinesTransport, UnixTransport
+
+    registry.append(ISOTPTransport)
+    registry.append(RawCANTransport)
+    registry.append(UnixLinesTransport)
+    registry.append(UnixTransport)
+
+    __all__ += [
+        "ISOTPTransport",
+        "RawCANTransport",
+        "UnixLinesTransport",
+        "UnixTransport",
+    ]
