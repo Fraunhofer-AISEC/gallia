@@ -40,3 +40,12 @@ if sys.platform.startswith("linux"):
         "UnixLinesTransport",
         "UnixTransport",
     ]
+
+
+if sys.platform == "win32":
+    from gallia.transports.flexray_vector import FlexRayTPLegacyTransport, RawFlexRayTransport
+
+    registry.append(RawFlexRayTransport)
+    registry.append(FlexRayTPLegacyTransport)
+
+    __all__ += ["FlexRayTPTransport", "FlexRayTPLegacyTransport"]

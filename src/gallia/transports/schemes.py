@@ -31,3 +31,6 @@ if sys.platform == "win32":
         TCP = TCP
         TCP_LINES = TCP_LINES
         DOIP = DOIP
+
+        FLEXRAY_RAW = "fr-raw"
+        FLEXRAY_TP_LEGACY = "fr-tp-legacy"
