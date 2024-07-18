@@ -100,7 +100,8 @@ class Dumpcap:
         return cls(proc, artifacts_dir, outfile)
 
     async def sync(self, timeout: float = 1) -> None:
-        await asyncio.wait_for(self.ready_event.wait(), timeout)
+        async with asyncio.timeout(timeout):
+            await self.ready_event.wait()
 
     async def stop(self) -> None:
         logger.info(f"Waiting {self.cleanup}s for dumpcap to receive all packets")

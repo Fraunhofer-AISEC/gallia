@@ -189,14 +189,16 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
             logger.trace(f"{dst:03x}#{data.hex()}", extra={"tags": t})
 
         loop = asyncio.get_running_loop()
-        await asyncio.wait_for(loop.sock_sendall(self._sock, msg.pack()), timeout)
+        async with asyncio.timeout(timeout):
+            await loop.sock_sendall(self._sock, msg.pack())
         return len(data)
 
     async def recvfrom(
         self, timeout: float | None = None, tags: list[str] | None = None
     ) -> tuple[int, bytes]:
         loop = asyncio.get_running_loop()
-        can_frame = await asyncio.wait_for(loop.sock_recv(self._sock, self.BUFSIZE), timeout)
+        async with asyncio.timeout(timeout):
+            can_frame = await loop.sock_recv(self._sock, self.BUFSIZE)
         msg = CANMessage.unpack(can_frame)
 
         t = tags + ["read"] if tags is not None else ["read"]

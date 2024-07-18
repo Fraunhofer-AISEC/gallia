@@ -29,9 +29,8 @@ class TCPTransport(BaseTransport, scheme="tcp"):
         t = target if isinstance(target, TargetURI) else TargetURI(target)
         cls.check_scheme(t)
 
-        reader, writer = await asyncio.wait_for(
-            asyncio.open_connection(t.hostname, t.port), timeout
-        )
+        async with asyncio.timeout(timeout):
+            reader, writer = await asyncio.open_connection(t.hostname, t.port)
         return cls(t, reader, writer)
 
     async def close(self) -> None:
@@ -51,7 +50,8 @@ class TCPTransport(BaseTransport, scheme="tcp"):
         logger.trace(data.hex(), extra={"tags": t})
 
         self.writer.write(data)
-        await asyncio.wait_for(self.writer.drain(), timeout)
+        async with asyncio.timeout(timeout):
+            await self.writer.drain()
         return len(data)
 
     async def read(
@@ -59,7 +59,8 @@ class TCPTransport(BaseTransport, scheme="tcp"):
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> bytes:
-        data = await asyncio.wait_for(self.reader.read(self.BUFSIZE), timeout)
+        async with asyncio.timeout(timeout):
+            data = await self.reader.read(self.BUFSIZE)
 
         t = tags + ["read"] if tags is not None else ["read"]
         logger.trace(data.hex(), extra={"tags": t})

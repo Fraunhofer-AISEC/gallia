@@ -242,7 +242,8 @@ class LinesTransportMixin:
 
         writer = self.get_writer()
         writer.write(binascii.hexlify(data) + b"\n")
-        await asyncio.wait_for(writer.drain(), timeout)
+        async with asyncio.timeout(timeout):
+            await writer.drain()
         return len(data)
 
     async def read(
@@ -250,7 +251,8 @@ class LinesTransportMixin:
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> bytes:
-        data = await asyncio.wait_for(self.get_reader().readline(), timeout)
+        async with asyncio.timeout(timeout):
+            data = await self.get_reader().readline()
         d = data.decode().strip()
 
         t = tags + ["read"] if tags is not None else ["read"]

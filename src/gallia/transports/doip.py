@@ -661,17 +661,17 @@ class DoIPConnection:
                 match payload:
                     case DiagnosticMessage():
                         # Now an ACK message is expected.
-                        await asyncio.wait_for(
-                            self._read_ack(payload.UserData),
+                        async with asyncio.timeout(
                             TimingAndCommunicationParameters.DiagnosticMessageMessageAckTimeout
                             / 1000,
-                        )
+                        ):
+                            await self._read_ack(payload.UserData)
                     case RoutingActivationRequest():
-                        await asyncio.wait_for(
-                            self._read_routing_activation_response(),
+                        async with asyncio.timeout(
                             TimingAndCommunicationParameters.RoutingActivationResponseTimeout
                             / 1000,
-                        )
+                        ):
+                            await self._read_routing_activation_response()
             except TimeoutError as e:
                 await self.close()
                 raise BrokenPipeError("Timeout while waiting for DoIP ACK message") from e
@@ -793,17 +793,15 @@ class DoIPTransport(BaseTransport, scheme="doip"):
 
         port = t.port if t.port is not None else 13400
         config = DoIPConfig(**t.qs_flat)
-        conn = await asyncio.wait_for(
-            cls._connect(
+        async with asyncio.timeout(timeout):
+            conn = await cls._connect(
                 t.hostname,
                 port,
                 config.src_addr,
                 config.target_addr,
                 config.activation_type,
                 config.protocol_version,
-            ),
-            timeout,
-        )
+            )
         return cls(t, port, config, conn)
 
     async def close(self) -> None:
@@ -817,7 +815,8 @@ class DoIPTransport(BaseTransport, scheme="doip"):
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> bytes:
-        data = await asyncio.wait_for(self._conn.read_diag_request(), timeout)
+        async with asyncio.timeout(timeout):
+            data = await self._conn.read_diag_request()
 
         t = tags + ["read"] if tags is not None else ["read"]
         logger.trace(data.hex(), extra={"tags": t})
@@ -833,7 +832,8 @@ class DoIPTransport(BaseTransport, scheme="doip"):
         logger.trace(data.hex(), extra={"tags": t})
 
         try:
-            await asyncio.wait_for(self._conn.write_diag_request(data), timeout)
+            async with asyncio.timeout(timeout):
+                await self._conn.write_diag_request(data)
         except DoIPNegativeAckError as e:
             if e.nack_code != DiagnosticMessageNegativeAckCodes.TargetUnreachable:
                 raise e
