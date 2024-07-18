@@ -340,7 +340,8 @@ class ECU(UDSClient):
 
         t = timeout if timeout is not None else self.timeout
         try:
-            await asyncio.wait_for(self._wait_for_ecu(0.5), timeout=t)
+            async with asyncio.timeout(t):
+                await self._wait_for_ecu(0.5)
             return True
         except TimeoutError:
             logger.critical("Timeout while waiting for ECU!")

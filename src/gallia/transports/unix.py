@@ -29,7 +29,8 @@ class UnixTransport(BaseTransport, scheme="unix"):
         t = target if isinstance(target, TargetURI) else TargetURI(target)
         cls.check_scheme(t)
 
-        reader, writer = await asyncio.wait_for(asyncio.open_unix_connection(t.path), timeout)
+        async with asyncio.timeout(timeout):
+            reader, writer = await asyncio.open_unix_connection(t.path)
 
         return cls(t, reader, writer)
 
@@ -48,7 +49,8 @@ class UnixTransport(BaseTransport, scheme="unix"):
         t = tags + ["write"] if tags is not None else ["write"]
         logger.trace(data.hex(), extra={"tags": t})
         self.writer.write(data)
-        await asyncio.wait_for(self.writer.drain(), timeout)
+        async with asyncio.timeout(timeout):
+            await self.writer.drain()
 
         return len(data)
 
