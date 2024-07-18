@@ -2,13 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import base64
+import pickle
 import sys
 from argparse import BooleanOptionalAction, Namespace
 
 assert sys.platform == "win32"
 
-from gallia.command import AsyncScript
-from gallia.transports.flexray_vector import RawFlexRayTransport
 from gallia.command import AsyncScript, Script
 from gallia.transports._ctypes_vector_xl_wrapper import FlexRayCtypesBackend
 from gallia.transports.flexray_vector import FlexRayFrame, RawFlexRayTransport, parse_frame_type
@@ -114,4 +114,3 @@ class FRDumpConfig(Script):
             print(raw_config)
         else:
             print(base64.b64encode(config))
->>>>>>> b32077b (fixup! feat(flexray): Add a helper script to dump bus traffic)

@@ -95,7 +95,7 @@ if sys.platform.startswith("linux"):
 
 
 if sys.platform == "win32":
-    from gallia.commands.script.flexray import FRDump
+    from gallia.commands.script.flexray import FRDump, FRDumpConfig
 
-    registry.append(FRDump)
-    __all__.append("FRDump")
+    registry += [FRDump, FRDumpConfig]
+    __all__ += ["FRDump", "FRDumpConfig"]

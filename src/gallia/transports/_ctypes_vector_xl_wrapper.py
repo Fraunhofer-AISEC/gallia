@@ -34,9 +34,13 @@ class FlexRayCtypesBackend:
         self.event_handle: _ctypes_vector_xl.XLhandle | None = None
 
     @classmethod
-    def create(cls, channel_no: int | None, rx_queue_size: int) -> Self:
-        cls._open_driver()
+    def create(
+        cls,
+        channel_no: int | None,
+        rx_queue_size: int = 0x2000,
+    ) -> Self:
         cls._enable_vector_license()
+        cls._open_driver()
 
         channel_mask = cls._find_flexray_channel(channel_no)
         port_handle = cls._open_flexray_port(
@@ -44,10 +48,27 @@ class FlexRayCtypesBackend:
             channel_mask,
             rx_queue_size,
         )
+
         return cls(
             channel_mask=channel_mask,
             port_handle=port_handle,
         )
+
+    def set_configuration(self, config: _ctypes_vector_xl.XLfrClusterConfig) -> None:
+        _ctypes_vector_xl.xlFrSetConfiguration(
+            _ctypes_vector_xl.XLportHandle(self.port_handle),
+            _ctypes_vector_xl.XLaccess(self.channel_mask),
+            ctypes.byref(config),
+        )
+
+    def get_configuration(self) -> _ctypes_vector_xl.XLfrClusterConfig:
+        config = _ctypes_vector_xl.XLfrChannelConfig()
+        _ctypes_vector_xl.xlFrGetChannelConfiguration(
+            _ctypes_vector_xl.XLportHandle(self.port_handle),
+            _ctypes_vector_xl.XLaccess(self.channel_mask),
+            ctypes.byref(config),
+        )
+        return cast(_ctypes_vector_xl.XLfrClusterConfig, config.xlFrClusterConfig)
 
     @staticmethod
     def _open_driver() -> None:
