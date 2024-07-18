@@ -138,6 +138,7 @@ def check_status_operation(result, function, arguments):  # type: ignore
         )
     return result
 
+
 def check_rxtx_operation(result, function, arguments):  # type: ignore
     match result:
         case XL_Status.XL_ERR_QUEUE_IS_FULL:
@@ -161,6 +162,7 @@ def check_rxtx_operation(result, function, arguments):  # type: ignore
                 function.__name__,
             )
     return result
+
 
 def check_status_initialization(result, function, arguments):  # type: ignore
     if result > 0:
@@ -272,6 +274,73 @@ class XL_BusTypes(IntFlag):
     XL_BUS_TYPE_KLINE = 2048  # =0x00000800
     XL_BUS_TYPE_ETHERNET = 4096  # =0x00001000
     XL_BUS_TYPE_A429 = 8192  # =0x00002000
+
+
+class XL_HardwareType(IntEnum):
+    XL_HWTYPE_NONE = 0
+    XL_HWTYPE_VIRTUAL = 1
+    XL_HWTYPE_CANCARDX = 2
+    XL_HWTYPE_CANAC2PCI = 6
+    XL_HWTYPE_CANCARDY = 12
+    XL_HWTYPE_CANCARDXL = 15
+    XL_HWTYPE_CANCASEXL = 21
+    XL_HWTYPE_CANCASEXL_LOG_OBSOLETE = 23
+    XL_HWTYPE_CANBOARDXL = 25
+    XL_HWTYPE_CANBOARDXL_PXI = 27
+    XL_HWTYPE_VN2600 = 29
+    XL_HWTYPE_VN2610 = XL_HWTYPE_VN2600
+    XL_HWTYPE_VN3300 = 37
+    XL_HWTYPE_VN3600 = 39
+    XL_HWTYPE_VN7600 = 41
+    XL_HWTYPE_CANCARDXLE = 43
+    XL_HWTYPE_VN8900 = 45
+    XL_HWTYPE_VN8950 = 47
+    XL_HWTYPE_VN2640 = 53
+    XL_HWTYPE_VN1610 = 55
+    XL_HWTYPE_VN1630 = 57
+    XL_HWTYPE_VN1640 = 59
+    XL_HWTYPE_VN8970 = 61
+    XL_HWTYPE_VN1611 = 63
+    XL_HWTYPE_VN5240 = 64
+    XL_HWTYPE_VN5610 = 65
+    XL_HWTYPE_VN5620 = 66
+    XL_HWTYPE_VN7570 = 67
+    XL_HWTYPE_VN5650 = 68
+    XL_HWTYPE_IPCLIENT = 69
+    XL_HWTYPE_VN5611 = 70
+    XL_HWTYPE_IPSERVER = 71
+    XL_HWTYPE_VN5612 = 72
+    XL_HWTYPE_VX1121 = 73
+    XL_HWTYPE_VN5601 = 74
+    XL_HWTYPE_VX1131 = 75
+    XL_HWTYPE_VT6204 = 77
+    XL_HWTYPE_VN1630_LOG = 79
+    XL_HWTYPE_VN7610 = 81
+    XL_HWTYPE_VN7572 = 83
+    XL_HWTYPE_VN8972 = 85
+    XL_HWTYPE_VN0601 = 87
+    XL_HWTYPE_VN5640 = 89
+    XL_HWTYPE_VX0312 = 91
+    XL_HWTYPE_VH6501 = 94
+    XL_HWTYPE_VN8800 = 95
+    XL_HWTYPE_IPCL8800 = 96
+    XL_HWTYPE_IPSRV8800 = 97
+    XL_HWTYPE_CSMCAN = 98
+    XL_HWTYPE_VN5610A = 101
+    XL_HWTYPE_VN7640 = 102
+    XL_HWTYPE_VX1135 = 104
+    XL_HWTYPE_VN4610 = 105
+    XL_HWTYPE_VT6306 = 107
+    XL_HWTYPE_VT6104A = 108
+    XL_HWTYPE_VN5430 = 109
+    XL_HWTYPE_VTSSERVICE = 110
+    XL_HWTYPE_VN1530 = 112
+    XL_HWTYPE_VN1531 = 113
+    XL_HWTYPE_VX1161A = 114
+    XL_HWTYPE_VX1161B = 115
+    XL_HWTYPE_VGNSS = 116
+    XL_HWTYPE_VXLAPINIC = 118
+    XL_MAX_HWTYPE = 120
 
 
 class XL_InterfaceVersion(IntEnum):
@@ -1032,6 +1101,10 @@ xlCloseDriver.argtypes = []
 xlCloseDriver.restype = XLstatus
 xlCloseDriver.errcheck = check_status_operation
 
+xlGetChannelMask = _xlapi_dll.xlGetChannelMask
+xlGetChannelMask.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_int]
+xlGetChannelMask.restype = XLaccess
+
 xlOpenPort = _xlapi_dll.xlOpenPort
 xlOpenPort.argtypes = [
     ctypes.POINTER(XLportHandle),
@@ -1116,3 +1189,13 @@ xlFlushReceiveQueue = _xlapi_dll.xlFlushReceiveQueue
 xlFlushReceiveQueue.argtypes = [XLportHandle]
 xlFlushReceiveQueue.restype = XLstatus
 xlFlushReceiveQueue.errcheck = check_status_operation
+
+xlFrSetConfiguration = _xlapi_dll.xlFrSetConfiguration
+xlFrSetConfiguration.argtypes = [XLportHandle, XLaccess, ctypes.POINTER(XLfrClusterConfig)]
+xlFrSetConfiguration.restype = XLstatus
+xlFrSetConfiguration.errcheck = check_status_initialization
+
+xlFrGetChannelConfiguration = _xlapi_dll.xlFrGetChannelConfiguration
+xlFrGetChannelConfiguration.argtypes = [XLportHandle, XLaccess, ctypes.POINTER(XLfrChannelConfig)]
+xlFrGetChannelConfiguration.restype = XLstatus
+xlFrGetChannelConfiguration.errcheck = check_status_operation
