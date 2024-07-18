@@ -242,7 +242,8 @@ class DoIPDiscoverer(AsyncScript):
             await loop.sock_sendto(sock, hdr.pack(), (tgt_hostname, tgt_port))
 
             try:
-                data, _ = await asyncio.wait_for(loop.sock_recvfrom(sock, 1024), 2)
+                async with asyncio.timeout(2):
+                    data, _ = await loop.sock_recvfrom(sock, 1024)
             except TimeoutError:
                 logger.info("[🐣] No response!")
                 continue
@@ -367,12 +368,13 @@ class DoIPDiscoverer(AsyncScript):
                 logger.info(f"[⏳] Waiting for reply of target {target_addr:#x}")
                 # Hardcoded loop to detect potential broadcasts
                 while True:
-                    pot_broadcast, data = await asyncio.wait_for(
-                        self.read_diag_request_custom(conn),
+                    timeout = (
                         TimingAndCommunicationParameters.DiagnosticMessageMessageTimeout / 1000
                         if timeout is None
-                        else timeout,
+                        else timeout
                     )
+                    async with asyncio.timeout(timeout):
+                        pot_broadcast, data = await self.read_diag_request_custom(conn)
                     if pot_broadcast is None:
                         break
 
@@ -534,7 +536,8 @@ class DoIPDiscoverer(AsyncScript):
             await loop.sock_sendto(sock, hdr.pack(), (ip.broadcast, 13400))
             try:
                 while True:
-                    data, addr = await asyncio.wait_for(loop.sock_recvfrom(sock, 1024), 2)
+                    async with asyncio.timeout(2):
+                        data, addr = await loop.sock_recvfrom(sock, 1024)
                     info = VehicleAnnouncementMessage.unpack(data[8:])
                     logger.notice(f"[💝]: {addr} responded: {info}")
                     found.append(addr)

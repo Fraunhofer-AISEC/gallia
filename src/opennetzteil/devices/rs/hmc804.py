@@ -23,21 +23,22 @@ class HMC804(BaseNetzteil):
     async def _connect(
         self,
     ) -> tuple[asyncio.StreamReader, asyncio.StreamWriter]:
-        return await asyncio.wait_for(
-            asyncio.open_connection(self.target.hostname, self.target.port),
-            self.timeout,
-        )
+        async with asyncio.timeout(self.timeout):
+            return await asyncio.open_connection(self.target.hostname, self.target.port)
 
     async def _send_line(self, writer: asyncio.StreamWriter, data: str) -> None:
         writer.write(data.encode() + b"\n")
-        await asyncio.wait_for(writer.drain(), self.timeout)
+        async with asyncio.timeout(self.timeout):
+            await writer.drain()
 
     async def _recv_line(self, reader: asyncio.StreamReader) -> str:
-        return (await asyncio.wait_for(reader.readline(), self.timeout)).decode().strip()
+        async with asyncio.timeout(self.timeout):
+            return (await reader.readline()).decode().strip()
 
     async def _close_conn(self, writer: asyncio.StreamWriter) -> None:
         writer.close()
-        await asyncio.wait_for(writer.wait_closed(), self.timeout)
+        async with asyncio.timeout(self.timeout):
+            await writer.wait_closed()
 
     async def _request(self, data: str) -> str:
         reader, writer = await self._connect()

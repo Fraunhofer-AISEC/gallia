@@ -185,13 +185,15 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
         logger.trace(data.hex(), extra={"tags": t})
 
         loop = asyncio.get_running_loop()
-        await asyncio.wait_for(loop.sock_sendall(self._sock, data), timeout)
+        async with asyncio.timeout(timeout):
+            await loop.sock_sendall(self._sock, data)
         return len(data)
 
     async def read(self, timeout: float | None = None, tags: list[str] | None = None) -> bytes:
         loop = asyncio.get_running_loop()
         try:
-            data = await asyncio.wait_for(loop.sock_recv(self._sock, self.BUFSIZE), timeout)
+            async with asyncio.timeout(timeout):
+                data = await loop.sock_recv(self._sock, self.BUFSIZE)
         except OSError as e:
             if e.errno == errno.ECOMM:
                 raise BrokenPipeError(f"isotp flow control frame missing: {e}") from e
