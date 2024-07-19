@@ -20,6 +20,10 @@ Python dependencies are listed in `pyproject.toml`.
 
 An overview of software repos where `gallia` is available is provided by [repology.org](https://repology.org/project/gallia/versions).
 
+### Docker
+
+Docker images are published via the [Github Container registry](https://github.com/Fraunhofer-AISEC/gallia/pkgs/container/gallia).
+
 ### Arch Linux 
 
 ``` shell-session
