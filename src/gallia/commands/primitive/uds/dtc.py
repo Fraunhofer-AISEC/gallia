@@ -107,6 +107,8 @@ class DTCPrimitive(UDSScanner):
         return dtcs
 
     async def read(self) -> None:
+        assert isinstance(self.config, ReadDTCPrimitiveConfig)
+
         dtcs = await self.fetch_error_codes(self.config.mask)
 
         failed_dtcs: list[list[str]] = []
@@ -170,6 +172,8 @@ class DTCPrimitive(UDSScanner):
             logger.result(line)
 
     async def clear(self) -> None:
+        assert isinstance(self.config, ClearDTCPrimitiveConfig)
+
         group_of_dtc: int = self.config.group_of_dtc
 
         min_group_of_dtc = 0
@@ -188,6 +192,8 @@ class DTCPrimitive(UDSScanner):
             logger.result("Success")
 
     async def control(self) -> None:
+        assert isinstance(self.config, ControlDTCPrimitiveConfig)
+
         if self.config.stop:
             await self.ecu.control_dtc_setting(CDTCSSubFuncs.OFF)
         else:
@@ -196,11 +202,11 @@ class DTCPrimitive(UDSScanner):
     async def main(self) -> None:
         await self.ecu.set_session(self.config.session)
 
-        if self.config.cmd == "clear":
+        if isinstance(self.config, ClearDTCPrimitiveConfig):
             await self.clear()
-        elif self.config.cmd == "control":
+        elif isinstance(self.config, ControlDTCPrimitiveConfig):
             await self.control()
-        elif self.config.cmd == "read":
+        elif isinstance(self.config, ReadDTCPrimitiveConfig):
             await self.read()
         else:
             logger.critical("Unhandled command")

@@ -133,7 +133,7 @@ class UDSScanner(Scanner, ABC):
         if self.db_handler is not None:
             self._apply_implicit_logging_setting()
 
-            if args.properties is True:
+            if self.config.properties is True:
                 try:
                     await self.db_handler.insert_scan_run_properties_pre(
                         await self.ecu.properties()
@@ -155,7 +155,7 @@ class UDSScanner(Scanner, ABC):
             if self.config.compare_properties and await self.ecu.properties(False) != prop_pre:
                 logger.warning("ecu properties differ, please investigate!")
 
-        if self.db_handler is not None and args.properties is True:
+        if self.db_handler is not None and self.config.properties is True:
             try:
                 await self.db_handler.complete_scan_run(await self.ecu.properties(False))
             except Exception as e:
