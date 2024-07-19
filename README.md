@@ -7,7 +7,6 @@ SPDX-License-Identifier: CC0-1.0
 # Gallia
 
 [![docs](https://img.shields.io/badge/-docs-green)](https://fraunhofer-aisec.github.io/gallia)
-[![docs](https://readthedocs.org/projects/docs/badge/?version=latest)](https://gallia.readthedocs.io/en/latest)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/gallia)](https://pypi.python.org/pypi/gallia/)
 [![PyPI - License](https://img.shields.io/pypi/l/gallia)](https://www.apache.org/licenses/LICENSE-2.0.html)
 [![PyPI](https://img.shields.io/pypi/v/gallia)](https://pypi.python.org/pypi/gallia/)
@@ -20,8 +19,6 @@ The scope of the toolchain is conducting penetration tests from a single ECU up 
 Currently, the main focus lies on the [UDS](https://www.iso.org/standard/72439.html) interface.
 Acting as a generic interface, the logging functionality implements reproducible tests and enables post-processing tasks.
 The [rendered documentation](https://fraunhofer-aisec.github.io/gallia) is available via Github Pages.
-Alternatively, the documentation is hosted on [readthedocs](https://gallia.readthedocs.io/en/latest) as well.
-The documentation for the current [stable](https://gallia.readthedocs.io/en/stable) realease is available on readthedocs.
 
 Keep in mind that this project is intended for research and development usage only!
 Inappropriate usage might cause irreversible damage to the device under test.
