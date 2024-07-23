@@ -56,7 +56,12 @@ def check_project(rule: BumpMode | str) -> None:
         match rule:
             case BumpMode.PATCH | BumpMode.PREPATCH if not current_branch.endswith("-maint"):
                 die("minor or patch releases must be cut from maintenance branch!")
-            case BumpMode.MAJOR | BumpMode.PREMAJOR | BumpMode.MINOR | BumpMode.PREMINOR if current_branch != "master":
+            case (
+                BumpMode.MAJOR
+                | BumpMode.PREMAJOR
+                | BumpMode.MINOR
+                | BumpMode.PREMINOR
+            ) if current_branch != "master":
                 die("major releases must be cut from master branch!")
     p = run(
         ["git", "diff", "--no-ext-diff", "--quiet", "--exit-code"],
