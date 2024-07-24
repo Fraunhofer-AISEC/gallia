@@ -23,7 +23,7 @@ from gallia.transports import TargetURI, TransportScheme
 dynamic_attr_prefix = "dynamic_attr_"
 
 
-logger = get_logger(__file__)
+logger = get_logger(__name__)
 
 
 class VirtualECU(AsyncScript):

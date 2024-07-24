@@ -30,7 +30,7 @@ from gallia.services.uds.core.utils import bytes_repr, int_repr, service_repr, t
 from gallia.services.uds.ecu import ECUState
 from gallia.transports import TargetURI
 
-logger = get_logger(__file__)
+logger = get_logger(__name__)
 
 
 class UDSServer(ABC):

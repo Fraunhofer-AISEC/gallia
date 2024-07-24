@@ -34,7 +34,7 @@ from gallia.transports.doip import (
     VehicleAnnouncementMessage,
 )
 
-logger = get_logger(__file__)
+logger = get_logger(__name__)
 
 
 class DoIPDiscoverer(AsyncScript):

@@ -131,7 +131,7 @@ GROUP BY ru.id;
 INSERT OR IGNORE INTO version VALUES('main', '{schema_version}');
 """
 
-logger = get_logger(__file__)
+logger = get_logger(__name__)
 
 
 class DBHandler:

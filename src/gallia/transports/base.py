@@ -13,7 +13,7 @@ from gallia.log import get_logger
 from gallia.transports.schemes import TransportScheme
 from gallia.utils import join_host_port
 
-logger = get_logger(__file__)
+logger = get_logger(__name__)
 
 
 class TargetURI:

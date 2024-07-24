@@ -30,7 +30,7 @@ class UDSRequestConfig:
     tags: list[str] | None = None
 
 
-logger = get_logger(__file__)
+logger = get_logger(__name__)
 
 
 class UDSClient:

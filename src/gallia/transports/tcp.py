@@ -10,7 +10,7 @@ from typing import Self
 from gallia.log import get_logger
 from gallia.transports.base import BaseTransport, LinesTransportMixin, TargetURI
 
-logger = get_logger(__file__)
+logger = get_logger(__name__)
 
 
 class TCPTransport(BaseTransport, scheme="tcp"):

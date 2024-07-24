@@ -10,7 +10,7 @@ from gallia.log import get_logger
 from gallia.services.uds.core.service import NegativeResponse
 from gallia.utils import auto_int
 
-logger = get_logger(__file__)
+logger = get_logger(__name__)
 
 
 class ReadByIdentifierPrimitive(UDSScanner):

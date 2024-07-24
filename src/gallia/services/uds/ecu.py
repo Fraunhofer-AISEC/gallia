@@ -45,7 +45,7 @@ class ECUState:
         return f'{type(self).__name__}({", ".join(f"{key}={g_repr(value)}" for key, value in self.__dict__.items())})'
 
 
-logger = get_logger(__file__)
+logger = get_logger(__name__)
 
 
 class ECU(UDSClient):

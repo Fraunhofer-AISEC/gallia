@@ -20,7 +20,7 @@ from gallia.services.uds.helpers import suggests_identifier_not_supported
 from gallia.transports import RawCANTransport, TargetURI
 from gallia.utils import auto_int
 
-logger = get_logger(__file__)
+logger = get_logger(__name__)
 
 
 class PDUFuzzer(UDSScanner):

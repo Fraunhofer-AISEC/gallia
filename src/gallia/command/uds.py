@@ -15,7 +15,7 @@ from gallia.services.uds.core.service import NegativeResponse, UDSResponse
 from gallia.services.uds.ecu import ECU
 from gallia.services.uds.helpers import raise_for_error
 
-logger = get_logger(__file__)
+logger = get_logger(__name__)
 
 
 class UDSScanner(Scanner):

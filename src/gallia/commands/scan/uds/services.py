@@ -19,7 +19,7 @@ from gallia.services.uds.core.exception import MalformedResponse, UDSException
 from gallia.services.uds.core.utils import g_repr
 from gallia.utils import ParseSkips, auto_int
 
-logger = get_logger(__file__)
+logger = get_logger(__name__)
 
 
 class ServicesScanner(UDSScanner):

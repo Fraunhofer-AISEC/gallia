@@ -12,7 +12,7 @@ from gallia.services.uds import NegativeResponse, UDSErrorCodes, UDSRequestConfi
 from gallia.services.uds.core.utils import g_repr, uds_memory_parameters
 from gallia.utils import auto_int
 
-logger = get_logger(__file__)
+logger = get_logger(__name__)
 
 
 class MemoryFunctionsScanner(UDSScanner):
