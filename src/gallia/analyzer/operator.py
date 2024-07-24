@@ -73,14 +73,16 @@ class Operator(DatabaseHandler):
             return ScanMode.UNKNOWN
         try:
             scan_mode_str = self.run_meta_df.loc[run, ColNm.scan_mode]
-            if scan_mode_str == "scan-services":
+            if scan_mode_str == "scan-uds-services":
                 return ScanMode.SERV
-            if scan_mode_str == "scan-identifiers":
+            if scan_mode_str == "scan-uds-identifiers":
                 return ScanMode.IDEN
+            else:
+                self.logger.error(f"Unknown scan mode: {scan_mode_str}")
+                return ScanMode.UNKNOWN
         except (KeyError, IndexingError, AttributeError) as exc:
             self.logger.error(f"getting scan mode failed: {g_repr(exc)}")
             return ScanMode.UNKNOWN
-        return ScanMode.UNKNOWN
 
     def get_sid(self, run: int) -> int:
         """
@@ -246,7 +248,7 @@ class Operator(DatabaseHandler):
         FROM "{TblNm.scan_run}";
         CREATE VIEW "{VwNm.mode_vw}"
         AS SELECT "{ColNm.id}" AS "{ColNm.run_id}",
-        "script" AS "{ColNm.scan_mode}"
+        json_extract("command_meta", "$.group") ||  "-" || json_extract("command_meta", "$.subgroup") || "-" || json_extract("command_meta", "$.command") AS "{ColNm.scan_mode}"
         FROM "{TblNm.run_meta}";
         DROP TABLE IF EXISTS "{TblNm.meta}";
         CREATE TABLE "{TblNm.meta}"

@@ -162,9 +162,10 @@ class Reporter(Operator):
             return False
         self.load_ven_sess()
         self.load_ven_lu()
+        res = True
         for run in runs_vec:
-            self.report_xl_each_run(run, show_psb)
-        return True
+            res = res & self.report_xl_each_run(run, show_psb)
+        return res
 
     def report_xl_each_run(self, run: int, show_psb: bool = False) -> bool:
         """
@@ -176,6 +177,7 @@ class Reporter(Operator):
             return self.report_xl_serv(run, show_psb)
         if scan_mode == ScanMode.IDEN:
             return self.report_xl_iden(run, show_psb)
+        self.logger.error(f"Unknown scan mode: {scan_mode}")
         return False
 
     def report_xl_serv(self, run: int, show_psb: bool = False) -> bool:

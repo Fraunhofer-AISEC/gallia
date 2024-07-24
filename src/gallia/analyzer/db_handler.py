@@ -24,10 +24,10 @@ class DatabaseHandler:
 
     def __init__(self, path: str = "", mode: LogMode = LogMode.STD_OUT) -> None:
         self.set_db_path(path)
-        self.mode = mode
+        self.log_mode = mode
         self.con: sqlite3.Connection
         self.cur: sqlite3.Cursor
-        self.logger = get_logger(__file__)
+        self.logger = get_logger(__package__)
         self.connect_db()
 
     def set_db_path(self, path: str = "") -> bool:

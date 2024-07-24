@@ -31,6 +31,7 @@ except ModuleNotFoundError:
 from gallia.analyzer.arg_help import ArgHelp
 from gallia.command.base import Script
 from gallia.log import get_logger
+from gallia.utils import auto_int
 from argparse import ArgumentParser
 from gallia.config import Config
 
@@ -54,7 +55,7 @@ class AnalyzerMain(Script):
     def __init__(self, parser: ArgumentParser, config: Config = Config()) -> None:
         super().__init__(parser, config)
         self.artifacts_dir: Path
-        self.logger = get_logger(__file__)
+        self.logger = get_logger(__package__)
 
     def prepare_artifactsdir(self, path: Optional[Path]) -> Path:
         if path is None:
@@ -93,9 +94,9 @@ class AnalyzerMain(Script):
 
         # Parameters
         grp_param = self.parser.add_argument_group("Parameter")
-        grp_param.add_argument("--sid", type=int, help=ArgHelp.sid, default=-1)
-        grp_param.add_argument("--from", type=int, help=ArgHelp.first, default=0)
-        grp_param.add_argument("--to", type=int, help=ArgHelp.last, default=0)
+        grp_param.add_argument("--sid", type=auto_int, help=ArgHelp.sid, default=-1)
+        grp_param.add_argument("--from", type=auto_int, help=ArgHelp.first, default=0)
+        grp_param.add_argument("--to", type=auto_int, help=ArgHelp.last, default=0)
         grp_param.add_argument("--source", type=str, help=ArgHelp.source, default="")
         grp_param.add_argument("--precision", type=int, help=ArgHelp.prec, default=0)
         grp_param.add_argument(
@@ -196,7 +197,8 @@ class AnalyzerMain(Script):
             reporter = Reporter(db_path, self.artifacts_dir, log_mode)
 
         if report_on:
-            reporter.report_xl(runs_vec, show_possible_on)
+            res = reporter.report_xl(runs_vec, show_possible_on)
+            self.logger.result(f'Report result: {res}')
 
         if aio_service_on:
             reporter.consolidate_xl_serv(show_possible_on)
