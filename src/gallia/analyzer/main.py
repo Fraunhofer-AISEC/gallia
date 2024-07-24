@@ -29,7 +29,7 @@ except ModuleNotFoundError:
     ANALYZER_AVAILABLE = False
 
 from gallia.analyzer.arg_help import ArgHelp
-from gallia.command.base import Script
+from gallia.command.base import BaseCommand
 from gallia.log import get_logger
 from gallia.utils import auto_int
 from argparse import ArgumentParser
@@ -45,32 +45,18 @@ from gallia.config import Config
 # ========================================================== #
 
 
-class AnalyzerMain(Script):
+class AnalyzerMain(BaseCommand):
     """Analyzer"""
 
     GROUP = "analyzer"
     COMMAND = "run"
     SHORT_HELP = "request VIN"
 
+    HAS_ARTIFACTS_DIR = True
+
     def __init__(self, parser: ArgumentParser, config: Config = Config()) -> None:
         super().__init__(parser, config)
-        self.artifacts_dir: Path
         self.logger = get_logger(__package__)
-
-    def prepare_artifactsdir(self, path: Optional[Path]) -> Path:
-        if path is None:
-            base = Path(gettempdir())
-            p = base.joinpath(
-                f'{self.id}_{time.strftime("%Y%m%d-%H%M%S")}_{token_urlsafe(6)}'
-            )
-            p.mkdir(parents=True)
-            return p
-
-        if path.is_dir():
-            return path
-
-        self.logger.error(f"Data directory {path} is not an existing directory.")
-        sys.exit(1)
 
     def configure_parser(self) -> None:
         # Commands
@@ -106,15 +92,12 @@ class AnalyzerMain(Script):
             help="Folder for artifacts",
         )
 
-    def main(self, args: Namespace) -> None:
+    def run(self, args: Namespace) -> None:
         if not ANALYZER_AVAILABLE:
             self.logger.error(
                 "Please install optional dependencies to run the analyzer"
             )
             sys.exit(1)
-
-        self.artifacts_dir = self.prepare_artifactsdir(args.data_dir)
-        self.logger.result(f"Storing artifacts at {self.artifacts_dir}")
 
         args = vars(args)
         # Commands
