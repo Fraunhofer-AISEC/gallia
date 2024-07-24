@@ -12,7 +12,7 @@ from gallia.services.uds import NegativeResponse
 from gallia.services.uds.core.utils import g_repr
 from gallia.utils import auto_int
 
-logger = get_logger(__file__)
+logger = get_logger(__name__)
 
 
 class IOCBIPrimitive(UDSScanner):

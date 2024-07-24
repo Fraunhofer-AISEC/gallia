@@ -19,7 +19,7 @@ from gallia.services.uds.core.service import RawRequest, RawResponse
 from gallia.services.uds.helpers import raise_for_error
 from gallia.utils import auto_int
 
-logger = get_logger(__file__)
+logger = get_logger(__name__)
 
 
 class SendPDUPrimitive(UDSScanner):

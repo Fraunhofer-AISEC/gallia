@@ -11,7 +11,7 @@ assert sys.platform.startswith("linux"), "unsupported platform"
 from gallia.log import get_logger
 from gallia.transports.base import BaseTransport, LinesTransportMixin, TargetURI
 
-logger = get_logger(__file__)
+logger = get_logger(__name__)
 
 
 class UnixTransport(BaseTransport, scheme="unix"):

@@ -16,7 +16,7 @@ from gallia.services.uds.core.utils import g_repr
 from gallia.transports import ISOTPTransport, RawCANTransport, TargetURI
 from gallia.utils import auto_int, can_id_repr, write_target_list
 
-logger = get_logger(__file__)
+logger = get_logger(__name__)
 
 
 class IsotpDiscoverer(UDSDiscoveryScanner):

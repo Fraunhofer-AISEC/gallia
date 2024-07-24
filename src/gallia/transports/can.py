@@ -18,7 +18,7 @@ from gallia.log import get_logger
 from gallia.transports.base import BaseTransport, TargetURI
 from gallia.utils import auto_int
 
-logger = get_logger(__file__)
+logger = get_logger(__name__)
 
 CANFD_MTU = 72
 CAN_MTU = 16
