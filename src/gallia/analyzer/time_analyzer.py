@@ -17,7 +17,7 @@ from gallia.analyzer.reporter import Reporter
 from gallia.analyzer.config import PltDesign, TblStruct, SrcPath, DFT_T_PREC
 from gallia.analyzer.mode_config import ScanMode, LogMode
 from gallia.analyzer.name_config import ColNm, TblNm, KyNm
-from gallia.utils import g_repr
+from gallia.services.uds.core.utils import g_repr
 
 
 class TimeAnalyzer(Reporter):
@@ -49,7 +49,7 @@ class TimeAnalyzer(Reporter):
         """
         extract reaction times of each run.
         """
-        self.logger.log_summary(
+        self.logger.result(
             f"extracting time for run #{str(run)} from {self.db_path} ..."
         )
         scan_mode = self.get_scan_mode(run)
@@ -91,7 +91,7 @@ class TimeAnalyzer(Reporter):
             EmptyTableException,
             ColumnMismatchException,
         ) as exc:
-            self.logger.log_error(
+            self.logger.error(
                 f"extracting reaction time for run #{run} failed: {g_repr(exc)}"
             )
             return False
@@ -109,7 +109,7 @@ class TimeAnalyzer(Reporter):
         """
         plot reaction time for each run.
         """
-        self.logger.log_summary(
+        self.logger.result(
             f"plotting reaction time for run #{str(run)} from {self.db_path} ..."
         )
         scan_mode = self.get_scan_mode(run)
@@ -152,7 +152,7 @@ class TimeAnalyzer(Reporter):
             plt.cla()
             plt.close()
         except (KeyError, IndexingError, AttributeError, FileNotFoundError) as exc:
-            self.logger.log_error(
+            self.logger.error(
                 f"plotting service ID and reaction time in run #{run} failed: {g_repr(exc)}"
             )
             return False
@@ -191,7 +191,7 @@ class TimeAnalyzer(Reporter):
             plt.cla()
             plt.close()
         except (KeyError, IndexingError, AttributeError, FileNotFoundError) as exc:
-            self.logger.log_error(
+            self.logger.error(
                 f"plotting identifier and reaction time in run #{run} failed: {g_repr(exc)}"
             )
             return False
@@ -209,7 +209,7 @@ class TimeAnalyzer(Reporter):
         """
         create a histogram of reaction time for a given run.
         """
-        self.logger.log_summary(
+        self.logger.result(
             f"creating a histogram for run #{str(run)} from {self.db_path} ..."
         )
         try:
@@ -227,7 +227,7 @@ class TimeAnalyzer(Reporter):
             plt.cla()
             plt.close()
         except (KeyError, IndexingError, AttributeError, FileNotFoundError) as exc:
-            self.logger.log_error(
+            self.logger.error(
                 f"establishing histogram of identifiers in run #{run} failed: {g_repr(exc)}"
             )
             return False

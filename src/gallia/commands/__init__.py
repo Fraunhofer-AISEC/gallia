@@ -24,6 +24,7 @@ from gallia.commands.scan.uds.reset import ResetScanner
 from gallia.commands.scan.uds.sa_dump_seeds import SASeedsDumper
 from gallia.commands.scan.uds.services import ServicesScanner
 from gallia.commands.scan.uds.sessions import SessionsScanner
+from gallia.analyzer.main import AnalyzerMain
 
 registry: list[type[BaseCommand]] = [
     DoIPDiscoverer,
@@ -45,6 +46,7 @@ registry: list[type[BaseCommand]] = [
     SendPDUPrimitive,
     WMBAPrimitive,
     WriteByIdentifierPrimitive,
+    AnalyzerMain
 ]
 
 __all__ = [
@@ -67,6 +69,7 @@ __all__ = [
     "DSendPDUPrimitive",
     "DWMBAPrimitive",
     "DWriteByIdentifierPrimitive",
+    "AnalyzerMain",
 ]
 
 

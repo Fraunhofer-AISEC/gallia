@@ -17,8 +17,8 @@ from gallia.analyzer.failure import Failure
 from gallia.analyzer.mode_config import LogMode, OpMode
 from gallia.analyzer.name_config import ColNm, TblNm
 from gallia.analyzer.exceptions import EmptyTableException, ColumnMismatchException
-from gallia.uds.core.constants import UDSIsoServices, UDSErrorCodes
-from gallia.utils import g_repr
+from gallia.services.uds.core.constants import UDSIsoServices, UDSErrorCodes
+from gallia.services.uds.core.utils import g_repr
 
 
 class Categorizer(Analyzer):
@@ -45,7 +45,7 @@ class Categorizer(Analyzer):
             if not self.write_db(raw_df, TblNm.serv):
                 return False
         except (EmptyTableException, ColumnMismatchException, OperationalError) as exc:
-            self.logger.log_error(f"analyzing scan_service failed: {g_repr(exc)}")
+            self.logger.error(f"analyzing scan_service failed: {g_repr(exc)}")
             return False
         return True
 
@@ -65,7 +65,7 @@ class Categorizer(Analyzer):
             if not self.write_db(raw_df, TblNm.iden):
                 return False
         except (EmptyTableException, ColumnMismatchException, OperationalError) as exc:
-            self.logger.log_error(f"analyzing scan_identifier failed: {g_repr(exc)}")
+            self.logger.error(f"analyzing scan_identifier failed: {g_repr(exc)}")
             return False
         return True
 
@@ -89,7 +89,7 @@ class Categorizer(Analyzer):
             )
             raw_df = raw_df.drop([ColNm.combi], axis=1)
         except KeyError as exc:
-            self.logger.log_error(
+            self.logger.error(
                 f"categorizing failures for scan_service failed: {g_repr(exc)}"
             )
             return pd.DataFrame()
@@ -107,7 +107,7 @@ class Categorizer(Analyzer):
         try:
             serv_vec = np.unique(raw_df[ColNm.serv])
             if not serv_vec.size == 1:
-                self.logger.log_error("more than one service in a run")
+                self.logger.error("more than one service in a run")
                 return pd.DataFrame()
             else:
                 serv = serv_vec[0]
@@ -130,7 +130,7 @@ class Categorizer(Analyzer):
             )
             raw_df = raw_df.drop([ColNm.combi], axis=1)
         except KeyError as exc:
-            self.logger.log_error(
+            self.logger.error(
                 f"categorizing failures for scan_identifier failed: {g_repr(exc)}"
             )
             return pd.DataFrame()
@@ -332,7 +332,7 @@ class Categorizer(Analyzer):
                     break
 
         except (KeyError, AttributeError) as exc:
-            self.logger.log_error(
+            self.logger.error(
                 f"getting failure for identifier failed: {g_repr(exc)}"
             )
             return Failure.UNKNOWN

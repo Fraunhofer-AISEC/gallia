@@ -29,7 +29,10 @@ except ModuleNotFoundError:
     ANALYZER_AVAILABLE = False
 
 from gallia.analyzer.arg_help import ArgHelp
-from gallia.udscan.core import Script
+from gallia.command.base import Script
+from gallia.log import get_logger
+from argparse import ArgumentParser
+from gallia.config import Config
 
 # ========================================================== #
 # [Rule for arguments]
@@ -42,9 +45,16 @@ from gallia.udscan.core import Script
 
 
 class AnalyzerMain(Script):
-    def __init__(self) -> None:
-        super().__init__()
+    """Analyzer"""
+
+    GROUP = "analyzer"
+    COMMAND = "run"
+    SHORT_HELP = "request VIN"
+
+    def __init__(self, parser: ArgumentParser, config: Config = Config()) -> None:
+        super().__init__(parser, config)
         self.artifacts_dir: Path
+        self.logger = get_logger(__file__)
 
     def prepare_artifactsdir(self, path: Optional[Path]) -> Path:
         if path is None:
@@ -58,10 +68,10 @@ class AnalyzerMain(Script):
         if path.is_dir():
             return path
 
-        self.logger.log_error(f"Data directory {path} is not an existing directory.")
+        self.logger.error(f"Data directory {path} is not an existing directory.")
         sys.exit(1)
 
-    def add_parser(self) -> None:
+    def configure_parser(self) -> None:
         # Commands
         grp_cmd = self.parser.add_argument_group("Command")
         grp_cmd.add_argument("-a", action="store_true", help=ArgHelp.analyze)
@@ -97,13 +107,13 @@ class AnalyzerMain(Script):
 
     def main(self, args: Namespace) -> None:
         if not ANALYZER_AVAILABLE:
-            self.logger.log_error(
+            self.logger.error(
                 "Please install optional dependencies to run the analyzer"
             )
             sys.exit(1)
 
         self.artifacts_dir = self.prepare_artifactsdir(args.data_dir)
-        self.logger.log_preamble(f"Storing artifacts at {self.artifacts_dir}")
+        self.logger.result(f"Storing artifacts at {self.artifacts_dir}")
 
         args = vars(args)
         # Commands
@@ -134,7 +144,7 @@ class AnalyzerMain(Script):
             run_end = run_start + 1
 
         if db_path == "":
-            self.logger.log_error("Please set database path with --source option!")
+            self.logger.error("Please set database path with --source option!")
             sys.exit()
 
         start_time = time.process_time()
@@ -196,10 +206,10 @@ class AnalyzerMain(Script):
                 reporter.iterate_all(show_possible_on)
             else:
                 if service_id == -1:
-                    self.logger.log_error("Please input Service ID with --sid option.")
+                    self.logger.error("Please input Service ID with --sid option.")
                 else:
                     reporter.consolidate_xl_iden(service_id, show_possible_on)
 
-        self.logger.log_summary(
+        self.logger.result(
             f"gallia-analyze: elapsed time(sec): {str(time.process_time() - start_time)}"
         )

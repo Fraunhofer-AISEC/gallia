@@ -17,7 +17,7 @@ from gallia.analyzer.operator import Operator
 from gallia.analyzer.config import SrcPath
 from gallia.analyzer.mode_config import LogMode, ScanMode, OpMode
 from gallia.analyzer.name_config import ColNm, KyNm, TblNm, VwNm, NEG_STR
-from gallia.utils import g_repr
+from gallia.services.uds.core.utils import g_repr
 
 
 class Analyzer(Operator):
@@ -60,7 +60,7 @@ class Analyzer(Operator):
         """
         analyze certain run at a given operation mode.
         """
-        self.logger.log_summary(f"analyzing run #{str(run)} from {self.db_path} ...")
+        self.logger.result(f"analyzing run #{str(run)} from {self.db_path} ...")
         scan_mode = self.get_scan_mode(run)
         if scan_mode == ScanMode.SERV:
             if not self.reset(TblNm.serv, run):
@@ -83,7 +83,7 @@ class Analyzer(Operator):
             self.cur.executescript(reset_sql)
             self.con.commit()
         except (OperationalError, FileNotFoundError, KeyError) as exc:
-            self.logger.log_error(f"resetting analysis in place failed: {g_repr(exc)}")
+            self.logger.error(f"resetting analysis in place failed: {g_repr(exc)}")
             return False
         return True
 
@@ -110,7 +110,7 @@ class Analyzer(Operator):
                         )
                         analyze_sql += update_sql
                 except KeyError as exc:
-                    self.logger.log_error(
+                    self.logger.error(
                         f"condition key reading failed: {g_repr(exc)}"
                     )
             if self.debug_on:
@@ -129,7 +129,7 @@ class Analyzer(Operator):
             JSONDecodeError,
             NotImplementedError,
         ) as exc:
-            self.logger.log_error(
+            self.logger.error(
                 f"analyzing scan_service in place failed: {g_repr(exc)}"
             )
             return False
@@ -141,7 +141,7 @@ class Analyzer(Operator):
         without using data frame direct in data base.
         """
         if op_mode == OpMode.ISO:
-            self.logger.log_warning(
+            self.logger.warning(
                 "ISO Standard analysis unavailable for scan_identifier"
             )
             return False
@@ -192,7 +192,7 @@ class Analyzer(Operator):
                     else:
                         pass
                 except KeyError as exc:
-                    self.logger.log_error(
+                    self.logger.error(
                         f"condition key reading failed: {g_repr(exc)}"
                     )
             drop_view_sql = f"""
@@ -217,7 +217,7 @@ class Analyzer(Operator):
             AttributeError,
             JSONDecodeError,
         ) as exc:
-            self.logger.log_error(
+            self.logger.error(
                 f"analyzing scan_identifier in place failed: {g_repr(exc)}"
             )
             return False
@@ -236,7 +236,7 @@ class Analyzer(Operator):
         try:
             failure = self.fail_name_dict[cond_dict[KyNm.fail]]
         except KeyError as exc:
-            self.logger.log_error(
+            self.logger.error(
                 f"getting failure condition from JSON failed: {g_repr(exc)}"
             )
             return 255, ""
@@ -317,7 +317,7 @@ class Analyzer(Operator):
                     + f"""(SELECT({ref_cols} ) FROM "{VwNm.ref_vw}")"""
                 )
             except KeyError as exc:
-                self.logger.log_error(
+                self.logger.error(
                     f"condition key reading failed at '{neg_str}{KyNm.match}': {g_repr(exc)}"
                 )
                 add_cond = ""
@@ -337,7 +337,7 @@ class Analyzer(Operator):
                     add_cond += str(self.iso_err_name_dict[resp_name]) + ","
             add_cond = add_cond[:-1] + ")"
         except KeyError as exc:
-            self.logger.log_error(
+            self.logger.error(
                 f"condition key reading failed at '{neg_str}{KyNm.resd}': {g_repr(exc)}"
             )
             add_cond = ""
@@ -414,7 +414,7 @@ class Analyzer(Operator):
                     )
                 cond += add_cond
         except KeyError as exc:
-            self.logger.log_error(
+            self.logger.error(
                 f"condition key reading failed at '{neg_str}{KyNm.supp}': {g_repr(exc)}"
             )
         return cond
@@ -435,7 +435,7 @@ class Analyzer(Operator):
                     add_cond += str(self.iso_serv_name_dict[serv_name]) + ","
             add_cond = add_cond[:-1] + ")"
         except KeyError as exc:
-            self.logger.log_error(
+            self.logger.error(
                 f"condition key reading failed at '{neg_str}{KyNm.for_serv}': {g_repr(exc)}"
             )
             return cond
@@ -466,7 +466,7 @@ class Analyzer(Operator):
                     add_cond += str(resp) + ","
                 cond += add_cond[:-1] + ")"
         except KeyError as exc:
-            self.logger.log_error(
+            self.logger.error(
                 f"condition key reading failed at '{neg_str}{KyNm.known}': {g_repr(exc)}"
             )
         return cond

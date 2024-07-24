@@ -12,8 +12,8 @@ import pandas as pd
 from pandas.io.sql import DatabaseError
 from gallia.analyzer.mode_config import LogMode
 from gallia.analyzer.name_config import ColNm
-from gallia.utils import g_repr
-from gallia.penlog import Logger
+from gallia.services.uds.core.utils import g_repr
+from gallia.log import get_logger
 
 
 class DatabaseHandler:
@@ -22,12 +22,12 @@ class DatabaseHandler:
     Used for database connection, reading and writing data and log.
     """
 
-    def __init__(self, path: str = "", log_mode: LogMode = LogMode.STD_OUT) -> None:
+    def __init__(self, path: str = "", mode: LogMode = LogMode.STD_OUT) -> None:
         self.set_db_path(path)
-        self.log_mode = log_mode
+        self.mode = mode
         self.con: sqlite3.Connection
         self.cur: sqlite3.Cursor
-        self.logger: Logger = Logger("Analyzer")
+        self.logger = get_logger(__file__)
         self.connect_db()
 
     def set_db_path(self, path: str = "") -> bool:
@@ -49,7 +49,7 @@ class DatabaseHandler:
             self.con = sqlite3.connect(self.db_path)
             self.cur = self.con.cursor()
         except OperationalError as exc:
-            self.logger.log_error(f"DB connection failed: {g_repr(exc)}")
+            self.logger.error(f"DB connection failed: {g_repr(exc)}")
             return False
         return True
 
@@ -74,7 +74,7 @@ class DatabaseHandler:
             self.cur.executescript(create_sql)
             self.con.commit()
         except (OperationalError, AttributeError) as exc:
-            self.logger.log_error(f"DB creating table failed: {g_repr(exc)}")
+            self.logger.error(f"DB creating table failed: {g_repr(exc)}")
             return False
         return True
 
@@ -86,7 +86,7 @@ class DatabaseHandler:
             self.cur.execute(f"DELETE FROM {table_name}")
             self.con.commit()
         except (OperationalError, AttributeError) as exc:
-            self.logger.log_error(f"DB clearing table failed: {g_repr(exc)}")
+            self.logger.error(f"DB clearing table failed: {g_repr(exc)}")
             return False
         return True
 
@@ -98,7 +98,7 @@ class DatabaseHandler:
             self.cur.execute(f"DROP TABLE IF EXISTS {table_name}")
             self.con.commit()
         except (OperationalError, AttributeError) as exc:
-            self.logger.log_error(f"DB deleting table failed: {g_repr(exc)}")
+            self.logger.error(f"DB deleting table failed: {g_repr(exc)}")
             return False
         return True
 
@@ -110,11 +110,11 @@ class DatabaseHandler:
             raw_df: pd.DataFrame = pd.read_sql_query(sql, self.con)
         except (DatabaseError, AttributeError) as exc:
             if error_on:
-                self.logger.log_error(f"DB query failed: {g_repr(exc)}")
+                self.logger.error(f"DB query failed: {g_repr(exc)}")
             return pd.DataFrame()
         if raw_df.shape[0] == 0:
             if error_on:
-                self.logger.log_warning("no entry in database.")
+                self.logger.warning("no entry in database.")
             return pd.DataFrame()
         return raw_df
 
@@ -152,7 +152,7 @@ class DatabaseHandler:
             self.cur.executescript(del_sql)
             self.con.commit()
         except (OperationalError, AttributeError) as exc:
-            self.logger.log_error(f"deleting a run from DB failed: {g_repr(exc)}")
+            self.logger.error(f"deleting a run from DB failed: {g_repr(exc)}")
             return False
         return True
 
@@ -163,6 +163,6 @@ class DatabaseHandler:
         try:
             raw_df.to_sql(table_name, self.con, if_exists="append", index=False)
         except (OperationalError, AttributeError) as exc:
-            self.logger.log_error(f"writing data to DB failed: {g_repr(exc)}")
+            self.logger.error(f"writing data to DB failed: {g_repr(exc)}")
             return False
         return True

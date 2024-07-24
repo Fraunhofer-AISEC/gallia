@@ -12,7 +12,7 @@ from gallia.analyzer.operator import Operator
 from gallia.analyzer.config import TblStruct
 from gallia.analyzer.mode_config import LogMode, ScanMode
 from gallia.analyzer.name_config import TblNm, ColNm, VwNm
-from gallia.utils import g_repr
+from gallia.services.uds.core.utils import g_repr
 
 
 class Extractor(Operator):
@@ -41,7 +41,7 @@ class Extractor(Operator):
         extract scan result data from JSON form in the database
         and save it into relational tables for a certain input run.
         """
-        self.logger.log_summary(f"extracting run #{str(run)} from {self.db_path} ...")
+        self.logger.result(f"extracting run #{str(run)} from {self.db_path} ...")
         self.check_boot(run)
         scan_mode = self.get_scan_mode(run)
         if scan_mode == ScanMode.SERV:
@@ -100,7 +100,7 @@ class Extractor(Operator):
             self.cur.executescript(extract_sql)
             self.con.commit()
         except OperationalError as exc:
-            self.logger.log_error(f"extracting scan_service failed: {g_repr(exc)}")
+            self.logger.error(f"extracting scan_service failed: {g_repr(exc)}")
             return False
         return True
 
@@ -170,7 +170,7 @@ class Extractor(Operator):
             self.cur.executescript(extract_sql)
             self.con.commit()
         except OperationalError as exc:
-            self.logger.log_error(f"extracting scan_identifier failed: {g_repr(exc)}")
+            self.logger.error(f"extracting scan_identifier failed: {g_repr(exc)}")
             return False
         return True
 
@@ -188,8 +188,8 @@ class Extractor(Operator):
                 boot_df[ColNm.boot].apply(lambda x: x in boot_types_vec).all()
             )
             if not boot_ok:
-                self.logger.log_warning("boot information not complete")
+                self.logger.warning("boot information not complete")
         except (KeyError, AttributeError, OperationalError) as exc:
-            self.logger.log_error(f"checking boot information failed: {g_repr(exc)}")
+            self.logger.error(f"checking boot information failed: {g_repr(exc)}")
             return False
         return boot_ok

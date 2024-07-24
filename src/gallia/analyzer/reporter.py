@@ -18,7 +18,7 @@ from gallia.analyzer.config import TblStruct, NUM_ECU_MODES
 from gallia.analyzer.mode_config import LogMode, ScanMode
 from gallia.analyzer.name_config import ColNm, TblNm
 from gallia.analyzer.exceptions import ColumnMismatchException, EmptyTableException
-from gallia.utils import g_repr
+from gallia.services.uds.core.utils import g_repr
 
 
 class Reporter(Operator):
@@ -52,7 +52,7 @@ class Reporter(Operator):
             return False
         self.load_ven_sess()
         self.load_ven_lu()
-        self.logger.log_summary(
+        self.logger.result(
             f"consolidating scan_service by ECU mode from {self.db_path} ..."
         )
         xl_generator = ExcelGenerator(self.db_path, self.log_mode)
@@ -75,12 +75,12 @@ class Reporter(Operator):
                 ColumnMismatchException,
                 AttributeError,
             ) as exc:
-                self.logger.log_error(
+                self.logger.error(
                     f"consolidating scan_service failed: {g_repr(exc)}"
                 )
                 continue
             except EmptyTableException:
-                self.logger.log_warning(f"nothing to report for ECU mode {ecu_mode}.")
+                self.logger.warning(f"nothing to report for ECU mode {ecu_mode}.")
         if xl_is_empty:
             return False
         out_path = self.get_path(
@@ -96,20 +96,20 @@ class Reporter(Operator):
         for a certain given service into one EXCEL file.
         """
         if serv not in self.iso_serv_by_iden_vec:
-            self.logger.log_error("given Service ID is not service by identifier.")
+            self.logger.error("given Service ID is not service by identifier.")
             return False
         if not self.load_meta(force=True):
             return False
         self.load_ven_sess()
         self.load_ven_lu()
-        self.logger.log_summary(
+        self.logger.result(
             f"consolidating for Service ID 0x{serv:02X} {self.iso_serv_code_dict[serv]} from {self.db_path} ..."
         )
         xl_generator = ExcelGenerator(self.db_path, self.log_mode)
         xl_is_empty = True
         if self.num_modes == 0:
             num_modes = NUM_ECU_MODES
-            self.logger.log_warning(
+            self.logger.warning(
                 f"no information about ECU modes. trying {NUM_ECU_MODES} mode(s)..."
             )
         else:
@@ -132,14 +132,14 @@ class Reporter(Operator):
                 ColumnMismatchException,
                 AttributeError,
             ) as exc:
-                self.logger.log_error(
+                self.logger.error(
                     f"consolidating scan_identifier failed: {g_repr(exc)}"
                 )
                 continue
             except EmptyTableException:
-                self.logger.log_error(f"nothing to report for ECU mode {ecu_mode}.")
+                self.logger.error(f"nothing to report for ECU mode {ecu_mode}.")
         if xl_is_empty:
-            self.logger.log_info(f"nothing to report for Service ID 0x{serv:02X}")
+            self.logger.info(f"nothing to report for Service ID 0x{serv:02X}")
             return False
         out_path = self.get_path(
             f"0x{serv:02X}_{self.iso_serv_code_dict[serv]}",
@@ -170,7 +170,7 @@ class Reporter(Operator):
         """
         generate EXCEL report for a certain run.
         """
-        self.logger.log_summary(f"reporting run #{str(run)} from {self.db_path} ...")
+        self.logger.result(f"reporting run #{str(run)} from {self.db_path} ...")
         scan_mode = self.get_scan_mode(run)
         if scan_mode == ScanMode.SERV:
             return self.report_xl_serv(run, show_psb)
@@ -196,7 +196,7 @@ class Reporter(Operator):
             if not xl_generator.save_close_xl(out_path):
                 return False
         except (EmptyTableException, ColumnMismatchException, AttributeError) as exc:
-            self.logger.log_error(f"reporting scan_service failed: {g_repr(exc)}")
+            self.logger.error(f"reporting scan_service failed: {g_repr(exc)}")
             return False
         return True
 
@@ -218,7 +218,7 @@ class Reporter(Operator):
             if not xl_generator.save_close_xl(out_path):
                 return False
         except (EmptyTableException, ColumnMismatchException, AttributeError) as exc:
-            self.logger.log_error(f"reporting scan_identifier failed: {g_repr(exc)}")
+            self.logger.error(f"reporting scan_identifier failed: {g_repr(exc)}")
             return False
         return True
 
@@ -232,7 +232,7 @@ class Reporter(Operator):
         out_path = self.artifacts_dir.joinpath(f"{suffix}{ext}")
         if out_path.is_file() and rm_if_exists:
             os.remove(out_path)
-            self.logger.log_info(f"existing file removed from {out_path}")
+            self.logger.info(f"existing file removed from {out_path}")
         return str(out_path)
 
     def get_entries_oi(self, scan_mode: ScanMode, show_psb: bool = False) -> np.ndarray:
@@ -261,7 +261,7 @@ class Reporter(Operator):
             if not self.load_sid_oi_from_df(raw_df, ecu_mode):
                 return False
         except (EmptyTableException, ColumnMismatchException) as exc:
-            self.logger.log_error(f"loading services of interest failed: {g_repr(exc)}")
+            self.logger.error(f"loading services of interest failed: {g_repr(exc)}")
             return False
         return True
 
@@ -289,7 +289,7 @@ class Reporter(Operator):
                 cond_abn &= raw_df[ColNm.ecu_mode] == ecu_mode
             self.abn_serv_vec = np.sort(np.unique(raw_df.loc[cond_abn, ColNm.serv]))
         except (KeyError, IndexingError, AttributeError) as exc:
-            self.logger.log_error(
+            self.logger.error(
                 f"loading services of interest from data frame failed: {g_repr(exc)}"
             )
             return False
@@ -305,7 +305,7 @@ class Reporter(Operator):
             if not self.load_iden_oi_from_df(raw_df, ecu_mode):
                 return False
         except (EmptyTableException, ColumnMismatchException) as exc:
-            self.logger.log_error(
+            self.logger.error(
                 f"loading identifiers of interest failed: {g_repr(exc)}"
             )
             return False
@@ -318,7 +318,7 @@ class Reporter(Operator):
         try:
             serv_vec = np.sort(np.unique(raw_df[ColNm.serv]))
             if not serv_vec.size == 1:
-                self.logger.log_error("more than one service in a run")
+                self.logger.error("more than one service in a run")
                 return False
             dft_err_df = self.get_dft_err_df_from_raw(raw_df)
             dft_err_ser: pd.Series = dft_err_df.loc[ColNm.dft]
@@ -338,7 +338,7 @@ class Reporter(Operator):
                 cond_abn &= raw_df[ColNm.ecu_mode] == ecu_mode
             self.abn_iden_vec = np.sort(np.unique(raw_df.loc[cond_abn, ColNm.iden]))
         except (KeyError, IndexingError, AttributeError) as exc:
-            self.logger.log_error(
+            self.logger.error(
                 f"loading identifiers of interest from data frame failed: {g_repr(exc)}"
             )
             return False
