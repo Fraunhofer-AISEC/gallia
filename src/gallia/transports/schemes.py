@@ -3,19 +3,21 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import sys
-from enum import Enum, unique
+from enum import StrEnum, unique
 
 TCP = "tcp"
 TCP_LINES = "tcp-lines"
+HTTP = "http"
 DOIP = "doip"
 
 
 if sys.platform.startswith("linux"):
 
     @unique
-    class TransportScheme(str, Enum):
+    class TransportScheme(StrEnum):
         TCP = TCP
         TCP_LINES = TCP_LINES
+        HTTP = HTTP
         DOIP = DOIP
         UNIX = "unix"
         UNIX_LINES = "unix-lines"
@@ -27,9 +29,10 @@ if sys.platform.startswith("linux"):
 if sys.platform == "win32":
 
     @unique
-    class TransportScheme(str, Enum):
+    class TransportScheme(StrEnum):
         TCP = TCP
         TCP_LINES = TCP_LINES
+        HTTP = HTTP
         DOIP = DOIP
 
         FLEXRAY_RAW = "fr-raw"
