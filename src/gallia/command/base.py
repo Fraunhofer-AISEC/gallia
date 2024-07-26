@@ -25,7 +25,6 @@ from gallia.command.config import Field, GalliaBaseModel, idempotent
 from gallia.db.handler import DBHandler
 from gallia.dumpcap import Dumpcap
 from gallia.log import add_zst_log_handler, get_logger, tz
-from gallia.plugins import load_transport
 from gallia.powersupply import PowerSupply, PowerSupplyURI
 from gallia.services.uds.core.exception import UDSException
 from gallia.transports import BaseTransport, TargetURI
@@ -435,7 +434,9 @@ class AsyncScript(BaseCommand, ABC):
 
 
 class ScannerConfig(AsyncScriptConfig, argument_group="scanner", config_section="gallia.scanner"):
-    dumpcap: bool = Field(sys.platform == "linux", description="Enable/Disable creating a pcap file")
+    dumpcap: bool = Field(
+        sys.platform == "linux", description="Enable/Disable creating a pcap file"
+    )
     target: idempotent(TargetURI) = Field(
         description="URI that describes the target", metavar="TARGET"
     )
@@ -491,6 +492,8 @@ class Scanner(AsyncScript, ABC):
     async def main(self) -> None: ...
 
     async def setup(self) -> None:
+        from gallia.plugins.plugin import load_transport
+
         if self.config.power_supply is not None:
             self.power_supply = await PowerSupply.connect(self.config.power_supply)
             if self.config.power_cycle is True:

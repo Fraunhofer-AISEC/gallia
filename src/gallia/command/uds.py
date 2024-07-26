@@ -10,7 +10,6 @@ import aiofiles
 from gallia.command.base import FileNames, Scanner, ScannerConfig
 from gallia.command.config import Field
 from gallia.log import get_logger
-from gallia.plugins import load_ecu
 from gallia.services.uds.core.service import NegativeResponse, UDSResponse
 from gallia.services.uds.ecu import ECU
 from gallia.services.uds.helpers import raise_for_error
@@ -84,6 +83,8 @@ class UDSScanner(Scanner, ABC):
         self.ecu.implicit_logging = self._implicit_logging
 
     async def setup(self) -> None:
+        from gallia.plugins.plugin import load_ecu
+
         await super().setup()
 
         self.ecu = load_ecu(self.config.oem)(
