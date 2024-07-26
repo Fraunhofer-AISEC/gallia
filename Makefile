@@ -44,7 +44,7 @@ docs:
 
 .PHONY: test
 test:
-	python -m pytest -v --cov=$(PWD) --cov-report html tests
+	python -m pytest -v --cov=$(PWD) --cov-report html tests -W error::UserWarning
 
 .PHONY: clean
 clean:
