@@ -60,7 +60,6 @@ async def _echo_test(
 
 
 @pytest.fixture()
-@pytest.mark.asyncio
 async def tcp_server() -> AsyncIterator[TCPServer]:
     tcp_server = TCPServer()
     await tcp_server.listen(listen_target)

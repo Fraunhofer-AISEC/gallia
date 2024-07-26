@@ -41,7 +41,7 @@ jobs:
         poetry install
     - name: Run pytest
       run: |
-        poetry run python -m pytest -v tests
+        poetry run make test
 
   vecu:
     strategy:
