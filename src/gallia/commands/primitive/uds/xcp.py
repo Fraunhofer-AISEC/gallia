@@ -3,15 +3,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import sys
-from argparse import ArgumentParser
 
 assert sys.platform.startswith("linux"), "unsupported platform"
 
 from gallia.command import Scanner
 from gallia.command.base import ScannerConfig
 from gallia.command.config import AutoInt, Field
-from gallia.config import Config
-from gallia.plugins import load_transport
+from gallia.plugins.plugin import load_transport
 from gallia.services.xcp import CANXCPSerivce, XCPService
 from gallia.transports import ISOTPTransport, RawCANTransport
 from gallia.utils import catch_and_log_exception
@@ -30,11 +28,7 @@ class SimpleTestXCP(Scanner):
     def __init__(self, config: SimpleTestXCPConfig):
         super().__init__(config)
         self.config = config
-
-    def __init__(self, parser: ArgumentParser, config: Config):
         self.service: XCPService
-
-        super().__init__(parser, config)
 
     async def setup(self) -> None:
         transport_type = load_transport(self.config.target)
@@ -42,15 +36,17 @@ class SimpleTestXCP(Scanner):
 
         if isinstance(transport, RawCANTransport):
             if self.config.can_master is None or self.config.can_slave is None:
+                # TODO: Transform
                 self.parser.error("For CAN interfaces, master and slave address are required!")
 
             self.service = CANXCPSerivce(transport, self.config.can_master, self.config.can_slave)
         elif isinstance(transport, ISOTPTransport):
+            # TODO: Transform
             self.parser.error("Use can-raw for CAN interfaces!")
         else:
             self.service = XCPService(transport)
 
-        await super().setup(self.config)
+        await super().setup()
 
     async def main(self) -> None:
         await catch_and_log_exception(self.service.connect)

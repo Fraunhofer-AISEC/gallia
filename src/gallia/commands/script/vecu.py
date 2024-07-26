@@ -19,7 +19,6 @@ from gallia.services.uds.server import (
     TCPUDSServerTransport,
     UDSServer,
     UDSServerTransport,
-    UnixUDSServerTransport,
 )
 from gallia.transports import TargetURI, TransportScheme
 
