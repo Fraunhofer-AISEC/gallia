@@ -34,6 +34,7 @@ class ColNm:
 
     run = "run"
     run_id = "run_id"
+    run_meta_id = "run_meta_id"
     index = "index"
     sess = "session"
     sess_name = "session_name"

@@ -244,10 +244,10 @@ class Operator(DatabaseHandler):
         DROP VIEW IF EXISTS "{VwNm.ecu_vw}";
         DROP VIEW IF EXISTS "{VwNm.mode_vw}";
         CREATE VIEW "{VwNm.ecu_vw}"
-        AS SELECT "{ColNm.id}", json_extract("properties_pre", "$.mode") AS "{ColNm.ecu_mode}"
+        AS SELECT "{ColNm.id}" as {ColNm.run_id}, meta as {ColNm.run_meta_id}, json_extract("properties_pre", "$.mode") AS "{ColNm.ecu_mode}"
         FROM "{TblNm.scan_run}";
         CREATE VIEW "{VwNm.mode_vw}"
-        AS SELECT "{ColNm.id}" AS "{ColNm.run_id}",
+        AS SELECT "{ColNm.id}" AS "{ColNm.run_meta_id}",
         json_extract("command_meta", "$.group") ||  "-" || json_extract("command_meta", "$.subgroup") || "-" || json_extract("command_meta", "$.command") AS "{ColNm.scan_mode}"
         FROM "{TblNm.run_meta}";
         DROP TABLE IF EXISTS "{TblNm.meta}";
@@ -255,9 +255,7 @@ class Operator(DatabaseHandler):
         AS SELECT "{ColNm.run_id}", "{ColNm.ecu_mode}", "{ColNm.scan_mode}"
         FROM "{VwNm.ecu_vw}"
         INNER JOIN "{VwNm.mode_vw}"
-        ON "{VwNm.ecu_vw}"."{ColNm.id}" = "{VwNm.mode_vw}"."{ColNm.run_id}";
-        DROP VIEW IF EXISTS "{VwNm.ecu_vw}";
-        DROP VIEW IF EXISTS "{VwNm.mode_vw}";
+        ON "{VwNm.ecu_vw}"."{ColNm.run_meta_id}" = "{VwNm.mode_vw}"."{ColNm.run_meta_id}";
         """
         try:
             self.cur.executescript(gen_meta_sql)
