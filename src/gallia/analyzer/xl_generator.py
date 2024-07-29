@@ -230,13 +230,12 @@ class ExcelGenerator(Operator):
                     else:
                         index_name = f"0x{int(row.identifier):04X}"
                     self.worksheet.cell(cur_row, self.start_col).value = index_name
-                    cur_row += 1
                     if row.subfunc != -1:
                         # service has subfunction and identifier
                         self.worksheet.cell(
                             cur_row, self.start_col + 1
                         ).value = row.subfunc
-                        cur_row += 1
+                    cur_row += 1
 
                 self.worksheet.cell(cur_row, cur_col).font = Font(
                     name=XlDesign.font_index
