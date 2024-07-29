@@ -156,6 +156,12 @@ def load_parsers() -> Parsers:
         description="miscellaneous uncategorized helper scripts",
         metavar=command,
     )
+    add_cli_group(
+        parsers,
+        "analyzer",
+        "analyzer",
+        metavar=subgroup,
+    )
 
     return parsers
 
