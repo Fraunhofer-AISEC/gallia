@@ -21,8 +21,6 @@ be compatible with an IDE, linter or type checker.
 
 import argparse
 import sys
-from collections.abc import Sequence
-from dataclasses import dataclass
 from typing import Dict, Generic, List, NoReturn, Optional, Tuple, Type, Any
 
 from pydantic import BaseModel, ValidationError
@@ -114,7 +112,6 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
         # Add Arguments from Model
         self._submodels: dict[str, Type[BaseModel]] = dict()
         self.model = self._add_model(model)
-        print(vars(self.model), file=open("/tmp/after", "w"))
 
         self._help_group = self.add_argument_group(ArgumentParser.HELP)
 

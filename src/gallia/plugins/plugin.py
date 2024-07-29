@@ -3,8 +3,7 @@ from dataclasses import dataclass
 from importlib.metadata import entry_points
 from typing import Union
 
-from pydantic_argparse import BaseCommand
-
+from gallia.command import BaseCommand
 from gallia.command.config import GalliaBaseModel
 from gallia.services.uds import ECU
 from gallia.transports import BaseTransport, TargetURI

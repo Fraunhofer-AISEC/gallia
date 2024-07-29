@@ -16,6 +16,7 @@ from typing import Any
 
 import aiosqlite
 
+from gallia.command.config import GalliaBaseModel
 from gallia.log import get_logger
 from gallia.services.uds.core import service
 from gallia.services.uds.core.constants import (
@@ -34,18 +35,23 @@ logger = get_logger(__name__)
 
 
 class UDSServer(ABC):
-    def __init__(self) -> None:
-        self.state = ECUState()
+    class Behavior(GalliaBaseModel):
+        default_response_if_service_not_supported: bool = True
+        default_response_if_missing_sub_function: bool = True
+        default_response_if_sub_function_not_supported: bool = True
+        default_response_if_incorrect_format: bool = True
+        default_response_if_session_change: bool = True
+        default_response_if_session_read: bool = True
+        default_response_if_tester_present: bool = True
+        default_response_if_none: bool = True
+        default_response_if_suppress: bool = True
 
-        self.use_default_response_if_service_not_supported = True
-        self.use_default_response_if_missing_sub_function = True
-        self.use_default_response_if_sub_function_not_supported = True
-        self.use_default_response_if_incorrect_format = True
-        self.use_default_response_if_session_change = True
-        self.use_default_response_if_session_read = True
-        self.use_default_response_if_tester_present = True
-        self.use_default_response_if_none = True
-        self.use_default_response_if_suppress = True
+    def __init__(self, behavior: Behavior | None = None) -> None:
+        self.state = ECUState()
+        if behavior is None:
+            self.behavior = self.Behavior()
+        else:
+            self.behavior = behavior
 
     @property
     @abstractmethod
@@ -222,44 +228,44 @@ class UDSServer(ABC):
         response: service.UDSResponse | None
 
         if (
-            self.use_default_response_if_service_not_supported
+            self.behavior.default_response_if_service_not_supported
             and (response := self.default_response_if_service_not_supported(request)) is not None
         ):
             return response
 
         if (
-            self.use_default_response_if_missing_sub_function
+            self.behavior.default_response_if_missing_sub_function
             and (response := self.default_response_if_missing_sub_function(request)) is not None
         ):
             return response
 
         if (
-            self.use_default_response_if_sub_function_not_supported
+            self.behavior.default_response_if_sub_function_not_supported
             and (response := self.default_response_if_sub_function_not_supported(request))
             is not None
         ):
             return response
 
         if (
-            self.use_default_response_if_incorrect_format
+            self.behavior.default_response_if_incorrect_format
             and (response := self.default_response_if_incorrect_format(request)) is not None
         ):
             return response
 
         if (
-            self.use_default_response_if_session_change
+            self.behavior.default_response_if_session_change
             and (response := self.default_response_if_session_change(request)) is not None
         ):
             return response
 
         if (
-            self.use_default_response_if_session_read
+            self.behavior.default_response_if_session_read
             and (response := self.default_response_if_session_read(request)) is not None
         ):
             return response
 
         if (
-            self.use_default_response_if_tester_present
+            self.behavior.default_response_if_tester_present
             and (response := self.default_response_if_tester_present(request)) is not None
         ):
             return response
@@ -267,7 +273,7 @@ class UDSServer(ABC):
         if (response := await self.respond_after_default(request)) is not None:
             return response
 
-        if self.use_default_response_if_none:
+        if self.behavior.default_response_if_none:
             return self.default_response_if_none(request)
 
         return None
@@ -283,7 +289,7 @@ class UDSServer(ABC):
             if self.state.__dict__ != old_state.__dict__:
                 logger.debug(f"Changed state to {self.state}")
 
-            if self.use_default_response_if_suppress:
+            if self.behavior.default_response_if_suppress:
                 return self.default_response_if_suppress(request, response)
 
         return response
@@ -337,28 +343,38 @@ class RNGEcuState(ECUState):
 
 
 class RandomUDSServer(UDSServer):
-    def __init__(self, seed: int):
-        super().__init__()
+    class RandomnessParameters(GalliaBaseModel):
+        mandatory_sessions: list[int] = [1]
+        optional_sessions: list[int] = [2, 3, 4] + list(range(0x40, 0x7F))
+        p_session: float = 0.05
+
+        services: dict[int, dict[UDSIsoServices, list[int] | None]] = {}
+        mandatory_services: list[UDSIsoServices] = [UDSIsoServices.DiagnosticSessionControl]
+        optional_services: list[UDSIsoServices] = list(
+            set(UDSIsoServices) - set(mandatory_services + [UDSIsoServices.NegativeResponse])
+        )
+        p_service: float = 0.2
+
+        p_sub_function: float = 0.05
+        p_identifier: float = 0.005
+        p_correct_payload_format: float = 0.1
+        p_dtc_status_mask: float = 0.9
+
+    def __init__(
+        self,
+        seed: int,
+        randomness_parameters: RandomnessParameters | None = None,
+        behavior: UDSServer.Behavior | None = None,
+    ):
+        super().__init__(behavior)
 
         self.state: RNGEcuState = RNGEcuState()
-
         self.seed = seed
 
-        self.mandatory_sessions = [1]
-        self.optional_sessions = [2, 3, 4] + list(range(0x40, 0x7F))
-        self.p_session = 0.05
-
-        self.services: dict[int, dict[UDSIsoServices, list[int] | None]] = {}
-        self.mandatory_services = [UDSIsoServices.DiagnosticSessionControl]
-        self.optional_services = list(
-            set(UDSIsoServices) - set(self.mandatory_services + [UDSIsoServices.NegativeResponse])
-        )
-        self.p_service = 0.2
-
-        self.p_sub_function = 0.05
-        self.p_identifier = 0.005
-        self.p_correct_payload_format = 0.1
-        self.p_dtc_status_mask = 0.9
+        if randomness_parameters is None:
+            self.randomness_parameters = self.RandomnessParameters()
+        else:
+            self.randomness_parameters = randomness_parameters
 
     async def setup(self) -> None:
         self.randomize()
@@ -375,7 +391,7 @@ class RandomUDSServer(UDSServer):
                         else None
                         for s, sfs in services.items()
                     }
-                    for session, services in self.services.items()
+                    for session, services in self.randomness_parameters.services.items()
                 },
                 indent=4,
                 sort_keys=True,
@@ -390,10 +406,15 @@ class RandomUDSServer(UDSServer):
         level_sessions = {default_session}
         session_transitions: list[set[int]] = [set() for _ in range(0x7F)]
         session_transitions[default_session] = {default_session}
-        combined_sessions = self.mandatory_sessions + self.optional_sessions
+        combined_sessions = (
+            self.randomness_parameters.mandatory_sessions
+            + self.randomness_parameters.optional_sessions
+        )
 
         while len(level_sessions) > 0:
-            p_transition = self.p_session / len(level_sessions) / 2 ** (level + 0.5)
+            p_transition = (
+                self.randomness_parameters.p_session / len(level_sessions) / 2 ** (level + 0.5)
+            )
             next_level_sessions = set()
             available_sessions = [
                 i
@@ -414,7 +435,7 @@ class RandomUDSServer(UDSServer):
             level_sessions = next_level_sessions - set(available_sessions)
             level += 1
 
-        for session in self.mandatory_sessions:
+        for session in self.randomness_parameters.mandatory_sessions:
             if len(session_transitions[session]) == 0:
                 available_sessions = [
                     i
@@ -424,16 +445,18 @@ class RandomUDSServer(UDSServer):
                 session_transitions[rng.choice(available_sessions)].add(session)
                 session_transitions[session] = {default_session}
 
-        self.services = {}
+        self.randomness_parameters.services = {}
 
         for session, session_specific_transitions in enumerate(session_transitions):
             if len(session_specific_transitions) == 0:
                 continue
 
-            self.services[session] = {}
+            self.randomness_parameters.services[session] = {}
 
-            for supported_service in self.mandatory_services + [
-                s for s in self.optional_services if rng.random() < self.p_service
+            for supported_service in self.randomness_parameters.mandatory_services + [
+                s
+                for s in self.randomness_parameters.optional_services
+                if rng.random() < self.randomness_parameters.p_service
             ]:
                 supported_sub_functions: list[int] | None = None
 
@@ -446,7 +469,9 @@ class RandomUDSServer(UDSServer):
                         supported_sub_functions = sorted(session_specific_transitions)
                     elif supported_service == UDSIsoServices.SecurityAccess:
                         supported_sub_functions_tmp = [
-                            sf for sf in range(1, 0x7E, 2) if rng.random() < self.p_sub_function / 2
+                            sf
+                            for sf in range(1, 0x7E, 2)
+                            if rng.random() < self.randomness_parameters.p_sub_function / 2
                         ]
                         supported_sub_functions = []
 
@@ -460,16 +485,20 @@ class RandomUDSServer(UDSServer):
                         supported_sub_functions = [ReadDTCInformationSubFuncs.reportDTCByStatusMask]
                     else:
                         supported_sub_functions = [
-                            sf for sf in range(1, 0x80, 1) if rng.random() < self.p_sub_function
+                            sf
+                            for sf in range(1, 0x80, 1)
+                            if rng.random() < self.randomness_parameters.p_sub_function
                         ]
 
-                self.services[session][supported_service] = supported_sub_functions
+                self.randomness_parameters.services[session][supported_service] = (
+                    supported_sub_functions
+                )
 
     @property
     def supported_services(
         self,
     ) -> dict[int, dict[UDSIsoServices, list[int] | None]]:
-        return self.services
+        return self.randomness_parameters.services
 
     def stateful_rng(self, *args: Any) -> RNG:
         return RNG(
@@ -549,7 +578,7 @@ class RandomUDSServer(UDSServer):
     def routine_control(self, request: service.RoutineControlRequest) -> service.UDSResponse:
         rng = self.stateful_rng(request.service_id, request.routine_identifier)
 
-        if not rng.random_bool(self.p_identifier):
+        if not rng.random_bool(self.randomness_parameters.p_identifier):
             return service.NegativeResponse(request.service_id, UDSErrorCodes.requestOutOfRange)
 
         rng.add_seeds(request.sub_function)
@@ -561,7 +590,7 @@ class RandomUDSServer(UDSServer):
 
         rng = self.stateful_rng(request.pdu)
 
-        if not rng.random_bool(self.p_correct_payload_format):
+        if not rng.random_bool(self.randomness_parameters.p_correct_payload_format):
             return service.NegativeResponse(
                 request.service_id, UDSErrorCodes.incorrectMessageLengthOrInvalidFormat
             )
@@ -573,7 +602,7 @@ class RandomUDSServer(UDSServer):
     ) -> service.UDSResponse:
         rng = self.stateful_rng(request.pdu)
 
-        if not rng.random_bool(self.p_identifier):
+        if not rng.random_bool(self.randomness_parameters.p_identifier):
             return service.NegativeResponse(request.service_id, UDSErrorCodes.requestOutOfRange)
 
         return service.ReadDataByIdentifierResponse(
@@ -585,12 +614,12 @@ class RandomUDSServer(UDSServer):
     ) -> service.UDSResponse:
         rng = self.stateful_rng(request.service_id, request.data_identifier)
 
-        if not rng.random_bool(self.p_identifier):
+        if not rng.random_bool(self.randomness_parameters.p_identifier):
             return service.NegativeResponse(request.service_id, UDSErrorCodes.requestOutOfRange)
 
         rng = self.stateful_rng(request.pdu)
 
-        if not rng.random_bool(self.p_correct_payload_format):
+        if not rng.random_bool(self.randomness_parameters.p_correct_payload_format):
             return service.NegativeResponse(
                 request.service_id, UDSErrorCodes.incorrectMessageLengthOrInvalidFormat
             )
@@ -602,12 +631,12 @@ class RandomUDSServer(UDSServer):
     ) -> service.UDSResponse:
         rng = self.stateful_rng(request.service_id, request.data_identifier)
 
-        if not rng.random_bool(self.p_identifier):
+        if not rng.random_bool(self.randomness_parameters.p_identifier):
             return service.NegativeResponse(request.service_id, UDSErrorCodes.requestOutOfRange)
 
         rng = self.stateful_rng(request.pdu)
 
-        if not rng.random_bool(self.p_correct_payload_format):
+        if not rng.random_bool(self.randomness_parameters.p_correct_payload_format):
             return service.NegativeResponse(
                 request.service_id, UDSErrorCodes.incorrectMessageLengthOrInvalidFormat
             )
@@ -619,7 +648,7 @@ class RandomUDSServer(UDSServer):
     ) -> service.UDSResponse:
         rng = self.stateful_rng(request.service_id, request.group_of_dtc)
 
-        if not rng.random_bool(self.p_dtc_status_mask):
+        if not rng.random_bool(self.randomness_parameters.p_dtc_status_mask):
             return service.NegativeResponse(request.service_id, UDSErrorCodes.requestOutOfRange)
 
         return service.ClearDiagnosticInformationResponse()
@@ -650,25 +679,31 @@ class RandomUDSServer(UDSServer):
 
 
 class DBUDSServer(UDSServer):
-    def __init__(self, db_path: Path, ecu: str | None, properties: dict[str, Any] | None):
-        super().__init__()
+    class Behavior(GalliaBaseModel):
+        default_response_if_service_not_supported: bool = False
+        default_response_if_missing_sub_function: bool = False
+        default_response_if_sub_function_not_supported: bool = False
+        default_response_if_incorrect_format: bool = False
+        default_response_if_session_change: bool = False
+        default_response_if_session_read: bool = False
+        default_response_if_tester_present: bool = False
+        default_response_if_none: bool = False
+        default_response_if_suppress: bool = False
+
+    def __init__(
+        self,
+        db_path: Path,
+        ecu: str | None,
+        properties: dict[str, Any] | None,
+        behavior: Behavior | None = None,
+    ):
+        super().__init__(behavior)
 
         self.db_path = db_path
         self.ecu = ecu
         self.properties = properties
         self.connection: aiosqlite.Connection | None = None
         self.last_response = -1
-
-        # Override defaults
-        self.use_default_response_if_service_not_supported = False
-        self.use_default_response_if_missing_sub_function = False
-        self.use_default_response_if_sub_function_not_supported = False
-        self.use_default_response_if_incorrect_format = False
-        self.use_default_response_if_session_change = False
-        self.use_default_response_if_session_read = False
-        self.use_default_response_if_tester_present = False
-        self.use_default_response_if_none = False
-        self.use_default_response_if_suppress = False
 
     async def setup(self) -> None:
         self.connection = await aiosqlite.connect(self.db_path)
