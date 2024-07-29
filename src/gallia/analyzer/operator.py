@@ -249,7 +249,8 @@ class Operator(DatabaseHandler):
         CREATE VIEW "{VwNm.mode_vw}"
         AS SELECT "{ColNm.id}" AS "{ColNm.run_meta_id}",
         json_extract("command_meta", "$.group") ||  "-" || json_extract("command_meta", "$.subgroup") || "-" || json_extract("command_meta", "$.command") AS "{ColNm.scan_mode}"
-        FROM "{TblNm.run_meta}";
+        FROM "{TblNm.run_meta}"
+        WHERE exit_code = 0;
         DROP TABLE IF EXISTS "{TblNm.meta}";
         CREATE TABLE "{TblNm.meta}"
         AS SELECT "{ColNm.run_id}", "{ColNm.ecu_mode}", "{ColNm.scan_mode}"
