@@ -5,32 +5,32 @@
 import base64
 import pickle
 import sys
-from argparse import BooleanOptionalAction, Namespace
+
+from gallia.command.base import AsyncScriptConfig, ScriptConfig
+from gallia.command.config import AutoInt, Field, Ranges
 
 assert sys.platform == "win32"
 
 from gallia.command import AsyncScript, Script
 from gallia.transports._ctypes_vector_xl_wrapper import FlexRayCtypesBackend
 from gallia.transports.flexray_vector import FlexRayFrame, RawFlexRayTransport, parse_frame_type
-from gallia.utils import auto_int
+
+
+class FRDumpConfig(AsyncScriptConfig):
+    target_slot: AutoInt | None = Field(description="the target flexray slot")
+    isotp: bool = Field(False, description="the target flexray slot")
+    filter_null_frames: bool = Field(True, description="filter mysterious null frames out")
+    slot: Ranges = Field([], description="filter on flexray slot")
 
 
 class FRDump(AsyncScript):
     """Dump the content of the flexray bus"""
 
-    COMMAND = "fr-dump"
     SHORT_HELP = "runs a helper tool that dumps flexray bus traffic to stdout"
 
-    def configure_parser(self) -> None:
-        self.parser.add_argument("--target-slot", type=auto_int, help="the target flexray slot")
-        self.parser.add_argument("--isotp", action="store_true", help="the target flexray slot")
-        self.parser.add_argument(
-            "--filter-null-frames",
-            action=BooleanOptionalAction,
-            default=True,
-            help="filter mysterious null frames out",
-        )
-        self.parser.add_argument("slot", type=auto_int, help="filter on flexray slot", nargs="*")
+    def __init__(self, config: FRDumpConfig):
+        super().__init__(config)
+        self.config = config
 
     @staticmethod
     def poor_mans_dissect(frame: FlexRayFrame) -> str:
@@ -45,12 +45,12 @@ class FRDump(AsyncScript):
 
         return res
 
-    async def main(self, args: Namespace) -> None:
+    async def main(self) -> None:
         tp = await RawFlexRayTransport.connect("fr-raw:", None)
 
-        if args.slot:
+        if len(self.config.slot) > 0:
             tp.add_block_all_filter()
-            for slot in args.slot:
+            for slot in self.config.slot:
                 tp.set_acceptance_filter(slot)
 
         tp.activate_channel()
@@ -58,40 +58,38 @@ class FRDump(AsyncScript):
         while True:
             frame = await tp.read_frame()
 
-            if args.filter_null_frames is True:
+            if self.config.filter_null_frames is True:
                 # Best effort; in our use case this was the ISO-TP header.
                 # The first ISO-TP header byte is never 0x00.
                 if frame.data[0] == 0x00:
                     continue
 
-            if args.isotp:
+            if self.config.isotp:
                 print(self.poor_mans_dissect(frame))
             else:
                 print(f"slot_id: {frame.slot_id:03d}; data: {frame.data.hex()}")
 
 
-class FRDumpConfig(Script):
+class FRConfigDumpConfig(ScriptConfig):
+    channel: str | None = Field(description="the channel number of the flexray device")
+    pretty: bool = Field(False, description="pretty print the configuration", short="p")
+
+
+class FRConfigDump(Script):
     """Dump the flexray configuration as base64"""
 
-    COMMAND = "fr-dump-config"
     SHORT_HELP = "Dump the flexray configuration as base64"
 
-    def configure_parser(self) -> None:
-        self.parser.add_argument("--channel", help="the channel number of the flexray device")
-        self.parser.add_argument(
-            "-p",
-            "--pretty",
-            action="store_true",
-            default=False,
-            help="pretty print the configuration",
-        )
+    def __init__(self, config: FRConfigDumpConfig):
+        super().__init__(config)
+        self.config = config
 
-    def main(self, args: Namespace) -> None:
-        backend = FlexRayCtypesBackend.create(args.channel)
+    def main(self) -> None:
+        backend = FlexRayCtypesBackend.create(self.config.channel)
         raw_config = backend.get_configuration()
         config = pickle.dumps(raw_config)
 
-        if args.pretty:
+        if self.config.pretty:
             print(raw_config)
         else:
             print(base64.b64encode(config))
