@@ -1,13 +1,6 @@
-from gallia.commands import IOCBIPrimitive, SendPDUPrimitive
+import sys
+
 from gallia.commands.discover.doip import DoIPDiscoverer, DoIPDiscovererConfig
-from gallia.commands.discover.find_xcp import (
-    CanFindXCPConfig,
-    FindXCP,
-    TcpFindXCPConfig,
-    UdpFindXCPConfig,
-)
-from gallia.commands.discover.uds.isotp import IsotpDiscoverer, IsotpDiscovererConfig
-from gallia.commands.fuzz.uds.pdu import PDUFuzzer, PDUFuzzerConfig
 from gallia.commands.primitive.generic.pdu import GenericPDUPrimitive, GenericPDUPrimitiveConfig
 from gallia.commands.primitive.uds.dtc import (
     ClearDTCPrimitiveConfig,
@@ -16,8 +9,8 @@ from gallia.commands.primitive.uds.dtc import (
     ReadDTCPrimitiveConfig,
 )
 from gallia.commands.primitive.uds.ecu_reset import ECUResetPrimitive, ECUResetPrimitiveConfig
-from gallia.commands.primitive.uds.iocbi import IOCBIPrimitiveConfig
-from gallia.commands.primitive.uds.pdu import SendPDUPrimitiveConfig
+from gallia.commands.primitive.uds.iocbi import IOCBIPrimitive, IOCBIPrimitiveConfig
+from gallia.commands.primitive.uds.pdu import SendPDUPrimitive, SendPDUPrimitiveConfig
 from gallia.commands.primitive.uds.ping import PingPrimitive, PingPrimitiveConfig
 from gallia.commands.primitive.uds.rdbi import (
     ReadByIdentifierPrimitive,
@@ -31,14 +24,12 @@ from gallia.commands.primitive.uds.wdbi import (
     WriteByIdentifierPrimitiveConfig,
 )
 from gallia.commands.primitive.uds.wmba import WMBAPrimitive, WMBAPrimitiveConfig
-from gallia.commands.primitive.uds.xcp import SimpleTestXCP, SimpleTestXCPConfig
 from gallia.commands.scan.uds.identifiers import ScanIdentifiers, ScanIdentifiersConfig
 from gallia.commands.scan.uds.memory import MemoryFunctionsScanner, MemoryFunctionsScannerConfig
 from gallia.commands.scan.uds.reset import ResetScanner, ResetScannerConfig
 from gallia.commands.scan.uds.sa_dump_seeds import SASeedsDumper, SASeedsDumperConfig
 from gallia.commands.scan.uds.services import ServicesScanner, ServicesScannerConfig
 from gallia.commands.scan.uds.sessions import SessionsScanner, SessionsScannerConfig
-from gallia.commands.script.vecu import DbVirtualECUConfig, RngVirtualECUConfig, VirtualECU
 from gallia.plugins.plugin import Command, CommandTree, Plugin
 from gallia.services.uds import ECU
 from gallia.transports import BaseTransport, registry
@@ -63,44 +54,14 @@ class UDSPlugin(Plugin):
 
     @classmethod
     def commands(cls) -> dict[str, CommandTree | Command]:
-        return {
+        tree = {
             "discover": CommandTree(
                 description="discover scanners for hosts and endpoints",
                 subtree={
-                    "uds": CommandTree(
-                        description="Universal Diagnostic Services",
-                        subtree={
-                            "isotp": Command(
-                                description="ISO-TP enumeration scanner",
-                                config=IsotpDiscovererConfig,
-                                command=IsotpDiscoverer,
-                            )
-                        },
-                    ),
                     "doip": Command(
                         description="zero-knowledge DoIP enumeration scanner",
                         config=DoIPDiscovererConfig,
                         command=DoIPDiscoverer,
-                    ),
-                    "xcp": CommandTree(
-                        description="XCP enumeration scanner",
-                        subtree={
-                            "can": Command(
-                                description="XCP enumeration scanner for CAN",
-                                config=CanFindXCPConfig,
-                                command=FindXCP,
-                            ),
-                            "tcp": Command(
-                                description="TCP enumeration scanner for CAN",
-                                config=TcpFindXCPConfig,
-                                command=FindXCP,
-                            ),
-                            "udp": Command(
-                                description="UDP enumeration scanner for CAN",
-                                config=UdpFindXCPConfig,
-                                command=FindXCP,
-                            ),
-                        },
                     ),
                 },
             ),
@@ -193,11 +154,6 @@ class UDSPlugin(Plugin):
                             )
                         },
                     ),
-                    "xcp": Command(
-                        description="XCP tester",
-                        config=SimpleTestXCPConfig,
-                        command=SimpleTestXCP,
-                    ),
                 },
             ),
             "scan": CommandTree(
@@ -240,24 +196,95 @@ class UDSPlugin(Plugin):
                     )
                 },
             ),
-            "fuzz": CommandTree(
-                description="fuzzing tools",
-                subtree={
+            "script": CommandTree(
+                description="miscellaneous helper scripts",
+                subtree={},
+            ),
+        }
+
+        if sys.platform.startswith("linux"):
+            from gallia.commands.discover.find_xcp import (
+                CanFindXCPConfig,
+                FindXCP,
+                TcpFindXCPConfig,
+                UdpFindXCPConfig,
+            )
+            from gallia.commands.discover.uds.isotp import IsotpDiscoverer, IsotpDiscovererConfig
+            from gallia.commands.fuzz.uds.pdu import PDUFuzzer, PDUFuzzerConfig
+            from gallia.commands.primitive.uds.xcp import SimpleTestXCP, SimpleTestXCPConfig
+            from gallia.commands.script.vecu import (
+                DbVirtualECUConfig,
+                RngVirtualECUConfig,
+                VirtualECU,
+            )
+
+            tree["discover"].subtree.update(
+                {
                     "uds": CommandTree(
                         description="Universal Diagnostic Services",
                         subtree={
-                            "pdu": Command(
-                                description="fuzz the UDS pdu of selected services",
-                                config=PDUFuzzerConfig,
-                                command=PDUFuzzer,
+                            "isotp": Command(
+                                description="ISO-TP enumeration scanner",
+                                config=IsotpDiscovererConfig,
+                                command=IsotpDiscoverer,
                             )
                         },
-                    )
-                },
-            ),
-            "script": CommandTree(
-                description="miscellaneous helper scripts",
-                subtree={
+                    ),
+                    "xcp": CommandTree(
+                        description="XCP enumeration scanner",
+                        subtree={
+                            "can": Command(
+                                description="XCP enumeration scanner for CAN",
+                                config=CanFindXCPConfig,
+                                command=FindXCP,
+                            ),
+                            "tcp": Command(
+                                description="TCP enumeration scanner for CAN",
+                                config=TcpFindXCPConfig,
+                                command=FindXCP,
+                            ),
+                            "udp": Command(
+                                description="UDP enumeration scanner for CAN",
+                                config=UdpFindXCPConfig,
+                                command=FindXCP,
+                            ),
+                        },
+                    ),
+                }
+            )
+
+            tree["primitive"].subtree.update(
+                {
+                    "xcp": Command(
+                        description="XCP tester",
+                        config=SimpleTestXCPConfig,
+                        command=SimpleTestXCP,
+                    ),
+                }
+            )
+
+            tree.update(
+                {
+                    "fuzz": CommandTree(
+                        description="fuzzing tools",
+                        subtree={
+                            "uds": CommandTree(
+                                description="Universal Diagnostic Services",
+                                subtree={
+                                    "pdu": Command(
+                                        description="fuzz the UDS pdu of selected services",
+                                        config=PDUFuzzerConfig,
+                                        command=PDUFuzzer,
+                                    )
+                                },
+                            )
+                        },
+                    ),
+                }
+            )
+
+            tree["script"].subtree.update(
+                {
                     "vecu": CommandTree(
                         description="spawn a virtual UDS ECU",
                         subtree={
@@ -272,7 +299,31 @@ class UDSPlugin(Plugin):
                                 command=VirtualECU,
                             ),
                         },
-                    )
-                },
-            ),
-        }
+                    ),
+                }
+            )
+
+        if sys.platform == "win32":
+            from gallia.commands.script.flexray import (
+                FRConfigDump,
+                FRConfigDumpConfig,
+                FRDump,
+                FRDumpConfig,
+            )
+
+            tree["script"].subtree.update(
+                {
+                    "fr-dump": Command(
+                        description="runs a helper tool that dumps flexray bus traffic to stdout",
+                        config=FRDumpConfig,
+                        command=FRDump,
+                    ),
+                    "fr-dump-config": Command(
+                        description="Dump the flexray configuration as base64",
+                        config=FRConfigDumpConfig,
+                        command=FRConfigDump,
+                    ),
+                }
+            )
+
+        return tree
