@@ -5,16 +5,12 @@
 import socket
 import struct
 import sys
-from argparse import ArgumentParser
-
-from pydantic_argparse import BaseCommand
 
 assert sys.platform.startswith("linux"), "unsupported platform"
 
 from gallia.command import AsyncScript
 from gallia.command.base import AsyncScriptConfig
 from gallia.command.config import AutoInt, Field
-from gallia.config import Config
 from gallia.log import get_logger
 from gallia.services.uds.core.utils import bytes_repr, g_repr
 from gallia.transports import RawCANTransport, TargetURI
@@ -48,12 +44,6 @@ class UdpFindXCPConfig(FindXCPConfig):
     udp_ports: str = Field("", description="Comma separated list of UDP ports to test for XCP")
 
 
-class FindXCPConfigCommand(BaseCommand):
-    can: CanFindXCPConfig | None = None
-    tcp: TcpFindXCPConfig | None = None
-    udp: UdpFindXCPConfig | None = None
-
-
 class FindXCP(AsyncScript):
     """Find XCP Slave"""
 
@@ -63,9 +53,6 @@ class FindXCP(AsyncScript):
     def __init__(self, config: FindXCPConfig):
         super().__init__(config)
         self.config = config
-
-    def __init__(self, parser: ArgumentParser, config: Config = Config()) -> None:
-        super().__init__(parser, config)
         self.socket: socket.socket
 
     def pack_xcp_eth(self, data: bytes, ctr: int = 0) -> bytes:
@@ -80,18 +67,20 @@ class FindXCP(AsyncScript):
         return (length, ctr, data[4:])
 
     async def main(self) -> None:
-        if self.config.mode == "can":
+        if isinstance(self.config, CanFindXCPConfig):
             await self.test_can()
 
-        elif self.config.mode == "tcp":
+        elif isinstance(self.config, TcpFindXCPConfig):
             await self.test_tcp()
 
-        elif self.config.mode == "udp":
+        elif isinstance(self.config, UdpFindXCPConfig):
             self.test_eth_broadcast()
             await self.test_udp()
 
     async def test_tcp(self) -> None:
         # TODO: rewrite as async
+
+        assert isinstance(self.config, TcpFindXCPConfig)
 
         data = bytes([0xFF, 0x00])
         endpoints = []
@@ -136,6 +125,8 @@ class FindXCP(AsyncScript):
     async def test_udp(self) -> None:
         # TODO: rewrite as async
 
+        assert isinstance(self.config, UdpFindXCPConfig)
+
         data = bytes([0xFF, 0x00])
         endpoints = []
         for port in self.config.udp_ports.split(","):
@@ -164,6 +155,8 @@ class FindXCP(AsyncScript):
         logger.result(f"Finished; Found {len(endpoints)} XCP endpoints via UDP")
 
     async def test_can(self) -> None:
+        assert isinstance(self.config, CanFindXCPConfig)
+
         target = TargetURI(
             f"{RawCANTransport.SCHEME}://{self.config.xcp_can_iface}?is_extended={str(self.config.extended).lower()}"
             + ("&is_fd=true" if self.config.can_fd else "")
@@ -202,6 +195,8 @@ class FindXCP(AsyncScript):
 
     def test_eth_broadcast(self) -> None:
         # TODO: rewrite as async
+
+        assert isinstance(self.config, UdpFindXCPConfig)
 
         multicast_group = ("239.255.0.0", 5556)
         logger.result(

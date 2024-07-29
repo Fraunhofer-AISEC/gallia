@@ -1,10 +1,20 @@
 from gallia.commands import IOCBIPrimitive, SendPDUPrimitive
 from gallia.commands.discover.doip import DoIPDiscoverer, DoIPDiscovererConfig
-from gallia.commands.discover.find_xcp import FindXCP, FindXCPConfig
+from gallia.commands.discover.find_xcp import (
+    CanFindXCPConfig,
+    FindXCP,
+    TcpFindXCPConfig,
+    UdpFindXCPConfig,
+)
 from gallia.commands.discover.uds.isotp import IsotpDiscoverer, IsotpDiscovererConfig
 from gallia.commands.fuzz.uds.pdu import PDUFuzzer, PDUFuzzerConfig
 from gallia.commands.primitive.generic.pdu import GenericPDUPrimitive, GenericPDUPrimitiveConfig
-from gallia.commands.primitive.uds.dtc import DTCPrimitive, DTCPrimitiveConfig
+from gallia.commands.primitive.uds.dtc import (
+    ClearDTCPrimitiveConfig,
+    ControlDTCPrimitiveConfig,
+    DTCPrimitive,
+    ReadDTCPrimitiveConfig,
+)
 from gallia.commands.primitive.uds.ecu_reset import ECUResetPrimitive, ECUResetPrimitiveConfig
 from gallia.commands.primitive.uds.iocbi import IOCBIPrimitiveConfig
 from gallia.commands.primitive.uds.pdu import SendPDUPrimitiveConfig
@@ -28,7 +38,7 @@ from gallia.commands.scan.uds.reset import ResetScanner, ResetScannerConfig
 from gallia.commands.scan.uds.sa_dump_seeds import SASeedsDumper, SASeedsDumperConfig
 from gallia.commands.scan.uds.services import ServicesScanner, ServicesScannerConfig
 from gallia.commands.scan.uds.sessions import SessionsScanner, SessionsScannerConfig
-from gallia.commands.script.vecu import VirtualECU, VirtualECUConfig
+from gallia.commands.script.vecu import DbVirtualECUConfig, RngVirtualECUConfig, VirtualECU
 from gallia.plugins.plugin import Command, CommandTree, Plugin
 from gallia.services.uds import ECU
 from gallia.transports import BaseTransport, registry
@@ -72,10 +82,25 @@ class UDSPlugin(Plugin):
                         config=DoIPDiscovererConfig,
                         command=DoIPDiscoverer,
                     ),
-                    "xcp": Command(
+                    "xcp": CommandTree(
                         description="XCP enumeration scanner",
-                        config=FindXCPConfig,
-                        command=FindXCP,
+                        subtree={
+                            "can": Command(
+                                description="XCP enumeration scanner for CAN",
+                                config=CanFindXCPConfig,
+                                command=FindXCP,
+                            ),
+                            "tcp": Command(
+                                description="TCP enumeration scanner for CAN",
+                                config=TcpFindXCPConfig,
+                                command=FindXCP,
+                            ),
+                            "udp": Command(
+                                description="UDP enumeration scanner for CAN",
+                                config=UdpFindXCPConfig,
+                                command=FindXCP,
+                            ),
+                        },
                     ),
                 },
             ),
@@ -90,10 +115,26 @@ class UDSPlugin(Plugin):
                                 config=ReadByIdentifierPrimitiveConfig,
                                 command=ReadByIdentifierPrimitive,
                             ),
-                            "dtc": Command(
+                            "dtc": CommandTree(
                                 description="DiagnosticTroubleCodes",
-                                config=DTCPrimitiveConfig,
-                                command=DTCPrimitive,
+                                subtree={
+                                    "clear": Command(
+                                        description="Clear the DTCs using the ClearDiagnosticInformation service",
+                                        config=ClearDTCPrimitiveConfig,
+                                        command=DTCPrimitive,
+                                    ),
+                                    "control": Command(
+                                        description="Stop or resume the setting of DTCs using the "
+                                        "ControlDTCSetting service",
+                                        config=ControlDTCPrimitiveConfig,
+                                        command=DTCPrimitive,
+                                    ),
+                                    "read": Command(
+                                        description="Read the DTCs using the ReadDTCInformation service",
+                                        config=ReadDTCPrimitiveConfig,
+                                        command=DTCPrimitive,
+                                    ),
+                                },
                             ),
                             "ecu-reset": Command(
                                 description="ECUReset",
@@ -217,10 +258,20 @@ class UDSPlugin(Plugin):
             "script": CommandTree(
                 description="miscellaneous helper scripts",
                 subtree={
-                    "vecu": Command(
+                    "vecu": CommandTree(
                         description="spawn a virtual UDS ECU",
-                        config=VirtualECUConfig,
-                        command=VirtualECU,
+                        subtree={
+                            "db": Command(
+                                description="Virtual ECU which mimics the behavior of an ECU according to logs in the database",
+                                config=DbVirtualECUConfig,
+                                command=VirtualECU,
+                            ),
+                            "rng": Command(
+                                description="Virtual ECU with randomized behavior",
+                                config=RngVirtualECUConfig,
+                                command=VirtualECU,
+                            ),
+                        },
                     )
                 },
             ),

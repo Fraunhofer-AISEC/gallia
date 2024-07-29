@@ -4,7 +4,6 @@
 
 import sys
 
-from pydantic_argparse import BaseCommand
 from tabulate import tabulate
 
 from gallia.command import UDSScanner
@@ -27,7 +26,7 @@ class DTCPrimitiveConfig(UDSScannerConfig):
         False,
         description="Read and store the ECU proporties prior and after scan",
         group=UDSScannerConfig._argument_group,
-        config=UDSScannerConfig._config_section,
+        config_section=UDSScannerConfig._config_section,
     )
     session: AutoInt = Field(
         DiagnosticSessionControlSubFuncs.defaultSession.value,
@@ -63,12 +62,6 @@ class ControlDTCPrimitiveConfig(DTCPrimitiveConfig):
     resume: bool = Field(
         False, description="Resume the setting of DTCs. If already enabled, this has no effect."
     )
-
-
-class DTCPrimitiveConfigCommand(BaseCommand):
-    read: ReadDTCPrimitiveConfig | None = None
-    clear: ClearDTCPrimitiveConfig | None = None
-    control: ControlDTCPrimitiveConfig | None = None
 
 
 class DTCPrimitive(UDSScanner):
