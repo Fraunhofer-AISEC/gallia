@@ -22,16 +22,8 @@ class FRDump(AsyncScript):
     SHORT_HELP = "runs a helper tool that dumps flexray bus traffic to stdout"
 
     def configure_parser(self) -> None:
-        self.parser.add_argument(
-            "--target-slot",
-            type=auto_int,
-            help="the target flexray slot",
-        )
-        self.parser.add_argument(
-            "--isotp",
-            action="store_true",
-            help="the target flexray slot",
-        )
+        self.parser.add_argument("--target-slot", type=auto_int, help="the target flexray slot")
+        self.parser.add_argument("--isotp", action="store_true", help="the target flexray slot")
         self.parser.add_argument(
             "--filter-null-frames",
             action=BooleanOptionalAction,
@@ -85,10 +77,7 @@ class FRDumpConfig(Script):
     SHORT_HELP = "Dump the flexray configuration as base64"
 
     def configure_parser(self) -> None:
-        self.parser.add_argument(
-            "--channel",
-            help="the channel number of the flexray device",
-        )
+        self.parser.add_argument("--channel", help="the channel number of the flexray device")
         self.parser.add_argument(
             "-p",
             "--pretty",
