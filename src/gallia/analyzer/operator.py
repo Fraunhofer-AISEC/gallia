@@ -75,7 +75,7 @@ class Operator(DatabaseHandler):
             scan_mode_str = self.run_meta_df.loc[run, ColNm.scan_mode]
             if scan_mode_str == "scan-uds-services":
                 return ScanMode.SERV
-            if scan_mode_str == "scan-uds-identifiers":
+            if scan_mode_str in ["scan-uds-identifiers", "scan-uds-reset"]:
                 return ScanMode.IDEN
             else:
                 self.logger.error(f"Unknown scan mode: {scan_mode_str}")

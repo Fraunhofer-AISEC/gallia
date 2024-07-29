@@ -133,6 +133,8 @@ class Extractor(Operator):
         AND json_extract("request_data", '$.sub_function') IS NULL THEN -1
         WHEN json_extract("request_data", '$.service_id') = 39
         THEN json_extract("request_data", '$.sub_function')
+        WHEN json_extract("request_data", '$.service_id') = 0x11
+        THEN json_extract("request_data", '$.sub_function')
         WHEN json_extract("request_data", '$.data_identifier') IS NULL
         THEN json_extract("request_data", '$.data_identifiers[0]')
         ELSE json_extract("request_data", '$.data_identifier')
