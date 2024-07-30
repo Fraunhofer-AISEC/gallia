@@ -58,6 +58,95 @@ When a valid answer is received an ECU has been found; when the gateway sends a 
 
 ### ISO-TP
 
+#### Functionality Overview
+
+- Scans a specified CAN ID range to locate potential ECU endpoints.
+- Sends a user-defined ISO-TP PDU (Protocol Data Unit) to discovered CAN IDs to identify responsive endpoints (`TesterPresent` - `3E 00` by default).
+- Analyzes responses to determine if a valid UDS endpoint is present.
+- Optionally queries the ECU description by reading a data identifier (DID), `0xF197` by default.
+
+For a discovery scan it is important to distinguish whether the tester is connected to a filtered interface (e.g. the OBD connector) or to an unfiltered interface (e.g. an internal CAN bus).
+In order to not confuse the discovery scanner, the so called *idle traffic* needs to be observed.
+The idle traffic consists of the mentioned cyclic messages of the can bus.
+Since there is no concept of a connection on the CAN bus itself and the parameters for the ISO-TP connection are unknown at the very first stage, an educated guess for a deny list is required.
+Typically, `gallia` waits for a few seconds and observes the CAN bus traffic (5 seconds by default).
+Subsequently, a deny filter is configured which filters out all CAN IDs seen in the idle traffic.
+
+From a high level perspective, the destination ID is iterated and a valid payload is sent.
+If a valid answer is received, an ECU has been found.
+
+#### Detailed Functionality Description
+
+This method performs the following steps:
+
+1. **Connect to CAN Transport:**
+    - Establishes a connection to the specified CAN interface using the `RawCANTransport.connect` method.
+
+2. **Record Idle Bus Communication (Optional):**
+    - If `args.sniff_time` is greater than zero, the method sniffs the CAN bus for the specified duration to capture any existing communication.
+    - The captured CAN addresses are stored in the `addr_idle` variable.
+    - The transport filter is then set to exclude these idle addresses using `transport.set_filter(addr_idle, inv_filter=True)`.
+
+3. **Parse UDS Request:**
+    - Parses the UDS service PDU (Protocol Data Unit) from the provided `args.pdu` argument using the `UDSRequest.parse_dynamic` method.
+
+4. **Build ISO-TP Frame:**
+    - Constructs an ISO-TP frame based on the parsed UDS request.
+    - If `args.padding` is provided, the frame is padded with the specified value.
+    - The `build_isotp_frame` method is used, potentially incorporating extended addressing if `args.extended_addr` is True.
+
+5. **Iterate Through CAN IDs:**
+    - Loops through the CAN ID range specified by `args.start` and `args.stop` (inclusive).
+    - A short sleep is introduced between iterations using `asyncio.sleep(args.sleep)`.
+
+6. **Send ISO-TP Frame and Handle Response:**
+    - Determines the destination address (DST) for the frame:
+        - If extended addressing is enabled (`args.extended_addr`), the tester address (`args.tester_addr`) is used.
+        - Otherwise, the current CAN ID from the loop (`ID`) is used.
+    - Sends the constructed ISO-TP frame to the determined DST address with a timeout of 0.1 seconds using `transport.sendto`.
+    - Attempts to receive a response within a timeout of 0.1 seconds using `transport.recvfrom`.
+        - If no response is received within the timeout, the loop continues to the next CAN ID.
+        - If the received address (source address) matches the transmitted address (DST), it's considered a self-response and the loop skips to the next CAN ID.
+
+    - Handles received responses:
+        - If multiple responses are received for the same CAN ID, it's potentially indicative of a broadcast triggered by the request.
+            - The method logs a message and continues iterating.
+        - If the response size suggests a large ISO-TP packet, it might be a multi-frame response.
+            - The method logs a message and continues iterating.
+
+7. **Identify UDS Endpoint:**
+    - If a valid response is received from a different address than the transmitted one, a UDS endpoint is potentially discovered on the current CAN ID.
+        - The method logs a success message and extracts details from the response:
+            - Source and destination CAN IDs.
+            - Response payload in hexadecimal format.
+        - A `TargetURI` object is constructed representing the discovered endpoint, incorporating relevant details like transport scheme, hostname, addresses (source and destination), extended addressing settings (if applicable), and potentially padding values (if used).
+        - The discovered endpoint is appended to the `found` list.
+        - The loop exits, as a UDS endpoint has been identified on the current CAN ID.
+
+8. **Compile Results and Write to File:**
+    - After iterating through the CAN ID range, the method logs the total number of discovered UDS endpoints.
+    - It constructs the file path for storing the discovered endpoints in a text file named "ECUs.txt" within the `artifacts_dir` directory.
+    - The `write_target_list` method is called asynchronously to write the list of discovered endpoints along with any associated database information (using `self.db_handler`) to the file.
+
+9. **Optional: Query ECU Description (Diagnostics):**
+    - If `args.query` is True, the method calls the `query_description` method to retrieve the ECU description for each discovered endpoint using the specified DID (Data Identifier) from `args.info_did`.
+        
+#### Usage
+
+```bash
+gallia discover uds isotp --start <START_ID> --stop <END_ID> --target <TARGET_URI>
+```
+
+**Example:**
+
+This example command discovers UDS endpoints on a CAN bus using virtual interface vcan0 within a CAN ID range of 0x000 to 0x7FF, sending a default UDS PDU and logging discovered endpoints:
+
+```bash
+gallia discover uds isotp --start 0 --stop 0x7FF --target can-raw://vcan0
+```
+
+#### ISO-TP Details
+
 [ISO-TP](https://www.iso.org/standard/66574.html) is a standard for a transport protocol on top of the [CAN bus](https://www.iso.org/standard/63648.html) system.
 The CAN bus is a field bus which acts as a broadcast medium; any connected participant can read all messages.
 On the CAN bus there is no concept of a connection.
@@ -66,12 +155,7 @@ However, in order to implement a connection channel for the UDS protocol (which 
 In contrast to DoIP special CAN hardware is required.
 The ISO-TP protocol and the interaction with CAN interfaces is handled by the [networking stack](https://www.kernel.org/doc/html/latest/networking/can.html) of the Linux kernel.
 
-For a discovery scan it is important to distinguish whether the tester is connected to a filtered interface (e.g. the OBD connector) or to an unfiltered interface (e.g. an internal CAN bus).
-In order to not confuse the discovery scanner, the so called *idle traffic* needs to be observed.
-The idle traffic consists of the mentioned cyclic messages of the can bus.
-Since there is no concept of a connection on the CAN bus itself and the parameters for the ISO-TP connection are unknown at the very first stage, an educated guess for a deny list is required.
-Typically, `gallia` waits for a few seconds and observes the CAN bus traffic.
-Subsequently, a deny filter is configured which filters out all CAN IDs seen in the idle traffic.
+##### ISO-TP addressing methods
 
 ISO-TP provides multiple different addressing methods:
 * normal addressing with normal CAN IDs,
@@ -97,11 +181,11 @@ ISO-TP provides the following parameters:
 * **extended source address**: When extended addressing is in use, often set to a static value, e.g. `0xf1`.
 * **extended destination address**: When extended addressing is in use, it is the address of the ECU.
 
-The discovery procedure is dependend on the used addressing scheme.
-From a high level perspective, the destination id is iterated and a valid payload is sent.
-If a valid answer is received, an ECU has been found.
+The discovery procedure is dependent on the used addressing scheme.
 
 ## Session Scan
+
+The UDS session scan discovers available diagnostic sessions and their transition paths within a target Electronic Control Unit (ECU). This scan explores the hierarchical structure of UDS sessions, starting from the default session and recursively identifying other accessible sessions.
 
 UDS has the concept of sessions.
 Different sessions can for example offer different services.
@@ -117,18 +201,177 @@ In case of a negative response, the session is considered not available from the
 To detect sessions, which are only reachable from a session different to the default session, a recursive approach is used.
 The scan for new sessions starts at each previously identified session.
 The maximum depth is limited to avoid endless scans in case of transition cycles, such as `0x01 -> 0x03 -> 0x05 -> 0x03`.
-The scan is finished, if no new session transition is found.
+The scan is finished if no new session transition is found.
+
+### Functionality
+
+1. **Recursive Session Exploration:**
+   - Starts with the default session (0x01).
+   - Attempts to transition into each possible session (1-0x7F) using the `DiagnosticSessionControl` service.
+   - Tracks successful transitions, building a graph of reachable sessions and their paths.
+   - Limits the search depth (`--depth`) to prevent infinite loops in case of cyclical session transitions.
+
+2. **Error Handling and Recovery:**
+   - **ConditionsNotCorrect:** If a session change fails due to "ConditionsNotCorrect," the scan can optionally retry using diagnostic session control hooks (`--with-hooks`).
+   - **ECU Reset:** If enabled (`--reset`), the ECU is reset at specific intervals to potentially overcome limitations and access additional sessions.
+   - **Stack Recovery:** If an error occurs during session switching, the scan attempts to recover by resetting the ECU and traversing the known path to the current session.
+
+3. **Optimized Scan (Optional):**
+   - The `--fast` flag enables a quicker scan mode, where new sessions are searched for only once per session, potentially missing some transitions.
+
+4. **Session Transition Logging:**
+   - Records all successful and failed session transitions, including the path taken to reach each session.
+   - Optionally stores the session transition information in a database for further analysis.
+
+### Key Advantages
+
+- **Comprehensive Discovery:** Thoroughly explores the entire session space of the ECU, uncovering hidden or non-standard sessions.
+- **Session Transition Mapping:** Provides a clear picture of how different sessions can be reached, aiding in understanding the ECU's behavior and potential attack surfaces.
+- **Error Resilience:** Handles various errors encountered during session switching, ensuring the scan continues even in the face of unexpected responses from the ECU.
+- **Customization:** Offers flexibility in scan depth, ECU reset options, and hook usage to tailor the scan to specific ECU behavior.
+
+### Usage
+
+```bash
+gallia scan uds sessions --help
+```
+
+```{note}
+The specific command-line arguments and their behavior are subject to change. Always refer to the latest `--help` output for accurate usage information.
+```
+
+## Reset Scan
+
+The ECU reset scan assesses the response of an Electronic Control Unit (ECU) to various reset commands. It systematically probes the ECU with different reset sub-functions to gauge its response and identify potential vulnerabilities.
+
+It iterates and sends UDS requests `11 01` to `11 7F` and identifies the responses. If the response was positive (`51 xx`), it assumes the reset was successful.
+
+### Key Features
+
+* **Sub-Function Probing:** The scanner tests a range of ECU reset sub-functions (0x01 to 0x7F) as defined in the UDS standard. This comprehensive approach helps to reveal specific reset levels that may trigger unintended behavior or expose weaknesses in the ECU's reset logic.
+* **Session Handling:** It can operate across multiple diagnostic sessions, allowing for a broader evaluation of the ECU's reset behavior in different states or configurations.
+* **Configurable Skips:** Users can specify certain sub-functions or sessions to be excluded from the scan, providing flexibility for targeted testing or avoiding known problematic areas.
+* **Error Recovery:** The scanner includes mechanisms to handle communication errors and timeouts that may occur during testing. It can attempt to recover the connection and resume the scan, ensuring thoroughness even in the face of unexpected issues.
+
+### Benefits
+
+* **Vulnerability Detection:** By systematically triggering different reset levels, the scanner can uncover vulnerabilities that could be exploited to disrupt the ECU's operation or gain unauthorized access, such as a reset triggering an unauthorised Diagnostic Session switch.
+* **Robustness Assessment:** The results of the scan provide valuable insights into the ECU's resilience to various reset scenarios, helping to identify areas for improvement in its design and implementation.
+* **Customized Testing:** The ability to configure session switching and selectively skip specific sub-functions allows for tailored testing based on the specific requirements and concerns of the user.
+
+### Usage
+
+To run the ECU reset scan, use the following command:
+
+```bash
+gallia scan uds reset --target <TARGET_URI> [OPTIONS]
+```
+
+Replace `<TARGET_URI>` with the appropriate connection details for the ECU (e.g., `isotp://vcan0?is_fd=false&is_extended=false&src_addr=0x701&dst_addr=0x700`). Refer to the CLI `--help` for available options to customize the scan. Make sure the target URI is in quotes in the command, as not enclosing it in quotes might alter the execution of the command.
+
+```{note}
+The specific command-line arguments and their behavior are subject to change. Always refer to the latest `--help` output for accurate usage information.
+```
+
+The scan results will be displayed in the console, indicating which reset levels were successful, timed out, or resulted in errors. This information can be used to further analyze the ECU's behavior and identify potential security risks.
+
+### Workflow Overview
+
+The ECU reset scan leverages the Unified Diagnostic Services (UDS) protocol, a standardized communication framework for vehicle diagnostics and reprogramming. Specifically, it interacts with the ECU Reset service (UDS service ID `0x11`).
+
+1. **Session Handling:**
+   * Optionally, if the `--sessions` argument is provided, the scan iterates through a list of specified diagnostic sessions.
+   * For each session:
+      * A `DiagnosticSessionControl` (UDS service ID `0x10`) request is sent to switch the ECU to the desired session.
+      * The scan proceeds if the session change is successful.
+
+2. **Sub-Function Iteration:**
+   * The scan systematically iterates through ECU Reset sub-functions, ranging from 0x01 to 0x7F.
+   * Skipping of specific sub-functions or sessions can be configured using the `--skip` argument.
+
+3. **ECU Reset Request:**
+   * For each sub-function, a UDS `ECUReset` request is sent with the corresponding sub-function byte.
+   * The request is configured with the `ANALYZE` tag to prompt detailed logging of the response.
+
+4. **Response Analysis:**
+   * **Positive Response:** If the ECU responds positively (acknowledges the reset), the sub-function is recorded as "ok".
+      * The script waits for the ECU to recover using `ecu.wait_for_ecu()`.
+      * A hard reset (sub-function 0x01) is issued to restore the ECU to a known state.
+   * **Negative Response:** If the ECU sends a negative response:
+      * `subFunctionNotSupported`: The sub-function is not implemented and is logged accordingly.
+      * Other negative responses are recorded as errors along with their response codes.
+   * **Timeout:** If the ECU does not respond within a timeout period:
+      * The sub-function is recorded as "timeout".
+      * If the `--power-cycle` flag is set, the script attempts to power-cycle the ECU and reconnect before continuing.
+
+5. **Session Verification (Optional):**
+   * If `--sessions` is used and `--skip-check-session` is not set, the script verifies that the ECU remains in the intended session after each reset.
+   * If the session has changed, it attempts to re-enter the correct session.
+
+6. **Result Summary:**
+   * Upon completion, the script outputs lists of sub-functions categorized as "ok", "timeout", and "error".
+
+**Technical Details:**
+
+* **Transport Protocol:** The scan relies on a UDS transport layer (e.g., ISOTP or DoIP), which is configured separately using the `--target` argument.
+* **Error Handling:** The script employs `try-except` blocks to catch and handle `TimeoutError`, `ConnectionError`, and UDS-specific exceptions like `IllegalResponse` and `UnexpectedNegativeResponse`.
+* **Logging:** Detailed logging is used to record each step of the scan, including sent requests, received responses, and any errors encountered.
 
 ## Service Scan
 
-The service scan operates at the UDS protocol level.
-UDS provides several endpoints called *services*.
-Each service has an identifier and a specific list of arguments or sub-functions.
+The UDS service scan identifies available UDS services on a target UDS Server. It accomplishes this through a methodical process of iterating through service IDs and analyzing UDS responses. Each service has an identifier and a specific list of arguments or sub-functions.
 
 In order to identify available services, a reverse matching is applied.
 According to the UDS standard, ECUs reply with the error codes `serviceNotSupported` or `serviceNotSupportedInActiveSession` when an unimplemented service is requested.
 Therefore, each service which responds with a different error code is considered available.
 To address the different services and their varying length of arguments and sub-functions the scanner automatically appends `\x00` bytes if the received response was `incorrectMessageLengthOrInvalidFormat`.
+
+### Key Advantages
+
+- **Thoroughness:**  The scan systematically covers the entire UDS service ID range, ensuring no potential services are overlooked.
+- **Session Awareness:** By optionally testing across multiple sessions, it can reveal services that are only available in specific ECU states.
+- **Adaptability:**  The scan automatically adapts to services with different parameter lengths, ensuring accurate identification.
+- **Error Handling:** Robustly handles timeouts and unexpected responses, providing diagnostic information for troubleshooting.
+
+### Usage
+
+The service scan is initiated through the Gallia command-line interface. For detailed usage instructions and available options, refer to the help information by running:
+
+```bash
+gallia scan uds services --target <TARGET_URI>
+```
+
+```{note}
+The specific command-line arguments and their behavior are subject to change. Always refer to the latest `--help` output for accurate usage information.
+```
+
+### Workflow Overview
+
+1. **Session Handling (Optional):**
+   - If desired, the scan can operate across multiple diagnostic sessions.
+   - For each specified session, it attempts to switch the ECU to that session using the `DiagnosticSessionControl` service.
+   - If the session switch fails, it moves on to the next session.
+
+2. **Service ID Iteration:**
+   - Systematically scans through UDS service IDs (0x00 to 0xFF).
+   - Can optionally include service IDs that have the "SuppressPositiveResponse" bit set (those that do not typically send positive responses).
+
+3. **Request Generation and Transmission:**
+   - Constructs a UDS request for each service ID, experimenting with different payload lengths (1, 2, 3, and 5 bytes) if the received response was `incorrectMessageLengthOrInvalidFormat` to accommodate services with varying parameters.
+   - Sends the request to the ECU.
+
+4. **Response Analysis:**
+   - Handles various types of ECU responses:
+      - **Positive Response:** Indicates the service is available.
+      - **Negative Response:**
+          - Specific negative response codes (`serviceNotSupported` or `serviceNotSupportedInActiveSession`) signal that the service is not supported and iteration for the current session ends.
+          - `incorrectMessageLengthOrInvalidFormat` suggests adjusting the payload length, prompting further probing.
+      - **Timeout:** The ECU fails to respond within the expected time, indicating the service might not be available or accessible.
+      - **Malformed Response:** An unexpected or invalid response is logged for further investigation.
+
+5. **Result Logging:**
+   - Records the availability of each service along with its corresponding response for each session (if applicable).
+   - Outputs a summary of discovered services in each session.
 
 ## Identifier Scan
 
@@ -147,6 +390,153 @@ For discovering available subFunctions the following error codes indicate the su
 
 Each identifier or subFunction which responds with a different error code is considered available.
 
-## Memory Scan
+### Functionality
 
-TODO
+1. **Service Selection:**
+   - Users specify the target service ID (`--sid`) they want to scan.
+   - Currently supported services include:
+      - `0x27`: SecurityAccess
+      - `0x22`: ReadDataByIdentifier
+      - `0x2e`: WriteDataByIdentifier
+      - `0x31`: RoutineControl
+
+2. **Session Handling (Optional):**
+   - The scan can optionally operate across multiple diagnostic sessions (`--sessions`).
+   - It attempts to switch to each specified session before initiating the identifier scan.
+   - Session switching can be verified at intervals using the `--check-session` option.
+
+3. **DID/Sub-Function Iteration:**
+   - Systematically scans through the specified range of data identifiers (DIDs) or sub-functions.
+   - The start and end values of the scan range are customizable with `--start` and `--end` arguments.
+
+4. **Request Generation and Transmission:**
+   - Constructs a UDS request for each DID or sub-function, tailored to the specified service.
+   - Appends an optional payload to the request if provided using `--payload`.
+   - Transmits the request to the ECU.
+
+5. **Response Analysis:**
+   - Handles various types of ECU responses:
+      - **Positive Response:** Indicates the DID or sub-function is available.
+      - **Negative Response:**
+          - Specific negative response codes (e.g., `requestOutOfRange`, `subFunctionNotSupported`) are interpreted based on the service being scanned, potentially leading to the end of the current session's scan (`--skip-not-supported`).
+          - Other negative responses are logged for further analysis.
+      - **Timeout:** The ECU fails to respond within the expected time, indicating the DID or sub-function might not be available or accessible.
+      - **Illegal Response:** An unexpected or invalid response is logged as a warning.
+
+6. **Result Categorization and Logging:**
+   - Categorizes responses as "Positive", "Abnormal", or "Timeout".
+   - Logs detailed information about each response, including the DID/sub-function and session (if applicable).
+   - Outputs a summary of the scan results, including the count of each response category.
+
+### Key Advantages
+
+- **Service-Specific Focus:** Tailors the scan to the unique requirements of each UDS service, maximizing the accuracy of DID/sub-function discovery.
+- **Customizable Scan Range:** Allows users to define the starting and ending DIDs/sub-functions, focusing on specific areas of interest.
+- **Session Support:**  Optionally scans across multiple sessions to identify DIDs/sub-functions that are session-dependent.
+- **Payload Flexibility:**  Permits appending custom payloads to requests for advanced testing scenarios.
+
+### Usage
+
+```bash
+gallia scan uds identifiers --help
+```
+
+```{note}
+The specific command-line arguments and their behavior are subject to change. Always refer to the latest `--help` output for accurate usage information.
+```
+
+## Memory Functions Scan
+
+This scanner targets Electronic Control Units (ECUs) and explores functionalities that provide direct access to their memory.
+
+### Functionality
+
+The scanner focuses on the following Unified Diagnostic Service (UDS) services:
+
+* **ReadMemoryByAddress (service ID 0x23):** Retrieves data from a specified memory location.
+* **WriteMemoryByAddress (service ID 0x3D):** Writes data to a specified memory location.
+* **RequestDownload (service ID 0x34):** Tester downloads a block of data from the ECU.
+* **RequestUpload (service ID 0x35):** ECU uploads a block of data to the tester.
+
+These services all share a similar packet structure, with the exception of WriteMemoryByAddress which requires an additional data field.
+It iterates through a range of memory addresses and attempts to:
+
+* Read or write data using the chosen UDS service.
+* Handle potential timeouts during communication with the ECU.
+* Analyze the ECU's response to these attempts, which might reveal vulnerabilities or security mechanisms.
+
+The scanner offers several configuration options through command-line arguments to customize its behavior:
+* Target diagnostic session (default: 0x03).
+* Optionally verify and potentially recover the session before each memory access.
+* Specify the UDS service to use for memory access (required, choices: 0x23, 0x3D, 0x34, 0x35).
+* Provide data to write for service 0x3D WriteMemoryByAddress (8 bytes of zeroes by default).
+
+### Usage
+
+```bash
+gallia scan uds memory --target <TARGET_URI> --sid <SID>
+```
+
+```{note}
+The specific command-line arguments and their behavior are subject to change. Always refer to the latest `--help` output for accurate usage information.
+```
+
+**Example:**
+
+```bash
+gallia scan uds memory --sid 0x23 --target "isotp://can2?is_fd=false&is_extended=true&src_addr=0x22bbfbfa&dst_addr=0x22bbfafb&tx_padding=0&rx_padding=0" --db ecu_test --session 1
+```
+
+The provided command invokes the scanner to utilize the UDS service `ReadMemoryByAddress` (service ID 0x23) on the target ECU reachable through the specified ISO-TP connection in session `0x01`. It will iterate through a range of memory addresses and attempt to read data from those locations. The results will be saved in a database file called `ecu_test`.
+
+## Dump Security Access Seeds
+
+The `dump-seeds` scanner attempts to retrieve security access seeds from the connected ECU. These seeds are (ideally) random values used by the ECU's security mechanisms. By capturing these seeds, attackers might be able to potentially bypass certain security checks or unlock higher access levels.
+
+The scanner offers several functionalities:
+
+* **Session Management:**
+    * Can switch between diagnostic sessions on the ECU based on the provided session ID.
+    * Optionally verifies the current session before proceeding.
+    * Re-enters the session after potential ECU resets.
+* **Seed Request:**
+    * Requests security access seeds at a specified level from the ECU.
+    * Allows attaching additional data to the seed request message.
+    * Handles timeouts and errors that might occur during communication with the ECU.
+* **Key Sending (Optional):**
+    * Simulates sending a key filled with zeros after requesting a seed.
+    * This technique might bypass certain brute-force protection mechanisms implemented by the ECU.
+* **ECU Reset (Optional):**
+    * Can be configured to periodically reset the ECU.
+    * This aims to overcome limitations imposed by the ECU, such as seed rate limiting.
+    * Handles ECU recovery and reconnection after reset.
+
+### Usage
+
+The seed dumper is invoked using the following command:
+
+```bash
+gallia scan uds dump-seeds --target <TARGET_URI> [OPTIONS]
+```
+
+```{note}
+The specific command-line arguments and their behavior are subject to change. Always refer to the latest `--help` output for accurate usage information.
+```
+
+**Example:**
+
+This example demonstrates how to capture seeds from security level 0x11 with session 0x02, resetting the ECU every 10th seed request, and running for 30 minutes:
+
+```
+gallia scan uds dump-seeds --target "isotp://vcan0?is_fd=false&is_extended=false&src_addr=0x701&dst_addr=0x700" --session 0x02 --data-record 0xCAFE00 --level 0x11 --reset 10 --duration 30 --db ecu_test
+```
+
+This command would:
+* Connect to the ECU specified by `<TARGET_URI>`.
+* Switch to diagnostic session 0x02 (if possible).
+* Request seeds from security level 0x11 with data record 0xCAFE00. (`27 11 CA FE 00`)
+* Reset the ECU after every 10th seed request.
+* Run for 30 minutes (or indefinitely if `--duration` is not set).
+* Log the results in a database file called `ecu_test`
+
+The dumped seeds will be written to a file named "seeds.bin" located in the scanner's artifacts directory.
