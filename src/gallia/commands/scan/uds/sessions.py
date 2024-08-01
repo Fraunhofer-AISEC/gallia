@@ -179,7 +179,8 @@ class SessionsScanner(UDSScanner):
                             sys.exit(1)
                     except Exception as e:
                         logger.error(f"Could not change to default session: {e!r}")
-                        sys.exit(1)
+                        await self.ecu.ecu_reset(1)
+                        await self.ecu.reconnect()
 
                     logger.debug(f"Sleeping for {args.sleep}s after changing to DefaultSession")
                     await asyncio.sleep(args.sleep)

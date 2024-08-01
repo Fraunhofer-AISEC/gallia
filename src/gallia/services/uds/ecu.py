@@ -337,6 +337,7 @@ class ECU(UDSClient):
             await self.stop_cyclic_tester_present()
 
         t = timeout if timeout is not None else self.timeout
+        t = max(10, t)
         try:
             await asyncio.wait_for(self._wait_for_ecu(0.5), timeout=t)
             return True
