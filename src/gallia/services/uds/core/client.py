@@ -69,6 +69,7 @@ class UDSClient:
         last_exception: Exception = MissingResponse(request)
         max_retry = config.max_retry if config.max_retry else self.max_retry
         timeout = config.timeout if config.timeout else self.timeout
+        timeout = max(timeout, 10)
         for i in range(0, max_retry):
             # Exponential backoff
             wait_time = self.retry_wait * 2**i
@@ -1077,7 +1078,11 @@ class UDSClient:
         :param config: The request config parameters
         :return: The response.
         """
-        return await self._request(request, config)
+        try:
+            return await self._request(request, config)
+        except (BrokenPipeError, ConnectionResetError):
+            await self.reconnect()
+            return await self._request(request, config)
 
     async def _request(
         self, request: service.UDSRequest, config: UDSRequestConfig | None = None
