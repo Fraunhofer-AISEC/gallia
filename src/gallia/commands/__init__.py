@@ -27,6 +27,7 @@ from gallia.commands.scan.uds.identifiers import ScanIdentifiers
 from gallia.commands.scan.uds.memory import MemoryFunctionsScanner
 from gallia.commands.scan.uds.reset import ResetScanner
 from gallia.commands.scan.uds.sa_dump_seeds import SASeedsDumper
+from gallia.commands.scan.uds.sa_keylen import SAKeylenDetector
 from gallia.commands.scan.uds.services import ServicesScanner
 from gallia.commands.scan.uds.sessions import SessionsScanner
 
@@ -42,6 +43,7 @@ registry: list[type[BaseCommand]] = [
     RTCLPrimitive,
     ReadByIdentifierPrimitive,
     ResetScanner,
+    SAKeylenDetector,
     SASeedsDumper,
     ScanIdentifiers,
     SessionsScanner,
@@ -77,6 +79,7 @@ __all__ = [
     "RTCLPrimitive",
     "ReadByIdentifierPrimitive",
     "ResetScanner",
+    "SAKeylenDetector",
     "SASeedsDumper",
     "ScanIdentifiers",
     "SessionsScanner",
