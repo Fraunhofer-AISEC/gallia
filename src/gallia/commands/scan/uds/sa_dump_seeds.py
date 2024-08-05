@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import asyncio
 import binascii
 import sys
 import time
@@ -83,6 +84,12 @@ class SASeedsDumper(UDSScanner):
             type=binascii.unhexlify,
             default=b"",
             help="Append an optional data record to each seed request",
+        )
+        self.parser.add_argument(
+            "--sleep",
+            type=float,
+            metavar="FLOAT",
+            help="Attempt to fool brute force protection by sleeping for N seconds between seed requests.",
         )
 
     async def request_seed(self, level: int, data: bytes) -> bytes | None:
@@ -168,6 +175,8 @@ class SASeedsDumper(UDSScanner):
                 # Errors are already logged in .request_seed()
                 continue
 
+            logger.info(f"Received seed of length {len(seed)}")
+
             await file.write(seed)
             if last_seed == seed:
                 logger.warning("Received the same seed as before")
@@ -208,6 +217,10 @@ class SASeedsDumper(UDSScanner):
 
                 # Re-enter session. Checking/logging will be done at the beginning of next iteration
                 await self.ecu.set_session(session)
+
+            if args.sleep is not None:
+                logger.info(f"Sleeping for {args.sleep} seconds between seed requests…")
+                await asyncio.sleep(args.sleep)
 
         await file.close()
         self.log_size(seeds_file, time.time() - start_time)
