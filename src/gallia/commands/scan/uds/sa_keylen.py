@@ -11,7 +11,8 @@ from gallia.command import UDSScanner
 from gallia.config import Config
 from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse, UDSRequestConfig
-from gallia.services.uds.core.service import SecurityAccessResponse, UDSErrorCodes
+from gallia.services.uds.core.constants import UDSErrorCodes
+from gallia.services.uds.core.service import SecurityAccessResponse
 from gallia.services.uds.core.utils import g_repr
 from gallia.utils import auto_int
 
@@ -97,9 +98,9 @@ class SAKeylenDetector(UDSScanner):
         session = args.session
         logger.info(f"scanning in session: {g_repr(session)}")
 
-        resp = await self.ecu.set_session(session)
-        if isinstance(resp, NegativeResponse):
-            logger.critical(f"could not change to session: {resp}")
+        sess_resp = await self.ecu.set_session(session)
+        if isinstance(sess_resp, NegativeResponse):
+            logger.critical(f"could not change to session: {sess_resp}")
             return
 
         key = bytes([0x00])
@@ -124,21 +125,22 @@ class SAKeylenDetector(UDSScanner):
                     logger.critical(f"Error while requesting seed: {g_repr(e)}")
                     sys.exit(1)
 
-            resp = await self.ecu.security_access_send_key(
+            key_resp = await self.ecu.security_access_send_key(
                 args.level + 1, key, config=UDSRequestConfig(tags=["ANALYZE"])
             )
-            if isinstance(resp, SecurityAccessResponse):
+            if isinstance(key_resp, SecurityAccessResponse):
                 logger.result(
                     f"That's unexpected: Unlocked SA level {g_repr(args.level)} with all-zero key of length {len(key)}."
                 )
                 length_identified = True
                 break
-            elif isinstance(resp, NegativeResponse):
+            elif isinstance(key_resp, NegativeResponse):
                 if (
                     not args.request_seed
-                    and resp.response_code == UDSErrorCodes.requestSequenceError
+                    and key_resp.response_code == UDSErrorCodes.requestSequenceError
                 ) or (
-                    args.request_seed and resp.response_code == UDSErrorCodes.conditionsNotCorrect
+                    args.request_seed
+                    and key_resp.response_code == UDSErrorCodes.conditionsNotCorrect
                 ):
                     logger.result(f"The ECU seems to be expecting keys of length {len(key)}.")
                     length_identified = True
