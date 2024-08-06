@@ -22,50 +22,53 @@ from gallia.commands.scan.uds.identifiers import ScanIdentifiers
 from gallia.commands.scan.uds.memory import MemoryFunctionsScanner
 from gallia.commands.scan.uds.reset import ResetScanner
 from gallia.commands.scan.uds.sa_dump_seeds import SASeedsDumper
+from gallia.commands.scan.uds.sa_keylen import SAKeylenDetector
 from gallia.commands.scan.uds.services import ServicesScanner
 from gallia.commands.scan.uds.sessions import SessionsScanner
 
 registry: list[type[BaseCommand]] = [
-    DoIPDiscoverer,
-    MemoryFunctionsScanner,
-    ReadByIdentifierPrimitive,
-    ResetScanner,
-    SASeedsDumper,
-    ScanIdentifiers,
-    SessionsScanner,
-    ServicesScanner,
     DTCPrimitive,
+    DoIPDiscoverer,
     ECUResetPrimitive,
-    VINPrimitive,
+    GenericPDUPrimitive,
     IOCBIPrimitive,
+    MemoryFunctionsScanner,
     PingPrimitive,
     RMBAPrimitive,
     RTCLPrimitive,
-    GenericPDUPrimitive,
+    ReadByIdentifierPrimitive,
+    ResetScanner,
+    SAKeylenDetector,
+    SASeedsDumper,
+    ScanIdentifiers,
     SendPDUPrimitive,
+    ServicesScanner,
+    SessionsScanner,
+    VINPrimitive,
     WMBAPrimitive,
     WriteByIdentifierPrimitive,
 ]
 
 # TODO: Investigate why linters didn't catch faulty strings in here.
 __all__ = [
-    "DoIPDiscoverer",
-    "MemoryFunctionsScanner",
-    "ReadByIdentifierPrimitive",
-    "ResetScanner",
-    "SASeedsDumper",
-    "ScanIdentifiers",
-    "SessionsScanner",
-    "ServicesScanner",
     "DTCPrimitive",
+    "DoIPDiscoverer",
     "ECUResetPrimitive",
-    "VINPrimitive",
+    "GenericPDUPrimitive",
     "IOCBIPrimitive",
+    "MemoryFunctionsScanner",
     "PingPrimitive",
     "RMBAPrimitive",
     "RTCLPrimitive",
-    "GenericPDUPrimitive",
+    "ReadByIdentifierPrimitive",
+    "ResetScanner",
+    "SAKeylenDetector",
+    "SASeedsDumper",
+    "ScanIdentifiers",
     "SendPDUPrimitive",
+    "ServicesScanner",
+    "SessionsScanner",
+    "VINPrimitive",
     "WMBAPrimitive",
     "WriteByIdentifierPrimitive",
 ]
