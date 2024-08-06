@@ -314,18 +314,22 @@ class ECU(UDSClient):
         resp = await self.request_transfer_exit(config=config)
         raise_for_error(resp)
 
-    async def _wait_for_ecu(self, sleep_time: float) -> None:
+    async def _wait_for_ecu_endless_loop(self, sleep_time: float) -> None:
         """Internal method with endless loop in case of no answer from ECU"""
         config = UDSRequestConfig(timeout=0.5, max_retry=1, skip_hooks=True)
-        logger.info("waiting for ECU…")
+        i = -1
         while True:
+            i = (i + 1) % 4
+            logger.info(f"Waiting for ECU{'.'*i}")
             try:
                 await asyncio.sleep(sleep_time)
                 await self.ping(config=config)
                 break
-            except (ConnectionError, UDSException) as e:
-                logger.debug(f"ECU not ready: {e!r}")
+            except ConnectionError as e:
+                logger.debug(f"ECU not ready: {e!r}, reconnecting…")
                 await self.reconnect()
+            except UDSException as e:
+                logger.debug(f"ECU not ready: {e!r}")
         logger.info("ECU ready")
 
     async def wait_for_ecu(
@@ -340,7 +344,7 @@ class ECU(UDSClient):
             await self.stop_cyclic_tester_present()
 
         try:
-            await asyncio.wait_for(self._wait_for_ecu(0.5), timeout=timeout)
+            await asyncio.wait_for(self._wait_for_ecu_endless_loop(0.5), timeout=timeout)
             return True
         except TimeoutError:
             logger.critical("Timeout while waiting for ECU!")
