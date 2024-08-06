@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gallia.plugins &mdash; gallia  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../transports.html">Transports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../env.html">Environment Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../logging.html">Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../plugins.html">Plugins</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">Public API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">gallia.plugins</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gallia.plugins</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-FileCopyrightText: AISEC Pentesting Team</span>
+<span class="c1">#</span>
+<span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Callable</span>
+<span class="kn">from</span> <span class="nn">importlib.metadata</span> <span class="kn">import</span> <span class="n">EntryPoint</span><span class="p">,</span> <span class="n">entry_points</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">TypedDict</span>
+
+<span class="kn">from</span> <span class="nn">gallia.services.uds.ecu</span> <span class="kn">import</span> <span class="n">ECU</span>
+<span class="kn">from</span> <span class="nn">gallia.transports</span> <span class="kn">import</span> <span class="n">BaseTransport</span><span class="p">,</span> <span class="n">TargetURI</span><span class="p">,</span> <span class="n">registry</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">gallia.command</span> <span class="kn">import</span> <span class="n">BaseCommand</span>
+
+
+<div class="viewcode-block" id="Parsers">
+<a class="viewcode-back" href="../../api.html#gallia.plugins.Parsers">[docs]</a>
+<span class="k">class</span> <span class="nc">Parsers</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">siblings</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Parsers</span><span class="p">]</span>
+    <span class="n">parser</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span>
+    <span class="n">subparsers</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">_SubParsersAction</span><span class="p">[</span><span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="load_ecu_plugin_eps">
+<a class="viewcode-back" href="../../api.html#gallia.plugins.load_ecu_plugin_eps">[docs]</a>
+<span class="k">def</span> <span class="nf">load_ecu_plugin_eps</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">EntryPoint</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Loads the ``gallia_uds_ecus`` entry_point.&quot;&quot;&quot;</span>
+    <span class="n">eps</span> <span class="o">=</span> <span class="n">entry_points</span><span class="p">()</span>
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">eps</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="s2">&quot;gallia_uds_ecus&quot;</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="load_ecu_plugins">
+<a class="viewcode-back" href="../../api.html#gallia.plugins.load_ecu_plugins">[docs]</a>
+<span class="k">def</span> <span class="nf">load_ecu_plugins</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">type</span><span class="p">[</span><span class="n">ECU</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Loads the ``gallia_uds_ecus`` entry_point and</span>
+<span class="sd">    imports the ecu classes with some sanity checks.&quot;&quot;&quot;</span>
+    <span class="n">ecus</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">ep</span> <span class="ow">in</span> <span class="n">load_ecu_plugin_eps</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">ep</span><span class="o">.</span><span class="n">load</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">ECU</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;entry_point </span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2"> not derived from ECU&quot;</span><span class="p">)</span>
+            <span class="n">ecus</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ecus</span></div>
+
+
+
+<div class="viewcode-block" id="load_ecu">
+<a class="viewcode-back" href="../../api.html#gallia.plugins.load_ecu">[docs]</a>
+<span class="k">def</span> <span class="nf">load_ecu</span><span class="p">(</span><span class="n">vendor</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">type</span><span class="p">[</span><span class="n">ECU</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Selects an ecu class depending on a vendor string.</span>
+<span class="sd">    The lookup is performed in builtin ecus and all</span>
+<span class="sd">    classes behind the ``gallia_uds_ecus`` entry_point.</span>
+<span class="sd">    The vendor string ``default`` selects a generic ECU.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">vendor</span> <span class="o">==</span> <span class="s2">&quot;default&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ECU</span>
+
+    <span class="k">for</span> <span class="n">ecu</span> <span class="ow">in</span> <span class="n">load_ecu_plugins</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">vendor</span> <span class="o">==</span> <span class="n">ecu</span><span class="o">.</span><span class="n">OEM</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ecu</span>
+
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;no such OEM: &#39;</span><span class="si">{</span><span class="n">vendor</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="load_command_plugin_eps">
+<a class="viewcode-back" href="../../api.html#gallia.plugins.load_command_plugin_eps">[docs]</a>
+<span class="k">def</span> <span class="nf">load_command_plugin_eps</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">EntryPoint</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Loads the ``gallia_commands`` entry_point.&quot;&quot;&quot;</span>
+    <span class="n">eps</span> <span class="o">=</span> <span class="n">entry_points</span><span class="p">()</span>
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">eps</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="s2">&quot;gallia_commands&quot;</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="load_command_plugins">
+<a class="viewcode-back" href="../../api.html#gallia.plugins.load_command_plugins">[docs]</a>
+<span class="k">def</span> <span class="nf">load_command_plugins</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">type</span><span class="p">[</span><span class="n">BaseCommand</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Loads the ``gallia_commands`` entry_point and</span>
+<span class="sd">    imports the command classes with some sanity checks.&quot;&quot;&quot;</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">ep</span> <span class="ow">in</span> <span class="n">load_command_plugin_eps</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">ep</span><span class="o">.</span><span class="n">load</span><span class="p">():</span>
+            <span class="c1"># TODO: Find out how to avoid the circular dep.</span>
+            <span class="c1"># if not issubclass(t, BaseCommand):</span>
+            <span class="c1">#     raise ValueError(f&quot;{type(t)} not derived from BaseCommand&quot;)</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+
+<div class="viewcode-block" id="load_cli_init_plugin_eps">
+<a class="viewcode-back" href="../../api.html#gallia.plugins.load_cli_init_plugin_eps">[docs]</a>
+<span class="k">def</span> <span class="nf">load_cli_init_plugin_eps</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">EntryPoint</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Loads the ``gallia_cli_init`` entry_point.&quot;&quot;&quot;</span>
+    <span class="n">eps</span> <span class="o">=</span> <span class="n">entry_points</span><span class="p">()</span>
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">eps</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="s2">&quot;gallia_cli_init&quot;</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="load_cli_init_plugins">
+<a class="viewcode-back" href="../../api.html#gallia.plugins.load_cli_init_plugins">[docs]</a>
+<span class="k">def</span> <span class="nf">load_cli_init_plugins</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Parsers</span><span class="p">],</span> <span class="kc">None</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Loads the ``gallia_cli_init`` entry_point and</span>
+<span class="sd">    imports the functions behind it.&quot;&quot;&quot;</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">load_cli_init_plugin_eps</span><span class="p">():</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">load</span><span class="p">())</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+
+<div class="viewcode-block" id="load_transport_plugin_eps">
+<a class="viewcode-back" href="../../api.html#gallia.plugins.load_transport_plugin_eps">[docs]</a>
+<span class="k">def</span> <span class="nf">load_transport_plugin_eps</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">EntryPoint</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Loads the ``gallia_transports`` entry_point.&quot;&quot;&quot;</span>
+    <span class="n">eps</span> <span class="o">=</span> <span class="n">entry_points</span><span class="p">()</span>
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">eps</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="s2">&quot;gallia_transports&quot;</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="load_transport_plugins">
+<a class="viewcode-back" href="../../api.html#gallia.plugins.load_transport_plugins">[docs]</a>
+<span class="k">def</span> <span class="nf">load_transport_plugins</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">type</span><span class="p">[</span><span class="n">BaseTransport</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Loads the ``gallia_transports`` entry_point and</span>
+<span class="sd">    imports the transport classes with some sanity checks.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">ep</span> <span class="ow">in</span> <span class="n">load_transport_plugin_eps</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">ep</span><span class="o">.</span><span class="n">load</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">BaseTransport</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="si">}</span><span class="s2"> not derived from BaseTransport&quot;</span><span class="p">)</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+
+<div class="viewcode-block" id="load_transport">
+<a class="viewcode-back" href="../../api.html#gallia.plugins.load_transport">[docs]</a>
+<span class="k">def</span> <span class="nf">load_transport</span><span class="p">(</span><span class="n">target</span><span class="p">:</span> <span class="n">TargetURI</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">type</span><span class="p">[</span><span class="n">BaseTransport</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Selects a transport class depending on a TargetURI.</span>
+<span class="sd">    The lookup is performed in builtin transports and all</span>
+<span class="sd">    classes behind the ``gallia_transports`` entry_point.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">transports</span> <span class="o">=</span> <span class="n">registry</span><span class="p">[:]</span>
+    <span class="n">transports</span> <span class="o">+=</span> <span class="n">load_transport_plugins</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">transport</span> <span class="ow">in</span> <span class="n">transports</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">target</span><span class="o">.</span><span class="n">scheme</span> <span class="o">==</span> <span class="n">transport</span><span class="o">.</span><span class="n">SCHEME</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">transport</span>
+
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;no transport for </span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="add_cli_group">
+<a class="viewcode-back" href="../../api.html#gallia.plugins.add_cli_group">[docs]</a>
+<span class="k">def</span> <span class="nf">add_cli_group</span><span class="p">(</span>  <span class="c1"># noqa: PLR0913</span>
+    <span class="n">parent</span><span class="p">:</span> <span class="n">Parsers</span><span class="p">,</span>
+    <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">help_</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">metavar</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">epilog</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Adds a group to the gallia CLI interface. The arguments</span>
+<span class="sd">    correspond to the arguments of :meth:`argparse.ArgumentParser.add_argument()`.</span>
+<span class="sd">    The ``parent`` argument must contain the relevant entry point to the cli</span>
+<span class="sd">    parse tree. The parse tree is passed to the entry_point ``gallia_cli_init``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">parent</span><span class="p">[</span><span class="s2">&quot;subparsers&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">add_parser</span><span class="p">(</span>
+        <span class="n">group</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="n">help_</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span>
+        <span class="n">epilog</span><span class="o">=</span><span class="n">epilog</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">set_defaults</span><span class="p">(</span><span class="n">usage_func</span><span class="o">=</span><span class="n">parser</span><span class="o">.</span><span class="n">print_usage</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">set_defaults</span><span class="p">(</span><span class="n">help_func</span><span class="o">=</span><span class="n">parser</span><span class="o">.</span><span class="n">print_help</span><span class="p">)</span>
+
+    <span class="n">parent</span><span class="p">[</span><span class="s2">&quot;siblings&quot;</span><span class="p">][</span><span class="n">group</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;siblings&quot;</span><span class="p">:</span> <span class="p">{},</span>
+        <span class="s2">&quot;parser&quot;</span><span class="p">:</span> <span class="n">parser</span><span class="p">,</span>
+        <span class="s2">&quot;subparsers&quot;</span><span class="p">:</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_subparsers</span><span class="p">(</span><span class="n">metavar</span><span class="o">=</span><span class="n">metavar</span><span class="p">),</span>
+    <span class="p">}</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
