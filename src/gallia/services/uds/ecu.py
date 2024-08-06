@@ -330,16 +330,17 @@ class ECU(UDSClient):
 
     async def wait_for_ecu(
         self,
-        timeout: float | None = None,
+        timeout: float | None = 10,
     ) -> bool:
         """Wait for ecu to be alive again (e.g. after reset).
-        Sends a ping every 0.5s and waits at most timeout"""
+        Sends a ping every 0.5s and waits at most timeout.
+        If timeout is None, wait endlessly"""
+        logger.info(f"Waiting for {timeout}s for ECU to respond")
         if self.tester_present_task and self.tester_present_interval:
             await self.stop_cyclic_tester_present()
 
-        t = timeout if timeout is not None else self.timeout
         try:
-            await asyncio.wait_for(self._wait_for_ecu(0.5), timeout=t)
+            await asyncio.wait_for(self._wait_for_ecu(0.5), timeout=timeout)
             return True
         except TimeoutError:
             logger.critical("Timeout while waiting for ECU!")
