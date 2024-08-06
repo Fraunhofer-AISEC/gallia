@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import contextvars
 import importlib.util
 import ipaddress
 import logging
@@ -18,7 +20,7 @@ from urllib.parse import urlparse
 
 import aiofiles
 
-from gallia.log import Loglevel
+from gallia.log import Loglevel, get_logger
 
 if TYPE_CHECKING:
     from gallia.db.handler import DBHandler
@@ -244,3 +246,32 @@ def get_file_log_level(args: Namespace) -> Loglevel:
         if args.verbose >= 2:
             level = Loglevel.TRACE
     return level
+
+
+CONTEXT_SHARED_VARIABLE = "logger_name"
+ctxVar: contextvars.ContextVar[tuple[str, str | None]] = contextvars.ContextVar(
+    CONTEXT_SHARED_VARIABLE
+)
+
+
+def set_task_handler_ctx_variable(
+    logger_name: str, task_name: str | None = None
+) -> contextvars.Context:
+    ctx = contextvars.copy_context()
+    ctx.run(ctxVar.set, (logger_name, task_name))
+    return ctx
+
+
+def handle_task_error(fut: asyncio.Future[Any]) -> None:
+    (logger_name, task_name) = ctxVar.get((__name__, "Task"))
+    logger = get_logger(logger_name)
+    if logger.name is __name__:
+        logger.warning(
+            f"<DEV> {fut} did not have context variable '{CONTEXT_SHARED_VARIABLE}' set; please fix this for proper logging"
+        )
+
+    try:
+        fut.result()
+    except BaseException as e:
+        # Info level is enough, since our aim is only to consume the stack trace
+        logger.info(f"{task_name if task_name is not None else 'Task'} ended with error: {e!r}")

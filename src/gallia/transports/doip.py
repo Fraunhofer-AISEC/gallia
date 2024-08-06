@@ -15,7 +15,11 @@ from pydantic import BaseModel, field_validator
 
 from gallia.log import get_logger
 from gallia.transports.base import BaseTransport, TargetURI
-from gallia.utils import auto_int
+from gallia.utils import (
+    auto_int,
+    handle_task_error,
+    set_task_handler_ctx_variable,
+)
 
 logger = get_logger(__name__)
 
@@ -474,6 +478,10 @@ class DoIPConnection:
         self.protocol_version = protocol_version
         self._read_queue: asyncio.Queue[DoIPFrame] = asyncio.Queue()
         self._read_task = asyncio.create_task(self._read_worker())
+        self._read_task.add_done_callback(
+            handle_task_error,
+            context=set_task_handler_ctx_variable(__name__, "DoipReader"),
+        )
         self._is_closed = False
         self._mutex = asyncio.Lock()
 
