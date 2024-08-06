@@ -168,24 +168,33 @@ class BaseTransport(ABC):
         """Terminates the connection and clean up all allocated ressources."""
 
     async def reconnect(self, timeout: float | None = None) -> Self:
-        """Closes the connection to the target and reconnects. A new
-        instance of this class is returned rendering the old one
-        obsolete. This method is safe for concurrent use.
+        """Closes the connection to the target and attempts to reconnect every
+        100 ms until at max timeout. If timeout is None, only attempt to connect
+        once.
+        A new instance of this class is returned rendering the old one obsolete.
+        This method is safe for concurrent use.
         """
         async with self.mutex:
             try:
                 await self.close()
             except ConnectionError as e:
-                logger.warning(f"close() failed during reconnect ({e}); ignoring")
-            
-            logger.error("Starting loop...")
-            
-            while True:
-                try:
-                    return await self.connect(self.target)
-                except ConnectionError as e:
-                    logger.error("Connection failed. Retrying ...")
-                    await asyncio.sleep(0.1)
+                logger.warning(f"close() failed during reconnect ({e!r}); ignoring")
+
+            async with asyncio.timeout(timeout):
+                logger.debug(
+                    f"Attempting to establish a new connection with a timeout of {timeout}"
+                )
+                while True:
+                    try:
+                        return await self.connect(self.target)
+                    except ConnectionError as e:
+                        logger.info(
+                            f"Connection attempt failed while reconnecting: {e!r}."
+                        )
+                        if timeout is None:
+                            logger.debug("Breaking out of the reconnect-loop since timeout is None")
+                            raise e
+                        await asyncio.sleep(0.1)
 
     @abstractmethod
     async def read(
