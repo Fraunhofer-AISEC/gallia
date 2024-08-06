@@ -219,7 +219,7 @@ class SASeedsDumper(UDSScanner):
                 await self.ecu.set_session(session)
 
             if args.sleep > 0:
-                logger.info(f"Sleeping for {args.sleep} seconds between seed requests...")
+                logger.info(f"Sleeping for {args.sleep} seconds between seed requests…")
                 await asyncio.sleep(args.sleep)
 
         await file.close()
