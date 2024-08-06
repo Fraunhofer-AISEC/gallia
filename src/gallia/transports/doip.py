@@ -814,6 +814,11 @@ class DoIPTransport(BaseTransport, scheme="doip"):
         )
         return cls(t, port, config, conn)
 
+    async def reconnect(self, timeout: float | None = None) -> Self:
+        # It might be that the DoIP endpoint is not immediately ready for another
+        # connection, so set the timeout to 10s by default.
+        return await super().reconnect(10 if timeout is None else timeout)
+
     async def close(self) -> None:
         if self._is_closed:
             return
