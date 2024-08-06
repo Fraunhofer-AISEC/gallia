@@ -13,6 +13,7 @@ assert sys.platform == "win32", "unsupported platform"
 
 from gallia.log import get_logger
 from gallia.transports import _ctypes_vector_xl
+from gallia.utils import handle_task_error, set_task_handler_ctx_variable
 
 logger = get_logger(__name__)
 
@@ -193,6 +194,10 @@ class FlexRayCtypesBackend:
     def start_queue(self) -> None:
         self.event_handle = self._set_notification()
         self.background_task = asyncio.create_task(self._receive_worker())
+        self.background_task.add_done_callback(
+            handle_task_error,
+            context=set_task_handler_ctx_variable(__name__),
+        )
 
     async def stop_queue(self) -> None:
         assert self.background_task is not None
