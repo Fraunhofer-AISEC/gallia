@@ -5,7 +5,6 @@
 import asyncio
 import binascii
 import sys
-import time
 from argparse import ArgumentParser, Namespace
 
 from gallia.command import UDSScanner
