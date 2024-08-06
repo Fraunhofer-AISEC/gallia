@@ -21,6 +21,7 @@ from gallia.services.uds.core.service import (
 )
 from gallia.services.uds.core.utils import bytes_repr as bytes_repr_
 from gallia.services.uds.core.utils import g_repr
+from gallia.utils import handle_task_error, set_task_handler_ctx_variable
 
 
 def bytes_repr(data: bytes) -> str:
@@ -389,6 +390,10 @@ class DBHandler:
                 await self.connection.commit()
 
         self.tasks.append(asyncio.create_task(execute()))
+        self.tasks[-1].add_done_callback(
+            handle_task_error,
+            context=set_task_handler_ctx_variable(__name__, "DbHandler"),
+        )
 
     async def insert_session_transition(self, destination: int, steps: list[int]) -> None:
         assert self.connection is not None, "Not connected to the database"

@@ -27,6 +27,7 @@ from gallia.services.uds.helpers import (
     suggests_identifier_not_supported,
 )
 from gallia.transports.base import BaseTransport
+from gallia.utils import handle_task_error, set_task_handler_ctx_variable
 
 if TYPE_CHECKING:
     from gallia.db.handler import DBHandler
@@ -370,6 +371,10 @@ class ECU(UDSClient):
         self.tester_present_interval = interval
         coroutine = self._tester_present_worker(interval)
         self.tester_present_task = asyncio.create_task(coroutine)
+        self.tester_present_task.add_done_callback(
+            handle_task_error,
+            context=set_task_handler_ctx_variable(__name__, "TesterPresent"),
+        )
 
         # enforce context switch
         # this ensures, that the task is executed at least once

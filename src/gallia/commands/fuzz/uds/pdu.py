@@ -18,7 +18,7 @@ from gallia.services.uds.core.exception import IllegalResponse
 from gallia.services.uds.core.service import NegativeResponse, UDSResponse
 from gallia.services.uds.helpers import suggests_identifier_not_supported
 from gallia.transports import RawCANTransport, TargetURI
-from gallia.utils import auto_int
+from gallia.utils import auto_int, handle_task_error, set_task_handler_ctx_variable
 
 logger = get_logger(__name__)
 
@@ -120,6 +120,10 @@ class PDUFuzzer(UDSScanner):
     async def main(self, args: Namespace) -> None:
         if args.observe_can_ids:
             recv_task = asyncio.create_task(self.observe_can_messages(args.observe_can_ids, args))
+            recv_task.add_done_callback(
+                handle_task_error,
+                context=set_task_handler_ctx_variable(__name__, "ReceiveTask"),
+            )
 
         logger.info(f"testing sessions {args.sessions}")
 

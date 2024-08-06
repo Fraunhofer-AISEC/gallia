@@ -18,7 +18,7 @@ from urllib.parse import urlparse
 
 from gallia.log import get_logger
 from gallia.transports import TargetURI, TransportScheme
-from gallia.utils import auto_int, split_host_port
+from gallia.utils import auto_int, handle_task_error, set_task_handler_ctx_variable, split_host_port
 
 logger = get_logger(__name__)
 
@@ -41,6 +41,10 @@ if sys.platform.startswith("linux") or sys.platform == "darwin":
             self.cleanup = cleanup
             self.ready_event = asyncio.Event()
             self.compressor = asyncio.create_task(self._compressor())
+            self.compressor.add_done_callback(
+                handle_task_error,
+                context=set_task_handler_ctx_variable(__name__, "Dumpcap"),
+            )
 
         @classmethod
         async def start(
