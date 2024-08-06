@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import asyncio
 import binascii
 import sys
 import time
@@ -173,8 +174,8 @@ class SAKeylenDetector(UDSScanner):
                 await self.ecu.set_session(session)
 
             if args.sleep > 0:
-                logger.info(f"Sleeping for {args.sleep} seconds between sending keys...")
-                time.sleep(args.sleep)
+                logger.info(f"Sleeping for {args.sleep} seconds between sending keys…")
+                await asyncio.sleep(args.sleep)
 
         if not length_identified:
             logger.result(
