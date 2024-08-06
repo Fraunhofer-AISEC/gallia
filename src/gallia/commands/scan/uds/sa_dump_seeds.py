@@ -220,7 +220,7 @@ class SASeedsDumper(UDSScanner):
 
             if args.sleep > 0:
                 logger.info(f"Sleeping for {args.sleep} seconds between seed requests...")
-                time.sleep(args.sleep)
+                await asyncio.sleep(args.sleep)
 
         await file.close()
         self.log_size(seeds_file, time.time() - start_time)
