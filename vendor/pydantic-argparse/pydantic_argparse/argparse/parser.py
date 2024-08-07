@@ -289,7 +289,11 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
                 if self.extra_defaults is not None and model in self.extra_defaults and field.name in self.extra_defaults[model]:
                     field.extra_default = self.extra_defaults[model][field.name]
                     try:
-                        field.validated_extra_default = getattr(model.__pydantic_validator__.validate_assignment(validation_model, field.name, field.extra_default), field.name)
+                        # TODO: This does not work well with model validators, need to rethink
+                        # field.validated_extra_default = getattr(model.__pydantic_validator__.validate_assignment(validation_model, field.name, field.extra_default), field.name)
+                        field.validated_extra_default = field.extra_default
+                    except AttributeError:
+                        sys.exit(0)
                     except ValidationError:
                         # TODO Print warning for invalid config
                         pass

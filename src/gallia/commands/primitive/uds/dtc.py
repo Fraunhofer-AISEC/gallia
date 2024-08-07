@@ -65,7 +65,7 @@ class ControlDTCPrimitiveConfig(DTCPrimitiveConfig):
 
 
 class DTCPrimitive(UDSScanner):
-    """Read out the Diagnostic Troube Codes (DTC)"""
+    """Read out the Diagnostic Trouble Codes (DTC)"""
 
     SHORT_HELP = "DiagnosticTroubleCodes"
 

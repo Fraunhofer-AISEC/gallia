@@ -5,8 +5,9 @@
 import random
 import sys
 from pathlib import Path
+from typing import Self
 
-from pydantic import field_serializer
+from pydantic import field_serializer, model_validator
 
 from gallia.command import AsyncScript
 from gallia.command.base import AsyncScriptConfig
@@ -33,6 +34,21 @@ class VirtualECUConfig(AsyncScriptConfig):
             return None
 
         return target_uri.raw
+
+    @model_validator(mode="after")
+    def check_transport_requirements(self) -> Self:
+        supported: list[TransportScheme] = []
+
+        if sys.platform.startswith("linux"):
+            supported = [TransportScheme.TCP, TransportScheme.ISOTP, TransportScheme.UNIX_LINES]
+
+        if sys.platform.startswith("win32"):
+            supported = [TransportScheme.TCP]
+
+        if self.target.scheme not in supported:
+            raise ValueError(f"Unsupported transport scheme! Use any of {supported}")
+
+        return self
 
 
 class DbVirtualECUConfig(VirtualECUConfig, DBUDSServer.Behavior):
@@ -89,20 +105,14 @@ class VirtualECU(AsyncScript):
                 case TransportScheme.UNIX_LINES:
                     transport = UnixUDSServerTransport(server, target)
                 case _:
-                    # TODO
-                    self.parser.error(
-                        f"Unsupported transport scheme! Use any of ["
-                        f"{TransportScheme.TCP}, {TransportScheme.ISOTP}, {TransportScheme.UNIX_LINES}]"
-                    )
+                    assert False
+
         if sys.platform.startswith("win32"):
             match target.scheme:
                 case TransportScheme.TCP:
                     transport = TCPUDSServerTransport(server, target)
                 case _:
-                    # TODO
-                    self.parser.error(
-                        f"Unsupported transport scheme! Use any of [" f"{TransportScheme.TCP}]"
-                    )
+                    assert False
 
         try:
             await server.setup()
