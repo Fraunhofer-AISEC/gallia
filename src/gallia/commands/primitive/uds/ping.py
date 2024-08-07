@@ -19,7 +19,7 @@ class PingPrimitiveConfig(UDSScannerConfig):
         False,
         description="Read and store the ECU proporties prior and after scan",
         group=UDSScannerConfig._argument_group,
-        config=UDSScannerConfig._config_section,
+        config_section=UDSScannerConfig._config_section,
     )
     session: AutoInt = Field(0x01, description="set session to perform test")
     count: AutoInt | None = Field(None, description="limit number of pings to this amount")

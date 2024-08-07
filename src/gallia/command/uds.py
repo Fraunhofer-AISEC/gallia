@@ -4,12 +4,15 @@
 
 import json
 from abc import ABC
+from typing import Self
 
 import aiofiles
+from pydantic import model_validator
 
 from gallia.command.base import FileNames, Scanner, ScannerConfig
 from gallia.command.config import Field
 from gallia.log import get_logger
+from gallia.plugins.plugin import load_ecu, load_ecus
 from gallia.services.uds.core.service import NegativeResponse, UDSResponse
 from gallia.services.uds.ecu import ECU
 from gallia.services.uds.helpers import raise_for_error
@@ -23,9 +26,8 @@ class UDSScannerConfig(ScannerConfig, argument_group="uds", config_section="gall
         description="Trigger an initial ecu_reset via UDS; reset level is optional",
         const=0x01,
     )
-    # TODO: Potentially turn this to a literal, if possible without circular dependencies
     oem: str = Field(
-        "default",
+        ECU.OEM,
         description="The OEM of the ECU, used to choose a OEM specific ECU implementation",
         metavar="OEM",
     )
@@ -50,6 +52,15 @@ class UDSScannerConfig(ScannerConfig, argument_group="uds", config_section="gall
     compare_properties: bool = Field(
         True, description="Compare properties before and after the scan"
     )
+
+    @model_validator(mode="after")
+    def check_oem(self) -> Self:
+        ecu_names = [ecu.OEM for ecu in load_ecus()]
+
+        if self.oem not in ecu_names:
+            raise ValueError(f"Not a valid OEM. Use any of {ecu_names}.")
+
+        return self
 
 
 class UDSScanner(Scanner, ABC):
@@ -83,8 +94,6 @@ class UDSScanner(Scanner, ABC):
         self.ecu.implicit_logging = self._implicit_logging
 
     async def setup(self) -> None:
-        from gallia.plugins.plugin import load_ecu
-
         await super().setup()
 
         self.ecu = load_ecu(self.config.oem)(

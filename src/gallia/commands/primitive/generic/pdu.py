@@ -14,7 +14,7 @@ class GenericPDUPrimitiveConfig(ScannerConfig):
         False,
         description="Read and store the ECU proporties prior and after scan",
         group=UDSScannerConfig._argument_group,
-        config=UDSScannerConfig._config_section,
+        config_section=UDSScannerConfig._config_section,
     )
     pdu: HexBytes = Field(description="raw pdu to send", positional=True)
 

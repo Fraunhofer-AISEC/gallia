@@ -19,7 +19,7 @@ class ECUResetPrimitiveConfig(UDSScannerConfig):
         False,
         description="Read and store the ECU proporties prior and after scan",
         group=UDSScannerConfig._argument_group,
-        config=UDSScannerConfig._config_section,
+        config_section=UDSScannerConfig._config_section,
     )
     session: AutoInt = Field(0x01, description="set session perform test in")
     subfunc: AutoInt = Field(0x01, description="subfunc", short="f")
