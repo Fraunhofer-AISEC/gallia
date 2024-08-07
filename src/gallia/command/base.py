@@ -15,10 +15,10 @@ from logging import Handler
 from pathlib import Path
 from subprocess import CalledProcessError, run
 from tempfile import gettempdir
-from typing import Protocol, cast
+from typing import Any, Protocol, Self, cast
 
 import msgspec
-from pydantic import ConfigDict, field_serializer
+from pydantic import ConfigDict, field_serializer, model_validator
 
 from gallia import exitcodes
 from gallia.command.config import Field, GalliaBaseModel, idempotent
@@ -454,11 +454,18 @@ class ScannerConfig(AsyncScriptConfig, argument_group="scanner", config_section=
     )
 
     @field_serializer("target", "power_supply")
-    def serialize_target_uri(self, target_uri: TargetURI | None, _info):
+    def serialize_target_uri(self, target_uri: TargetURI | None, _info) -> Any:
         if target_uri is None:
             return None
 
         return target_uri.raw
+
+    @model_validator(mode="after")
+    def check_power_supply_required(self) -> Self:
+        if self.power_cycle and self.power_supply is None:
+            raise ValueError("--power-cycle needs --power-supply")
+
+        return self
 
 
 class Scanner(AsyncScript, ABC):
@@ -500,9 +507,6 @@ class Scanner(AsyncScript, ABC):
                 await self.power_supply.power_cycle(
                     self.config.power_cycle_sleep, lambda: asyncio.sleep(2)
                 )
-        # TODO: Transform to pydantic
-        # elif self.config.power_cycle is True:
-        # self.parser.error("--power-cycle needs --power-supply")
 
         # Start dumpcap as the first subprocess; otherwise network
         # traffic might be missing.

@@ -239,12 +239,12 @@ class UDSPlugin(Plugin):
                                 command=FindXCP,
                             ),
                             "tcp": Command(
-                                description="TCP enumeration scanner for CAN",
+                                description="XCP enumeration scanner for TCP",
                                 config=TcpFindXCPConfig,
                                 command=FindXCP,
                             ),
                             "udp": Command(
-                                description="UDP enumeration scanner for CAN",
+                                description="XCP enumeration scanner for UDP",
                                 config=UdpFindXCPConfig,
                                 command=FindXCP,
                             ),
