@@ -18,7 +18,7 @@ class ReadByIdentifierPrimitiveConfig(UDSScannerConfig):
         False,
         description="Read and store the ECU proporties prior and after scan",
         group=UDSScannerConfig._argument_group,
-        config=UDSScannerConfig._config_section,
+        config_section=UDSScannerConfig._config_section,
     )
     data_identifier: AutoInt = Field(description="The data identifier", positional=True)
     session: AutoInt = Field(0x01, description="set session perform test in")

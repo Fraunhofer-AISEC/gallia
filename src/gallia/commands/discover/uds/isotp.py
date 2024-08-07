@@ -4,6 +4,9 @@
 
 import asyncio
 import sys
+from typing import Self
+
+from pydantic import model_validator
 
 assert sys.platform.startswith("linux"), "unsupported platform"
 
@@ -33,6 +36,15 @@ class IsotpDiscovererConfig(UDSDiscoveryScannerConfig):
         5, description="Time in seconds to sniff on bus for current traffic", metavar="SECONDS"
     )
 
+    @model_validator(mode="after")
+    def check_transport_requirements(self) -> Self:
+        if self.target is not None and (not self.target.scheme == RawCANTransport.SCHEME):
+            raise ValueError(f"Unsupported transport schema {self.target.scheme}; must be can-raw!")
+        if self.extended_addr and (self.start > 0xFF or self.stop > 0xFF):
+            raise ValueError("--start/--stop maximum value is 0xFF")
+
+        return self
+
 
 class IsotpDiscoverer(UDSDiscoveryScanner):
     """Discovers all UDS endpoints on an ECU using ISO-TP normal addressing.
@@ -46,17 +58,6 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
     def __init__(self, config: IsotpDiscovererConfig):
         super().__init__(config)
         self.config = config
-
-    async def setup(self) -> None:
-        if self.config.target is not None and (
-            not self.config.target.scheme == RawCANTransport.SCHEME
-        ):
-            self.parser.error(
-                f"Unsupported transport schema {self.config.target.scheme}; must be can-raw!"
-            )
-        if self.config.extended_addr and (self.config.start > 0xFF or self.config.stop > 0xFF):
-            self.parser.error("--start/--stop maximum value is 0xFF")
-        await super().setup(self.config)
 
     async def query_description(self, target_list: list[TargetURI], did: int) -> None:
         logger.info("reading info DID from all discovered endpoints")

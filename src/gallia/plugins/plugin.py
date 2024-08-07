@@ -61,6 +61,16 @@ def load_plugins() -> list[type[Plugin]]:
     return plugins
 
 
+def load_transports() -> list[type[BaseTransport]]:
+    transports = []
+
+    for plugin in load_plugins():
+        for transport in plugin.transports():
+            transports.append(transport)
+
+    return transports
+
+
 def load_transport(target: TargetURI) -> type[BaseTransport]:
     """Selects a transport class depending on a TargetURI.
     The lookup is performed in builtin transports and all
@@ -72,6 +82,16 @@ def load_transport(target: TargetURI) -> type[BaseTransport]:
                 return transport
 
     raise ValueError(f"no transport for {target}")
+
+
+def load_ecus() -> list[type[ECU]]:
+    ecus = []
+
+    for plugin in load_plugins():
+        for ecu in plugin.ecus():
+            ecus.append(ecu)
+
+    return ecus
 
 
 def load_ecu(vendor: str) -> type[ECU]:
