@@ -47,10 +47,14 @@ class UDSClient:
         self.pending_timeout = 5
         self.mutex = asyncio.Lock()
 
+    async def connect(self) -> None: ...
+
     async def reconnect(self, timeout: int | None = None) -> None:
         """Calls the underlying transport to trigger a reconnect"""
         async with self.mutex:
             self.transport = await self.transport.reconnect(timeout)
+
+        await self.connect()
 
     async def _read(self, timeout: float | None = None, tags: list[str] | None = None) -> bytes:
         if timeout is None and self.timeout:
