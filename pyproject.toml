@@ -71,6 +71,7 @@ ruff = "^0.5.0"
 
 [tool.poetry.plugins."gallia_plugins"]
 "uds" = "gallia.plugins.uds:UDSPlugin"
+"xcp" = "gallia.plugins.xcp:XCPPlugin"
 
 [tool.poetry.scripts]
 "gallia" = "gallia.cli:main"
