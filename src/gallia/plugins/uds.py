@@ -203,15 +203,8 @@ class UDSPlugin(Plugin):
         }
 
         if sys.platform.startswith("linux"):
-            from gallia.commands.discover.find_xcp import (
-                CanFindXCPConfig,
-                FindXCP,
-                TcpFindXCPConfig,
-                UdpFindXCPConfig,
-            )
             from gallia.commands.discover.uds.isotp import IsotpDiscoverer, IsotpDiscovererConfig
             from gallia.commands.fuzz.uds.pdu import PDUFuzzer, PDUFuzzerConfig
-            from gallia.commands.primitive.uds.xcp import SimpleTestXCP, SimpleTestXCPConfig
             from gallia.commands.script.vecu import (
                 DbVirtualECUConfig,
                 RngVirtualECUConfig,
@@ -229,36 +222,6 @@ class UDSPlugin(Plugin):
                                 command=IsotpDiscoverer,
                             )
                         },
-                    ),
-                    "xcp": CommandTree(
-                        description="XCP enumeration scanner",
-                        subtree={
-                            "can": Command(
-                                description="XCP enumeration scanner for CAN",
-                                config=CanFindXCPConfig,
-                                command=FindXCP,
-                            ),
-                            "tcp": Command(
-                                description="XCP enumeration scanner for TCP",
-                                config=TcpFindXCPConfig,
-                                command=FindXCP,
-                            ),
-                            "udp": Command(
-                                description="XCP enumeration scanner for UDP",
-                                config=UdpFindXCPConfig,
-                                command=FindXCP,
-                            ),
-                        },
-                    ),
-                }
-            )
-
-            tree["primitive"].subtree.update(
-                {
-                    "xcp": Command(
-                        description="XCP tester",
-                        config=SimpleTestXCPConfig,
-                        command=SimpleTestXCP,
                     ),
                 }
             )
