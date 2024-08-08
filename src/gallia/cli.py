@@ -43,6 +43,7 @@ def _create_parser_from_tree(
     extra_defaults: defaults,
 ) -> tuple[type[PydanticBaseCommand], defaults]:
     global model_counter
+    model_name = f"_dynamic_gallia_hierarchy_model_{model_counter}"
     model_counter += 1
     args: dict[str, tuple[type | UnionType, Field]] = {}
 
@@ -54,12 +55,7 @@ def _create_parser_from_tree(
 
         args[key] = (model_type | None, Field(None, description=value.description))
 
-    return (
-        create_model(
-            f"_dynamic_gallia_hierarchy_model_{model_counter}", __base__=PydanticBaseCommand, **args
-        ),
-        extra_defaults,
-    )
+    return create_model(model_name, __base__=PydanticBaseCommand, **args), extra_defaults
 
 
 def create_parser(commands: Command | dict[str, CommandTree | Command]) -> ArgumentParser:
