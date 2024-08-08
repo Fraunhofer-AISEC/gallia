@@ -24,24 +24,24 @@ class FindXCPConfig(AsyncScriptConfig):
 
 
 class CanFindXCPConfig(FindXCPConfig):
-    xcp_can_iface: str = Field("", description="CAN interface used for XCP communication")
+    xcp_can_iface: str = Field(description="CAN interface used for XCP communication")
     can_fd: bool = Field(False, description="use can FD")
     extended: bool = Field(False, description="use extended CAN address space")
     sniff_time: int = Field(
         60, description="Time in seconds to sniff on bus for current traffic", metavar="SECONDS"
     )
-    can_id_start: AutoInt = Field("", description="First CAN id to test")
-    can_id_end: AutoInt = Field("", description="Last CAN id to test")
+    can_id_start: AutoInt = Field(description="First CAN id to test")
+    can_id_end: AutoInt = Field(description="Last CAN id to test")
 
 
 class TcpFindXCPConfig(FindXCPConfig):
-    xcp_ip: str = Field("", description="XCP destination IP Address")
-    tcp_ports: str = Field("", description="Comma separated list of TCP ports to test for XCP")
+    xcp_ip: str = Field(description="XCP destination IP Address")
+    tcp_ports: str = Field(description="Comma separated list of TCP ports to test for XCP")
 
 
 class UdpFindXCPConfig(FindXCPConfig):
-    xcp_ip: str = Field("", description="XCP destination IP Address")
-    udp_ports: str = Field("", description="Comma separated list of UDP ports to test for XCP")
+    xcp_ip: str = Field(description="XCP destination IP Address")
+    udp_ports: str = Field(description="Comma separated list of UDP ports to test for XCP")
 
 
 class FindXCP(AsyncScript):
