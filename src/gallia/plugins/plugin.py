@@ -108,7 +108,9 @@ def load_ecu(vendor: str) -> type[ECU]:
     raise ValueError(f"no such OEM: '{vendor}'")
 
 
-def _merge_commands(c1: dict[str, CommandTree | Command], c2: dict[str, CommandTree | Command]) -> None:
+def _merge_commands(
+    c1: dict[str, CommandTree | Command], c2: dict[str, CommandTree | Command]
+) -> None:
     for key, value in c2.items():
         if key not in c1:
             c1[key] = value
@@ -122,8 +124,12 @@ def _merge_commands(c1: dict[str, CommandTree | Command], c2: dict[str, CommandT
 
 
 def _merge_command_trees(tree1: CommandTree, tree2: CommandTree) -> None:
-    if tree1.description is not None and tree2.description is not None and tree1.description != tree2.description:
-        raise ValueError(f"]: Incompatible descriptions")
+    if (
+        tree1.description is not None
+        and tree2.description is not None
+        and tree1.description != tree2.description
+    ):
+        raise ValueError("]: Incompatible descriptions")
 
     _merge_commands(tree1.subtree, tree2.subtree)
 
@@ -136,6 +142,8 @@ def load_commands() -> dict[str, CommandTree | Command]:
         try:
             _merge_commands(commands, plugin.commands())
         except ValueError as e:
-            raise ValueError(f'Plugin "{plugin.name()}" conflicts with other plugins on command [ {str(e)}') from None
+            raise ValueError(
+                f'Plugin "{plugin.name()}" conflicts with other plugins on command [ {str(e)}'
+            ) from None
 
     return commands
