@@ -49,6 +49,7 @@ exitcode = "^0.1.0"
 psutil = ">=5.9.4,<7.0.0"
 httpx = ">=0.26,<0.28"
 more-itertools = "^10.3.0"
+pydantic-argparse = { path = "vendor/pydantic-argparse", develop = true }
 
 [tool.poetry.group.dev.dependencies]
 Sphinx = ">=5.2,<8.0"
@@ -67,6 +68,10 @@ reuse = "^4.0"
 construct-typing = ">=0.5.2,<0.7.0"
 pytest-cov = ">=4,<6"
 ruff = "^0.5.0"
+
+[tool.poetry.plugins."gallia_plugins"]
+"uds" = "gallia.plugins.uds:UDSPlugin"
+"xcp" = "gallia.plugins.xcp:XCPPlugin"
 
 [tool.poetry.scripts]
 "gallia" = "gallia.cli:main"
