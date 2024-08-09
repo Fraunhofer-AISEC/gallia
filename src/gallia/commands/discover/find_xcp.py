@@ -52,7 +52,7 @@ class FindXCP(AsyncScript):
 
     def __init__(self, config: FindXCPConfig):
         super().__init__(config)
-        self.config = config
+        self.config: FindXCPConfig = config
         self.socket: socket.socket
 
     def pack_xcp_eth(self, data: bytes, ctr: int = 0) -> bytes:

@@ -33,7 +33,7 @@ class WMBAPrimitive(UDSScanner):
 
     def __init__(self, config: WMBAPrimitiveConfig):
         super().__init__(config)
-        self.config = config
+        self.config: WMBAPrimitiveConfig = config
 
     async def main(self) -> None:
         try:

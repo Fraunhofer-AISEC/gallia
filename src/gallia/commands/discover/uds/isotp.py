@@ -57,7 +57,7 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
 
     def __init__(self, config: IsotpDiscovererConfig):
         super().__init__(config)
-        self.config = config
+        self.config: IsotpDiscovererConfig = config
 
     async def query_description(self, target_list: list[TargetURI], did: int) -> None:
         logger.info("reading info DID from all discovered endpoints")

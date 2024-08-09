@@ -41,7 +41,7 @@ class MemoryFunctionsScanner(UDSScanner):
 
     def __init__(self, config: MemoryFunctionsScannerConfig):
         super().__init__(config)
-        self.config = config
+        self.config: MemoryFunctionsScannerConfig = config
 
     async def main(self) -> None:
         resp = await self.ecu.set_session(self.config.session)

@@ -53,7 +53,7 @@ class ScanIdentifiers(UDSScanner):
 
     def __init__(self, config: ScanIdentifiersConfig):
         super().__init__(config)
-        self.config = config
+        self.config: ScanIdentifiersConfig = config
 
     async def main(self) -> None:
         if self.config.sessions is None:

@@ -36,7 +36,7 @@ class ResetScanner(UDSScanner):
 
     def __init__(self, config: ResetScannerConfig):
         super().__init__(config)
-        self.config = config
+        self.config: ResetScannerConfig = config
 
     async def main(self) -> None:
         if self.config.sessions is None:

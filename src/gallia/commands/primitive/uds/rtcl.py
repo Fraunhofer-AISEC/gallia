@@ -71,7 +71,7 @@ class RTCLPrimitive(UDSScanner):
 
     def __init__(self, config: RTCLPrimitiveConfig):
         super().__init__(config)
-        self.config = config
+        self.config: RTCLPrimitiveConfig = config
 
     async def main(self) -> None:
         try:

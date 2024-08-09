@@ -58,7 +58,7 @@ class SetCLIConfig(CLIConfig):
 class CLI(AsyncScript):
     def __init__(self, config: CLIConfig):
         super().__init__(config)
-        self.config = config
+        self.config: CLIConfig = config
 
     async def main(self) -> None:
         for netzteil in netzteile:

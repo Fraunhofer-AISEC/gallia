@@ -28,7 +28,7 @@ class VINPrimitive(UDSScanner):
 
     def __init__(self, config: VINPrimitiveConfig):
         super().__init__(config)
-        self.config = config
+        self.config: VINPrimitiveConfig = config
 
     async def main(self) -> None:
         resp = await self.ecu.read_vin()

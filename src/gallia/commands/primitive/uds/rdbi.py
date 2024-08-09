@@ -31,7 +31,7 @@ class ReadByIdentifierPrimitive(UDSScanner):
 
     def __init__(self, config: ReadByIdentifierPrimitiveConfig):
         super().__init__(config)
-        self.config = config
+        self.config: ReadByIdentifierPrimitiveConfig = config
 
     async def main(self) -> None:
         try:
