@@ -49,7 +49,7 @@ class XCPPlugin(Plugin):
                                 ),
                             },
                         ),
-                    }
+                    },
                 ),
                 "primitive": CommandTree(
                     description=None,
@@ -59,8 +59,8 @@ class XCPPlugin(Plugin):
                             config=SimpleTestXCPConfig,
                             command=SimpleTestXCP,
                         )
-                    }
-                )
+                    },
+                ),
             }
 
         return tree
