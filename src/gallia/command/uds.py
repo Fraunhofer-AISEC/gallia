@@ -4,10 +4,9 @@
 
 import json
 from abc import ABC
-from typing import Self
 
 import aiofiles
-from pydantic import model_validator
+from pydantic import field_validator
 
 from gallia.command.base import FileNames, Scanner, ScannerConfig
 from gallia.command.config import Field
@@ -53,14 +52,15 @@ class UDSScannerConfig(ScannerConfig, argument_group="uds", config_section="gall
         True, description="Compare properties before and after the scan"
     )
 
-    @model_validator(mode="after")
-    def check_oem(self) -> Self:
+    @field_validator("oem")
+    @classmethod
+    def check_oem(cls, v: str) -> str:
         ecu_names = [ecu.OEM for ecu in load_ecus()]
 
-        if self.oem not in ecu_names:
+        if v not in ecu_names:
             raise ValueError(f"Not a valid OEM. Use any of {ecu_names}.")
 
-        return self
+        return v
 
 
 class UDSScanner(Scanner, ABC):
