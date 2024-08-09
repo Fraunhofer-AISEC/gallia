@@ -47,7 +47,7 @@ class PDUFuzzer(UDSScanner):
 
     def __init__(self, config: PDUFuzzerConfig):
         super().__init__(config)
-        self.config = config
+        self.config: PDUFuzzerConfig = config
 
     def generate_payload(self) -> bytes:
         return random.randbytes(random.randint(self.config.min_length, self.config.max_length))

@@ -72,7 +72,7 @@ class DoIPDiscoverer(AsyncScript):
 
     def __init__(self, config: DoIPDiscovererConfig):
         super().__init__(config)
-        self.config = config
+        self.config: DoIPDiscovererConfig = config
 
     # This is an ugly hack to circumvent AsyncScript's shortcomings regarding return codes
 

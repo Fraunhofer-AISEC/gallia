@@ -75,7 +75,7 @@ class UDSScanner(Scanner, ABC):
 
     def __init__(self, config: UDSScannerConfig):
         super().__init__(config)
-        self.config = config
+        self.config: UDSScannerConfig = config
         self.ecu: ECU
         self._implicit_logging = True
 
@@ -185,7 +185,7 @@ class UDSDiscoveryScannerConfig(ScannerConfig):
 class UDSDiscoveryScanner(Scanner, ABC):
     def __init__(self, config: UDSDiscoveryScannerConfig):
         super().__init__(config)
-        self.config = config
+        self.config: UDSDiscoveryScannerConfig = config
 
     async def setup(self) -> None:
         await super().setup()

@@ -42,7 +42,7 @@ class SimpleTestXCP(Scanner):
 
     def __init__(self, config: SimpleTestXCPConfig):
         super().__init__(config)
-        self.config = config
+        self.config: SimpleTestXCPConfig = config
         self.service: XCPService
 
     async def setup(self) -> None:

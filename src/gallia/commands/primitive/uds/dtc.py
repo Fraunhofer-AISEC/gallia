@@ -71,7 +71,7 @@ class DTCPrimitive(UDSScanner):
 
     def __init__(self, config: DTCPrimitiveConfig):
         super().__init__(config)
-        self.config = config
+        self.config: DTCPrimitiveConfig = config
 
     async def fetch_error_codes(self, mask: int, split: bool = True) -> dict[int, int]:
         ecu_response = await self.ecu.read_dtc_information_report_dtc_by_status_mask(mask)

@@ -53,7 +53,7 @@ class IOCBIPrimitive(UDSScanner):
 
     def __init__(self, config: IOCBIPrimitiveConfig):
         super().__init__(config)
-        self.config = config
+        self.config: IOCBIPrimitiveConfig = config
 
     async def main(self) -> None:
         try:

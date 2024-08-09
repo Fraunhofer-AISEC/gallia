@@ -167,7 +167,7 @@ class BaseCommand(FlockMixin, ABC):
 
     def __init__(self, config: BaseCommandConfig) -> None:
         self.id = camel_to_snake(self.__class__.__name__)
-        self.config = config
+        self.config: BaseCommandConfig = config
         self.artifacts_dir = Path()
         self.run_meta = RunMeta(
             command=type(self).__name__,
@@ -490,7 +490,7 @@ class Scanner(AsyncScript, ABC):
 
     def __init__(self, config: ScannerConfig):
         super().__init__(config)
-        self.config = config
+        self.config: ScannerConfig = config
         self.power_supply: PowerSupply | None = None
         self.transport: BaseTransport
         self.dumpcap: Dumpcap | None = None

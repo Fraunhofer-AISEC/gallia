@@ -61,7 +61,7 @@ class SASeedsDumper(UDSScanner):
 
     def __init__(self, config: SASeedsDumperConfig):
         super().__init__(config)
-        self.config = config
+        self.config: SASeedsDumperConfig = config
 
     def __init__(self, parser: ArgumentParser, config: Config = Config()) -> None:
         super().__init__(parser, config)
