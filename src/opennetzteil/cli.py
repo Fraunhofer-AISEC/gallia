@@ -37,7 +37,7 @@ class CLIConfig(AsyncScriptConfig):
         return target_uri.raw
 
     @model_validator(mode="after")
-    def check_transport_requirements(self) -> Self:
+    def check_power_supply_requirements(self) -> Self:
         for netzteil in netzteile:
             if self.power_supply.product_id == netzteil.PRODUCT_ID:
                 break
