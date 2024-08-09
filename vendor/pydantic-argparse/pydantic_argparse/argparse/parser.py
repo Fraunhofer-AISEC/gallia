@@ -155,14 +155,54 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
         """
         # Call Super Class Method
         namespace = self.parse_args(args)
+        nested_parser = _NestedArgumentParser(model=self.model, namespace=namespace)
 
         try:
-            nested_parser = _NestedArgumentParser(model=self.model, namespace=namespace)
             return nested_parser.validate()
         except ValidationError as exc:
             # Catch exceptions, and use the ArgumentParser.error() method
             # to report it to the user
-            self.error(utils.errors.format(exc))
+            self.validation_error(exc, nested_parser)
+
+    def validation_error(self, error: ValidationError, parser: _NestedArgumentParser):
+        self.print_usage(sys.stderr)
+
+        model = parser.model
+        for scp in parser.subcommand_path:
+            model = PydanticField(scp, model.model_fields[scp]).model_type
+
+        fields = model.model_fields
+        msg = ""
+
+        if error.error_count() == 1:
+            msg += "error: "
+        else:
+            msg += f"{error.error_count()} errors: \n"
+
+        for e in error.errors():
+            if error.error_count() > 1:
+                msg += "  "
+
+            source = ""
+            sources = e["loc"][len(parser.subcommand_path):]
+
+            # If the validation failed for a field validator there is one source level left,
+            # which equals the name of the field
+            if len(sources) > 0:
+                argument = sources[0]
+                # Use the same method, that was used for the CLI generation
+                argument_name = PydanticField(argument, fields[argument]).arg_names()
+                source = f"argument {', '.join(argument_name)}: "
+
+            error_msg = str(e["ctx"]["error"])
+            msg += f"{source}{error_msg}\n"
+
+        # Check whether parser should exit
+        if self.exit_on_error:
+            self.exit(ArgumentParser.EXIT_ERROR, msg)
+
+        # Raise Error
+        raise argparse.ArgumentError(None, msg)
 
     def error(self, message: str) -> NoReturn:
         """Prints a usage message to `stderr` and exits if required.
@@ -177,12 +217,14 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
         # Print usage message
         self.print_usage(sys.stderr)
 
+        msg = f"error: {message}\n"
+
         # Check whether parser should exit
         if self.exit_on_error:
-            self.exit(ArgumentParser.EXIT_ERROR, f"{self.prog}: error: {message}\n")
+            self.exit(ArgumentParser.EXIT_ERROR, msg)
 
         # Raise Error
-        raise argparse.ArgumentError(None, f"{self.prog}: error: {message}")
+        raise argparse.ArgumentError(None, msg)
 
     def _commands(self) -> argparse._SubParsersAction:
         """Creates and Retrieves Subcommands Action for the ArgumentParser.
