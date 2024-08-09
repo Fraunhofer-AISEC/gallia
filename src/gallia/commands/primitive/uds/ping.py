@@ -33,7 +33,7 @@ class PingPrimitive(UDSScanner):
 
     def __init__(self, config: PingPrimitiveConfig):
         super().__init__(config)
-        self.config = config
+        self.config: PingPrimitiveConfig = config
 
     async def main(self) -> None:
         resp = await self.ecu.set_session(self.config.session)

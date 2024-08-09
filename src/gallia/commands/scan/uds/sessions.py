@@ -47,7 +47,7 @@ class SessionsScanner(UDSScanner):
 
     def __init__(self, config: SessionsScannerConfig):
         super().__init__(config)
-        self.config = config
+        self.config: SessionsScannerConfig = config
 
     async def set_session_with_hooks_handling(
         self, session: int, use_hooks: bool

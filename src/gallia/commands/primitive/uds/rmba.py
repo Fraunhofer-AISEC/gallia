@@ -35,7 +35,7 @@ class RMBAPrimitive(UDSScanner):
 
     def __init__(self, config: RMBAPrimitiveConfig):
         super().__init__(config)
-        self.config = config
+        self.config: RMBAPrimitiveConfig = config
 
     async def main(self) -> None:
         try:

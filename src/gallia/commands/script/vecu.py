@@ -74,7 +74,7 @@ class VirtualECU(AsyncScript):
 
     def __init__(self, config: VirtualECUConfig):
         super().__init__(config)
-        self.config = config
+        self.config: VirtualECUConfig = config
 
     async def main(self) -> None:
         server: UDSServer

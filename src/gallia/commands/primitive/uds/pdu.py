@@ -37,7 +37,7 @@ class SendPDUPrimitive(UDSScanner):
 
     def __init__(self, config: SendPDUPrimitiveConfig):
         super().__init__(config)
-        self.config = config
+        self.config: SendPDUPrimitiveConfig = config
 
     async def main(self) -> None:
         pdu = self.config.pdu

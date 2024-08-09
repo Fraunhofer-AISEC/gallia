@@ -30,7 +30,7 @@ class FRDump(AsyncScript):
 
     def __init__(self, config: FRDumpConfig):
         super().__init__(config)
-        self.config = config
+        self.config: FRDumpConfig = config
 
     @staticmethod
     def poor_mans_dissect(frame: FlexRayFrame) -> str:
@@ -82,7 +82,7 @@ class FRConfigDump(Script):
 
     def __init__(self, config: FRConfigDumpConfig):
         super().__init__(config)
-        self.config = config
+        self.config: FRConfigDumpConfig = config
 
     def main(self) -> None:
         backend = FlexRayCtypesBackend.create(self.config.channel)

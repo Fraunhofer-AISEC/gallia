@@ -26,7 +26,7 @@ class GenericPDUPrimitive(Scanner):
 
     def __init__(self, config: GenericPDUPrimitiveConfig):
         super().__init__(config)
-        self.config = config
+        self.config: GenericPDUPrimitiveConfig = config
 
     async def main(self) -> None:
         await self.transport.write(self.config.pdu)
