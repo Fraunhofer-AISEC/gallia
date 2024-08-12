@@ -329,18 +329,6 @@ def add_zst_log_handler(
     return zstd_handler
 
 
-class _PenlogRecordV1(msgspec.Struct, omit_defaults=True):
-    component: str
-    host: str
-    data: str
-    timestamp: str
-    priority: int
-    type: str | None = None
-    tags: list[str] | None = None
-    line: str | None = None
-    stacktrace: str | None = None
-
-
 class _PenlogRecordV2(msgspec.Struct, omit_defaults=True, tag=2, tag_field="version"):
     module: str
     host: str
@@ -355,7 +343,7 @@ class _PenlogRecordV2(msgspec.Struct, omit_defaults=True, tag=2, tag_field="vers
     _python_func_name: str | None = None
 
 
-_PenlogRecord: TypeAlias = _PenlogRecordV1 | _PenlogRecordV2
+_PenlogRecord: TypeAlias = _PenlogRecordV2
 
 
 def _colorize_msg(data: str, levelno: int) -> tuple[str, int]:
@@ -471,57 +459,21 @@ class PenlogRecord:
         if data.startswith(b"<"):
             data = data[data.index(b">") + 1 :]
 
-        # PenlogRecordV1 has no version field, thus the tagged
-        # union based approach does not work.
-        record: _PenlogRecord
-        try:
-            record = msgspec.json.decode(data, type=_PenlogRecordV2)
-        except msgspec.ValidationError:
-            record = msgspec.json.decode(data, type=_PenlogRecordV1)
+        record = msgspec.json.decode(data, type=_PenlogRecordV2)
 
-        match record:
-            case _PenlogRecordV1():
-                try:
-                    dt = datetime.datetime.fromisoformat(record.timestamp)
-                except ValueError:
-                    # Workaround for broken ISO strings. Go produced broken strings. :)
-                    # We have some old logfiles with this shortcoming.
-                    datestr, _ = record.timestamp.split(".", 2)
-                    dt = datetime.datetime.strptime(datestr, "%Y-%m-%dT%H:%M:%S")
-
-                if record.tags is not None:
-                    tags = record.tags
-                else:
-                    tags = []
-
-                if record.type is not None:
-                    tags += [record.type]
-
-                return cls(
-                    module=record.component,
-                    host=record.host,
-                    data=record.data,
-                    datetime=dt,
-                    priority=PenlogPriority(record.priority),
-                    tags=tags,
-                    line=record.line,
-                    stacktrace=record.stacktrace,
-                )
-            case _PenlogRecordV2():
-                return cls(
-                    module=record.module,
-                    host=record.host,
-                    data=record.data,
-                    datetime=datetime.datetime.fromisoformat(record.datetime),
-                    priority=PenlogPriority(record.priority),
-                    tags=record.tags,
-                    line=record.line,
-                    stacktrace=record.stacktrace,
-                    _python_level_no=record._python_level_no,
-                    _python_level_name=record._python_level_name,
-                    _python_func_name=record._python_func_name,
-                )
-        raise ValueError("unknown record version")
+        return cls(
+            module=record.module,
+            host=record.host,
+            data=record.data,
+            datetime=datetime.datetime.fromisoformat(record.datetime),
+            priority=PenlogPriority(record.priority),
+            tags=record.tags,
+            line=record.line,
+            stacktrace=record.stacktrace,
+            _python_level_no=record._python_level_no,
+            _python_level_name=record._python_level_name,
+            _python_func_name=record._python_func_name,
+        )
 
     def to_log_record(self) -> logging.LogRecord:
         level = self.priority.to_level()
