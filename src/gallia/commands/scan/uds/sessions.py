@@ -13,9 +13,7 @@ from gallia.services.uds import (
     NegativeResponse,
     UDSErrorCodes,
     UDSRequestConfig,
-    UDSResponse,
 )
-from gallia.services.uds.core.constants import EcuResetSubFuncs
 from gallia.services.uds.core.service import DiagnosticSessionControlResponse
 from gallia.services.uds.core.utils import g_repr
 from gallia.utils import auto_int
@@ -52,14 +50,6 @@ class SessionsScanner(UDSScanner):
             "--with-hooks",
             action="store_true",
             help="Use hooks in case of a ConditionsNotCorrect error",
-        )
-        self.parser.add_argument(
-            "--reset",
-            nargs="?",
-            default=None,
-            const=0x01,
-            type=lambda x: int(x, 0),
-            help="Reset the ECU after each iteration with the optionally given reset level",
         )
         self.parser.add_argument(
             "--fast",
@@ -146,39 +136,15 @@ class SessionsScanner(UDSScanner):
                 if stack:
                     logger.info(f"Starting from session: {g_repr(stack[-1])}")
 
+                current_session = 1
+
                 for session in sessions:
                     if session in args.skip:
                         logger.info(f"Skipping session {g_repr(session)} as requested")
                         continue
 
-                    if args.reset:
-                        try:
-                            logger.info("Resetting the ECU")
-                            resp: UDSResponse = await self.ecu.ecu_reset(args.reset)
-
-                            if isinstance(resp, NegativeResponse):
-                                logger.warning(
-                                    f"Could not reset ECU with {EcuResetSubFuncs(args.reset).name if args.reset in iter(EcuResetSubFuncs) else args.reset}: {resp}"
-                                    f"; continuing without reset"
-                                )
-                            else:
-                                logger.info("Waiting for the ECU to recover…")
-                                await self.ecu.wait_for_ecu(timeout=args.timeout)
-                        except (TimeoutError, ConnectionError):
-                            logger.warning(
-                                "Lost connection to the ECU after performing a reset. "
-                                "Attempting to reconnect…"
-                            )
-                            await self.ecu.reconnect()
-
-                    try:
-                        logger.debug("Changing session to DefaultSession")
-                        resp = await self.ecu.set_session(0x01, use_db=False)
-                        if isinstance(resp, NegativeResponse):
-                            logger.error(f"Could not change to default session: {resp}")
-                            sys.exit(1)
-                    except Exception as e:
-                        logger.error(f"Could not change to default session: {e!r}")
+                    if not (await self.ecu.leave_session(current_session)):
+                        logger.error("Could not change to default session")
                         sys.exit(1)
 
                     logger.debug(f"Sleeping for {args.sleep}s after changing to DefaultSession")
@@ -187,6 +153,8 @@ class SessionsScanner(UDSScanner):
                     logger.debug("Recovering the current session stack")
                     if not await self.recover_stack(stack, args.with_hooks):
                         sys.exit(1)
+
+                    current_session = stack[-1]
 
                     try:
                         logger.debug(f"Attempting to change to session {session:#04x}")
@@ -213,6 +181,8 @@ class SessionsScanner(UDSScanner):
                             positive_results.append(
                                 {"session": session, "stack": stack, "error": None}
                             )
+
+                            current_session = session
                         else:
                             negative_results.append(
                                 {
