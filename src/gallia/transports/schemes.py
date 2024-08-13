@@ -19,6 +19,7 @@ if sys.platform.startswith("linux"):
         TCP_LINES = TCP_LINES
         HTTP = HTTP
         DOIP = DOIP
+        HSFZ = "hsfz"
         UNIX = "unix"
         UNIX_LINES = "unix-lines"
 

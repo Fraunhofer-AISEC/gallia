@@ -6,6 +6,7 @@ import sys
 
 from gallia.command.base import BaseCommand
 from gallia.commands.discover.doip import DoIPDiscoverer
+from gallia.commands.discover.hsfz import HSFZDiscoverer
 from gallia.commands.primitive.generic.pdu import GenericPDUPrimitive
 from gallia.commands.primitive.uds.dtc import DTCPrimitive
 from gallia.commands.primitive.uds.ecu_reset import ECUResetPrimitive
@@ -26,46 +27,48 @@ from gallia.commands.scan.uds.services import ServicesScanner
 from gallia.commands.scan.uds.sessions import SessionsScanner
 
 registry: list[type[BaseCommand]] = [
+    DTCPrimitive,
     DoIPDiscoverer,
+    ECUResetPrimitive,
+    GenericPDUPrimitive,
+    HSFZDiscoverer,
+    IOCBIPrimitive,
     MemoryFunctionsScanner,
+    PingPrimitive,
+    RMBAPrimitive,
+    RTCLPrimitive,
     ReadByIdentifierPrimitive,
     ResetScanner,
     SASeedsDumper,
     ScanIdentifiers,
-    SessionsScanner,
-    ServicesScanner,
-    DTCPrimitive,
-    ECUResetPrimitive,
-    VINPrimitive,
-    IOCBIPrimitive,
-    PingPrimitive,
-    RMBAPrimitive,
-    RTCLPrimitive,
-    GenericPDUPrimitive,
     SendPDUPrimitive,
+    ServicesScanner,
+    SessionsScanner,
+    VINPrimitive,
     WMBAPrimitive,
     WriteByIdentifierPrimitive,
 ]
 
 # TODO: Investigate why linters didn't catch faulty strings in here.
 __all__ = [
+    "DTCPrimitive",
     "DoIPDiscoverer",
+    "ECUResetPrimitive",
+    "GenericPDUPrimitive",
+    "HSFZDiscoverer",
+    "IOCBIPrimitive",
     "MemoryFunctionsScanner",
+    "PingPrimitive",
+    "RMBAPrimitive",
+    "RTCLPrimitive",
     "ReadByIdentifierPrimitive",
     "ResetScanner",
     "SASeedsDumper",
     "ScanIdentifiers",
-    "SessionsScanner",
-    "ServicesScanner",
-    "DTCPrimitive",
-    "ECUResetPrimitive",
-    "VINPrimitive",
-    "IOCBIPrimitive",
-    "PingPrimitive",
-    "RMBAPrimitive",
-    "RTCLPrimitive",
-    "GenericPDUPrimitive",
     "SendPDUPrimitive",
+    "ServicesScanner",
+    "SessionsScanner",
+    "VINPrimitive",
     "WMBAPrimitive",
     "WriteByIdentifierPrimitive",
 ]

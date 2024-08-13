@@ -6,11 +6,13 @@ import sys
 
 from gallia.transports.base import BaseTransport, TargetURI
 from gallia.transports.doip import DoIPTransport
+from gallia.transports.hsfz import HSFZTransport
 from gallia.transports.schemes import TransportScheme
 from gallia.transports.tcp import TCPLinesTransport, TCPTransport
 
 registry: list[type[BaseTransport]] = [
     DoIPTransport,
+    HSFZTransport,
     TCPLinesTransport,
     TCPTransport,
 ]
@@ -18,6 +20,7 @@ registry: list[type[BaseTransport]] = [
 __all__ = [
     "BaseTransport",
     "DoIPTransport",
+    "HSFZTransport",
     "TCPLinesTransport",
     "TCPTransport",
     "TargetURI",
