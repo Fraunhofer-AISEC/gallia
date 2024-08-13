@@ -43,7 +43,7 @@ if sys.platform.startswith("linux") or sys.platform == "darwin":
             self.compressor = asyncio.create_task(self._compressor())
             self.compressor.add_done_callback(
                 handle_task_error,
-                context=set_task_handler_ctx_variable(__name__),
+                context=set_task_handler_ctx_variable(__name__, "Dumpcap"),
             )
 
         @classmethod

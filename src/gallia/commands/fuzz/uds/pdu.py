@@ -122,7 +122,7 @@ class PDUFuzzer(UDSScanner):
             recv_task = asyncio.create_task(self.observe_can_messages(args.observe_can_ids, args))
             recv_task.add_done_callback(
                 handle_task_error,
-                context=set_task_handler_ctx_variable(__name__),
+                context=set_task_handler_ctx_variable(__name__, "ReceiveTask"),
             )
 
         logger.info(f"testing sessions {args.sessions}")

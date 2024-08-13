@@ -378,7 +378,7 @@ class ECU(UDSClient):
         self.tester_present_task = asyncio.create_task(coroutine)
         self.tester_present_task.add_done_callback(
             handle_task_error,
-            context=set_task_handler_ctx_variable(__name__),
+            context=set_task_handler_ctx_variable(__name__, "TesterPresent"),
         )
 
         # enforce context switch

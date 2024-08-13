@@ -480,7 +480,7 @@ class DoIPConnection:
         self._read_task = asyncio.create_task(self._read_worker())
         self._read_task.add_done_callback(
             handle_task_error,
-            context=set_task_handler_ctx_variable(__name__),
+            context=set_task_handler_ctx_variable(__name__, "DoipReader"),
         )
         self._is_closed = False
         self._mutex = asyncio.Lock()

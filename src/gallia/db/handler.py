@@ -392,7 +392,7 @@ class DBHandler:
         self.tasks.append(asyncio.create_task(execute()))
         self.tasks[-1].add_done_callback(
             handle_task_error,
-            context=set_task_handler_ctx_variable(__name__),
+            context=set_task_handler_ctx_variable(__name__, "DbHandler"),
         )
 
     async def insert_session_transition(self, destination: int, steps: list[int]) -> None:

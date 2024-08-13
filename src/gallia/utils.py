@@ -249,23 +249,27 @@ def get_file_log_level(args: Namespace) -> Loglevel:
 
 
 CONTEXT_SHARED_VARIABLE = "logger_name"
-ctxVar = contextvars.ContextVar(CONTEXT_SHARED_VARIABLE)  # type: ignore
+ctxVar1 = contextvars.ContextVar(CONTEXT_SHARED_VARIABLE)  # type: ignore
+ctxVar2 = contextvars.ContextVar("task_name")  # type: ignore
 
 
-def set_task_handler_ctx_variable(name: str) -> contextvars.Context:
+def set_task_handler_ctx_variable(
+    logger_name: str, task_name: str | None = None
+) -> contextvars.Context:
     ctx = contextvars.copy_context()
-    ctx.run(ctxVar.set, name)
+    ctx.run(ctxVar1.set, logger_name)
+    ctx.run(ctxVar2.set, task_name)
     return ctx
 
 
 def handle_task_error(fut: asyncio.Future) -> None:  # type: ignore
-    logger = get_logger(ctxVar.get(__name__))
+    logger = get_logger(ctxVar1.get(__name__))
     if logger.name is __name__:
         logger.warning(
-            f"{fut} did not have context variable '{CONTEXT_SHARED_VARIABLE}' set; please fix this for proper logging"
+            f"<DEV> {fut} did not have context variable '{CONTEXT_SHARED_VARIABLE}' set; please fix this for proper logging"
         )
 
     try:
         fut.result()
     except BaseException as e:
-        logger.info(f"Task ended with error: {e!r}")
+        logger.info(f"{ctxVar2.get('Task')} ended with error: {e!r}")
