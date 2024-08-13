@@ -87,6 +87,7 @@ def main() -> None:
         sys.exit(_main())
     except (msgspec.DecodeError, msgspec.ValidationError) as e:
         print(f"invalid file format: {e}", file=sys.stderr)
+        sys.exit(1)
     # BrokenPipeError appears when stuff is piped to | head.
     except (KeyboardInterrupt, BrokenPipeError):
         pass
