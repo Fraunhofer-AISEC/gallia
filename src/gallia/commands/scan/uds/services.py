@@ -76,7 +76,7 @@ class ServicesScanner(UDSScanner):
 
     async def main(self, args: Namespace) -> None:
         self.result: list[tuple[int, int]] = []
-        self.ecu.max_retry = 1
+        self.ecu.max_retry = 0
         found: dict[int, dict[int, Any]] = {}
 
         if args.sessions is None:

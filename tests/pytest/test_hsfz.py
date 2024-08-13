@@ -101,7 +101,7 @@ async def test_hsfz_alive_check(transports: tuple[BaseTransport, BaseTransport])
 @pytest.mark.asyncio
 async def test_hsfz_diagnose_request(transports: tuple[BaseTransport, BaseTransport]) -> None:
     hsfz_transport, dummy_transport = transports
-    u = UDSClient(hsfz_transport, max_retry=1, timeout=1)
+    u = UDSClient(hsfz_transport, max_retry=0, timeout=1)
     task = asyncio.create_task(u.read_data_by_identifier(0x1234))
     await asyncio.sleep(0.5)
     # Send hsfz ack
@@ -141,7 +141,7 @@ async def test_request_pdu_mutex(transports: tuple[BaseTransport, BaseTransport]
     # stays task safe. In other words, requests and responses
     # between task1 and task2 must not be mixed.
     hsfz_transport, dummy_transport = transports
-    u = UDSClient(hsfz_transport, max_retry=1, timeout=1)
+    u = UDSClient(hsfz_transport, max_retry=0, timeout=1)
     task1 = asyncio.create_task(u.read_data_by_identifier(0x1234))
     task2 = asyncio.create_task(u.read_data_by_identifier(0x4321))
     for _ in range(2):
@@ -220,7 +220,7 @@ async def test_request_pdu_mutex(transports: tuple[BaseTransport, BaseTransport]
 @pytest.mark.asyncio
 async def test_unexpected_messages(transports: tuple[BaseTransport, BaseTransport]) -> None:
     hsfz_transport, dummy_transport = transports
-    u = UDSClient(hsfz_transport, max_retry=1, timeout=1)
+    u = UDSClient(hsfz_transport, max_retry=0, timeout=1)
     task = asyncio.create_task(u.read_data_by_identifier(0x1234))
 
     await dummy_transport.read(4096)

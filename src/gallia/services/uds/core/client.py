@@ -38,7 +38,7 @@ class UDSClient:
         self,
         transport: BaseTransport,
         timeout: float,
-        max_retry: int = 1,
+        max_retry: int = 0,
     ):
         self.transport = transport
         self.timeout = timeout
@@ -71,15 +71,15 @@ class UDSClient:
         tags: list[str] = [] if config.tags is None else config.tags
 
         last_exception: Exception = MissingResponse(request)
-        max_retry = config.max_retry if config.max_retry else self.max_retry
-        timeout = config.timeout if config.timeout else self.timeout
-        for i in range(0, max_retry):
+        max_retry = config.max_retry if config.max_retry is not None else self.max_retry
+        timeout = config.timeout if config.timeout is not None else self.timeout
+        for i in range(0, max_retry + 1):
             # Exponential backoff
             wait_time = self.retry_wait * 2**i
 
             # Avoid pasting this very line in every error branch.
             if i > 0:
-                logger.info(f"Requesting UDS PDU failed; retrying: {i} from {max_retry}…")
+                logger.info(f"Requesting UDS PDU failed; retrying: {i} / {max_retry}…")
             try:
                 logger.debug(request.pdu.hex(), extra={"tags": ["write", "uds"] + tags})
                 raw_resp = await self.transport.request_unsafe(request.pdu, timeout, config.tags)
@@ -96,7 +96,7 @@ class UDSClient:
 
             if isinstance(resp, service.NegativeResponse):
                 if resp.response_code == UDSErrorCodes.busyRepeatRequest:
-                    if i >= max_retry - 1:
+                    if i >= max_retry:
                         return resp
                     await asyncio.sleep(wait_time)
                     continue
