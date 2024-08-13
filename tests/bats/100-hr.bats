@@ -29,6 +29,10 @@
 	run -1 bash -c "echo 'invalid json' | hr -"
 }
 
+@test "pipe to head and handle SIGPIPE" {
+	hr "$BATS_TEST_DIRNAME/testfiles/log-01.json.zst" | head
+}
+
 @test "filter priority" {
 	local additional_line
 	additional_line='{"module": "foo", "data": "I am the line!", "host": "kronos", "datetime":"2020-04-23T15:21:50.620310", "priority": 5, "version": 2}'

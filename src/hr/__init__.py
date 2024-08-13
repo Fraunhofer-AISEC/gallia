@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import argparse
+import os
+import signal
 import sys
 from itertools import islice
 from pathlib import Path
@@ -89,8 +91,16 @@ def main() -> None:
         print(f"invalid file format: {e}", file=sys.stderr)
         sys.exit(1)
     # BrokenPipeError appears when stuff is piped to | head.
-    except (KeyboardInterrupt, BrokenPipeError):
-        pass
+    # This is not an error for hr.
+    except BrokenPipeError:
+        # https://docs.python.org/3/library/signal.html#note-on-sigpipe
+        # Python flushes standard streams on exit; redirect remaining output
+        # to devnull to avoid another BrokenPipeError at shutdown.
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        os.dup2(devnull, sys.stdout.fileno())
+        sys.exit(0)
+    except KeyboardInterrupt:
+        sys.exit(128 + signal.SIGINT)
 
 
 if __name__ == "__main__":
