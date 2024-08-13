@@ -62,7 +62,7 @@ class ECU(UDSClient):
         self,
         transport: BaseTransport,
         timeout: float,
-        max_retry: int = 1,
+        max_retry: int = 0,
         power_supply: PowerSupply | None = None,
     ) -> None:
         super().__init__(transport, timeout, max_retry)
@@ -316,7 +316,7 @@ class ECU(UDSClient):
 
     async def _wait_for_ecu_endless_loop(self, sleep_time: float) -> None:
         """Internal method with endless loop in case of no answer from ECU"""
-        config = UDSRequestConfig(timeout=0.5, max_retry=1, skip_hooks=True)
+        config = UDSRequestConfig(timeout=0.5, max_retry=0, skip_hooks=True)
         i = -1
         while True:
             i = (i + 1) % 4
@@ -361,7 +361,7 @@ class ECU(UDSClient):
             try:
                 await asyncio.sleep(interval)
                 # TODO Only ping if there was no other UDS traffic for `interval` amount of time
-                await self.ping(UDSRequestConfig(max_retry=1))
+                await self.ping(UDSRequestConfig(max_retry=0))
             except asyncio.CancelledError:
                 logger.debug("tester present worker terminated")
                 raise
