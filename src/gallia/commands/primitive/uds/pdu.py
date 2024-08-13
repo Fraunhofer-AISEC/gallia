@@ -41,7 +41,7 @@ class SendPDUPrimitive(UDSScanner):
             "-r",
             "--max-retry",
             type=int,
-            default=4,
+            default=3,
             help="Set the uds' stack max_retry argument",
         )
         self.parser.add_argument(
