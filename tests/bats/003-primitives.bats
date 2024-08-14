@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load helpers.bash
+load "helpers"
 
 setup_file() {
 	setup_gallia_toml
