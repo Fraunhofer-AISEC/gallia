@@ -26,7 +26,7 @@ teardown() {
 	gallia scan uds sessions --depth 2
 }
 
-@test "scan fast" {
+@test "scan sessions fast" {
 	gallia scan uds sessions --fast
 }
 

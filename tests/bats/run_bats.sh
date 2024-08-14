@@ -15,6 +15,7 @@ gallia script vecu --no-volatile-info "unix-lines:///tmp/vecu.sock" rng \
 trap 'kill "$(jobs -p)"' SIGINT SIGTERM EXIT
 
 if ! bats -r "$(dirname "$BASH_ARGV0")"; then
+	echo "vecu log:"
 	cat vecu.log
 	exit 1
 fi
