@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load helpers.bash
+load "helpers"
 
 @test "invoke gallia without parameters" {
 	# Should fail and print help page.
