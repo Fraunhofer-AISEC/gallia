@@ -10,6 +10,14 @@ setup_file() {
 	setup_gallia_toml
 }
 
+setup() {
+	common_setup
+}
+
+teardown() {
+	check_artifactsdir "$BATS_TMPDIR"/gallia/*/run-*
+}
+
 @test "scan services" {
 	gallia scan uds services --sessions 1 2 --check-session
 }
