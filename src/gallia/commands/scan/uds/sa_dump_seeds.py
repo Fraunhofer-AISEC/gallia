@@ -87,7 +87,6 @@ class SASeedsDumper(UDSScanner):
         )
         self.parser.add_argument(
             "--sleep",
-            default=0,
             type=float,
             metavar="FLOAT",
             help="Attempt to fool brute force protection by sleeping for N seconds between seed requests.",
@@ -219,7 +218,7 @@ class SASeedsDumper(UDSScanner):
                 # Re-enter session. Checking/logging will be done at the beginning of next iteration
                 await self.ecu.set_session(session)
 
-            if args.sleep > 0:
+            if args.sleep is not None:
                 logger.info(f"Sleeping for {args.sleep} seconds between seed requests…")
                 await asyncio.sleep(args.sleep)
 
