@@ -23,11 +23,6 @@ class FRDump(AsyncScript):
 
     def configure_parser(self) -> None:
         self.parser.add_argument(
-            "--src-slot",
-            type=auto_int,
-            help="the source flexray slot",
-        )
-        self.parser.add_argument(
             "--target-slot",
             type=auto_int,
             help="the target flexray slot",
@@ -43,6 +38,7 @@ class FRDump(AsyncScript):
             default=True,
             help="filter mysterious null frames out",
         )
+        self.parser.add_argument("slot", type=auto_int, help="filter on flexray slot", nargs="*")
 
     @staticmethod
     def poor_mans_dissect(frame: FlexRayFrame) -> str:
@@ -60,14 +56,10 @@ class FRDump(AsyncScript):
     async def main(self, args: Namespace) -> None:
         tp = await RawFlexRayTransport.connect("fr-raw:", None)
 
-        if args.src_slot or args.target_slot:
+        if args.slot:
             tp.add_block_all_filter()
-
-            if args.src_slot is not None:
-                tp.set_acceptance_filter(args.src_slot)
-
-            if args.target_slot is not None:
-                tp.set_acceptance_filter(args.target_slot)
+            for slot in args.slot:
+                tp.set_acceptance_filter(slot)
 
         tp.activate_channel()
 
