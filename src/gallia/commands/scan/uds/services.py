@@ -40,6 +40,7 @@ class ServicesScannerConfig(UDSScannerConfig):
 class ServicesScanner(UDSScanner):
     """Iterate sessions and services and find endpoints"""
 
+    CONFIG_TYPE = ServicesScannerConfig
     SHORT_HELP = "service scan on an ECU"
     EPILOG = "https://fraunhofer-aisec.github.io/gallia/uds/scan_modes.html#service-scan"
 

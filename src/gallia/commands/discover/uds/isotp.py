@@ -53,6 +53,7 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
     Addressing is only done via CAN IDs. Every endpoint has a source and destination CAN ID.
     Typically, there is also a broadcast destination ID to address all endpoints."""
 
+    CONFIG_TYPE = IsotpDiscovererConfig
     SHORT_HELP = "ISO-TP enumeration scanner"
 
     def __init__(self, config: IsotpDiscovererConfig):

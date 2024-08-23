@@ -4,6 +4,7 @@
 
 import random
 import sys
+from abc import ABC
 from pathlib import Path
 from typing import Self
 
@@ -66,27 +67,19 @@ class RngVirtualECUConfig(
     )
 
 
-class VirtualECU(AsyncScript):
+class VirtualECU(AsyncScript, ABC):
     """Spawn a virtual ECU for testing purposes"""
 
-    SHORT_HELP = "spawn a virtual UDS ECU"
     EPILOG = "https://fraunhofer-aisec.github.io/gallia/uds/virtual_ecu.html"
 
     def __init__(self, config: VirtualECUConfig):
         super().__init__(config)
         self.config: VirtualECUConfig = config
 
-    async def main(self) -> None:
-        server: UDSServer
+    def _server(self) -> UDSServer: ...
 
-        if isinstance(self.config, DbVirtualECUConfig):
-            server = DBUDSServer(
-                self.config.path, self.config.ecu, self.config.properties, self.config
-            )
-        elif isinstance(self.config, RngVirtualECUConfig):
-            server = RandomUDSServer(self.config.seed, self.config, self.config)
-        else:
-            raise AssertionError()
+    async def main(self) -> None:
+        server = self._server()
 
         target: TargetURI = self.config.target
         transport: UDSServerTransport
@@ -119,3 +112,27 @@ class VirtualECU(AsyncScript):
             await transport.run()
         finally:
             await server.teardown()
+
+
+class RngVirtualECU(VirtualECU):
+    CONFIG_TYPE = RngVirtualECUConfig
+    SHORT_HELP = "Virtual ECU with randomized behavior"
+
+    def __init__(self, config: RngVirtualECUConfig):
+        super().__init__(config)
+        self.config: RngVirtualECUConfig = config
+
+    def _server(self) -> RandomUDSServer:
+        return RandomUDSServer(self.config.seed, self.config, self.config)
+
+
+class DbVirtualECU(VirtualECU):
+    CONFIG_TYPE = DbVirtualECUConfig
+    SHORT_HELP = "Virtual ECU which mimics the behavior of an ECU according to logs in the database"
+
+    def __init__(self, config: DbVirtualECUConfig):
+        super().__init__(config)
+        self.config: DbVirtualECUConfig = config
+
+    def _server(self) -> DBUDSServer:
+        return DBUDSServer(self.config.path, self.config.ecu, self.config.properties, self.config)

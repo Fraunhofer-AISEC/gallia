@@ -1,6 +1,9 @@
 import sys
 
-from gallia.plugins.plugin import Command, CommandTree, Plugin
+from pydantic_argparse import BaseCommand
+
+from gallia.commands.discover.find_xcp import CanFindXCP, TcpFindXCP, UdpFindXCP
+from gallia.plugins.plugin import CommandTree, Plugin
 
 
 class XCPPlugin(Plugin):
@@ -13,17 +16,11 @@ class XCPPlugin(Plugin):
         return "Default Gallia plugin for Universal Measurement and Calibration Protocol (XCP) functionality"
 
     @classmethod
-    def commands(cls) -> dict[str, CommandTree | Command]:
+    def commands(cls) -> dict[str, CommandTree | type[BaseCommand]]:
         tree = {}
 
         if sys.platform.startswith("linux"):
-            from gallia.commands.discover.find_xcp import (
-                CanFindXCPConfig,
-                FindXCP,
-                TcpFindXCPConfig,
-                UdpFindXCPConfig,
-            )
-            from gallia.commands.primitive.uds.xcp import SimpleTestXCP, SimpleTestXCPConfig
+            from gallia.commands.primitive.uds.xcp import SimpleTestXCP
 
             tree = {
                 "discover": CommandTree(
@@ -32,21 +29,9 @@ class XCPPlugin(Plugin):
                         "xcp": CommandTree(
                             description="XCP enumeration scanner",
                             subtree={
-                                "can": Command(
-                                    description="XCP enumeration scanner for CAN",
-                                    config=CanFindXCPConfig,
-                                    command=FindXCP,
-                                ),
-                                "tcp": Command(
-                                    description="XCP enumeration scanner for TCP",
-                                    config=TcpFindXCPConfig,
-                                    command=FindXCP,
-                                ),
-                                "udp": Command(
-                                    description="XCP enumeration scanner for UDP",
-                                    config=UdpFindXCPConfig,
-                                    command=FindXCP,
-                                ),
+                                "can": CanFindXCP,
+                                "tcp": TcpFindXCP,
+                                "udp": UdpFindXCP,
                             },
                         ),
                     },
@@ -54,11 +39,7 @@ class XCPPlugin(Plugin):
                 "primitive": CommandTree(
                     description=None,
                     subtree={
-                        "xcp": Command(
-                            description="XCP tester",
-                            config=SimpleTestXCPConfig,
-                            command=SimpleTestXCP,
-                        )
+                        "xcp": SimpleTestXCP,
                     },
                 ),
             }

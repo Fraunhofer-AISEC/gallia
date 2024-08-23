@@ -1,24 +1,23 @@
 # SPDX-FileCopyrightText: AISEC Pentesting Team
 #
 # SPDX-License-Identifier: Apache-2.0
-
+from abc import ABC
 from typing import Any, Literal, Self
 
 from gallia.cli import parse_and_run
 from gallia.command import AsyncScript
 from gallia.command.base import AsyncScriptConfig, ScannerConfig
-from gallia.command.config import Field, idempotent
-from gallia.plugins.plugin import Command
+from gallia.command.config import Field, Idempotent
 from gallia.powersupply import PowerSupplyURI
 from gallia.transports import TargetURI
 from gallia.utils import strtobool
 from pydantic import field_serializer, model_validator
 
-from opennetzteil import netzteile
+from opennetzteil import BaseNetzteil, netzteile
 
 
 class CLIConfig(AsyncScriptConfig):
-    power_supply: idempotent(PowerSupplyURI) = Field(
+    power_supply: Idempotent[PowerSupplyURI] = Field(
         description="URI specifying the location of the powersupply",
         metavar="URI",
         short="t",
@@ -30,7 +29,7 @@ class CLIConfig(AsyncScriptConfig):
     )
 
     @field_serializer("power_supply")
-    def serialize_target_uri(self, target_uri: TargetURI | None, _info) -> Any:
+    def serialize_target_uri(self, target_uri: TargetURI | None) -> Any:
         if target_uri is None:
             return None
 
@@ -55,54 +54,67 @@ class SetCLIConfig(CLIConfig):
     value: str = Field(positional=True)
 
 
-class CLI(AsyncScript):
+class CLI(AsyncScript, ABC):
     def __init__(self, config: CLIConfig):
         super().__init__(config)
         self.config: CLIConfig = config
 
-    async def main(self) -> None:
+    async def _client(self) -> BaseNetzteil:
         for netzteil in netzteile:
             if self.config.power_supply.product_id == netzteil.PRODUCT_ID:
-                client = await netzteil.connect(self.config.power_supply, timeout=1.0)
-                break
+                return await netzteil.connect(self.config.power_supply, timeout=1.0)
 
-        assert client
+        assert False
 
-        if isinstance(self.config, GetCLIConfig):
-            match self.config.attr:
-                case "voltage":
-                    print(await client.get_voltage(self.config.channel))
-                case "current":
-                    print(await client.get_current(self.config.channel))
-                case "output":
-                    if self.config.channel == 0:
-                        print(await client.get_master())
-                    else:
-                        print(await client.get_output(self.config.channel))
-        elif isinstance(self.config, SetCLIConfig):
-            match self.config.attr:
-                case "voltage":
-                    await client.set_voltage(self.config.channel, float(self.config.value))
-                case "current":
-                    await client.set_current(self.config.channel, float(self.config.value))
-                case "output":
-                    if self.config.channel == 0:
-                        await client.set_master(strtobool(self.config.value))
-                    else:
-                        await client.set_output(self.config.channel, strtobool(self.config.value))
+
+class GetCLI(CLI, ABC):
+    CONFIG_TYPE = GetCLIConfig
+    SHORT_HELP = "Get properties of the power supply"
+
+    def __init__(self, config: GetCLIConfig):
+        super().__init__(config)
+        self.config: GetCLIConfig = config
+
+    async def main(self) -> None:
+        client = await self._client()
+
+        match self.config.attr:
+            case "voltage":
+                print(await client.get_voltage(self.config.channel))
+            case "current":
+                print(await client.get_current(self.config.channel))
+            case "output":
+                if self.config.channel == 0:
+                    print(await client.get_master())
+                else:
+                    print(await client.get_output(self.config.channel))
+
+
+class SetCLI(CLI, ABC):
+    CONFIG_TYPE = SetCLIConfig
+    SHORT_HELP = "Set properties of the power supply"
+
+    def __init__(self, config: SetCLIConfig):
+        super().__init__(config)
+        self.config: SetCLIConfig = config
+
+    async def main(self) -> None:
+        client = await self._client()
+
+        match self.config.attr:
+            case "voltage":
+                await client.set_voltage(self.config.channel, float(self.config.value))
+            case "current":
+                await client.set_current(self.config.channel, float(self.config.value))
+            case "output":
+                if self.config.channel == 0:
+                    await client.set_master(strtobool(self.config.value))
+                else:
+                    await client.set_output(self.config.channel, strtobool(self.config.value))
 
 
 def main() -> None:
-    parse_and_run(
-        {
-            "get": Command(
-                description="Get properties of the power supply", config=GetCLIConfig, command=CLI
-            ),
-            "set": Command(
-                description="Set properties of the power supply", config=SetCLIConfig, command=CLI
-            ),
-        }
-    )
+    parse_and_run({"get": GetCLI, "set": SetCLI})
 
 
 if __name__ == "__main__":

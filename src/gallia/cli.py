@@ -15,7 +15,7 @@ from pydantic_argparse import BaseCommand as PydanticBaseCommand
 from gallia.command import BaseCommand
 from gallia.config import Config, load_config_file
 from gallia.log import Loglevel, setup_logging
-from gallia.plugins.plugin import Command, CommandTree, load_commands
+from gallia.plugins.plugin import CommandTree, load_commands
 
 setup_logging(Loglevel.DEBUG)
 
@@ -26,15 +26,15 @@ model_counter: int = 0
 
 
 def _create_parser_from_command(
-    command: Command, config: Config, extra_defaults: defaults
+    command: type[BaseCommand], config: Config, extra_defaults: defaults
 ) -> tuple[type[PydanticBaseCommand], defaults]:
-    config_attributes = command.config.attributes_from_config(config)
-    env_attributes = command.config.attributes_from_env()
+    config_attributes = command.CONFIG_TYPE.attributes_from_config(config)
+    env_attributes = command.CONFIG_TYPE.attributes_from_env()
     config_attributes.update(env_attributes)
-    extra_defaults[command.config] = config_attributes
-    setattr(command.config, _CLASS_ATTR, command.command)
+    extra_defaults[command.CONFIG_TYPE] = config_attributes
+    setattr(command.CONFIG_TYPE, _CLASS_ATTR, command)
 
-    return command.config, extra_defaults
+    return command.CONFIG_TYPE, extra_defaults
 
 
 def _create_parser_from_tree(
@@ -48,17 +48,21 @@ def _create_parser_from_tree(
     args: dict[str, tuple[type | UnionType, Field]] = {}
 
     for key, value in command_tree.subtree.items():
-        if isinstance(value, Command):
-            model_type, extra_defaults = _create_parser_from_command(value, config, extra_defaults)
-        else:
+        if isinstance(value, CommandTree):
             model_type, extra_defaults = _create_parser_from_tree(value, config, extra_defaults)
+            description = value.description
+        else:
+            model_type, extra_defaults = _create_parser_from_command(value, config, extra_defaults)
+            description = value.SHORT_HELP
 
-        args[key] = (model_type | None, Field(None, description=value.description))
+        args[key] = (model_type | None, Field(None, description=description))
 
     return create_model(model_name, __base__=PydanticBaseCommand, **args), extra_defaults
 
 
-def create_parser(commands: Command | dict[str, CommandTree | Command]) -> ArgumentParser:
+def create_parser(
+    commands: type[BaseCommand] | dict[str, CommandTree | type[BaseCommand]],
+) -> ArgumentParser:
     """Creates an argument parser out of the given command hierarchy.
     For accessing the command after parsing, see get_command().
     See parse_and_run() for an easy-to-use one call alternative.
@@ -69,11 +73,11 @@ def create_parser(commands: Command | dict[str, CommandTree | Command]) -> Argum
 
     config, _ = load_config_file()
 
-    if isinstance(commands, Command):
-        model, extra_defaults = _create_parser_from_command(commands, config, {})
-    else:
+    if isinstance(commands, dict):
         command_tree = CommandTree("", subtree=commands)
         model, extra_defaults = _create_parser_from_tree(command_tree, config, {})
+    else:
+        model, extra_defaults = _create_parser_from_command(commands, config, {})
 
     return ArgumentParser(model=model, extra_defaults=extra_defaults)
 
@@ -89,7 +93,8 @@ def get_command(config: BaseModel) -> BaseCommand:
 
 
 def parse_and_run(
-    commands: Command | dict[str, CommandTree | Command], auto_complete: bool = True
+    commands: type[BaseCommand] | dict[str, CommandTree | type[BaseCommand]],
+    auto_complete: bool = True,
 ) -> Never:
     """Creates an argument parser out of the given command hierarchy and runs the command with its argument.
     This function never returns.
@@ -110,6 +115,7 @@ def parse_and_run(
 
 
 def main() -> None:
+    # TODO: gallia config template etc (version, plugins)
     gallia_commands = load_commands()
     parse_and_run(gallia_commands)
 

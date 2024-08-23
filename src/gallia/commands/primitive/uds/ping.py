@@ -29,6 +29,7 @@ class PingPrimitiveConfig(UDSScannerConfig):
 class PingPrimitive(UDSScanner):
     """Ping ECU via TesterPresent"""
 
+    CONFIG_TYPE = PingPrimitiveConfig
     SHORT_HELP = "ping ECU via TesterPresent"
 
     def __init__(self, config: PingPrimitiveConfig):

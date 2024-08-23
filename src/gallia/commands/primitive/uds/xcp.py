@@ -38,6 +38,7 @@ class SimpleTestXCPConfig(ScannerConfig):
 class SimpleTestXCP(Scanner):
     """Test XCP Slave"""
 
+    CONFIG_TYPE = SimpleTestXCPConfig
     SHORT_HELP = "XCP tester"
 
     def __init__(self, config: SimpleTestXCPConfig):

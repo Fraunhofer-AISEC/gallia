@@ -49,6 +49,7 @@ class ScanIdentifiers(UDSScanner):
     are considered and implemented in the script.
     """
 
+    CONFIG_TYPE = ScanIdentifiersConfig
     SHORT_HELP = "identifier scan of a UDS service"
 
     def __init__(self, config: ScanIdentifiersConfig):

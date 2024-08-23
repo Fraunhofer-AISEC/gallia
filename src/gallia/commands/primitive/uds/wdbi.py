@@ -32,6 +32,7 @@ class WriteByIdentifierPrimitiveConfig(UDSScannerConfig):
 class WriteByIdentifierPrimitive(UDSScanner):
     """A simple scanner to talk to the write by identifier service"""
 
+    CONFIG_TYPE = WriteByIdentifierPrimitiveConfig
     SHORT_HELP = "WriteDataByIdentifier"
 
     def __init__(self, config: WriteByIdentifierPrimitiveConfig):

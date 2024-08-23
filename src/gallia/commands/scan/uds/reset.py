@@ -32,6 +32,7 @@ class ResetScannerConfig(UDSScannerConfig):
 class ResetScanner(UDSScanner):
     """Scan ecu_reset"""
 
+    CONFIG_TYPE = ResetScannerConfig
     SHORT_HELP = "identifier scan in ECUReset"
 
     def __init__(self, config: ResetScannerConfig):
