@@ -1,36 +1,35 @@
 import sys
 
-from gallia.commands.discover.doip import DoIPDiscoverer, DoIPDiscovererConfig
-from gallia.commands.primitive.generic.pdu import GenericPDUPrimitive, GenericPDUPrimitiveConfig
+from gallia.command import BaseCommand
+from gallia.commands.discover.doip import DoIPDiscoverer
+from gallia.commands.primitive.generic.pdu import GenericPDUPrimitive
 from gallia.commands.primitive.uds.dtc import (
-    ClearDTCPrimitiveConfig,
-    ControlDTCPrimitiveConfig,
-    DTCPrimitive,
-    ReadDTCPrimitiveConfig,
+    ClearDTCPrimitive,
+    ControlDTCPrimitive,
+    ReadDTCPrimitive,
 )
-from gallia.commands.primitive.uds.ecu_reset import ECUResetPrimitive, ECUResetPrimitiveConfig
-from gallia.commands.primitive.uds.iocbi import IOCBIPrimitive, IOCBIPrimitiveConfig
-from gallia.commands.primitive.uds.pdu import SendPDUPrimitive, SendPDUPrimitiveConfig
-from gallia.commands.primitive.uds.ping import PingPrimitive, PingPrimitiveConfig
+from gallia.commands.primitive.uds.ecu_reset import ECUResetPrimitive
+from gallia.commands.primitive.uds.iocbi import IOCBIPrimitive
+from gallia.commands.primitive.uds.pdu import SendPDUPrimitive
+from gallia.commands.primitive.uds.ping import PingPrimitive
 from gallia.commands.primitive.uds.rdbi import (
     ReadByIdentifierPrimitive,
-    ReadByIdentifierPrimitiveConfig,
 )
-from gallia.commands.primitive.uds.rmba import RMBAPrimitive, RMBAPrimitiveConfig
-from gallia.commands.primitive.uds.rtcl import RTCLPrimitive, RTCLPrimitiveConfig
-from gallia.commands.primitive.uds.vin import VINPrimitive, VINPrimitiveConfig
+from gallia.commands.primitive.uds.rmba import RMBAPrimitive
+from gallia.commands.primitive.uds.rtcl import RTCLPrimitive
+from gallia.commands.primitive.uds.vin import VINPrimitive
 from gallia.commands.primitive.uds.wdbi import (
     WriteByIdentifierPrimitive,
-    WriteByIdentifierPrimitiveConfig,
 )
-from gallia.commands.primitive.uds.wmba import WMBAPrimitive, WMBAPrimitiveConfig
-from gallia.commands.scan.uds.identifiers import ScanIdentifiers, ScanIdentifiersConfig
-from gallia.commands.scan.uds.memory import MemoryFunctionsScanner, MemoryFunctionsScannerConfig
-from gallia.commands.scan.uds.reset import ResetScanner, ResetScannerConfig
-from gallia.commands.scan.uds.sa_dump_seeds import SASeedsDumper, SASeedsDumperConfig
-from gallia.commands.scan.uds.services import ServicesScanner, ServicesScannerConfig
-from gallia.commands.scan.uds.sessions import SessionsScanner, SessionsScannerConfig
-from gallia.plugins.plugin import Command, CommandTree, Plugin
+from gallia.commands.primitive.uds.wmba import WMBAPrimitive
+from gallia.commands.scan.uds.identifiers import ScanIdentifiers
+from gallia.commands.scan.uds.memory import MemoryFunctionsScanner
+from gallia.commands.scan.uds.reset import ResetScanner
+from gallia.commands.scan.uds.sa_dump_seeds import SASeedsDumper
+from gallia.commands.scan.uds.services import ServicesScanner
+from gallia.commands.scan.uds.sessions import SessionsScanner
+from gallia.commands.script.vecu import DbVirtualECU, RngVirtualECU
+from gallia.plugins.plugin import CommandTree, Plugin
 from gallia.services.uds import ECU
 from gallia.transports import BaseTransport, registry
 
@@ -53,17 +52,11 @@ class UDSPlugin(Plugin):
         return [ECU]
 
     @classmethod
-    def commands(cls) -> dict[str, CommandTree | Command]:
+    def commands(cls) -> dict[str, CommandTree | type[BaseCommand]]:
         tree = {
             "discover": CommandTree(
                 description="discover scanners for hosts and endpoints",
-                subtree={
-                    "doip": Command(
-                        description="zero-knowledge DoIP enumeration scanner",
-                        config=DoIPDiscovererConfig,
-                        command=DoIPDiscoverer,
-                    ),
-                },
+                subtree={"doip": DoIPDiscoverer},
             ),
             "primitive": CommandTree(
                 description="protocol specific primitives",
@@ -71,88 +64,29 @@ class UDSPlugin(Plugin):
                     "uds": CommandTree(
                         description="Universal Diagnostic Services",
                         subtree={
-                            "rdbi": Command(
-                                description="ReadDataByIdentifier",
-                                config=ReadByIdentifierPrimitiveConfig,
-                                command=ReadByIdentifierPrimitive,
-                            ),
+                            "rdbi": ReadByIdentifierPrimitive,
                             "dtc": CommandTree(
                                 description="DiagnosticTroubleCodes",
                                 subtree={
-                                    "clear": Command(
-                                        description="Clear the DTCs using the ClearDiagnosticInformation service",
-                                        config=ClearDTCPrimitiveConfig,
-                                        command=DTCPrimitive,
-                                    ),
-                                    "control": Command(
-                                        description="Stop or resume the setting of DTCs using the "
-                                        "ControlDTCSetting service",
-                                        config=ControlDTCPrimitiveConfig,
-                                        command=DTCPrimitive,
-                                    ),
-                                    "read": Command(
-                                        description="Read the DTCs using the ReadDTCInformation service",
-                                        config=ReadDTCPrimitiveConfig,
-                                        command=DTCPrimitive,
-                                    ),
+                                    "clear": ClearDTCPrimitive,
+                                    "control": ControlDTCPrimitive,
+                                    "read": ReadDTCPrimitive,
                                 },
                             ),
-                            "ecu-reset": Command(
-                                description="ECUReset",
-                                config=ECUResetPrimitiveConfig,
-                                command=ECUResetPrimitive,
-                            ),
-                            "vin": Command(
-                                description="request VIN",
-                                config=VINPrimitiveConfig,
-                                command=VINPrimitive,
-                            ),
-                            "iocbi": Command(
-                                description="InputOutputControl",
-                                config=IOCBIPrimitiveConfig,
-                                command=IOCBIPrimitive,
-                            ),
-                            "ping": Command(
-                                description="ping ECU via TesterPresent",
-                                config=PingPrimitiveConfig,
-                                command=PingPrimitive,
-                            ),
-                            "rmba": Command(
-                                description="ReadMemoryByAddress",
-                                config=RMBAPrimitiveConfig,
-                                command=RMBAPrimitive,
-                            ),
-                            "rtcl": Command(
-                                description="RoutineControl",
-                                config=RTCLPrimitiveConfig,
-                                command=RTCLPrimitive,
-                            ),
-                            "pdu": Command(
-                                description="send a plain PDU",
-                                config=SendPDUPrimitiveConfig,
-                                command=SendPDUPrimitive,
-                            ),
-                            "wmba": Command(
-                                description="WriteMemoryByAddress",
-                                config=WMBAPrimitiveConfig,
-                                command=WMBAPrimitive,
-                            ),
-                            "wdbi": Command(
-                                description="WriteDataByIdentifier",
-                                config=WriteByIdentifierPrimitiveConfig,
-                                command=WriteByIdentifierPrimitive,
-                            ),
+                            "ecu-reset": ECUResetPrimitive,
+                            "vin": VINPrimitive,
+                            "iocbi": IOCBIPrimitive,
+                            "ping": PingPrimitive,
+                            "rmba": RMBAPrimitive,
+                            "rtcl": RTCLPrimitive,
+                            "pdu": SendPDUPrimitive,
+                            "wmba": WMBAPrimitive,
+                            "wdbi": WriteByIdentifierPrimitive,
                         },
                     ),
                     "generic": CommandTree(
                         description="generic networks primitives",
-                        subtree={
-                            "pdu": Command(
-                                description="send a plain PDU",
-                                config=GenericPDUPrimitiveConfig,
-                                command=GenericPDUPrimitive,
-                            )
-                        },
+                        subtree={"pdu": GenericPDUPrimitive},
                     ),
                 },
             ),
@@ -162,36 +96,12 @@ class UDSPlugin(Plugin):
                     "uds": CommandTree(
                         description="Universal Diagnostic Services",
                         subtree={
-                            "memory": Command(
-                                description="scan services with direct memory access",
-                                config=MemoryFunctionsScannerConfig,
-                                command=MemoryFunctionsScanner,
-                            ),
-                            "reset": Command(
-                                description="identifier scan in ECUReset",
-                                config=ResetScannerConfig,
-                                command=ResetScanner,
-                            ),
-                            "dump-seeds": Command(
-                                description="dump security access seeds",
-                                config=SASeedsDumperConfig,
-                                command=SASeedsDumper,
-                            ),
-                            "identifiers": Command(
-                                description="identifier scan of a UDS service",
-                                config=ScanIdentifiersConfig,
-                                command=ScanIdentifiers,
-                            ),
-                            "sessions": Command(
-                                description="session scan on an ECU",
-                                config=SessionsScannerConfig,
-                                command=SessionsScanner,
-                            ),
-                            "services": Command(
-                                description="service scan on an ECU",
-                                config=ServicesScannerConfig,
-                                command=ServicesScanner,
-                            ),
+                            "memory": MemoryFunctionsScanner,
+                            "reset": ResetScanner,
+                            "dump-seeds": SASeedsDumper,
+                            "identifiers": ScanIdentifiers,
+                            "sessions": SessionsScanner,
+                            "services": ServicesScanner,
                         },
                     )
                 },
@@ -203,24 +113,15 @@ class UDSPlugin(Plugin):
         }
 
         if sys.platform.startswith("linux"):
-            from gallia.commands.discover.uds.isotp import IsotpDiscoverer, IsotpDiscovererConfig
-            from gallia.commands.fuzz.uds.pdu import PDUFuzzer, PDUFuzzerConfig
-            from gallia.commands.script.vecu import (
-                DbVirtualECUConfig,
-                RngVirtualECUConfig,
-                VirtualECU,
-            )
+            from gallia.commands.discover.uds.isotp import IsotpDiscoverer
+            from gallia.commands.fuzz.uds.pdu import PDUFuzzer
 
             tree["discover"].subtree.update(
                 {
                     "uds": CommandTree(
                         description="Universal Diagnostic Services",
                         subtree={
-                            "isotp": Command(
-                                description="ISO-TP enumeration scanner",
-                                config=IsotpDiscovererConfig,
-                                command=IsotpDiscoverer,
-                            )
+                            "isotp": IsotpDiscoverer,
                         },
                     ),
                 }
@@ -233,13 +134,7 @@ class UDSPlugin(Plugin):
                         subtree={
                             "uds": CommandTree(
                                 description="Universal Diagnostic Services",
-                                subtree={
-                                    "pdu": Command(
-                                        description="fuzz the UDS pdu of selected services",
-                                        config=PDUFuzzerConfig,
-                                        command=PDUFuzzer,
-                                    )
-                                },
+                                subtree={"pdu": PDUFuzzer},
                             )
                         },
                     ),
@@ -250,18 +145,7 @@ class UDSPlugin(Plugin):
                 {
                     "vecu": CommandTree(
                         description="spawn a virtual UDS ECU",
-                        subtree={
-                            "db": Command(
-                                description="Virtual ECU which mimics the behavior of an ECU according to logs in the database",
-                                config=DbVirtualECUConfig,
-                                command=VirtualECU,
-                            ),
-                            "rng": Command(
-                                description="Virtual ECU with randomized behavior",
-                                config=RngVirtualECUConfig,
-                                command=VirtualECU,
-                            ),
-                        },
+                        subtree={"db": DbVirtualECU, "rng": RngVirtualECU},
                     ),
                 }
             )
@@ -269,23 +153,13 @@ class UDSPlugin(Plugin):
         if sys.platform == "win32":
             from gallia.commands.script.flexray import (
                 FRConfigDump,
-                FRConfigDumpConfig,
                 FRDump,
-                FRDumpConfig,
             )
 
             tree["script"].subtree.update(
                 {
-                    "fr-dump": Command(
-                        description="runs a helper tool that dumps flexray bus traffic to stdout",
-                        config=FRDumpConfig,
-                        command=FRDump,
-                    ),
-                    "fr-dump-config": Command(
-                        description="Dump the flexray configuration as base64",
-                        config=FRConfigDumpConfig,
-                        command=FRConfigDump,
-                    ),
+                    "fr-dump": FRDump,
+                    "fr-dump-config": FRConfigDump,
                 }
             )
 

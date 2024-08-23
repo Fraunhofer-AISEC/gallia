@@ -57,6 +57,7 @@ class SASeedsDumperConfig(UDSScannerConfig):
 class SASeedsDumper(UDSScanner):
     """This scanner tries to enable ProgrammingSession and dump seeds for 12h."""
 
+    CONFIG_TYPE = SASeedsDumperConfig
     SHORT_HELP = "dump security access seeds"
 
     def __init__(self, config: SASeedsDumperConfig):

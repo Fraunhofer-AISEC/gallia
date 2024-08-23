@@ -27,6 +27,7 @@ class ReadByIdentifierPrimitiveConfig(UDSScannerConfig):
 class ReadByIdentifierPrimitive(UDSScanner):
     """Read data via the ReadDataByIdentifier service"""
 
+    CONFIG_TYPE = ReadByIdentifierPrimitiveConfig
     SHORT_HELP = "ReadDataByIdentifier"
 
     def __init__(self, config: ReadByIdentifierPrimitiveConfig):

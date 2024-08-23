@@ -65,6 +65,7 @@ class DoIPDiscoverer(AsyncScript):
     the script continues to discover valid TargetAddresses that are accepted and respond
     to UDS TesterPresent requests."""
 
+    CONFIG_TYPE = DoIPDiscovererConfig
     SHORT_HELP = "zero-knowledge DoIP enumeration scanner"
     HAS_ARTIFACTS_DIR = True
 

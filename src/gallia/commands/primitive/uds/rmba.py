@@ -31,6 +31,7 @@ class RMBAPrimitiveConfig(UDSScannerConfig):
 class RMBAPrimitive(UDSScanner):
     """Read memory by address"""
 
+    CONFIG_TYPE = RMBAPrimitiveConfig
     SHORT_HELP = "ReadMemoryByAddress"
 
     def __init__(self, config: RMBAPrimitiveConfig):

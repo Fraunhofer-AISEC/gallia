@@ -26,6 +26,7 @@ class FRDumpConfig(AsyncScriptConfig):
 class FRDump(AsyncScript):
     """Dump the content of the flexray bus"""
 
+    CONFIG_TYPE = FRDumpConfig
     SHORT_HELP = "runs a helper tool that dumps flexray bus traffic to stdout"
 
     def __init__(self, config: FRDumpConfig):
@@ -78,6 +79,7 @@ class FRConfigDumpConfig(ScriptConfig):
 class FRConfigDump(Script):
     """Dump the flexray configuration as base64"""
 
+    CONFIG_TYPE = FRConfigDumpConfig
     SHORT_HELP = "Dump the flexray configuration as base64"
 
     def __init__(self, config: FRConfigDumpConfig):
