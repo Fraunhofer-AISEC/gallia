@@ -4,22 +4,14 @@ from importlib.metadata import entry_points
 from typing import Union
 
 from gallia.command import BaseCommand
-from gallia.command.config import GalliaBaseModel
 from gallia.services.uds import ECU
 from gallia.transports import BaseTransport, TargetURI
 
 
 @dataclass
-class Command:
-    description: str
-    config: type[GalliaBaseModel]
-    command: type[BaseCommand]
-
-
-@dataclass
 class CommandTree:
     description: str | None
-    subtree: dict[str, Union["CommandTree", Command]]
+    subtree: dict[str, Union["CommandTree", type[BaseCommand]]]
 
 
 class Plugin(ABC):
@@ -40,7 +32,7 @@ class Plugin(ABC):
         return []
 
     @classmethod
-    def commands(cls) -> dict[str, CommandTree | Command]:
+    def commands(cls) -> dict[str, CommandTree | type[BaseCommand]]:
         return {}
 
 
@@ -109,7 +101,7 @@ def load_ecu(vendor: str) -> type[ECU]:
 
 
 def _merge_commands(
-    c1: dict[str, CommandTree | Command], c2: dict[str, CommandTree | Command]
+    c1: dict[str, CommandTree | type[BaseCommand]], c2: dict[str, CommandTree | type[BaseCommand]]
 ) -> None:
     for key, value in c2.items():
         if key not in c1:
@@ -134,9 +126,9 @@ def _merge_command_trees(tree1: CommandTree, tree2: CommandTree) -> None:
     _merge_commands(tree1.subtree, tree2.subtree)
 
 
-def load_commands() -> dict[str, CommandTree | Command]:
+def load_commands() -> dict[str, CommandTree | type[BaseCommand]]:
     plugins = load_plugins()
-    commands: dict[str, CommandTree | Command] = {}
+    commands: dict[str, CommandTree | type[BaseCommand]] = {}
 
     for plugin in plugins:
         try:

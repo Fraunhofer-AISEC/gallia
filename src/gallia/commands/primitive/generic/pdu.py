@@ -22,6 +22,7 @@ class GenericPDUPrimitiveConfig(ScannerConfig):
 class GenericPDUPrimitive(Scanner):
     """A raw scanner to send a plain pdu"""
 
+    CONFIG_TYPE = GenericPDUPrimitiveConfig
     SHORT_HELP = "send a plain PDU"
 
     def __init__(self, config: GenericPDUPrimitiveConfig):

@@ -33,6 +33,7 @@ class SendPDUPrimitiveConfig(UDSScannerConfig):
 class SendPDUPrimitive(UDSScanner):
     """A raw scanner to send a plain pdu"""
 
+    CONFIG_TYPE = SendPDUPrimitiveConfig
     SHORT_HELP = "send a plain PDU"
 
     def __init__(self, config: SendPDUPrimitiveConfig):

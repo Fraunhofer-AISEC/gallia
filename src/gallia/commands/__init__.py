@@ -7,7 +7,11 @@ import sys
 from gallia.command.base import BaseCommand
 from gallia.commands.discover.doip import DoIPDiscoverer
 from gallia.commands.primitive.generic.pdu import GenericPDUPrimitive
-from gallia.commands.primitive.uds.dtc import DTCPrimitive
+from gallia.commands.primitive.uds.dtc import (
+    ClearDTCPrimitive,
+    ControlDTCPrimitive,
+    ReadDTCPrimitive,
+)
 from gallia.commands.primitive.uds.ecu_reset import ECUResetPrimitive
 from gallia.commands.primitive.uds.iocbi import IOCBIPrimitive
 from gallia.commands.primitive.uds.pdu import SendPDUPrimitive
@@ -34,7 +38,9 @@ registry: list[type[BaseCommand]] = [
     ScanIdentifiers,
     SessionsScanner,
     ServicesScanner,
-    DTCPrimitive,
+    ClearDTCPrimitive,
+    ControlDTCPrimitive,
+    ReadDTCPrimitive,
     ECUResetPrimitive,
     VINPrimitive,
     IOCBIPrimitive,
@@ -57,7 +63,9 @@ __all__ = [
     "ScanIdentifiers",
     "SessionsScanner",
     "ServicesScanner",
-    "DTCPrimitive",
+    "ClearDTCPrimitive",
+    "ControlDTCPrimitive",
+    "ReadDTCPrimitive",
     "ECUResetPrimitive",
     "VINPrimitive",
     "IOCBIPrimitive",
@@ -72,26 +80,32 @@ __all__ = [
 
 
 if sys.platform.startswith("linux"):
-    from gallia.commands.discover.find_xcp import FindXCP
+    from gallia.commands.discover.find_xcp import CanFindXCP, TcpFindXCP, UdpFindXCP
     from gallia.commands.discover.uds.isotp import IsotpDiscoverer
     from gallia.commands.fuzz.uds.pdu import PDUFuzzer
     from gallia.commands.primitive.uds.xcp import SimpleTestXCP
-    from gallia.commands.script.vecu import VirtualECU
+    from gallia.commands.script.vecu import DbVirtualECU, RngVirtualECU
 
     registry += [
-        FindXCP,
+        CanFindXCP,
+        UdpFindXCP,
+        TcpFindXCP,
         IsotpDiscoverer,
         PDUFuzzer,
         SimpleTestXCP,
-        VirtualECU,
+        DbVirtualECU,
+        RngVirtualECU,
     ]
 
     __all__ += [
-        "FindXCP",
+        "CanFindXCP",
+        "UDSFindXCP",
+        "TCPFindXCP",
         "IsotpDiscoverer",
         "PDUFuzzer",
         "SimpleTestXCP",
-        "VirtualECU",
+        "DbVirtualECU",
+        "RngVirtualECU",
     ]
 
 

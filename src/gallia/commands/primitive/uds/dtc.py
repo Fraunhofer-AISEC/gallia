@@ -64,14 +64,15 @@ class ControlDTCPrimitiveConfig(DTCPrimitiveConfig):
     )
 
 
-class DTCPrimitive(UDSScanner):
+class ReadDTCPrimitive(UDSScanner):
     """Read out the Diagnostic Trouble Codes (DTC)"""
 
-    SHORT_HELP = "DiagnosticTroubleCodes"
+    CONFIG_TYPE = ReadDTCPrimitiveConfig
+    SHORT_HELP = "Read the DTCs using the ReadDTCInformation service"
 
-    def __init__(self, config: DTCPrimitiveConfig):
+    def __init__(self, config: ReadDTCPrimitiveConfig):
         super().__init__(config)
-        self.config: DTCPrimitiveConfig = config
+        self.config: ReadDTCPrimitiveConfig = config
 
     async def fetch_error_codes(self, mask: int, split: bool = True) -> dict[int, int]:
         ecu_response = await self.ecu.read_dtc_information_report_dtc_by_status_mask(mask)
@@ -99,9 +100,7 @@ class DTCPrimitive(UDSScanner):
 
         return dtcs
 
-    async def read(self) -> None:
-        assert isinstance(self.config, ReadDTCPrimitiveConfig)
-
+    async def main(self) -> None:
         dtcs = await self.fetch_error_codes(self.config.mask)
 
         failed_dtcs: list[list[str]] = []
@@ -164,9 +163,16 @@ class DTCPrimitive(UDSScanner):
         for line in tabulate(dtcs, headers=header, tablefmt="fancy_grid").splitlines():
             logger.result(line)
 
-    async def clear(self) -> None:
-        assert isinstance(self.config, ClearDTCPrimitiveConfig)
 
+class ClearDTCPrimitive(UDSScanner):
+    CONFIG_TYPE = ClearDTCPrimitiveConfig
+    SHORT_HELP = "Clear the DTCs using the ClearDiagnosticInformation service"
+
+    def __init__(self, config: ClearDTCPrimitiveConfig):
+        super().__init__(config)
+        self.config: ClearDTCPrimitiveConfig = config
+
+    async def main(self) -> None:
         group_of_dtc: int = self.config.group_of_dtc
 
         min_group_of_dtc = 0
@@ -184,23 +190,19 @@ class DTCPrimitive(UDSScanner):
         else:
             logger.result("Success")
 
-    async def control(self) -> None:
+
+class ControlDTCPrimitive(UDSScanner):
+    CONFIG_TYPE = ControlDTCPrimitiveConfig
+    SHORT_HELP = "Stop or resume the setting of DTCs using the ControlDTCSetting service"
+
+    def __init__(self, config: ControlDTCPrimitiveConfig):
+        super().__init__(config)
+        self.config: ControlDTCPrimitiveConfig = config
+
+    async def main(self) -> None:
         assert isinstance(self.config, ControlDTCPrimitiveConfig)
 
         if self.config.stop:
             await self.ecu.control_dtc_setting(CDTCSSubFuncs.OFF)
         else:
             await self.ecu.control_dtc_setting(CDTCSSubFuncs.ON)
-
-    async def main(self) -> None:
-        await self.ecu.set_session(self.config.session)
-
-        if isinstance(self.config, ClearDTCPrimitiveConfig):
-            await self.clear()
-        elif isinstance(self.config, ControlDTCPrimitiveConfig):
-            await self.control()
-        elif isinstance(self.config, ReadDTCPrimitiveConfig):
-            await self.read()
-        else:
-            logger.critical("Unhandled command")
-            sys.exit(1)

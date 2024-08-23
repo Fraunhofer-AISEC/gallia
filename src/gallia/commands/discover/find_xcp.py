@@ -5,6 +5,7 @@
 import socket
 import struct
 import sys
+from abc import ABC
 
 assert sys.platform.startswith("linux"), "unsupported platform"
 
@@ -44,10 +45,9 @@ class UdpFindXCPConfig(FindXCPConfig):
     udp_ports: str = Field(description="Comma separated list of UDP ports to test for XCP")
 
 
-class FindXCP(AsyncScript):
+class FindXCP(AsyncScript, ABC):
     """Find XCP Slave"""
 
-    SHORT_HELP = "XCP enumeration scanner"
     HAS_ARTIFACTS_DIR = True
 
     def __init__(self, config: FindXCPConfig):
@@ -66,55 +66,6 @@ class FindXCP(AsyncScript):
         logger.info(f"recv: {data.hex()}")
         return (length, ctr, data[4:])
 
-    async def main(self) -> None:
-        if isinstance(self.config, CanFindXCPConfig):
-            await self.test_can()
-
-        elif isinstance(self.config, TcpFindXCPConfig):
-            await self.test_tcp()
-
-        elif isinstance(self.config, UdpFindXCPConfig):
-            self.test_eth_broadcast()
-            await self.test_udp()
-
-    async def test_tcp(self) -> None:
-        # TODO: rewrite as async
-
-        assert isinstance(self.config, TcpFindXCPConfig)
-
-        data = bytes([0xFF, 0x00])
-        endpoints = []
-        for port in self.config.tcp_ports.split(","):
-            port = int(port, 0)  # noqa
-            logger.info(f"Testing TCP port: {port}")
-            server = (self.config.xcp_ip, port)
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.socket.settimeout(0.2)
-            try:
-                self.socket.connect(server)
-            except Exception as e:
-                logger.info(f"Connect: {g_repr(e)} on TCP port {port}")
-                continue
-
-            try:
-                self.socket.send(self.pack_xcp_eth(data))
-                _, _, data_ret = self.unpack_xcp_eth(self.socket.recv(1024))
-                ret = bytes_repr(data_ret)
-                logger.info(f"Receive data on TCP port {port}: {ret}")
-                if len(data_ret) > 0 and data_ret[0] == 0xFF:
-                    logger.result(f"XCP Slave on TCP port {port}, data: {ret}")
-                    endpoints.append(port)
-                else:
-                    logger.info(f"TCP port {port} is no XCP slave, data: {ret}")
-            except Exception as e:
-                logger.info(f"send/recv: {g_repr(e)} on TCP port {port:d}")
-                continue
-
-            self.xcp_disconnect(server)
-            self.socket.close()
-
-        logger.result(f"Finished; Found {len(endpoints)} XCP endpoints via TCP")
-
     def xcp_disconnect(self, server: tuple[str, int]) -> None:
         try:
             self.socket.sendto(self.pack_xcp_eth(bytes([0xFE, 0x00]), 1), server)
@@ -122,41 +73,16 @@ class FindXCP(AsyncScript):
         except Exception:
             pass
 
-    async def test_udp(self) -> None:
-        # TODO: rewrite as async
 
-        assert isinstance(self.config, UdpFindXCPConfig)
+class CanFindXCP(FindXCP):
+    CONFIG_TYPE = CanFindXCPConfig
+    SHORT_HELP = "XCP enumeration scanner for CAN"
 
-        data = bytes([0xFF, 0x00])
-        endpoints = []
-        for port in self.config.udp_ports.split(","):
-            port = int(port, 0)  # noqa
-            logger.info(f"Testing UDP port: {port}")
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            self.socket.settimeout(0.5)
-            server = (self.config.xcp_ip, port)
-            self.socket.sendto(self.pack_xcp_eth(data), server)
-            try:
-                _, _, data_ret = self.unpack_xcp_eth(self.socket.recv(1024))
-                ret = bytes_repr(data_ret)
-                logger.info(f"Receive data on TCP port {port}: {ret}")
-                if len(data_ret) > 0 and data_ret[0] == 0xFF:
-                    logger.result(f"XCP Slave on UDP port {port}, data: {ret}")
-                    endpoints.append(port)
-                else:
-                    logger.info(f"UDP port {port} is no XCP slave, data: {ret}")
+    def __init__(self, config: CanFindXCPConfig):
+        super().__init__(config)
+        self.config: CanFindXCPConfig = config
 
-            except TimeoutError:
-                logger.info(f"Timeout on UDP port {port}")
-
-            self.xcp_disconnect(server)
-            self.socket.close()
-
-        logger.result(f"Finished; Found {len(endpoints)} XCP endpoints via UDP")
-
-    async def test_can(self) -> None:
-        assert isinstance(self.config, CanFindXCPConfig)
-
+    async def main(self) -> None:
         target = TargetURI(
             f"{RawCANTransport.SCHEME}://{self.config.xcp_can_iface}?is_extended={str(self.config.extended).lower()}"
             + ("&is_fd=true" if self.config.can_fd else "")
@@ -193,10 +119,96 @@ class FindXCP(AsyncScript):
 
         logger.result(f"Finished; Found {len(endpoints)} XCP endpoints via CAN")
 
-    def test_eth_broadcast(self) -> None:
+
+class TcpFindXCP(FindXCP):
+    CONFIG_TYPE = TcpFindXCPConfig
+    SHORT_HELP = "XCP enumeration scanner for TCP"
+
+    def __init__(self, config: TcpFindXCPConfig):
+        super().__init__(config)
+        self.config: TcpFindXCPConfig = config
+
+    async def main(self) -> None:
         # TODO: rewrite as async
 
-        assert isinstance(self.config, UdpFindXCPConfig)
+        data = bytes([0xFF, 0x00])
+        endpoints = []
+        for port in self.config.tcp_ports.split(","):
+            port = int(port, 0)  # noqa
+            logger.info(f"Testing TCP port: {port}")
+            server = (self.config.xcp_ip, port)
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.socket.settimeout(0.2)
+            try:
+                self.socket.connect(server)
+            except Exception as e:
+                logger.info(f"Connect: {g_repr(e)} on TCP port {port}")
+                continue
+
+            try:
+                self.socket.send(self.pack_xcp_eth(data))
+                _, _, data_ret = self.unpack_xcp_eth(self.socket.recv(1024))
+                ret = bytes_repr(data_ret)
+                logger.info(f"Receive data on TCP port {port}: {ret}")
+                if len(data_ret) > 0 and data_ret[0] == 0xFF:
+                    logger.result(f"XCP Slave on TCP port {port}, data: {ret}")
+                    endpoints.append(port)
+                else:
+                    logger.info(f"TCP port {port} is no XCP slave, data: {ret}")
+            except Exception as e:
+                logger.info(f"send/recv: {g_repr(e)} on TCP port {port:d}")
+                continue
+
+            self.xcp_disconnect(server)
+            self.socket.close()
+
+        logger.result(f"Finished; Found {len(endpoints)} XCP endpoints via TCP")
+
+
+class UdpFindXCP(FindXCP):
+    CONFIG_TYPE = UdpFindXCPConfig
+    SHORT_HELP = "XCP enumeration scanner for Udp"
+
+    def __init__(self, config: UdpFindXCPConfig):
+        super().__init__(config)
+        self.config: UdpFindXCPConfig = config
+
+    async def main(self) -> None:
+        self.test_eth_broadcast()
+        await self.test_udp()
+
+    async def test_udp(self) -> None:
+        # TODO: rewrite as async
+
+        data = bytes([0xFF, 0x00])
+        endpoints = []
+        for port in self.config.udp_ports.split(","):
+            port = int(port, 0)  # noqa
+            logger.info(f"Testing UDP port: {port}")
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            self.socket.settimeout(0.5)
+            server = (self.config.xcp_ip, port)
+            self.socket.sendto(self.pack_xcp_eth(data), server)
+            try:
+                _, _, data_ret = self.unpack_xcp_eth(self.socket.recv(1024))
+                ret = bytes_repr(data_ret)
+                logger.info(f"Receive data on TCP port {port}: {ret}")
+                if len(data_ret) > 0 and data_ret[0] == 0xFF:
+                    logger.result(f"XCP Slave on UDP port {port}, data: {ret}")
+                    endpoints.append(port)
+                else:
+                    logger.info(f"UDP port {port} is no XCP slave, data: {ret}")
+
+            except TimeoutError:
+                logger.info(f"Timeout on UDP port {port}")
+
+            self.xcp_disconnect(server)
+            self.socket.close()
+
+        logger.result(f"Finished; Found {len(endpoints)} XCP endpoints via UDP")
+
+    def test_eth_broadcast(self) -> None:
+        # TODO: rewrite as async
 
         multicast_group = ("239.255.0.0", 5556)
         logger.result(

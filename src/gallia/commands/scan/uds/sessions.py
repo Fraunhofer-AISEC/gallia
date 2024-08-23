@@ -43,6 +43,7 @@ class SessionsScannerConfig(UDSScannerConfig):
 class SessionsScanner(UDSScanner):
     """Iterate Sessions"""
 
+    CONFIG_TYPE = SessionsScannerConfig
     SHORT_HELP = "session scan on an ECU"
 
     def __init__(self, config: SessionsScannerConfig):

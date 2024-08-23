@@ -37,6 +37,7 @@ class MemoryFunctionsScanner(UDSScanner):
     0x3d which requires an additional data field.
     """
 
+    CONFIG_TYPE = MemoryFunctionsScannerConfig
     SHORT_HELP = "scan services with direct memory access"
 
     def __init__(self, config: MemoryFunctionsScannerConfig):

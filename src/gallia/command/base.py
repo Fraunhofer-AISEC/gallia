@@ -106,6 +106,7 @@ if sys.platform == "win32":
             pass
 
 
+# TODO: Umbenennen in cli_group
 class BaseCommandConfig(GalliaBaseModel, argument_group="generic", config_section="gallia"):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -150,6 +151,10 @@ class BaseCommand(FlockMixin, ABC):
     The main entry_point is :meth:`entry_point()`.
     """
 
+    # The config type which is accepted by this class
+    # This is used for automatically creating the CLI
+    CONFIG_TYPE: type[BaseCommandConfig] = BaseCommandConfig
+
     #: The string which is shown on the cli with --help.
     SHORT_HELP: str | None = None
     #: The string which is shown at the bottom of --help.
@@ -165,9 +170,9 @@ class BaseCommand(FlockMixin, ABC):
 
     log_file_handlers: list[Handler]
 
-    def __init__(self, config: BaseCommandConfig) -> None:
+    def __init__(self, config: CONFIG_TYPE) -> None:
         self.id = camel_to_snake(self.__class__.__name__)
-        self.config: BaseCommandConfig = config
+        self.config = config
         self.artifacts_dir = Path()
         self.run_meta = RunMeta(
             command=type(self).__name__,
