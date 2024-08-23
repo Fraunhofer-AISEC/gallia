@@ -9,7 +9,6 @@ from gallia.command import AsyncScript
 from gallia.config import load_config_file
 from gallia.powersupply import PowerSupplyURI
 from gallia.utils import strtobool
-
 from opennetzteil import netzteile
 
 
