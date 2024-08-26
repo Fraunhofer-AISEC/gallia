@@ -3,19 +3,25 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+import shutil
+import subprocess
 from pathlib import Path
 
 import platformdirs
 import pytest
-from pygit2 import init_repository
 
 from gallia.config import get_config_dirs, load_config_file
 
 
+def init_repository(path: Path) -> None:
+    subprocess.run(["git", "init", path], check=True)
+
+
+@pytest.mark.skipif(shutil.which("git") is None, reason="git binary is not available")
 def test_config_discovery_git(tmp_path: Path) -> None:
     testrepo = tmp_path.joinpath("testrepo")
     testrepo.mkdir()
-    init_repository(str(testrepo))
+    init_repository(testrepo)
     os.chdir(testrepo)
 
     config_file = testrepo.joinpath("gallia.toml")
