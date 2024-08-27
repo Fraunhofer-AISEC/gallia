@@ -189,7 +189,7 @@ class BaseTransport(ABC):
                         return await self.connect(self.target)
                     except ConnectionError as e:
                         logger.info(
-                            f"Connection attempt failed while reconnecting: {e!r}."
+                            f"Connection attempt failed while reconnecting: {e!r}"
                         )
                         if timeout is None:
                             logger.debug("Breaking out of the reconnect-loop since timeout is None")
