@@ -19,12 +19,12 @@ from subprocess import CalledProcessError, run
 from tempfile import gettempdir
 from typing import Protocol, cast
 
-import exitcode
 import msgspec
 
 from gallia.config import Config
 from gallia.db.handler import DBHandler
 from gallia.dumpcap import Dumpcap
+from gallia import exitcodes
 from gallia.log import add_zst_log_handler, get_logger, tz
 from gallia.plugins import load_transport
 from gallia.powersupply import PowerSupply, PowerSupplyURI
@@ -406,7 +406,7 @@ class BaseCommand(FlockMixin, ABC):
                 self._aquire_flock()
             except OSError as e:
                 logger.critical(f"Unable to lock {p}: {e}")
-                return exitcode.OSFILE
+                return exitcodes.OSFILE
 
         if self.HAS_ARTIFACTS_DIR:
             self.artifacts_dir = self.prepare_artifactsdir(
@@ -438,17 +438,17 @@ class BaseCommand(FlockMixin, ABC):
                 case int():
                     exit_code = e.code
                 case _:
-                    exit_code = exitcode.SOFTWARE
+                    exit_code = exitcodes.SOFTWARE
         except Exception as e:
             for t in self.CATCHED_EXCEPTIONS:
                 if isinstance(e, t):
                     # TODO: Map the exitcode to superclass of builtin exceptions.
-                    exit_code = exitcode.IOERR
+                    exit_code = exitcodes.IOERR
                     logger.critical(f"Caught expected exception, stack trace on debug level: {e!r}")
                     logger.debug(e, exc_info=True)
                     break
             else:
-                exit_code = exitcode.SOFTWARE
+                exit_code = exitcodes.SOFTWARE
                 logger.critical(e, exc_info=True)
         finally:
             self.run_meta.exit_code = exit_code
@@ -492,7 +492,7 @@ class Script(BaseCommand, ABC):
         finally:
             self.teardown(args)
 
-        return exitcode.OK
+        return exitcodes.OK
 
 
 class AsyncScript(BaseCommand, ABC):
@@ -518,7 +518,7 @@ class AsyncScript(BaseCommand, ABC):
 
     def run(self, args: Namespace) -> int:
         asyncio.run(self._run(args))
-        return exitcode.OK
+        return exitcodes.OK
 
 
 class Scanner(AsyncScript, ABC):
