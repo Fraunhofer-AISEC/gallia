@@ -5,9 +5,9 @@
 import asyncio
 import sys
 from enum import IntEnum, unique
+from itertools import batched
 from typing import ClassVar, Self, TypeAlias
 
-from more_itertools import chunked
 from pydantic import BaseModel, ConfigDict, field_validator
 
 from gallia.log import get_logger
@@ -371,10 +371,10 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="fr-tp-legacy"):
         # Maybe a further flow control comes after block size number of frames.
 
         counter = 1
-        for chunk in chunked(data[6:], 7):
+        for batch in batched(data[6:], 7):
             cf_frame = FlexRayTPConsecutiveFrame(
                 counter=counter,
-                data=bytes(chunk),
+                data=bytes(batch),
             )
 
             await self.write_tp_frame(cf_frame)
