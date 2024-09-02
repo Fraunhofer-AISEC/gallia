@@ -20,3 +20,19 @@ load "helpers"
 	gallia --show-config
 	rm_gallia_toml
 }
+
+@test "invoke gallia -h" {
+	gallia -h
+}
+
+@test "invoke hr -h" {
+	hr -h
+}
+
+@test "invoke netzteil -h" {
+	netzteil -h
+}
+
+@test "invoke cursed-hr -h" {
+	cursed-hr -h
+}
