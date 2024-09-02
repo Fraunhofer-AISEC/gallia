@@ -12,6 +12,7 @@ from typing import cast
 
 import msgspec
 
+from gallia import exitcodes
 from gallia.log import ColorMode, PenlogPriority, PenlogReader, resolve_color_mode
 
 
@@ -90,7 +91,7 @@ def main() -> None:
         sys.exit(_main())
     except (msgspec.DecodeError, msgspec.ValidationError) as e:
         print(f"invalid file format: {e}", file=sys.stderr)
-        sys.exit(1)
+        sys.exit(exitcodes.DATAERR)
     # BrokenPipeError appears when stuff is piped to | head.
     # This is not an error for hr.
     except BrokenPipeError:
@@ -99,7 +100,7 @@ def main() -> None:
         # to devnull to avoid another BrokenPipeError at shutdown.
         devnull = os.open(os.devnull, os.O_WRONLY)
         os.dup2(devnull, sys.stdout.fileno())
-        sys.exit(0)
+        sys.exit(exitcodes.OK)
     except KeyboardInterrupt:
         sys.exit(128 + signal.SIGINT)
 

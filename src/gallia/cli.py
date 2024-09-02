@@ -16,8 +16,8 @@ from pprint import pprint
 from typing import Any
 
 import argcomplete
-import exitcode
 
+from gallia import exitcodes
 from gallia.command.base import BaseCommand
 from gallia.commands import registry as cmd_registry
 from gallia.config import Config, load_config_file
@@ -374,7 +374,7 @@ def build_parser() -> tuple[argparse.ArgumentParser, Config, Path | None]:
         config, config_path = load_config_file()
     except ValueError as e:
         print(f"invalid config: {e}", file=sys.stderr)
-        sys.exit(exitcode.CONFIG)
+        sys.exit(exitcodes.CONFIG)
 
     build_cli(parsers, config, registry)
 
@@ -389,27 +389,27 @@ def main() -> None:
 
     if args.show_config:
         cmd_show_config(args, config, config_path)
-        sys.exit(exitcode.OK)
+        sys.exit(exitcodes.OK)
 
     if args.show_defaults:
         cmd_show_defaults(parser)
-        sys.exit(exitcode.OK)
+        sys.exit(exitcodes.OK)
 
     if args.show_cli:
         cmd_show_cli(parser)
-        sys.exit(exitcode.OK)
+        sys.exit(exitcodes.OK)
 
     if args.show_plugins:
         cmd_show_plugins()
-        sys.exit(exitcode.OK)
+        sys.exit(exitcodes.OK)
 
     if args.template:
         cmd_template(args)
-        sys.exit(exitcode.OK)
+        sys.exit(exitcodes.OK)
 
     if not hasattr(args, "cls_object"):
         args.help_func()
-        parser.exit(exitcode.USAGE)
+        parser.exit(exitcodes.USAGE)
 
     setup_logging(
         level=get_log_level(args),
