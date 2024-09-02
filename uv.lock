@@ -281,7 +281,6 @@ dependencies = [
     { name = "argcomplete" },
     { name = "boltons" },
     { name = "construct" },
-    { name = "more-itertools" },
     { name = "platformdirs" },
     { name = "pydantic" },
     { name = "tabulate" },
@@ -314,7 +313,6 @@ requires-dist = [
     { name = "argcomplete", specifier = ">=2,<4" },
     { name = "boltons", specifier = ">=24.1.0" },
     { name = "construct", specifier = ">=2.10,<3.0" },
-    { name = "more-itertools", specifier = ">=10.3.0,<11.0.0" },
     { name = "platformdirs", specifier = ">=2.6,<5.0" },
     { name = "pydantic", specifier = ">=2.0,<3.0" },
     { name = "tabulate", specifier = ">=0.9" },
@@ -472,15 +470,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/d6/54/cfe61301667036ec958cb99bd3efefba235e65cdeb9c84d24a8293ba1d90/mdurl-0.1.2.tar.gz", hash = "sha256:bb413d29f5eea38f31dd4754dd7377d4465116fb207585f97bf925588687c1ba", size = 8729 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b3/38/89ba8ad64ae25be8de66a6d463314cf1eb366222074cfda9ee839c56a4b4/mdurl-0.1.2-py3-none-any.whl", hash = "sha256:84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8", size = 9979 },
-]
-
-[[package]]
-name = "more-itertools"
-version = "10.5.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/51/78/65922308c4248e0eb08ebcbe67c95d48615cc6f27854b6f2e57143e9178f/more-itertools-10.5.0.tar.gz", hash = "sha256:5482bfef7849c25dc3c6dd53a6173ae4795da2a41a80faea6700d9f5846c5da6", size = 121020 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/48/7e/3a64597054a70f7c86eb0a7d4fc315b8c1ab932f64883a297bdffeb5f967/more_itertools-10.5.0-py3-none-any.whl", hash = "sha256:037b0d3203ce90cca8ab1defbbdac29d5f993fc20131f3664dc8d6acfa872aef", size = 60952 },
 ]
 
 [[package]]
