@@ -21,10 +21,10 @@ from typing import Protocol, cast
 
 import msgspec
 
+from gallia import exitcodes
 from gallia.config import Config
 from gallia.db.handler import DBHandler
 from gallia.dumpcap import Dumpcap
-from gallia import exitcodes
 from gallia.log import add_zst_log_handler, get_logger, tz
 from gallia.plugins import load_transport
 from gallia.powersupply import PowerSupply, PowerSupplyURI

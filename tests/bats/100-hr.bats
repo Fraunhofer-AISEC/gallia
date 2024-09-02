@@ -26,7 +26,7 @@
 }
 
 @test "pipe invalid data" {
-	run -1 bash -c "echo 'invalid json' | hr -"
+	run -65 bash -c "echo 'invalid json' | hr -"
 }
 
 @test "pipe to head and handle SIGPIPE" {
