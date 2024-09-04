@@ -334,8 +334,14 @@ class BaseCommand(FlockMixin, ABC):
 
             try:
                 await self.db_handler.disconnect()
+            # CancelledError appears only on windows; it is unclear why this happens…
             except Exception as e:
                 logger.error(f"Could not close the database connection properly: {e!r}")
+            except asyncio.exceptions.CancelledError as e:
+                logger.error(f"BUG: {e!r} occured. This only seems to happen on windows")
+                logger.error(
+                    "If you can reproduce this, open an issue: https://github.com/Fraunhofer-AISEC/gallia"
+                )
 
     def _dump_environment(self, path: Path) -> None:
         environ = cast(dict[str, str], os.environ)
