@@ -62,6 +62,13 @@ class UDSScanner(Scanner):
             help="Timeout value to wait for a response from the ECU",
         )
         group.add_argument(
+            "--pending-timeout",
+            default=self.config.get_value("gallia.protocols.uds.pending_timeout", 0.5),
+            type=float,
+            metavar="SECONDS",
+            help="Timeout value to resolve a response pending error",
+        )
+        group.add_argument(
             "--max-retries",
             default=self.config.get_value("gallia.protocols.uds.max_retries", 3),
             type=int,
@@ -121,6 +128,7 @@ class UDSScanner(Scanner):
             self.transport,
             timeout=args.timeout,
             max_retry=args.max_retries,
+            pending_timeout=args.pending_timeout,
             power_supply=self.power_supply,
         )
 

@@ -24,6 +24,8 @@ class UDSRequestConfig:
     timeout: float | None = None
     # maximum number of attempts in case of network errors
     max_retry: int | None = None
+    # timeout value for resolving a response_pending error
+    pending_timeout: float | None = None
     # Skip the hooks which apply to session changes.
     skip_hooks: bool = False
     # tags to be applied to the logged output
@@ -39,12 +41,13 @@ class UDSClient:
         transport: BaseTransport,
         timeout: float,
         max_retry: int = 1,
+        pending_timeout: float = 0.5,
     ):
         self.transport = transport
         self.timeout = timeout
         self.max_retry = max_retry
         self.retry_wait = 0.2
-        self.pending_timeout = 5
+        self.pending_timeout = pending_timeout
         self.mutex = asyncio.Lock()
 
     async def connect(self) -> None: ...
@@ -106,8 +109,8 @@ class UDSClient:
             n_pending = 1
             MAX_N_PENDING = 120
             n_timeout = 0
-            waiting_time = 0.5
-            max_n_timeout = max(timeout if timeout else 0, 20) / waiting_time
+            pending_timeout = config.pending_timeout or self.pending_timeout
+            max_n_timeout = max(timeout if timeout else 0, 20) / pending_timeout
             while (
                 isinstance(resp, service.NegativeResponse)
                 and resp.response_code == UDSErrorCodes.requestCorrectlyReceivedResponsePending
@@ -117,7 +120,7 @@ class UDSClient:
                     + f"waiting for next message: {n_timeout}/{int(max_n_timeout)}s"
                 )
                 try:
-                    raw_resp = await self._read(timeout=waiting_time, tags=config.tags)
+                    raw_resp = await self._read(timeout=pending_timeout, tags=config.tags)
                     if raw_resp == b"":
                         raise BrokenPipeError("connection to target lost")
                     logger.debug(raw_resp.hex(), extra={"tags": ["read", "uds"] + tags})

@@ -62,9 +62,15 @@ class ECU(UDSClient):
         transport: BaseTransport,
         timeout: float,
         max_retry: int = 1,
+        pending_timeout: float = 0.5,
         power_supply: PowerSupply | None = None,
     ) -> None:
-        super().__init__(transport, timeout, max_retry)
+        super().__init__(
+            transport=transport,
+            timeout=timeout,
+            max_retry=max_retry,
+            pending_timeout=pending_timeout,
+        )
         self.tester_present_task: Task[None] | None = None
         self.tester_present_interval: float | None = None
         self.power_supply = power_supply
