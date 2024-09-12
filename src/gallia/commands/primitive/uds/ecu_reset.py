@@ -15,30 +15,40 @@ logger = get_logger(__name__)
 
 
 class ECUResetPrimitive(UDSScanner):
-    """Use the ECUReset UDS service to reset the ECU"""
+    """Use the ECUReset UDS service to reset the ECU
+
+    This class implements the ECU Reset functionality using the Unified Diagnostic Service (UDS)
+    protocol. It leverages the UDSScanner class from the gallia.command module to execute
+    the diagnostic communication.    
+    """
 
     GROUP = "primitive"
     COMMAND = "ecu-reset"
     SHORT_HELP = "ECUReset"
 
     def configure_parser(self) -> None:
+        """Configures the argument parser for the ECU Reset command.
+        """
+
         self.parser.set_defaults(properties=False)
 
         self.parser.add_argument(
             "--session",
             type=auto_int,
             default=0x01,
-            help="set session perform test in",
+            help="The diagnostic session to switch into before resetting (Default: 0x%(default)x).",
         )
         self.parser.add_argument(
             "-f",
             "--subfunc",
             type=auto_int,
             default=0x01,
-            help="subfunc",
+            help="The subfunction of the ECU Reset service (reset level - 11 xx) to execute (Default: 0x%(default)x).",
         )
 
     async def main(self, args: Namespace) -> None:
+        """The main execution function for the ECU Reset command."""
+
         resp: UDSResponse = await self.ecu.set_session(args.session)
         if isinstance(resp, NegativeResponse):
             logger.error(f"could not change to session: {g_repr(args.session)}")

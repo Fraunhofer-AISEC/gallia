@@ -23,7 +23,12 @@ logger = get_logger(__name__)
 
 
 class DTCPrimitive(UDSScanner):
-    """Read out the Diagnostic Troube Codes (DTC)"""
+    """
+    Read or manipulate Diagnostic Trouble Codes (DTCs)
+
+    This class provides functionalities to interact with the ECU's Diagnostic Trouble Codes (DTCs) using the UDS protocol.
+    It inherits from the UDSScanner class of the gallia.command module to establish communication with the ECU.
+    """
 
     GROUP = "primitive"
     COMMAND = "dtc"
@@ -36,7 +41,7 @@ class DTCPrimitive(UDSScanner):
             "--session",
             default=DiagnosticSessionControlSubFuncs.defaultSession.value,
             type=auto_int,
-            help="Session to perform test in",
+            help="Diagnostic session to perform the test in (default: %(default)x)",
         )
         sub_parser = self.parser.add_subparsers(dest="cmd", required=True)
         read_parser = sub_parser.add_parser(
@@ -47,12 +52,12 @@ class DTCPrimitive(UDSScanner):
             type=partial(int, base=16),
             default=0xFF,
             help="The bitmask which is sent to the ECU in order to select the relevant DTCs according to their "
-            "error state. By default, all error codes are returned (c.f. ISO 14229-1,D.2).",
+            "error state. By default, all error codes are returned (c.f. ISO 14229-1,D.2). (default: 0x%(default)x)",
         )
         read_parser.add_argument(
             "--show-legend",
             action="store_true",
-            help="Show the legend of the bit interpretation according to ISO 14229-1,D.2",
+            help="Displays a legend explaining the bit interpretation of the error state according to ISO 14229-1,D.2",
         )
         read_parser.add_argument(
             "--show-failed",
@@ -72,25 +77,40 @@ class DTCPrimitive(UDSScanner):
             type=int,
             default=0xFFFFFF,
             help="Only clear a particular DTC or the DTCs belonging to the given group. "
-            "By default, all error codes are cleared.",
+            "(default: 0x%(default)x - clears all)",
         )
         control_parser = sub_parser.add_parser(
             "control",
-            help="Stop or resume the setting of DTCs using the " "ControlDTCSetting service",
+            help="Stop or resume setting of new DTCs using the " "ControlDTCSetting service",
         )
         control_group = control_parser.add_mutually_exclusive_group(required=True)
         control_group.add_argument(
             "--stop",
             action="store_true",
-            help="Stop the setting of DTCs. If already disabled, this has no effect.",
+            help="Stops setting of new DTCs. If already disabled, this has no effect.",
         )
         control_group.add_argument(
             "--resume",
             action="store_true",
-            help="Resume the setting of DTCs. If already enabled, this has no effect.",
+            help="Resumes setting of new DTCs. If already enabled, this has no effect.",
         )
 
     async def fetch_error_codes(self, mask: int, split: bool = True) -> dict[int, int]:
+        """Fetches DTC information from the ECU using the ReadDTCInformation service.
+
+    This method retrieves DTCs from the ECU based on the provided bitmask, which filters the results according to their error state.
+
+    Args:
+        mask (int): Bitmask to select DTCs based on error state.
+        split (bool, optional): Attempts to fetch DTCs in chunks if the response is too large (default: True).
+
+    Returns:
+        dict[int, int]: Dictionary containing DTCs as keys and their corresponding error state as values.
+
+    Raises:
+        UDSErrorCodes: If a negative response is received from the ECU with a specific error code (e.g., response too long).
+    """
+        
         ecu_response = await self.ecu.read_dtc_information_report_dtc_by_status_mask(mask)
         dtcs = {}
 
@@ -118,6 +138,15 @@ class DTCPrimitive(UDSScanner):
         return dtcs
 
     async def read(self, args: Namespace) -> None:
+        """Reads DTCs and presents them along with summaries based on user options.
+
+        This method retrieves DTCs using the `fetch_error_codes` method and categorizes them based on their error state.
+        It then presents the DTC information and optional summaries according to user-specified flags.
+
+        Args:
+            args (Namespace): Namespace object containing parsed command-line arguments.
+        """
+        
         dtcs = await self.fetch_error_codes(args.mask)
 
         failed_dtcs: list[list[str]] = []
@@ -156,6 +185,14 @@ class DTCPrimitive(UDSScanner):
             self.show_summary(uncompleted_dtcs)
 
     def show_bit_legend(self) -> None:
+        """
+        Presents a legend explaining the bit interpretation of the DTC error state.
+
+        This method iterates through a list of bit descriptions and logs them using the logger.result function.
+        Each description corresponds to a specific bit in the error state value and explains its meaning.
+        This legend helps users understand the detailed information provided in the DTC output.
+        """
+
         bit_descriptions = [
             "0 = testFailed: most recent test failed",
             "1 = testFailedThisOperationCycle: failed in current cycle",
@@ -173,6 +210,14 @@ class DTCPrimitive(UDSScanner):
             logger.result(line)
 
     def show_summary(self, dtcs: list[list[str]]) -> None:
+        """
+        Generates a summary table for the provided DTC information.
+
+        This method sorts the DTC list and then creates a table with headers including "DTC", "error state", and individual bits (0 to 7).
+        It uses the `tabulate` library to format the table in a user-friendly way and logs each line using the logger.result function.
+        This summary provides a concise overview of the DTCs and their error states.
+        """
+
         dtcs.sort()
 
         header = [
@@ -192,6 +237,18 @@ class DTCPrimitive(UDSScanner):
             logger.result(line)
 
     async def clear(self, args: Namespace) -> None:
+        """
+        Clears DTCs from the ECU's memory based on the specified group or DTC.
+
+        This method retrieves the group of DTCs or a specific DTC to clear from the command-line arguments.
+        It then validates the provided value to ensure it falls within the acceptable range.
+        Finally, it calls the `ecu.clear_diagnostic_information` method to send the clear request to the ECU.
+        The method logs the response, indicating success or failure.
+
+        Args:
+            args (Namespace): Namespace object containing parsed command-line arguments.
+        """
+
         group_of_dtc: int = args.group_of_dtc
 
         min_group_of_dtc = 0
@@ -210,6 +267,13 @@ class DTCPrimitive(UDSScanner):
             logger.result("Success")
 
     async def control(self, args: Namespace) -> None:
+        """
+        Enables or disables setting of new DTCs based on user selection.
+
+        This method checks the `--stop` or `--resume` argument from the `args` object to determine whether to stop or resume setting new DTCs.
+        It then calls the `ecu.control_dtc_setting` method with the corresponding sub-function (CDTCSSubFuncs.OFF or CDTCSSubFuncs.ON) to send the control request to the ECU.
+        """
+
         if args.stop:
             await self.ecu.control_dtc_setting(CDTCSSubFuncs.OFF)
         else:
