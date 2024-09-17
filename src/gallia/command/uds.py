@@ -180,7 +180,7 @@ class UDSScanner(Scanner):
                 await file.write("\n")
 
             path_pre = self.artifacts_dir.joinpath(FileNames.PROPERTIES_PRE.value)
-            async with aiofiles.open(path_pre, "r") as file:
+            async with aiofiles.open(path_pre) as file:
                 prop_pre = json.loads(await file.read())
 
             if args.compare_properties and await self.ecu.properties(False) != prop_pre:
