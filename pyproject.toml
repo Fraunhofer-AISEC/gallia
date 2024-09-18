@@ -44,7 +44,6 @@ construct = "^2.10"
 msgspec = ">=0.11,<0.19"
 pydantic = "^2.0"
 platformdirs = ">=2.6,<5.0"
-psutil = ">=5.9.4,<7.0.0"
 httpx = ">=0.26,<0.28"
 more-itertools = "^10.3.0"
 

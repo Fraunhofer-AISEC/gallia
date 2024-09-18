@@ -6,8 +6,9 @@ from __future__ import annotations
 
 import importlib.util
 import ipaddress
-import logging
+import json
 import re
+import subprocess
 import sys
 from argparse import Action, ArgumentError, ArgumentParser, Namespace
 from collections.abc import Awaitable, Callable, Sequence
@@ -17,12 +18,17 @@ from typing import TYPE_CHECKING, Any, TypeVar
 from urllib.parse import urlparse
 
 import aiofiles
+import pydantic
+from pydantic.networks import IPvAnyAddress
 
-from gallia.log import Loglevel
+from gallia.log import Loglevel, get_logger
 
 if TYPE_CHECKING:
     from gallia.db.handler import DBHandler
     from gallia.transports import TargetURI
+
+
+logger = get_logger(__name__)
 
 
 def auto_int(arg: str) -> int:
@@ -176,7 +182,7 @@ async def catch_and_log_exception(
     try:
         return await func(*args, **kwargs)
     except Exception as e:
-        logging.error(f"func {func.__name__} failed: {repr(e)}")
+        logger.error(f"func {func.__name__} failed: {repr(e)}")
         return None
 
 
@@ -244,3 +250,53 @@ def get_file_log_level(args: Namespace) -> Loglevel:
         if args.verbose >= 2:
             level = Loglevel.TRACE
     return level
+
+
+class AddrInfo(pydantic.BaseModel):
+    family: str
+    local: IPvAnyAddress
+    prefixlen: int
+    broadcast: IPvAnyAddress | None = None
+    scope: str
+    label: str | None = None
+    valid_life_time: int
+    preferred_life_time: int
+
+    def is_v4(self) -> bool:
+        return self.family == "inet"
+
+
+class Interface(pydantic.BaseModel):
+    ifindex: int
+    ifname: str
+    flags: list[str]
+    mtu: int
+    qdisc: str
+    operstate: str
+    group: str
+    link_type: str
+    address: str | None = None
+    broadcast: str | None = None
+    addr_info: list[AddrInfo]
+
+    def is_up(self) -> bool:
+        return self.operstate == "UP"
+
+    def can_broadcast(self) -> bool:
+        return "BROADCAST" in self.flags
+
+
+def net_if_addrs() -> list[Interface]:
+    if sys.platform != "linux":
+        raise NotImplementedError("net_if_addrs() is only supported on Linux platforms")
+
+    p = subprocess.run(["ip", "-j", "address", "show"], capture_output=True, check=True)
+
+    try:
+        return [Interface(**item) for item in json.loads(p.stdout.decode())]
+    except pydantic.ValidationError as e:
+        logger.error("BUG: A special case for `ip -j address show` is not handled!")
+        logger.error("Please report a bug including the following json string.")
+        logger.error("https://github.com/Fraunhofer-AISEC/gallia/issues")
+        logger.error(e.json())
+        raise
