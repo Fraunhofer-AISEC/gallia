@@ -6,10 +6,10 @@ import asyncio
 import binascii
 import io
 from abc import ABC, abstractmethod
-from typing import Any, Protocol, Self
+from typing import Any, Literal, Protocol, Self
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
-from gallia.log import get_logger
+from gallia.log import Logger, get_logger
 from gallia.transports.schemes import TransportScheme
 from gallia.utils import join_host_port
 
@@ -144,6 +144,24 @@ class BaseTransport(ABC):
         super().__init_subclass__(**kwargs)
         cls.SCHEME = scheme
         cls.BUFSIZE = bufsize
+
+    @staticmethod
+    def log_io(
+        logger: Logger,
+        iotype: Literal["read", "write"],
+        proto: str,
+        data: bytes,
+        tags: list[str] | None,
+        trace: bool = False,
+    ) -> None:
+        # tags without "=" are deprecated
+        t = [f"type=io,{iotype}", "encoding=hex", f"proto={proto}", iotype]
+        if tags is not None:
+            t += tags
+        if trace:
+            logger.trace(data.hex(), extra={"tags": t})
+        else:
+            logger.debug(data.hex(), extra={"tags": t})
 
     @classmethod
     def check_scheme(cls, target: TargetURI) -> None:

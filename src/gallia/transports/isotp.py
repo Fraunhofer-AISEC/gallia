@@ -182,8 +182,7 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> int:
-        t = tags + ["write"] if tags is not None else ["write"]
-        logger.trace(data.hex(), extra={"tags": t})
+        self.log_io(logger, "write", "isotp", data, tags, trace=True)
 
         loop = asyncio.get_running_loop()
         await asyncio.wait_for(loop.sock_sendall(self._sock, data), timeout)
@@ -199,7 +198,7 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
             if e.errno == errno.EILSEQ:
                 raise BrokenPipeError(f"invalid consecutive frame numbers: {e}") from e
             raise e
-        logger.trace(data.hex(), extra={"tags": tags})
+        self.log_io(logger, "read", "isotp", data, tags, trace=True)
         return data
 
     async def close(self) -> None:
