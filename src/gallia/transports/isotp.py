@@ -14,7 +14,7 @@ assert sys.platform == "linux", "unsupported platform"
 from pydantic import BaseModel, field_validator
 
 from gallia.log import get_logger
-from gallia.transports.base import BaseTransport, TargetURI
+from gallia.transports.base import BaseTransport, TargetURI, log_io
 from gallia.utils import auto_int
 
 logger = get_logger(__name__)
@@ -182,7 +182,7 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> int:
-        self.log_io(logger, "write", "isotp", data, tags, trace=True)
+        log_io(logger, "write", "isotp", data, tags, trace=True)
 
         loop = asyncio.get_running_loop()
         await asyncio.wait_for(loop.sock_sendall(self._sock, data), timeout)
@@ -198,7 +198,7 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
             if e.errno == errno.EILSEQ:
                 raise BrokenPipeError(f"invalid consecutive frame numbers: {e}") from e
             raise e
-        self.log_io(logger, "read", "isotp", data, tags, trace=True)
+        log_io(logger, "read", "isotp", data, tags, trace=True)
         return data
 
     async def close(self) -> None:
