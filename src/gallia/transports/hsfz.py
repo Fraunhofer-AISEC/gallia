@@ -15,7 +15,7 @@ from typing import Any, Self
 from pydantic import BaseModel, field_validator
 
 from gallia.log import get_logger
-from gallia.transports.base import BaseTransport, TargetURI
+from gallia.transports.base import BaseTransport, TargetURI, log_io
 from gallia.utils import auto_int
 
 logger = get_logger(__name__)
@@ -357,7 +357,9 @@ class HSFZTransport(BaseTransport, scheme="hsfz"):
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> bytes:
-        return await asyncio.wait_for(self._conn.read_diag_request(), timeout)
+        data = await asyncio.wait_for(self._conn.read_diag_request(), timeout)
+        log_io(logger, "read", "hsfz", data, tags, trace=True)
+        return data
 
     async def write(
         self,
@@ -366,4 +368,5 @@ class HSFZTransport(BaseTransport, scheme="hsfz"):
         tags: list[str] | None = None,
     ) -> int:
         await asyncio.wait_for(self._conn.write_diag_request(data), timeout)
+        log_io(logger, "write", "hsfz", data, tags, trace=True)
         return len(data)

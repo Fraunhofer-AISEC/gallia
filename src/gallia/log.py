@@ -24,7 +24,7 @@ from logging.handlers import QueueHandler, QueueListener
 from pathlib import Path
 from queue import Queue
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, BinaryIO, Self, TextIO, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, BinaryIO, Literal, Self, TextIO, TypeAlias, cast
 
 import msgspec
 import zstandard
@@ -822,3 +822,21 @@ logging.setLoggerClass(Logger)
 
 def get_logger(name: str) -> Logger:
     return cast(Logger, logging.getLogger(name))
+
+
+def log_io(
+    logger: Logger,
+    iotype: Literal["read", "write"],
+    proto: str,
+    data: bytes,
+    tags: list[str] | None = None,
+    trace: bool = False,
+) -> None:
+    # tags without "=" are deprecated
+    t = [f"=io={iotype}", "encoding=hex", f"proto={proto}", iotype]
+    if tags is not None:
+        t += tags
+    if trace:
+        logger.trace(data.hex(), extra={"tags": t})
+    else:
+        logger.debug(data.hex(), extra={"tags": t})
