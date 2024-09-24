@@ -67,18 +67,3 @@ Example:
 tcp://192.0.2.5:5025?product_id=hmc804
 ```
 
-### HTTP
-
-This is a client to the [opennetzteil API](https://github.com/rumpelsepp/opennetzteil/blob/master/man/netzteil-http.7.adoc) which can expose power supplies over HTTP.
-
-product_id
-: `http`
-
-scheme
-: `http` or `https`
-
-HOST
-: IP address
-
-PORT
-: TCP port, most likely `8000` or the http defaults `80`, or `443`

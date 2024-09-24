@@ -7,7 +7,6 @@ from enum import StrEnum, unique
 
 TCP = "tcp"
 TCP_LINES = "tcp-lines"
-HTTP = "http"
 DOIP = "doip"
 
 
@@ -17,7 +16,6 @@ if sys.platform.startswith("linux"):
     class TransportScheme(StrEnum):
         TCP = TCP
         TCP_LINES = TCP_LINES
-        HTTP = HTTP
         DOIP = DOIP
         HSFZ = "hsfz"
         UNIX = "unix"
@@ -33,7 +31,6 @@ if sys.platform == "win32":
     class TransportScheme(StrEnum):
         TCP = TCP
         TCP_LINES = TCP_LINES
-        HTTP = HTTP
         DOIP = DOIP
 
         FLEXRAY_RAW = "fr-raw"
