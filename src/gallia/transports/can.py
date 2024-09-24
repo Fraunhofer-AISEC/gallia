@@ -7,11 +7,11 @@ import socket as s
 import struct
 import sys
 import time
+from dataclasses import dataclass
 from typing import Self
 
 assert sys.platform.startswith("linux"), "unsupported platform"
 
-from can import Message
 from pydantic import BaseModel, field_validator
 
 from gallia.log import get_logger
@@ -24,11 +24,32 @@ CANFD_MTU = 72
 CAN_MTU = 16
 
 
-class CANMessage(Message):
+@dataclass(kw_only=True, slots=True, frozen=True)
+class CANMessage:
     # https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/linux/can.h
     CAN_HEADER_FMT = struct.Struct("=IBB2x")
     CANFD_BRS = 0x01
     CANFD_ESI = 0x02
+
+    timestamp: float = 0.0
+    arbitration_id: int = 0
+
+    # TODO: Add a frametype attribute?
+    is_extended_id: bool = True
+    is_remote_frame: bool = False
+    is_error_frame: bool = False
+
+    dlc: int | None = None
+    data: bytes = b""
+    is_fd: bool = False
+    is_rx: bool = True
+    bitrate_switch: bool = False
+    error_state_indicator: bool = False
+
+    def __len__(self) -> int:
+        if self.dlc is None:
+            return len(self.data)
+        return self.dlc
 
     def _compose_arbitration_id(self) -> int:
         can_id = self.arbitration_id
@@ -181,7 +202,6 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
             data=data,
             is_extended_id=self.config.is_extended,
             is_fd=self.config.is_fd,
-            check=True,
         )
         t = tags + ["write"] if tags is not None else ["write"]
         if self.config.is_extended:
@@ -194,7 +214,9 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
         return len(data)
 
     async def recvfrom(
-        self, timeout: float | None = None, tags: list[str] | None = None
+        self,
+        timeout: float | None = None,
+        tags: list[str] | None = None,
     ) -> tuple[int, bytes]:
         loop = asyncio.get_running_loop()
         can_frame = await asyncio.wait_for(loop.sock_recv(self._sock, self.BUFSIZE), timeout)
