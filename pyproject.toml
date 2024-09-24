@@ -110,6 +110,7 @@ ignore = [
     "PLR0913",  # too many arguments to function call
     "PLR0915",  # too many statements
     "PLC1901",  # empty string is falsey
+    "UP040",    # TODO: type aliases are not yet supported by mypy
 ]
 
 [tool.pytest.ini_options]
