@@ -24,6 +24,12 @@ Keep in mind that this project is intended for research and development usage on
 Inappropriate usage might cause irreversible damage to the device under test.
 We do not take any responsibility for damage caused by the usage of this tool.
 
+## Testimonials
+
+Levent Çelik et al. in [Comparing Open-Source UDS Implementations Through Fuzz Testing](https://saemobilus.sae.org/papers/comparing-open-source-uds-implementations-fuzz-testing-2024-01-2799):
+
+> Among the implementations we've identified, Gallia stands out as the most robust and dependable by a significant margin.
+
 ## Quickstart
 
 See the [setup instructions](https://fraunhofer-aisec.github.io/gallia/setup.html).
@@ -49,3 +55,4 @@ For the format of the `--target` argument see the [transports documentation](htt
 
 This work was partly funded by the German Federal Ministry of Education and Research (BMBF) as part of the [SecForCARs](https://www.secforcars.de/) project (grant no. 16KIS0790).
 A short presentation and demo video is available at this [page](https://www.secforcars.de/demos/10-automotive-scanning-framework.html).
+
