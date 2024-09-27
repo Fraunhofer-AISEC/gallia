@@ -203,4 +203,4 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
         return data
 
     async def close(self) -> None:
-        pass
+        self._sock.close()
