@@ -148,7 +148,7 @@ class ExcelGenerator(Operator):
                 entries_vec,
                 ScanMode.IDEN,
             )
-        except (KeyError, IndexError, AttributeError, SheetTitleException) as exc:
+        except (KeyError, AttributeError, SheetTitleException) as exc:
             self.logger.error(f"adding summary sheet failed: {g_repr(exc)}")
             return False
         return True
@@ -303,6 +303,7 @@ class ExcelGenerator(Operator):
         """
         fill response field in summary sheet.
         """
+        print(raw_df)
         try:
             sess_vec = np.array(dft_err_df.columns)
             if scan_mode == ScanMode.SERV:
@@ -325,6 +326,10 @@ class ExcelGenerator(Operator):
                                 & (raw_df[ColNm.sbfn] == sbfn)
                             )
                         err_ser = raw_df.loc[cond, ColNm.resp].mode()
+                        if err_ser.size == 0:
+                            cur_row += 1
+                            print(f'Error on entry: 0x{entry:X} sbfn: 0x{sbfn:X}')
+                            continue
                         resp = self.get_code_text(
                             err_ser.iloc[-1], self.iso_err_code_dict
                         )
@@ -356,7 +361,7 @@ class ExcelGenerator(Operator):
         add failure(undocumented or missing) sheet to report EXCEL file.
         """
         if scan_mode == ScanMode.UNKNOWN:
-            self.logger.error("adding summary sheet failed: scan mode unknown.")
+            self.logger.error("adding failure summary sheets failed: scan mode unknown.")
             return False
         try:
             dft_err_df = self.get_dft_err_df_from_raw(raw_df)
