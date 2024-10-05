@@ -112,8 +112,6 @@ if sys.platform.startswith("linux") or sys.platform == "darwin":
             await self.compressor
 
         async def _compressor(self) -> None:
-            # Gzip support in aiofiles is missing.
-            # https://github.com/Tinche/aiofiles/issues/46
             ready = False
             assert self.proc.stdout
             with await asyncio.to_thread(gzip.open, self.outfile, "wb") as f:

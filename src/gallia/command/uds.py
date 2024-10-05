@@ -5,8 +5,6 @@
 import json
 from argparse import ArgumentParser, BooleanOptionalAction, Namespace
 
-import aiofiles
-
 from gallia.command.base import FileNames, Scanner
 from gallia.config import Config
 from gallia.log import get_logger
@@ -157,9 +155,8 @@ class UDSScanner(Scanner):
 
         if args.properties is True:
             path = self.artifacts_dir.joinpath(FileNames.PROPERTIES_PRE.value)
-            async with aiofiles.open(path, "w") as file:
-                await file.write(json.dumps(await self.ecu.properties(True), indent=4))
-                await file.write("\n")
+            properties = await self.ecu.properties(True)
+            path.write_text(json.dumps(properties, indent=4) + "\n")
 
         if self.db_handler is not None:
             self._apply_implicit_logging_setting()
@@ -175,13 +172,11 @@ class UDSScanner(Scanner):
     async def teardown(self, args: Namespace) -> None:
         if args.properties is True and not self.ecu.transport.is_closed:
             path = self.artifacts_dir.joinpath(FileNames.PROPERTIES_POST.value)
-            async with aiofiles.open(path, "w") as file:
-                await file.write(json.dumps(await self.ecu.properties(True), indent=4))
-                await file.write("\n")
+            properties = await self.ecu.properties(True)
+            path.write_text(json.dumps(properties, indent=4) + "\n")
 
             path_pre = self.artifacts_dir.joinpath(FileNames.PROPERTIES_PRE.value)
-            async with aiofiles.open(path_pre) as file:
-                prop_pre = json.loads(await file.read())
+            prop_pre = json.loads(path_pre.read_text())
 
             if args.compare_properties and await self.ecu.properties(False) != prop_pre:
                 logger.warning("ecu properties differ, please investigate!")
