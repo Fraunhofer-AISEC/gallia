@@ -4,15 +4,15 @@
 
 import random
 import sys
-from abc import ABC
+from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Self
+from typing import Any, Self
 
 from pydantic import field_serializer, model_validator
 
 from gallia.command import AsyncScript
 from gallia.command.base import AsyncScriptConfig
-from gallia.command.config import Field, idempotent
+from gallia.command.config import Field, Idempotent
 from gallia.log import get_logger
 from gallia.services.uds.server import (
     DBUDSServer,
@@ -27,10 +27,10 @@ logger = get_logger(__name__)
 
 
 class VirtualECUConfig(AsyncScriptConfig):
-    target: idempotent(TargetURI) = Field(positional=True)
+    target: Idempotent[TargetURI] = Field(positional=True)
 
     @field_serializer("target")
-    def serialize_target_uri(self, target_uri: TargetURI | None, _info):
+    def serialize_target_uri(self, target_uri: TargetURI | None) -> Any:
         if target_uri is None:
             return None
 
@@ -55,7 +55,7 @@ class VirtualECUConfig(AsyncScriptConfig):
 class DbVirtualECUConfig(VirtualECUConfig, DBUDSServer.Behavior):
     path: Path = Field(positional=True)
     ecu: str | None
-    properties: dict | None
+    properties: dict[str, Any] | None = Field(metavar="PROPERTIES")
 
 
 class RngVirtualECUConfig(
@@ -76,6 +76,7 @@ class VirtualECU(AsyncScript, ABC):
         super().__init__(config)
         self.config: VirtualECUConfig = config
 
+    @abstractmethod
     def _server(self) -> UDSServer: ...
 
     async def main(self) -> None:

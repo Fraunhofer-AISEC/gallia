@@ -12,7 +12,7 @@ command-line arguments.
 
 import argparse
 import enum
-from typing import Optional, Type, cast
+from typing import Optional, Type, cast, TypeVar
 
 from pydantic_argparse import utils
 from pydantic_argparse.utils.pydantic import PydanticField, PydanticValidator
@@ -33,6 +33,23 @@ def should_parse(field: PydanticField) -> bool:
     return field.is_a(enum.Enum)
 
 
+EnumType = TypeVar("EnumType", bound=enum.Enum)
+
+def auto_enum(x: str, enum_type: type[EnumType]) -> EnumType:
+    try:
+        return enum_type[x]
+    except KeyError:
+        try:
+            return enum_type(x)
+        except ValueError:
+            try:
+                return enum_type(int(x, 0))
+            except ValueError:
+                pass
+
+    raise ValueError(f"{x} is not a valid key or value for {enum_type}")
+
+
 def parse_field(
     parser: SupportsAddArgument,
     field: PydanticField,
@@ -50,7 +67,7 @@ def parse_field(
     enum_type = cast(Type[enum.Enum], field.info.annotation)
 
     # Determine Argument Properties
-    metavar = f"{{{', '.join(e.name for e in enum_type)}}}"
+    metavar = f"{{{', '.join(f'{e.name}({e.value})' for e in enum_type)}}}"
     action = argparse._StoreAction
 
     # Add Enum Field
@@ -66,4 +83,5 @@ def parse_field(
     )
 
     # Construct and Return Validator
-    return utils.pydantic.as_validator(field, lambda v: enum_type[v])
+    # TODO: Why does this have no effect?
+    return utils.pydantic.as_validator(field, lambda v: auto_enum(v, enum_type))

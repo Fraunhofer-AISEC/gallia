@@ -21,7 +21,7 @@ import msgspec
 from pydantic import ConfigDict, field_serializer, model_validator
 
 from gallia import exitcodes
-from gallia.command.config import Field, GalliaBaseModel, idempotent
+from gallia.command.config import Field, GalliaBaseModel, Idempotent
 from gallia.db.handler import DBHandler
 from gallia.dumpcap import Dumpcap
 from gallia.log import add_zst_log_handler, get_logger, tz
@@ -170,7 +170,7 @@ class BaseCommand(FlockMixin, ABC):
 
     log_file_handlers: list[Handler]
 
-    def __init__(self, config: CONFIG_TYPE) -> None:
+    def __init__(self, config: BaseCommandConfig) -> None:
         self.id = camel_to_snake(self.__class__.__name__)
         self.config = config
         self.artifacts_dir = Path()
@@ -442,10 +442,10 @@ class ScannerConfig(AsyncScriptConfig, argument_group="scanner", config_section=
     dumpcap: bool = Field(
         sys.platform == "linux", description="Enable/Disable creating a pcap file"
     )
-    target: idempotent(TargetURI) = Field(
+    target: Idempotent[TargetURI] = Field(
         description="URI that describes the target", metavar="TARGET"
     )
-    power_supply: idempotent(PowerSupplyURI) | None = Field(
+    power_supply: Idempotent[PowerSupplyURI] | None = Field(
         None,
         description="URI specifying the location of the relevant opennetzteil server",
         metavar="URI",
@@ -459,7 +459,7 @@ class ScannerConfig(AsyncScriptConfig, argument_group="scanner", config_section=
     )
 
     @field_serializer("target", "power_supply")
-    def serialize_target_uri(self, target_uri: TargetURI | None, _info) -> Any:
+    def serialize_target_uri(self, target_uri: TargetURI | None) -> Any:
         if target_uri is None:
             return None
 

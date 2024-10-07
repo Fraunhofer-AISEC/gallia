@@ -1,7 +1,7 @@
 import sys
+from collections.abc import Mapping
 
-from pydantic_argparse import BaseCommand
-
+from gallia.command import BaseCommand
 from gallia.commands.discover.find_xcp import CanFindXCP, TcpFindXCP, UdpFindXCP
 from gallia.plugins.plugin import CommandTree, Plugin
 
@@ -16,7 +16,7 @@ class XCPPlugin(Plugin):
         return "Default Gallia plugin for Universal Measurement and Calibration Protocol (XCP) functionality"
 
     @classmethod
-    def commands(cls) -> dict[str, CommandTree | type[BaseCommand]]:
+    def commands(cls) -> Mapping[str, CommandTree | type[BaseCommand]]:
         tree = {}
 
         if sys.platform.startswith("linux"):
