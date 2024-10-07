@@ -6,7 +6,7 @@ import reprlib
 from itertools import product
 
 from gallia.command import UDSScanner
-from gallia.command.config import AutoInt, Field, HexBytes
+from gallia.command.config import AutoInt, Field, HexBytes, Ranges2D
 from gallia.command.uds import UDSScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds.core.client import UDSRequestConfig
@@ -20,22 +20,26 @@ logger = get_logger(__name__)
 
 
 class ScanIdentifiersConfig(UDSScannerConfig):
-    sessions: AutoInt | None = Field(description="Set list of sessions to be tested; all if None")
+    sessions: list[AutoInt] | None = Field(
+        None, description="Set list of sessions to be tested; all if None", metavar="SESSION_ID"
+    )
     start: AutoInt = Field(0, description="start scan at this dataIdentifier")
     end: AutoInt = Field(0xFFFF, description="end scan at this dataIdentifier")
     payload: HexBytes | None = Field(
         None, description="Payload which will be appended for each request as hex string"
     )
-    sid: AutoInt = Field(
-        0x22,
-        description="\n            Service ID to scan; defaults to ReadDataByIdentifier;\n            currently supported:\n            0x27 Security Access;\n            0x22 Read Data By Identifier;\n            0x2e Write Data By Identifier;\n            0x31 Routine Control;\n            ",
+    service: UDSIsoServices = Field(
+        UDSIsoServices.ReadDataByIdentifier,
+        description="\n            Service (ID) to scan; defaults to ReadDataByIdentifier;\n            currently supported:\n            0x27 Security Access;\n            0x22 Read Data By Identifier;\n            0x2e Write Data By Identifier;\n            0x31 Routine Control;\n            ",
     )
     check_session: int | None = Field(
+        None,
         description="Check current session via read DID [for every nth DataIdentifier] and try to recover session; only takes affect if --sessions is given",
         const=1,
     )
-    skip: str = Field(
+    skip: Ranges2D = Field(
         {},
+        metavar="SESSION_ID:ID",
         description="\n                 The data identifiers to be skipped per session.\n                 A session specific skip is given by <session_id>:<identifiers>\n                 where <identifiers> is a comma separated list of single ids or id ranges using a dash.\n                 Examples:\n                  - 0x01:0xf3\n                  - 0x10-0x2f\n                  - 0x01:0xf3,0x10-0x2f\n                 Multiple session specific skips are separated by space.\n                 Only takes affect if --sessions is given.\n                 ",
     )
     skip_not_supported: bool = Field(
@@ -92,7 +96,7 @@ class ScanIdentifiers(UDSScanner):
         timeout_DIDs = 0
         sub_functions = [0x00]
 
-        if self.config.sid == UDSIsoServices.RoutineControl:
+        if self.config.service == UDSIsoServices.RoutineControl:
             if not self.config.payload:
                 logger.warning(
                     "Scanning RoutineControl with empty payload can successfully execute some "
@@ -102,7 +106,7 @@ class ScanIdentifiers(UDSScanner):
             # Scan all three subfunctions (startRoutine, stopRoutine, requestRoutineResults)
             sub_functions = list(map(int, RoutineControlSubFuncs))
 
-        if self.config.sid == UDSIsoServices.SecurityAccess and self.config.end > 0xFF:
+        if self.config.service == UDSIsoServices.SecurityAccess and self.config.end > 0xFF:
             logger.warning(
                 "Service 0x27 SecurityAccess only accepts subFunctions (1-byte identifiers); "
                 + f"limiting END to {g_repr(0xff)} instead of {g_repr(self.config.end)}"
@@ -128,21 +132,21 @@ class ScanIdentifiers(UDSScanner):
                     )
                     break
 
-            if self.config.sid == UDSIsoServices.SecurityAccess:
+            if self.config.service == UDSIsoServices.SecurityAccess:
                 if DID & 128:
                     logger.info(
                         "Keep in mind that you set the SuppressResponse Bit (8th bit): "
                         + f"{g_repr(DID)} = 0b{DID:b}"
                     )
-                pdu = bytes([self.config.sid, DID])
+                pdu = bytes([self.config.service, DID])
 
-            elif self.config.sid == UDSIsoServices.RoutineControl:
+            elif self.config.service == UDSIsoServices.RoutineControl:
                 pdu = bytes(
-                    [self.config.sid, sub_function, DID >> 8, DID & 0xFF]
+                    [self.config.service, sub_function, DID >> 8, DID & 0xFF]
                 )  # Needs extra byte for sub function
             else:
                 # DefaultBehavior, e.g. for ReadDataByIdentifier/WriteDataByIdentifier
-                pdu = bytes([self.config.sid, DID >> 8, DID & 0xFF])
+                pdu = bytes([self.config.service, DID >> 8, DID & 0xFF])
 
             if self.config.payload:
                 pdu += self.config.payload
@@ -162,7 +166,7 @@ class ScanIdentifiers(UDSScanner):
             if isinstance(resp, NegativeResponse):
                 if suggests_service_not_supported(resp):
                     logger.info(
-                        f"{g_repr(DID)}: {resp}; does session {g_repr(session)} support service {service_repr(self.config.sid)}?"
+                        f"{g_repr(DID)}: {resp}; does session {g_repr(session)} support service {service_repr(self.config.service)}?"
                     )
 
                     if self.config.skip_not_supported:

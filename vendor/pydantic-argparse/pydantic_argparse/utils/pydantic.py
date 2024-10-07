@@ -13,6 +13,7 @@ dynamically generated validators and environment variable parsers.
 from collections.abc import Container, Mapping
 from dataclasses import dataclass
 from enum import Enum
+from types import UnionType
 from typing import (
     Any,
     Callable,
@@ -30,6 +31,7 @@ from typing import (
 )
 
 import pydantic
+from docutils.nodes import field
 from pydantic import BaseModel
 from pydantic.fields import FieldInfo
 from pydantic_core import PydanticUndefined
@@ -72,52 +74,36 @@ class PydanticField:
         for name, info in model.model_fields.items():
             yield cls(name, info)
 
-    @property
-    def outer_type(self) -> Optional[Type]:
-        """Returns the outer type for nested types using `typing.get_origin`.
-
-        This will return `None` for simple, unnested types.
-        """
-        return get_origin(self.info.annotation)
-
-    @property
-    def inner_type(self) -> Tuple[Type, ...]:
-        """Returns the inner type for nested types using `typing.get_args`.
-
-        This will be an empty tuple for simple, unnested types.
-        """
-        return get_args(self.info.annotation)
-
-    @property
-    def main_type(self) -> Tuple[Type, ...]:
-        """Return the main inner types.
-
-        This excludes the `NoneType` when dealing with `typing.Optional` types.
-        """
-        return tuple(t for t in self.inner_type if t is not NoneType)
-
     def get_type(self) -> Union[Type, Tuple[Type, ...], None]:
         """Return the type annotation for the `pydantic` field.
 
         Returns:
             Union[Type, Tuple[Type, ...], None]
         """
-        field_type = self.info.annotation
-        main_type = self.main_type
-        outer_type = self.outer_type
-        outer_type_is_type = isinstance(outer_type, type)
-        if outer_type and (
-            isinstance(outer_type, (Container, Mapping))
-            or (outer_type_is_type and issubclass(outer_type, (Container, Mapping)))
-            or outer_type is Literal
-        ):
-            # only return if outer_type is a concrete type like list, dict, etc OR typing.Literal
-            # NOT if outer_type is typing.Union, etc
-            return outer_type
-        if main_type and all_types(main_type):
-            # the all type check is specifically for typing.Literal
-            return main_type
-        return field_type
+        annotation = self.info.annotation
+        origin = get_origin(annotation)
+
+        if origin is Literal or isinstance(origin, type) and issubclass(origin, Container):
+            return origin
+        elif origin is Union or origin is UnionType:
+            args = get_args(self.info.annotation)
+            types = list(arg for arg in args if arg is not NoneType)
+        elif origin is None:
+            types = [annotation]
+        else:
+            assert False, f"Unsupported origin {origin} for field {self.name} with annotation {annotation}"
+
+        base_types = []
+
+        for t in types:
+            origin = get_origin(t)
+
+            if origin is not None:
+                base_types.append(origin)
+            else:
+                base_types.append(t)
+
+        return tuple(base_types)
 
     def is_a(self, types: Union[Any, Tuple[Any, ...]]) -> bool:
         """Checks whether the subject *is* any of the supplied types.

@@ -194,7 +194,11 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
                 argument_name = PydanticField(argument, fields[argument]).arg_names()
                 source = f"argument {', '.join(argument_name)}: "
 
-            error_msg = str(e["ctx"]["error"])
+            try:
+                error_msg = str(e["ctx"]["error"])
+            except KeyError:
+                error_msg = e["msg"]
+
             msg += f"{source}{error_msg}\n"
 
         # Check whether parser should exit

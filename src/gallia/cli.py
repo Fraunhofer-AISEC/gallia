@@ -4,6 +4,7 @@
 
 
 import sys
+from collections.abc import Mapping
 from types import UnionType
 from typing import Any, Never
 
@@ -45,7 +46,7 @@ def _create_parser_from_tree(
     global model_counter
     model_name = f"_dynamic_gallia_hierarchy_model_{model_counter}"
     model_counter += 1
-    args: dict[str, tuple[type | UnionType, Field]] = {}
+    args: Mapping[str, tuple[type | UnionType, Any]] = {}
 
     for key, value in command_tree.subtree.items():
         if isinstance(value, CommandTree):
@@ -61,7 +62,7 @@ def _create_parser_from_tree(
 
 
 def create_parser(
-    commands: type[BaseCommand] | dict[str, CommandTree | type[BaseCommand]],
+    commands: type[BaseCommand] | Mapping[str, CommandTree | type[BaseCommand]],
 ) -> ArgumentParser:
     """Creates an argument parser out of the given command hierarchy.
     For accessing the command after parsing, see get_command().
@@ -73,7 +74,7 @@ def create_parser(
 
     config, _ = load_config_file()
 
-    if isinstance(commands, dict):
+    if isinstance(commands, Mapping):
         command_tree = CommandTree("", subtree=commands)
         model, extra_defaults = _create_parser_from_tree(command_tree, config, {})
     else:
@@ -93,7 +94,7 @@ def get_command(config: BaseModel) -> BaseCommand:
 
 
 def parse_and_run(
-    commands: type[BaseCommand] | dict[str, CommandTree | type[BaseCommand]],
+    commands: type[BaseCommand] | Mapping[str, CommandTree | type[BaseCommand]],
     auto_complete: bool = True,
 ) -> Never:
     """Creates an argument parser out of the given command hierarchy and runs the command with its argument.

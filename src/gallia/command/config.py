@@ -2,10 +2,21 @@ import binascii
 import os
 import tomllib
 from abc import ABC
+from collections.abc import Callable
 from enum import Enum
 from pathlib import Path
 from types import UnionType
-from typing import Annotated, Any, TypeVar, Union, Unpack, get_args, get_origin
+from typing import (
+    TYPE_CHECKING,
+    Annotated,
+    Any,
+    TypeAlias,
+    TypeVar,
+    Union,
+    Unpack,
+    get_args,
+    get_origin,
+)
 
 from pydantic import BeforeValidator
 from pydantic.fields import _FromFieldInfoInputs
@@ -14,14 +25,29 @@ from pydantic_argparse.utils.field import ArgFieldInfo
 from pydantic_core import PydanticUndefined
 
 from gallia.config import Config
+from gallia.utils import unravel, unravel_2d
 
 registry = {}
 
 
-AutoInt = Annotated[int, BeforeValidator(lambda x: x if isinstance(x, int) else int(x, 0))]
+def err_int(x: str, base: int) -> int:
+    try:
+        return int(x, base)
+    except ValueError:
+        base_suffix = ""
+
+        if base != 0:
+            base_suffix = f" with base {base}"
+
+        raise ValueError(
+            f"{repr(x)} is not a valid representation for an integer{base_suffix}"
+        ) from None
 
 
-HexInt = Annotated[int, BeforeValidator(lambda x: x if isinstance(x, int) else int(x, 16))]
+AutoInt = Annotated[int, BeforeValidator(lambda x: x if isinstance(x, int) else err_int(x, 0))]
+
+
+HexInt = Annotated[int, BeforeValidator(lambda x: x if isinstance(x, int) else err_int(x, 16))]
 
 
 HexBytes = Annotated[
@@ -30,18 +56,62 @@ HexBytes = Annotated[
 ]
 
 
-EnumType = TypeVar("EnumType", bound=Enum)
+Ranges = Annotated[list[int], BeforeValidator(lambda x: x if isinstance(x, list) else unravel(x))]
 
 
-def enum(cls: type[EnumType]) -> type[EnumType]:
-    return Annotated[cls, BeforeValidator(lambda x: x if isinstance(x, cls) else cls[x])]
+Ranges2D = Annotated[
+    dict[int, list[int]],
+    BeforeValidator(
+        lambda x: x
+        if isinstance(x, dict)
+        else unravel_2d(" ".join(x))
+        if isinstance(x, list)
+        else unravel_2d(x)
+    ),
+]
 
 
 T = TypeVar("T")
 
 
-def idempotent(cls: type[T]) -> type[T]:
-    return Annotated[cls, BeforeValidator(lambda x: x if isinstance(x, cls) else cls(x))]
+EnumType = TypeVar("EnumType", bound=Enum)
+
+
+def auto_enum(x: str, enum_type: type[EnumType]) -> EnumType:
+    try:
+        return enum_type[x]
+    except KeyError:
+        try:
+            return enum_type(x)
+        except ValueError:
+            try:
+                return enum_type(int(x, 0))
+            except ValueError:
+                pass
+
+    raise ValueError(f"{x} is not a valid key or value for {enum_type}")
+
+
+if TYPE_CHECKING:
+    Idempotent: TypeAlias = Annotated[T, ""]
+    EnumArg: TypeAlias = Annotated[EnumType, ""]
+else:
+
+    class _TrickType:
+        def __init__(self, function: Callable[[type[T]], type[T]]):
+            self.function = function
+
+        def __getitem__(self, cls: type[T]) -> type[T]:
+            return self.function(cls)
+
+    Idempotent = _TrickType(
+        lambda cls: Annotated[cls, BeforeValidator(lambda x: x if isinstance(x, cls) else cls(x))]
+    )
+    EnumArg = _TrickType(
+        lambda cls: Annotated[
+            cls, BeforeValidator(lambda x: x if isinstance(x, cls) else auto_enum(x, cls))
+        ]
+    )
 
 
 class ConfigArgFieldInfo(ArgFieldInfo):
@@ -89,7 +159,7 @@ def Field(
 
 
 class GalliaBaseModel(BaseCommand, ABC):
-    init_kwargs: dict | None = Field(None, hidden=True)
+    init_kwargs: dict[str, Any] | None = Field(None, hidden=True)
     _argument_group: str | None
     _config_section: str | None
 
@@ -104,8 +174,8 @@ class GalliaBaseModel(BaseCommand, ABC):
         /,
         argument_group: str | None = None,
         config_section: str | None = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         super().__init_subclass__(**kwargs)
 
         cls._config_section = config_section
