@@ -16,7 +16,7 @@ from typing import Any
 
 import aiosqlite
 
-from gallia.command.config import GalliaBaseModel
+from gallia.command.config import AutoInt, GalliaBaseModel
 from gallia.log import get_logger
 from gallia.services.uds.core import service
 from gallia.services.uds.core.constants import (
@@ -344,8 +344,8 @@ class RNGEcuState(ECUState):
 
 class RandomUDSServer(UDSServer):
     class RandomnessParameters(GalliaBaseModel):
-        mandatory_sessions: list[int] = [1]
-        optional_sessions: list[int] = [2, 3, 4] + list(range(0x40, 0x7F))
+        mandatory_sessions: list[AutoInt] = [1]
+        optional_sessions: list[AutoInt] = [2, 3, 4] + list(range(0x40, 0x7F))
         p_session: float = 0.05
 
         services: dict[int, dict[UDSIsoServices, list[int] | None]] = {}

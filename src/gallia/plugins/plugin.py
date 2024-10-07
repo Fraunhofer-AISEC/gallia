@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from collections.abc import Mapping, MutableMapping
 from dataclasses import dataclass
 from importlib.metadata import entry_points
 from typing import Union
@@ -11,7 +12,7 @@ from gallia.transports import BaseTransport, TargetURI
 @dataclass
 class CommandTree:
     description: str | None
-    subtree: dict[str, Union["CommandTree", type[BaseCommand]]]
+    subtree: MutableMapping[str, Union["CommandTree", type[BaseCommand]]]
 
 
 class Plugin(ABC):
@@ -32,7 +33,7 @@ class Plugin(ABC):
         return []
 
     @classmethod
-    def commands(cls) -> dict[str, CommandTree | type[BaseCommand]]:
+    def commands(cls) -> Mapping[str, CommandTree | type[BaseCommand]]:
         return {}
 
 
@@ -101,14 +102,15 @@ def load_ecu(vendor: str) -> type[ECU]:
 
 
 def _merge_commands(
-    c1: dict[str, CommandTree | type[BaseCommand]], c2: dict[str, CommandTree | type[BaseCommand]]
+    c1: MutableMapping[str, CommandTree | type[BaseCommand]],
+    c2: Mapping[str, CommandTree | type[BaseCommand]],
 ) -> None:
     for key, value in c2.items():
         if key not in c1:
             c1[key] = value
-        elif isinstance(value, CommandTree) and isinstance(c1[key], CommandTree):
+        elif isinstance(value, CommandTree) and isinstance(cmd := c1[key], CommandTree):
             try:
-                _merge_command_trees(c1[key], value)
+                _merge_command_trees(cmd, value)
             except ValueError as e:
                 raise ValueError(f"{key} {str(e)}")
         else:
@@ -126,9 +128,9 @@ def _merge_command_trees(tree1: CommandTree, tree2: CommandTree) -> None:
     _merge_commands(tree1.subtree, tree2.subtree)
 
 
-def load_commands() -> dict[str, CommandTree | type[BaseCommand]]:
+def load_commands() -> Mapping[str, CommandTree | type[BaseCommand]]:
     plugins = load_plugins()
-    commands: dict[str, CommandTree | type[BaseCommand]] = {}
+    commands: MutableMapping[str, CommandTree | type[BaseCommand]] = {}
 
     for plugin in plugins:
         try:

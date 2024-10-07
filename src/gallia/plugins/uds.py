@@ -1,4 +1,5 @@
 import sys
+from collections.abc import Mapping
 
 from gallia.command import BaseCommand
 from gallia.commands.discover.doip import DoIPDiscoverer
@@ -52,7 +53,7 @@ class UDSPlugin(Plugin):
         return [ECU]
 
     @classmethod
-    def commands(cls) -> dict[str, CommandTree | type[BaseCommand]]:
+    def commands(cls) -> Mapping[str, CommandTree | type[BaseCommand]]:
         tree = {
             "discover": CommandTree(
                 description="discover scanners for hosts and endpoints",

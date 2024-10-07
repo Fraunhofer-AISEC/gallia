@@ -13,7 +13,7 @@ import psutil
 
 from gallia.command import AsyncScript
 from gallia.command.base import AsyncScriptConfig
-from gallia.command.config import Field
+from gallia.command.config import AutoInt, Field
 from gallia.log import get_logger
 from gallia.services.uds.core.service import TesterPresentRequest, TesterPresentResponse
 from gallia.transports.doip import (
@@ -36,12 +36,12 @@ logger = get_logger(__name__)
 
 
 class DoIPDiscovererConfig(AsyncScriptConfig):
-    start: lambda x: int(
-        x, 0
-    ) = Field(0x00, description="Set start address of TargetAddress search range", metavar="INT")
-    stop: lambda x: int(
-        x, 0
-    ) = Field(0xFFFF, description="Set stop address of TargetAddress search range", metavar="INT")
+    start: AutoInt = Field(
+        0x00, description="Set start address of TargetAddress search range", metavar="INT"
+    )
+    stop: AutoInt = Field(
+        0xFFFF, description="Set stop address of TargetAddress search range", metavar="INT"
+    )
     target: str | None = Field(
         None,
         description="The more you give, the more automatic detection will be skipped: IP, Port, RoutingActivationType, SourceAddress",

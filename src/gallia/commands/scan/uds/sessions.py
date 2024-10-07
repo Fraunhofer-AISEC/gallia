@@ -7,7 +7,7 @@ import sys
 from typing import Any
 
 from gallia.command import UDSScanner
-from gallia.command.config import AutoInt, Field
+from gallia.command.config import AutoInt, Field, Ranges
 from gallia.command.uds import UDSScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse, UDSErrorCodes, UDSRequestConfig, UDSResponse
@@ -25,11 +25,11 @@ class SessionsScannerConfig(UDSScannerConfig):
         description="Sleep this amount of seconds after changing to DefaultSession",
         metavar="SECONDS",
     )
-    skip: AutoInt = Field(
+    skip: Ranges = Field(
         [], description="List with session IDs to skip while scanning", metavar="SESSION_ID"
     )
     with_hooks: bool = Field(False, description="Use hooks in case of a ConditionsNotCorrect error")
-    reset: lambda x: int(x, 0) | None = Field(
+    reset: AutoInt | None = Field(
         None,
         description="Reset the ECU after each iteration with the optionally given reset level",
         const=0x01,
