@@ -35,6 +35,7 @@ def should_parse(field: PydanticField) -> bool:
 
 EnumType = TypeVar("EnumType", bound=enum.Enum)
 
+
 def auto_enum(x: str, enum_type: type[EnumType]) -> EnumType:
     try:
         return enum_type[x]
@@ -79,7 +80,7 @@ def parse_field(
         **field.arg_required(),
         **field.arg_default(),
         **field.arg_const(),
-        **field.arg_dest()
+        **field.arg_dest(),
     )
 
     # Construct and Return Validator

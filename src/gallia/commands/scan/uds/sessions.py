@@ -137,7 +137,7 @@ class SessionsScanner(UDSScanner):
 
                             if isinstance(resp, NegativeResponse):
                                 logger.warning(
-                                    f"Could not reset ECU with {(EcuResetSubFuncs(self.config.reset).name if self.config.reset in iter(EcuResetSubFuncs) else self.config.reset)}: {resp}; continuing without reset"
+                                    f"Could not reset ECU with {(EcuResetSubFuncs(self.config.reset).name if self.config.reset in iter(EcuResetSubFuncs) else self.config.reset)}: {resp}; continuing without reset"  # type: ignore[operator]
                                 )
                             else:
                                 logger.info("Waiting for the ECU to recover…")

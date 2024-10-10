@@ -18,7 +18,6 @@ The resultant arguments object returned is an instance of the defined
 be compatible with an IDE, linter or type checker.
 """
 
-
 import argparse
 import sys
 from typing import Dict, Generic, List, NoReturn, Optional, Tuple, Type, Any
@@ -67,7 +66,7 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
         epilog: Optional[str] = None,
         add_help: bool = True,
         exit_on_error: bool = True,
-        extra_defaults: dict[Type, dict[str, Any]] | None = None
+        extra_defaults: dict[Type, dict[str, Any]] | None = None,
     ) -> None:
         """Instantiates the Typed Argument Parser with its `pydantic` model.
 
@@ -129,8 +128,7 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
         # this is for nested commands
         if self._subcommands is not None:
             has_submodels = has_submodels or any(
-                len(subparser._submodels) > 0
-                for subparser in self._subcommands.choices.values()
+                len(subparser._submodels) > 0 for subparser in self._subcommands.choices.values()
             )
         return has_submodels
 
@@ -184,7 +182,7 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
                 msg += "  "
 
             source = ""
-            sources = e["loc"][len(parser.subcommand_path):]
+            sources = e["loc"][len(parser.subcommand_path) :]
 
             # If the validation failed for a field validator there is one source level left,
             # which equals the name of the field
@@ -319,10 +317,7 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
 
                     # recurse and parse fields below this submodel
                     # TODO: storage of submodels not needed
-                    self._submodels[field.name] = self._add_model(
-                        model=field.model_type,
-                        arg_group=arg_group
-                    )
+                    self._submodels[field.name] = self._add_model(model=field.model_type, arg_group=arg_group)
 
                     validator = None
 
@@ -330,7 +325,11 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
                 # Add field
                 added = False
 
-                if self.extra_defaults is not None and model in self.extra_defaults and field.name in self.extra_defaults[model]:
+                if (
+                    self.extra_defaults is not None
+                    and model in self.extra_defaults
+                    and field.name in self.extra_defaults[model]
+                ):
                     field.extra_default = self.extra_defaults[model][field.name]
                     try:
                         # TODO: This does not work well with model validators, need to rethink

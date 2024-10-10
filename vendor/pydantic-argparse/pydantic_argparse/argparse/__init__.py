@@ -17,6 +17,4 @@ argument parsing.
 from pydantic_argparse.argparse.parser import ArgumentParser
 
 # Public Re-Exports
-__all__ = (
-    "ArgumentParser",
-)
+__all__ = ("ArgumentParser",)

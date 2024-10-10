@@ -29,6 +29,7 @@ from gallia.commands.scan.uds.reset import ResetScanner
 from gallia.commands.scan.uds.sa_dump_seeds import SASeedsDumper
 from gallia.commands.scan.uds.services import ServicesScanner
 from gallia.commands.scan.uds.sessions import SessionsScanner
+from gallia.commands.script.rerun import Rerunner
 from gallia.commands.script.vecu import DbVirtualECU, RngVirtualECU
 from gallia.plugins.plugin import CommandTree, Plugin
 from gallia.services.uds import ECU
@@ -109,7 +110,7 @@ class UDSPlugin(Plugin):
             ),
             "script": CommandTree(
                 description="miscellaneous helper scripts",
-                subtree={},
+                subtree={"rerun": Rerunner},
             ),
         }
 

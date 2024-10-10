@@ -47,7 +47,7 @@ class HookVariant(Enum):
 
 
 class RunMeta(msgspec.Struct):
-    command: list[str]
+    command: str
     start_time: str
     end_time: str
     exit_code: int
@@ -228,7 +228,7 @@ class BaseCommand(FlockMixin, ABC):
             await self.db_handler.connect()
 
             await self.db_handler.insert_run_meta(
-                script=sys.argv[0].split()[-1],
+                script=f"{type(self).__module__}.{type(self).__name__}",
                 config=self.config,
                 start_time=datetime.now(UTC).astimezone(),
                 path=self.artifacts_dir,
@@ -468,7 +468,7 @@ class ScannerConfig(AsyncScriptConfig, argument_group="scanner", config_section=
     @model_validator(mode="after")
     def check_power_supply_required(self) -> Self:
         if self.power_cycle and self.power_supply is None:
-            raise ValueError("--power-cycle needs --power-supply")
+            raise ValueError("power-cycle needs power-supply")
 
         return self
 

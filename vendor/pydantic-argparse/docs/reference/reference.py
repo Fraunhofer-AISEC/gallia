@@ -1,6 +1,5 @@
 """Automatic Code Reference Documentation Generation."""
 
-
 # Standard
 import pathlib
 

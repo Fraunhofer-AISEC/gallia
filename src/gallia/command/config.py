@@ -165,6 +165,10 @@ class GalliaBaseModel(BaseCommand, ABC):
 
     def __init__(self, **data: Any):
         init_kwargs = data.pop("init_kwargs", {})
+
+        if init_kwargs is None:
+            init_kwargs = {}
+
         init_kwargs.update(data)
 
         super().__init__(**init_kwargs)

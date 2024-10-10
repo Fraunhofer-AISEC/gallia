@@ -88,9 +88,6 @@ class IOCBIPrimitive(UDSScanner):
                 did, self.config.new_state, control_enable_mask_record
             )
             uses_control_parameter = False
-        else:
-            logger.critical("Unhandled control parameter")
-            sys.exit(1)
 
         if isinstance(resp, NegativeResponse):
             logger.error(resp)
