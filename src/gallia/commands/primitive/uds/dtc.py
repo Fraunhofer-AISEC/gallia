@@ -6,8 +6,6 @@ import sys
 from argparse import Namespace
 from functools import partial
 
-from tabulate import tabulate
-
 from gallia.command import UDSScanner
 from gallia.log import get_logger
 from gallia.services.uds.core.constants import (
@@ -17,7 +15,7 @@ from gallia.services.uds.core.constants import (
 )
 from gallia.services.uds.core.service import NegativeResponse
 from gallia.services.uds.core.utils import g_repr
-from gallia.utils import auto_int
+from gallia.utils import auto_int, format_table
 
 logger = get_logger(__name__)
 
@@ -167,10 +165,10 @@ class DTCPrimitive(UDSScanner):
             "7 = warningIndicatorRequested: existing warning indicators (e.g. lamp, display)",
         ]
 
-        for line in (
-            tabulate([[d] for d in bit_descriptions], headers=["bit descriptions"])
-        ).splitlines():
-            logger.result(line)
+        logger.result("bit descriptions")
+        logger.result("----------------")
+        for bit in bit_descriptions:
+            logger.result(bit)
 
     def show_summary(self, dtcs: list[list[str]]) -> None:
         dtcs.sort()
@@ -188,7 +186,7 @@ class DTCPrimitive(UDSScanner):
             "7",
         ]
 
-        for line in tabulate(dtcs, headers=header, tablefmt="fancy_grid").splitlines():
+        for line in format_table([header + dtcs]).splitlines():
             logger.result(line)
 
     async def clear(self, args: Namespace) -> None:
