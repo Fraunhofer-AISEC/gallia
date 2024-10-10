@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+import json
 import os
 import os.path
 import shutil
@@ -18,6 +19,7 @@ from tempfile import gettempdir
 from typing import Any, Protocol, Self, cast
 
 import msgspec
+from construct.core import Mapping
 from pydantic import ConfigDict, field_serializer, model_validator
 
 from gallia import exitcodes
@@ -51,6 +53,7 @@ class RunMeta(msgspec.Struct):
     start_time: str
     end_time: str
     exit_code: int
+    config: Mapping
 
     def json(self) -> str:
         return msgspec.json.encode(self).decode()
@@ -175,10 +178,11 @@ class BaseCommand(FlockMixin, ABC):
         self.config = config
         self.artifacts_dir = Path()
         self.run_meta = RunMeta(
-            command=type(self).__name__,
+            command=f"{type(self).__module__}.{type(self).__name__}",
             start_time=datetime.now(tz).isoformat(),
             exit_code=0,
             end_time="",
+            config=json.loads(config.model_dump_json()),
         )
         self._lock_file_fd: int | None = None
         self.db_handler: DBHandler | None = None
@@ -228,7 +232,7 @@ class BaseCommand(FlockMixin, ABC):
             await self.db_handler.connect()
 
             await self.db_handler.insert_run_meta(
-                script=f"{type(self).__module__}.{type(self).__name__}",
+                script=self.run_meta.command,
                 config=self.config,
                 start_time=datetime.now(UTC).astimezone(),
                 path=self.artifacts_dir,
