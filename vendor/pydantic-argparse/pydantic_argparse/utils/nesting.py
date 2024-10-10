@@ -5,7 +5,7 @@
 """Utilities to help with parsing arbitrarily nested `pydantic` models."""
 
 from argparse import Namespace
-from typing import Any, Dict, Generic, Optional, Tuple, Type
+from typing import Any, Dict, Generic, Tuple, Type
 
 from boltons.iterutils import get_path, remap
 from pydantic import BaseModel
@@ -20,7 +20,8 @@ class _NestedArgumentParser(Generic[PydanticModelT]):
     """Parses arbitrarily nested `pydantic` models and inserts values passed at the command line."""
 
     def __init__(
-        self, model: PydanticModelT | Type[PydanticModelT],
+        self,
+        model: PydanticModelT | Type[PydanticModelT],
         namespace: Namespace,
     ) -> None:
         self.model = model
@@ -56,9 +57,7 @@ class _NestedArgumentParser(Generic[PydanticModelT]):
                 # recursively build nestes pydantic models in dict,
                 # which matches the actual schema the nested
                 # schema pydantic will be expecting
-                model_fields[key] = self._get_nested_model_fields(
-                    field.model_type, namespace
-                )
+                model_fields[key] = self._get_nested_model_fields(field.model_type, namespace)
             else:
                 # start with all leaves as None unless key is in top level
                 value = self.args.get(key, None)

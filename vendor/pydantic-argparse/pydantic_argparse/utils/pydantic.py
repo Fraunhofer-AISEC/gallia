@@ -10,7 +10,7 @@ field validator dictionaries and constructing new model classes with
 dynamically generated validators and environment variable parsers.
 """
 
-from collections.abc import Container, Mapping
+from collections.abc import Container
 from dataclasses import dataclass
 from enum import Enum
 from types import UnionType
@@ -31,7 +31,6 @@ from typing import (
 )
 
 import pydantic
-from docutils.nodes import field
 from pydantic import BaseModel
 from pydantic.fields import FieldInfo
 from pydantic_core import PydanticUndefined
@@ -63,9 +62,7 @@ class PydanticField:
     validated_extra_default: Any = None
 
     @classmethod
-    def parse_model(
-        cls, model: BaseModel | Type[BaseModel]
-    ) -> Iterator["PydanticField"]:
+    def parse_model(cls, model: BaseModel | Type[BaseModel]) -> Iterator["PydanticField"]:
         """Iterator over the pydantic model fields, yielding this wrapper class.
 
         Yields:
@@ -142,10 +139,7 @@ class PydanticField:
         is_type = False
         for t in field_type:
             is_type = (
-                is_type
-                or t in types
-                or (is_valid and isinstance(t, types))
-                or (is_valid and issubclass(t, types))  # type: ignore
+                is_type or t in types or (is_valid and isinstance(t, types)) or (is_valid and issubclass(t, types))  # type: ignore
             )
 
         return is_type
@@ -168,9 +162,7 @@ class PydanticField:
             if isinstance(t, type) and issubclass(t, BaseModel):
                 return t
         else:
-            raise TypeError(
-                "No `pydantic.BaseModel`s were found associated with this field."
-            )
+            raise TypeError("No `pydantic.BaseModel`s were found associated with this field.")
 
     def is_subcommand(self) -> bool:
         """Check whether the input pydantic Model is a subcommand.
@@ -215,7 +207,7 @@ class PydanticField:
         name = self.info.title or self.name
 
         if isinstance(self.info, ArgFieldInfo) and self.info.positional:
-            return name,
+            return (name,)
 
         prefix = "--no-" if invert else "--"
         long_name = f"{prefix}{name.replace('_', '-')}"
@@ -223,7 +215,7 @@ class PydanticField:
         if isinstance(self.info, ArgFieldInfo) and self.info.short is not None:
             return f"-{self.info.short}", long_name
 
-        return long_name,
+        return (long_name,)
 
     def description(self) -> str:
         """Standardises argument description.
@@ -275,16 +267,28 @@ class PydanticField:
             return field_type.__name__.upper()
 
     def arg_required(self) -> dict[str, bool]:
-        return {} if isinstance(self.info, ArgFieldInfo) and self.info.positional else {'required': self.info.is_required() and self.extra_default is None}
+        return (
+            {}
+            if isinstance(self.info, ArgFieldInfo) and self.info.positional
+            else {"required": self.info.is_required() and self.extra_default is None}
+        )
 
     def arg_default(self) -> dict[str, Any]:
-        return {} if self.extra_default is None or isinstance(self.info, ArgFieldInfo) and self.info.positional else {'default': self.extra_default}
+        return (
+            {}
+            if self.extra_default is None or isinstance(self.info, ArgFieldInfo) and self.info.positional
+            else {"default": self.extra_default}
+        )
 
     def arg_const(self) -> dict[str, Any]:
-        return {'const': self.info.const, 'nargs': '?'} if isinstance(self.info, ArgFieldInfo) and self.info.const is not PydanticUndefined else {}
+        return (
+            {"const": self.info.const, "nargs": "?"}
+            if isinstance(self.info, ArgFieldInfo) and self.info.const is not PydanticUndefined
+            else {}
+        )
 
     def arg_dest(self) -> dict[str, str]:
-        return {} if isinstance(self.info, ArgFieldInfo) and self.info.positional else {'dest': self.name}
+        return {} if isinstance(self.info, ArgFieldInfo) and self.info.positional else {"dest": self.name}
 
 
 def as_validator(

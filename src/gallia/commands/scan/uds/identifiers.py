@@ -6,7 +6,7 @@ import reprlib
 from itertools import product
 
 from gallia.command import UDSScanner
-from gallia.command.config import AutoInt, Field, HexBytes, Ranges2D
+from gallia.command.config import AutoInt, Field, HexBytes, Ranges, Ranges2D
 from gallia.command.uds import UDSScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds.core.client import UDSRequestConfig
@@ -20,7 +20,7 @@ logger = get_logger(__name__)
 
 
 class ScanIdentifiersConfig(UDSScannerConfig):
-    sessions: list[AutoInt] | None = Field(
+    sessions: Ranges | None = Field(
         None, description="Set list of sessions to be tested; all if None", metavar="SESSION_ID"
     )
     start: AutoInt = Field(0, description="start scan at this dataIdentifier")

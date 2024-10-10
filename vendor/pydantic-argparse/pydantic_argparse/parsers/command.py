@@ -35,7 +35,7 @@ def should_parse(field: PydanticField) -> bool:
 def parse_field(
     subparser: argparse._SubParsersAction,
     field: PydanticField,
-    extra_defaults: dict[Type, dict[str, Any]] | None = None
+    extra_defaults: dict[Type, dict[str, Any]] | None = None,
 ) -> Optional[PydanticValidator]:
     """Adds command pydantic field to argument parser.
 
@@ -52,7 +52,7 @@ def parse_field(
         help=field.info.description,
         model=field.model_type,  # type: ignore[call-arg]
         exit_on_error=False,  # Allow top level parser to handle exiting
-        extra_defaults=extra_defaults
+        extra_defaults=extra_defaults,
     )
 
     # Return

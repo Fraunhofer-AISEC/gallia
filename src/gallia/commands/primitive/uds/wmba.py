@@ -4,6 +4,9 @@
 
 import sys
 from pathlib import Path
+from typing import Self
+
+from pydantic import model_validator
 
 from gallia.command import UDSScanner
 from gallia.command.config import AutoInt, Field, HexBytes
@@ -24,6 +27,13 @@ class WMBAPrimitiveConfig(UDSScannerConfig):
     data_file: Path | None = Field(
         description="The path to a file with the binary data which should be written"
     )
+
+    @model_validator(mode="after")
+    def check_data_source(self) -> Self:
+        if not (self.data is None) ^ (self.data_file is None):
+            raise ValueError("Exactly one of data or data-file is required")
+
+        return self
 
 
 class WMBAPrimitive(UDSScanner):
@@ -46,6 +56,8 @@ class WMBAPrimitive(UDSScanner):
         if self.config.data is not None:
             data = self.config.data
         else:
+            assert self.config.data_file is not None
+
             with self.config.data_file.open("rb") as file:
                 data = file.read()
 

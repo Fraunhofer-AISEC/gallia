@@ -11,7 +11,7 @@ assert sys.platform.startswith("linux"), "unsupported platform"
 
 from gallia.command import AsyncScript
 from gallia.command.base import AsyncScriptConfig
-from gallia.command.config import AutoInt, Field
+from gallia.command.config import AutoInt, Field, Ranges
 from gallia.log import get_logger
 from gallia.services.uds.core.utils import bytes_repr, g_repr
 from gallia.transports import RawCANTransport, TargetURI
@@ -37,12 +37,12 @@ class CanFindXCPConfig(FindXCPConfig):
 
 class TcpFindXCPConfig(FindXCPConfig):
     xcp_ip: str = Field(description="XCP destination IP Address")
-    tcp_ports: str = Field(description="Comma separated list of TCP ports to test for XCP")
+    tcp_ports: Ranges = Field(description="List of TCP ports to test for XCP")
 
 
 class UdpFindXCPConfig(FindXCPConfig):
     xcp_ip: str = Field(description="XCP destination IP Address")
-    udp_ports: str = Field(description="Comma separated list of UDP ports to test for XCP")
+    udp_ports: Ranges = Field(description="List of UDP ports to test for XCP")
 
 
 class FindXCP(AsyncScript, ABC):
@@ -133,8 +133,7 @@ class TcpFindXCP(FindXCP):
 
         data = bytes([0xFF, 0x00])
         endpoints = []
-        for port in self.config.tcp_ports.split(","):
-            port = int(port, 0)  # noqa
+        for port in self.config.tcp_ports:
             logger.info(f"Testing TCP port: {port}")
             server = (self.config.xcp_ip, port)
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -182,8 +181,7 @@ class UdpFindXCP(FindXCP):
 
         data = bytes([0xFF, 0x00])
         endpoints = []
-        for port in self.config.udp_ports.split(","):
-            port = int(port, 0)  # noqa
+        for port in self.config.udp_ports:
             logger.info(f"Testing UDP port: {port}")
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self.socket.settimeout(0.5)

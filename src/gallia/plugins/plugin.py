@@ -128,7 +128,7 @@ def _merge_command_trees(tree1: CommandTree, tree2: CommandTree) -> None:
     _merge_commands(tree1.subtree, tree2.subtree)
 
 
-def load_commands() -> Mapping[str, CommandTree | type[BaseCommand]]:
+def load_commands() -> MutableMapping[str, CommandTree | type[BaseCommand]]:
     plugins = load_plugins()
     commands: MutableMapping[str, CommandTree | type[BaseCommand]] = {}
 
