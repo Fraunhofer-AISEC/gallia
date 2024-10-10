@@ -41,7 +41,7 @@ class IsotpDiscovererConfig(UDSDiscoveryScannerConfig):
         if self.target is not None and (not self.target.scheme == RawCANTransport.SCHEME):
             raise ValueError(f"Unsupported transport schema {self.target.scheme}; must be can-raw!")
         if self.extended_addr and (self.start > 0xFF or self.stop > 0xFF):
-            raise ValueError("--start/--stop maximum value is 0xFF")
+            raise ValueError("start/stop maximum value is 0xFF")
 
         return self
 

@@ -4,7 +4,6 @@
 
 """Simple Example."""
 
-
 # Third-Party
 import pydantic
 import pydantic_argparse
@@ -12,6 +11,7 @@ import pydantic_argparse
 
 class Arguments(pydantic.BaseModel):
     """Simple Command-Line Arguments."""
+
     # Required Args
     string: str = pydantic.Field(description="a required string")
     integer: int = pydantic.Field(description="a required integer")

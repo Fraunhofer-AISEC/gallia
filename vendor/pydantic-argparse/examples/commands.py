@@ -4,7 +4,6 @@
 
 """Commands Example."""
 
-
 # Third-Party
 import pydantic
 import pydantic_argparse
@@ -15,12 +14,14 @@ from typing import Optional
 
 class BuildCommand(pydantic.BaseModel):
     """Build Command Arguments."""
+
     # Required Args
     location: pydantic.FilePath = pydantic.Field(description="build location")
 
 
 class ServeCommand(pydantic.BaseModel):
     """Serve Command Arguments."""
+
     # Required Args
     address: pydantic.IPvAnyAddress = pydantic.Field(description="serve address")
     port: int = pydantic.Field(description="serve port")
@@ -28,6 +29,7 @@ class ServeCommand(pydantic.BaseModel):
 
 class Arguments(pydantic.BaseModel):
     """Command-Line Arguments."""
+
     # Optional Args
     verbose: bool = pydantic.Field(False, description="verbose flag")
 

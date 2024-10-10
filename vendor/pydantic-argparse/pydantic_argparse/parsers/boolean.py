@@ -57,7 +57,7 @@ def parse_field(
     # Determine Argument Properties
     action = (
         actions.BooleanOptionalAction
-        if field.arg_required() or invalid_extra_default
+        if field.info.is_required() or invalid_extra_default
         else argparse._StoreFalseAction
         if is_inverted
         else argparse._StoreTrueAction
@@ -71,7 +71,7 @@ def parse_field(
         **field.arg_required(),
         **field.arg_default(),
         **field.arg_const(),
-        **field.arg_dest()
+        **field.arg_dest(),
     )
 
     # Construct and Return Validator

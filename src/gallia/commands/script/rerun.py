@@ -2,15 +2,15 @@ import asyncio
 import importlib
 import json
 import sys
-from typing import Self, Any
+from typing import Any, Self
 
 import aiosqlite
 from pydantic import model_validator
 
 from gallia.command import BaseCommand
-from gallia.command.base import ScriptConfig, Script
-from gallia.log import get_logger
+from gallia.command.base import Script, ScriptConfig
 from gallia.command.config import Field
+from gallia.log import get_logger
 
 logger = get_logger(__name__)
 
@@ -25,6 +25,7 @@ class RerunnerConfig(ScriptConfig):
 
         return self
 
+
 class Rerunner(Script):
     CONFIG_TYPE = RerunnerConfig
     SHORT_HELP = "Rerun a previous gallia command based on its run_meta in the database"
@@ -34,11 +35,16 @@ class Rerunner(Script):
         self.config: RerunnerConfig = config
 
     def main(self) -> None:
-        query = ("SELECT script, config "
-                 "FROM run_meta "
-                 "WHERE id = ?")
-        parameters = (self.config.id, )
-        cursor: aiosqlite.Cursor = asyncio.run(self.db_handler.connection.execute(query, parameters))
+        query = "SELECT script, config " "FROM run_meta " "WHERE id = ?"
+        parameters = (self.config.id,)
+
+        assert self.db_handler is not None
+
+        connection = self.db_handler.connection
+
+        assert connection is not None
+
+        cursor: aiosqlite.Cursor = asyncio.run(connection.execute(query, parameters))
         row = asyncio.run(cursor.fetchone())
 
         if row is None:
@@ -47,8 +53,8 @@ class Rerunner(Script):
 
         script: str = row[0]
         config: dict[str, Any] = json.loads(row[1])
-        script_parts = script.split('.')
-        module = '.'.join(script_parts[:-1])
+        script_parts = script.split(".")
+        module = ".".join(script_parts[:-1])
         class_name = script_parts[-1]
 
         logger.info(f"Rerunning run {self.config.id} ({class_name}) with: {config}")

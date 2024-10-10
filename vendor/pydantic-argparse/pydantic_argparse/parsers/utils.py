@@ -28,6 +28,5 @@ class SupportsAddArgument(Protocol):
         metavar: str | tuple[str, ...] | None = ...,
         dest: str | None = ...,
         version: str = ...,
-        **kwargs: Any
-    ) -> Action:
-        ...
+        **kwargs: Any,
+    ) -> Action: ...

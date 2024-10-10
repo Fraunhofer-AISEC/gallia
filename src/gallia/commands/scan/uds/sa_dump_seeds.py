@@ -5,7 +5,6 @@
 import asyncio
 import sys
 import time
-from argparse import ArgumentParser
 from pathlib import Path
 
 import aiofiles
@@ -13,7 +12,6 @@ import aiofiles
 from gallia.command import UDSScanner
 from gallia.command.config import AutoInt, Field, HexBytes
 from gallia.command.uds import UDSScannerConfig
-from gallia.config import Config
 from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse, UDSRequestConfig
 from gallia.services.uds.core.utils import g_repr
@@ -63,10 +61,6 @@ class SASeedsDumper(UDSScanner):
     def __init__(self, config: SASeedsDumperConfig):
         super().__init__(config)
         self.config: SASeedsDumperConfig = config
-
-    def __init__(self, parser: ArgumentParser, config: Config = Config()) -> None:
-        super().__init__(parser, config)
-
         self.implicit_logging = False
 
     async def request_seed(self, level: int, data: bytes) -> bytes | None:

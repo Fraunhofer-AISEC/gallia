@@ -679,7 +679,7 @@ class RandomUDSServer(UDSServer):
 
 
 class DBUDSServer(UDSServer):
-    class Behavior(GalliaBaseModel):
+    class Behavior(UDSServer.Behavior):
         default_response_if_service_not_supported: bool = False
         default_response_if_missing_sub_function: bool = False
         default_response_if_sub_function_not_supported: bool = False

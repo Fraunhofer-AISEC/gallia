@@ -6,7 +6,7 @@ import reprlib
 from typing import Any
 
 from gallia.command import UDSScanner
-from gallia.command.config import AutoInt, Field
+from gallia.command.config import Field, Ranges, Ranges2D
 from gallia.command.uds import UDSScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds import (
@@ -23,7 +23,7 @@ logger = get_logger(__name__)
 
 
 class ServicesScannerConfig(UDSScannerConfig):
-    sessions: AutoInt | None = Field(
+    sessions: Ranges | None = Field(
         None, description="Set list of sessions to be tested; all if None"
     )
     check_session: bool = Field(
@@ -31,8 +31,9 @@ class ServicesScannerConfig(UDSScannerConfig):
     )
     scan_response_ids: bool = Field(False, description="Include IDs in scan with reply flag set")
     auto_reset: bool = Field(False, description="Reset ECU with UDS ECU Reset before every request")
-    skip: str = Field(
+    skip: Ranges2D = Field(
         {},
+        metavar="SESSION_ID:ID",
         description="\n                 The service IDs to be skipped per session.\n                 A session specific skip is given by <session id>:<service ids>\n                 where <service ids> is a comma separated list of single ids or id ranges using a dash.\n                 Examples:\n                  - 0x01:0xf3\n                  - 0x10-0x2f\n                  - 0x01:0xf3,0x10-0x2f\n                 Multiple session specific skips are separated by space.\n                 Only takes affect if --sessions is given.\n                 ",
     )
 

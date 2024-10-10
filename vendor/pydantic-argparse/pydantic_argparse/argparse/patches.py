@@ -7,6 +7,7 @@
 In order to support Python 3.7 and 3.8 while retaining the unit tests, we need
 to backport the bugfix for [`BPO-29298`](https://bugs.python.org/issue29298).
 """
+
 import argparse
 import sys
 from typing import Optional
@@ -19,6 +20,7 @@ from typing import Optional
 # monkey-patching.
 # See: https://github.com/python/cpython/blob/v3.11.1/Lib/argparse.py#L739-L751
 if sys.version_info < (3, 9):  # pragma: <3.9 cover
+
     def _get_action_name(argument: Optional[argparse.Action]) -> Optional[str]:  # pragma: no cover
         """Generates the name for an argument action.
 

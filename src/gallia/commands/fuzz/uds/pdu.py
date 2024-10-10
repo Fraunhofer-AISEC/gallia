@@ -10,7 +10,7 @@ from typing import Literal
 assert sys.platform.startswith("linux"), "unsupported platform"
 
 from gallia.command import UDSScanner
-from gallia.command.config import AutoInt, Field, HexBytes
+from gallia.command.config import AutoInt, Field, HexBytes, Ranges
 from gallia.command.uds import UDSScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds.core.client import UDSRequestConfig
@@ -25,7 +25,7 @@ logger = get_logger(__name__)
 
 
 class PDUFuzzerConfig(UDSScannerConfig):
-    sessions: AutoInt = Field([1], description="Set list of sessions to be tested; 0x01 if None")
+    sessions: Ranges = Field([1], description="Set list of sessions to be tested; 0x01 if None")
     serviceid: Literal[0x2E, 0x31] = Field(
         0x2E,
         description="\n            Service ID to create payload for; defaults to 0x2e WriteDataByIdentifier;\n            currently supported:\n            0x2e WriteDataByIdentifier, 0x31 RoutineControl (startRoutine)\n            ",
@@ -33,11 +33,11 @@ class PDUFuzzerConfig(UDSScannerConfig):
     max_length: AutoInt = Field(42, description="maximum length of the payload")
     min_length: AutoInt = Field(1, description="minimum length of the payload")
     iterations: AutoInt = Field(1, description="number of iterations", short="i")
-    dids: AutoInt = Field(description="data identifiers to fuzz")
+    dids: Ranges = Field(description="data identifiers to fuzz")
     prefixed_payload: HexBytes = Field(
         b"", description="static payload, which precedes the fuzzed payload", metavar="HEXSTRING"
     )
-    observe_can_ids: AutoInt = Field([], description="can ids to observe while fuzzing")
+    observe_can_ids: Ranges = Field([], description="can ids to observe while fuzzing")
 
 
 class PDUFuzzer(UDSScanner):
@@ -88,9 +88,9 @@ class PDUFuzzer(UDSScanner):
         logger.info(f"testing sessions {self.config.sessions}")
 
         for did in self.config.dids:
-            if self.config.serviceid == UDSIsoServices.RoutineControl:
+            if self.config.serviceid == UDSIsoServices.RoutineControl.value:
                 pdu = bytes([self.config.serviceid, 0x01, did >> 8, did & 0xFF])
-            elif self.config.serviceid == UDSIsoServices.WriteDataByIdentifier:
+            elif self.config.serviceid == UDSIsoServices.WriteDataByIdentifier.value:
                 pdu = bytes([self.config.serviceid, did >> 8, did & 0xFF])
             for session in self.config.sessions:
                 logger.notice(f"Switching to session 0x{session:02x}")

@@ -4,7 +4,7 @@
 
 
 import sys
-from collections.abc import Mapping
+from collections.abc import Mapping, MutableMapping
 from types import UnionType
 from typing import Any, Never
 
@@ -14,9 +14,11 @@ from pydantic_argparse import ArgumentParser
 from pydantic_argparse import BaseCommand as PydanticBaseCommand
 
 from gallia.command import BaseCommand
+from gallia.command.base import BaseCommandConfig
 from gallia.config import Config, load_config_file
 from gallia.log import Loglevel, setup_logging
 from gallia.plugins.plugin import CommandTree, load_commands
+from gallia.utils import get_log_level
 
 setup_logging(Loglevel.DEBUG)
 
@@ -46,7 +48,7 @@ def _create_parser_from_tree(
     global model_counter
     model_name = f"_dynamic_gallia_hierarchy_model_{model_counter}"
     model_counter += 1
-    args: Mapping[str, tuple[type | UnionType, Any]] = {}
+    args: MutableMapping[str, tuple[type | UnionType, Any]] = {}
 
     for key, value in command_tree.subtree.items():
         if isinstance(value, CommandTree):
@@ -58,11 +60,11 @@ def _create_parser_from_tree(
 
         args[key] = (model_type | None, Field(None, description=description))
 
-    return create_model(model_name, __base__=PydanticBaseCommand, **args), extra_defaults
+    return create_model(model_name, __base__=PydanticBaseCommand, **args), extra_defaults  # type: ignore[call-overload]
 
 
 def create_parser(
-    commands: type[BaseCommand] | Mapping[str, CommandTree | type[BaseCommand]],
+    commands: type[BaseCommand] | MutableMapping[str, CommandTree | type[BaseCommand]],
 ) -> ArgumentParser:
     """Creates an argument parser out of the given command hierarchy.
     For accessing the command after parsing, see get_command().
@@ -94,8 +96,9 @@ def get_command(config: BaseModel) -> BaseCommand:
 
 
 def parse_and_run(
-    commands: type[BaseCommand] | Mapping[str, CommandTree | type[BaseCommand]],
+    commands: type[BaseCommand] | MutableMapping[str, CommandTree | type[BaseCommand]],
     auto_complete: bool = True,
+    setup_log: bool = True,
 ) -> Never:
     """Creates an argument parser out of the given command hierarchy and runs the command with its argument.
     This function never returns.
@@ -104,6 +107,7 @@ def parse_and_run(
 
     :param commands: A hierarchy of commands.
     :param auto_complete: Turns auto-complete functionality on.
+    :param setup_log: Setup logging according to the parameters in the parsed config.
     """
 
     parser = create_parser(commands)
@@ -112,6 +116,15 @@ def parse_and_run(
         argcomplete.autocomplete(parser)
 
     _, config = parser.parse_typed_args()
+
+    assert isinstance(config, BaseCommandConfig)
+
+    if setup_log:
+        setup_logging(
+            level=get_log_level(config.verbose),
+            no_volatile_info=config.no_volatile_info,
+        )
+
     sys.exit(get_command(config).entry_point())
 
 
