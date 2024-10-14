@@ -119,12 +119,20 @@ class BaseCommandConfig(GalliaBaseModel, argument_group="generic", config_sectio
     )
     trace_log: bool = Field(False, description="set the loglevel of the logfile to TRACE")
     pre_hook: str | None = Field(
-        None, description="shell script to run before the main entry_point", metavar="SCRIPT"
+        None,
+        description="shell script to run before the main entry_point",
+        metavar="SCRIPT",
+        config_section="gallia.hooks",
     )
     post_hook: str | None = Field(
-        None, description="shell script to run after the main entry_point", metavar="SCRIPT"
+        None,
+        description="shell script to run after the main entry_point",
+        metavar="SCRIPT",
+        config_section="gallia.hooks",
     )
-    hooks: bool = Field(True, description="execute pre and post hooks")
+    hooks: bool = Field(
+        True, description="execute pre and post hooks", config_section="gallia.hooks"
+    )
     lock_file: Path | None = Field(
         None, description="path to file used for a posix lock", metavar="PATH"
     )

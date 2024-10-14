@@ -20,8 +20,6 @@ from typing import (
 
 from pydantic import BeforeValidator
 from pydantic.fields import _FromFieldInfoInputs
-from pydantic.main import IncEx
-
 from pydantic_argparse import BaseCommand
 from pydantic_argparse.utils.field import ArgFieldInfo
 from pydantic_core import PydanticUndefined
@@ -29,7 +27,7 @@ from pydantic_core import PydanticUndefined
 from gallia.config import Config
 from gallia.utils import unravel, unravel_2d
 
-registry = {}
+registry: dict[str, str] = {}
 
 
 def err_int(x: str, base: int) -> int:
