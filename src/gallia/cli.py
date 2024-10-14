@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 import argparse
+import json
 import os
 import sys
 from collections.abc import Callable, Mapping, MutableMapping, Sequence
@@ -18,7 +19,7 @@ from pydantic_argparse import BaseCommand as PydanticBaseCommand
 from gallia import exitcodes
 from gallia.command import BaseCommand
 from gallia.command.base import BaseCommandConfig
-from gallia.command.config import registry
+from gallia.command.config import GalliaBaseModel
 from gallia.config import Config, load_config_file
 from gallia.log import Loglevel, setup_logging
 from gallia.plugins.plugin import CommandTree, load_commands, load_plugins
@@ -175,6 +176,9 @@ def main() -> None:
 
 
 def version() -> None:
+    """
+    Prints the currently installed version of gallia.
+    """
     print(f"gallia {meta_version('gallia')}")
 
 
@@ -201,6 +205,9 @@ def _walk_commands(
 
 
 def show_plugins() -> None:
+    """
+    Prints the currently installed plugins.
+    """
     plugins = load_plugins()
 
     print(f"There are currently {len(plugins)} plugins installed:")
@@ -229,6 +236,9 @@ def show_plugins() -> None:
 
 
 def show_config() -> None:
+    """
+    Prints the currently loaded config.
+    """
     if (p := os.getenv("GALLIA_CONFIG")) is not None:
         print(f"path to config set by env variable: {p}", file=sys.stderr)
 
@@ -243,9 +253,12 @@ def show_config() -> None:
 
 
 def template() -> None:
-    groups: dict[str, dict[str, str]] = {}
+    """
+    Prints a template config with default according to the programmatic defaults.
+    """
+    groups: dict[str, dict[str, tuple[str, str, Any]]] = {}
 
-    for key, value in registry.items():
+    for key, value in GalliaBaseModel.registry().items():
         tmp = key.split(".")
         group = ".".join(tmp[:-1])
         attribute = tmp[-1]
@@ -267,7 +280,18 @@ def template() -> None:
             print(f"# [{group}]")
 
         for attribute in sorted(groups[group]):
-            print(f"# {attribute} = ... {groups[group][attribute]}")
+            description, type_name, default_value = groups[group][attribute]
+
+            # Heuristic TOML dump
+            if default_value is not None:
+                try:
+                    default_repr = json.dumps(default_value)
+                except TypeError:
+                    default_repr = json.dumps(str(default_value))
+
+                print(f"{attribute} = {default_repr}  # {description} [{type_name}]")
+            else:
+                print(f"# {attribute} = ...  # {description} [{type_name}]")
 
 
 if __name__ == "__main__":
