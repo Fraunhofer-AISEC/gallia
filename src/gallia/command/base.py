@@ -114,8 +114,8 @@ class BaseCommandConfig(GalliaBaseModel, argument_group="generic", config_sectio
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     verbose: int = Field(0, description="increase verbosity on the console", short="v")
-    no_volatile_info: bool = Field(
-        False, description="do not overwrite log lines with level info or lower in terminal output"
+    volatile_info: bool = Field(
+        True, description="Overwrite log lines with level info or lower in terminal output"
     )
     trace_log: bool = Field(False, description="set the loglevel of the logfile to TRACE")
     pre_hook: str | None = Field(
@@ -452,7 +452,7 @@ class AsyncScript(BaseCommand, ABC):
 
 class ScannerConfig(AsyncScriptConfig, argument_group="scanner", config_section="gallia.scanner"):
     dumpcap: bool = Field(
-        sys.platform == "linux", description="Enable/Disable creating a pcap file"
+        sys.platform.startswith("linux"), description="Enable/Disable creating a pcap file"
     )
     target: Idempotent[TargetURI] = Field(
         description="URI that describes the target", metavar="TARGET"
