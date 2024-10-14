@@ -78,7 +78,7 @@ class PDUFuzzer(UDSScanner):
             logger.debug("Can message observer task cancelled")
 
     async def main(self) -> None:
-        if self.config.observe_can_ids:
+        if len(self.config.observe_can_ids) > 0:
             recv_task = asyncio.create_task(self.observe_can_messages(self.config.observe_can_ids))
             recv_task.add_done_callback(
                 handle_task_error,
@@ -152,6 +152,6 @@ class PDUFuzzer(UDSScanner):
                 logger.info(f"Leaving session 0x{session:02x} via hook")
                 await self.ecu.leave_session(session, sleep=self.config.power_cycle_sleep)
 
-        if self.config.observe_can_ids:
+        if len(self.config.observe_can_ids) > 0:
             recv_task.cancel()
             await recv_task
