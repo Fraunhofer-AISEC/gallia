@@ -19,7 +19,7 @@ from gallia.services.uds.helpers import raise_for_error
 logger = get_logger(__name__)
 
 
-class UDSScannerConfig(ScannerConfig, argument_group="uds", config_section="gallia.protocols.uds"):
+class UDSScannerConfig(ScannerConfig, cli_group="uds", config_section="gallia.protocols.uds"):
     ecu_reset: int | None = Field(
         None,
         description="Trigger an initial ecu_reset via UDS; reset level is optional",

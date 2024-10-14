@@ -125,7 +125,7 @@ class ConfigArgFieldInfo(ArgFieldInfo):
         positional: bool,
         short: str | None,
         metavar: str | None,
-        group: str | None,
+        cli_group: str | None,
         const: Any,
         hidden: bool,
         config_section: str | None,
@@ -136,7 +136,7 @@ class ConfigArgFieldInfo(ArgFieldInfo):
             positional=positional,
             short=short,
             metavar=metavar,
-            group=group,
+            cli_group=cli_group,
             const=const,
             hidden=hidden,
             **kwargs,
@@ -164,7 +164,7 @@ def Field(
 
 class GalliaBaseModel(BaseCommand, ABC):
     init_kwargs: dict[str, Any] | None = Field(None, hidden=True)
-    _argument_group: str | None
+    _cli_group: str | None
     _config_section: str | None
 
     def __init__(self, **data: Any):
@@ -180,19 +180,19 @@ class GalliaBaseModel(BaseCommand, ABC):
     def __init_subclass__(
         cls,
         /,
-        argument_group: str | None = None,
+        cli_group: str | None = None,
         config_section: str | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init_subclass__(**kwargs)
 
         cls._config_section = config_section
-        cls._argument_group = argument_group
+        cls._cli_group = cli_group
 
         for attribute, info in vars(cls).items():
             # Attribute specific annotation takes precedence
             if isinstance(info, ArgFieldInfo) and info.group is None:
-                info.group = argument_group
+                info.group = cli_group
 
             if isinstance(info, ConfigArgFieldInfo):
                 # Attribute specific annotation takes precedence

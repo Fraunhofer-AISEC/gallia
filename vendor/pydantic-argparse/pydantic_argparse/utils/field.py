@@ -15,7 +15,7 @@ class ArgFieldInfo(FieldInfo):
         positional: bool,
         short: str | None,
         metavar: str | None,
-        group: str | None,
+        cli_group: str | None,
         const: Any,
         hidden: bool,
         **kwargs: Unpack[_FromFieldInfoInputs],
@@ -25,7 +25,7 @@ class ArgFieldInfo(FieldInfo):
         self.positional = positional
         self.short = short
         self.metavar = metavar
-        self.group = group
+        self.group = cli_group
         self.const = const
         self.hidden = hidden
 
