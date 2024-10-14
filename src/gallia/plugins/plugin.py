@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: AISEC Pentesting Team
+#
+# SPDX-License-Identifier: Apache-2.0
+
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, MutableMapping
 from dataclasses import dataclass

@@ -13,7 +13,8 @@ from gallia.command.config import Field, Idempotent
 from gallia.powersupply import PowerSupplyURI
 from gallia.transports import TargetURI
 from gallia.utils import strtobool
-from opennetzteil import BaseNetzteil, netzteile
+from opennetzteil import netzteile
+from opennetzteil.netzteil import BaseNetzteil
 
 
 class CLIConfig(AsyncScriptConfig):

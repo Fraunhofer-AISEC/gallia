@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: AISEC Pentesting Team
+#
+# SPDX-License-Identifier: Apache-2.0
+
 import binascii
 import os
 import tomllib

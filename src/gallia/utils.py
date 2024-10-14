@@ -140,7 +140,7 @@ def unravel_2d(listing: str) -> dict[int, list[int]]:
                 for y in second:
                     unsorted_result[x].add(y)
 
-    return dict((x, sorted(unsorted_result[x])) for x in sorted(unsorted_result))
+    return {x: sorted(unsorted_result[x]) for x in sorted(unsorted_result)}
 
 
 class ParseSkips(Action):
