@@ -27,38 +27,18 @@ class HSFZDiscoverer(UDSDiscoveryScanner):
     SHORT_HELP = ""
 
     def configure_parser(self) -> None:
+        self.parser.add_argument("--reversed", action="store_true", help="scan in reversed order")
         self.parser.add_argument(
-            "--reversed",
-            action="store_true",
-            help="scan in reversed order",
+            "--src-addr", type=auto_int, default=0xF4, help="HSFZ source address"
         )
         self.parser.add_argument(
-            "--src-addr",
-            type=auto_int,
-            default=0xF4,
-            help="HSFZ source address",
+            "--start", metavar="INT", type=auto_int, default=0x00, help="set start address"
         )
         self.parser.add_argument(
-            "--start",
-            metavar="INT",
-            type=auto_int,
-            default=0x00,
-            help="set start address",
-        )
-        self.parser.add_argument(
-            "--stop",
-            metavar="INT",
-            type=auto_int,
-            default=0xFF,
-            help="set end address",
+            "--stop", metavar="INT", type=auto_int, default=0xFF, help="set end address"
         )
 
-    async def _probe(
-        self,
-        conn: HSFZConnection,
-        req: UDSRequest,
-        timeout: float,
-    ) -> bool:
+    async def _probe(self, conn: HSFZConnection, req: UDSRequest, timeout: float) -> bool:
         data = req.pdu
         result = False
 
@@ -88,13 +68,7 @@ class HSFZDiscoverer(UDSDiscoveryScanner):
         req = DiagnosticSessionControlRequest(0x01)
 
         try:
-            conn = await HSFZConnection.connect(
-                host,
-                port,
-                src_addr,
-                dst_addr,
-                ack_timeout,
-            )
+            conn = await HSFZConnection.connect(host, port, src_addr, dst_addr, ack_timeout)
         except TimeoutError:
             return None
 
@@ -128,11 +102,7 @@ class HSFZDiscoverer(UDSDiscoveryScanner):
             logger.info(f"testing target {dst_addr:#02x}")
 
             target = await self.probe(
-                args.target.hostname,
-                args.target.port,
-                args.src_addr,
-                dst_addr,
-                args.timeout,
+                args.target.hostname, args.target.port, args.src_addr, dst_addr, args.timeout
             )
 
             if target is not None:
