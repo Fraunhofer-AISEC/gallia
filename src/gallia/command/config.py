@@ -31,8 +31,6 @@ from pydantic_core import PydanticUndefined
 from gallia.config import Config
 from gallia.utils import unravel, unravel_2d
 
-registry: dict[str, str] = {}
-
 
 def err_int(x: str, base: int) -> int:
     try:
@@ -166,6 +164,7 @@ class GalliaBaseModel(BaseCommand, ABC):
     init_kwargs: dict[str, Any] | None = Field(None, hidden=True)
     _cli_group: str | None
     _config_section: str | None
+    __config_registry: dict[str, tuple[str, str, Any]]
 
     def __init__(self, **data: Any):
         init_kwargs = data.pop("init_kwargs", {})
@@ -206,7 +205,6 @@ class GalliaBaseModel(BaseCommand, ABC):
                         if info.config_section != ""
                         else attribute
                     )
-                    default = "" if info.default is None else f" ({info.default})"
                     description = "" if info.description is None else info.description
                     type_annotation = cls.__annotations__[attribute]
                     type_hint = (
@@ -220,7 +218,24 @@ class GalliaBaseModel(BaseCommand, ABC):
                     else:
                         type_ = type_hint.__name__
 
-                    registry[config_attribute] = f"{description} [{type_}]{default}"
+                    try:
+                        GalliaBaseModel.__config_registry[config_attribute] = (
+                            description,
+                            type_,
+                            info.default,
+                        )
+                    except TypeError:
+                        GalliaBaseModel.__config_registry = {}
+
+                    GalliaBaseModel.__config_registry[config_attribute] = (
+                        description,
+                        type_,
+                        info.default,
+                    )
+
+    @staticmethod
+    def registry() -> dict[str, tuple[str, str, Any]]:
+        return GalliaBaseModel.__config_registry
 
     @classmethod
     def attributes_from_toml(cls, path: Path) -> dict[str, Any]:
