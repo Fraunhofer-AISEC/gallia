@@ -8,8 +8,8 @@ from typing import Any, cast
 from urllib.parse import urljoin
 
 import httpx
-
 from gallia.transports import TargetURI
+
 from opennetzteil.exceptions import OperationNotSupportedError
 from opennetzteil.netzteil import BaseNetzteil
 

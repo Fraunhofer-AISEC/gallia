@@ -48,7 +48,7 @@ class SASeedsDumperConfig(UDSScannerConfig):
     )
     sleep: float | None = Field(
         None,
-        description="Attempt to fool brute force protection by sleeping for N seconds between seed requests."
+        description="Attempt to fool brute force protection by sleeping for N seconds between seed requests.",
     )
 
 

@@ -8,6 +8,7 @@ import asyncio
 from typing import Any
 
 from gallia.utils import strtobool
+
 from opennetzteil.exceptions import OperationNotSupportedError
 from opennetzteil.netzteil import BaseNetzteil
 

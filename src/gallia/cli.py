@@ -12,11 +12,10 @@ from typing import Any, Never
 
 import argcomplete
 from pydantic import BaseModel, Field, create_model
-
-from gallia import exitcodes
 from pydantic_argparse import ArgumentParser
 from pydantic_argparse import BaseCommand as PydanticBaseCommand
 
+from gallia import exitcodes
 from gallia.command import BaseCommand
 from gallia.command.base import BaseCommandConfig
 from gallia.command.config import registry

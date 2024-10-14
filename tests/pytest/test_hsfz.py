@@ -6,7 +6,6 @@ import asyncio
 from collections.abc import AsyncIterator
 
 import pytest
-
 from gallia.services.uds.core.client import UDSClient
 from gallia.services.uds.core.service import PositiveResponse
 from gallia.transports.base import BaseTransport, TargetURI
