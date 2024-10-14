@@ -179,8 +179,11 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
                         if self.config.padding is not None:
                             target_args["rx_padding"] = f"{self.config.padding}"
 
+                        hostname = self.config.target.hostname
+                        assert hostname is not None
+
                         target = TargetURI.from_parts(
-                            ISOTPTransport.SCHEME, self.config.target.hostname, None, target_args
+                            ISOTPTransport.SCHEME, hostname, None, target_args
                         )
                         found.append(target)
                     break
