@@ -29,7 +29,6 @@ setup_logging(Loglevel.DEBUG)
 
 defaults = dict[type, dict[str, Any]]
 _CLASS_ATTR = "_dynamic_gallia_command_class_reference"
-model_counter: int = 0
 
 
 def _create_parser_from_command(
@@ -45,18 +44,17 @@ def _create_parser_from_command(
 
 
 def _create_parser_from_tree(
-    command_tree: CommandTree,
-    config: Config,
-    extra_defaults: defaults,
+    command_tree: CommandTree, config: Config, extra_defaults: defaults, model_counter: int = 0
 ) -> tuple[type[PydanticBaseCommand], defaults]:
-    global model_counter
     model_name = f"_dynamic_gallia_hierarchy_model_{model_counter}"
-    model_counter += 1
     args: MutableMapping[str, tuple[type | UnionType, Any]] = {}
 
     for key, value in command_tree.subtree.items():
         if isinstance(value, CommandTree):
-            model_type, extra_defaults = _create_parser_from_tree(value, config, extra_defaults)
+            model_counter += 1
+            model_type, extra_defaults = _create_parser_from_tree(
+                value, config, extra_defaults, model_counter
+            )
             description = value.description
         else:
             model_type, extra_defaults = _create_parser_from_command(value, config, extra_defaults)
