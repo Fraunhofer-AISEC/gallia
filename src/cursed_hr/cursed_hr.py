@@ -25,6 +25,7 @@ from typing import Any, BinaryIO
 
 import platformdirs
 import zstandard as zstd
+
 from gallia.log import PenlogPriority, PenlogRecord
 from gallia.services.uds.core.service import NegativeResponse, UDSRequest, UDSResponse
 

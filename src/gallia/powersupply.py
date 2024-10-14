@@ -8,11 +8,10 @@ import asyncio
 from collections.abc import Awaitable, Callable
 from functools import partial
 
-from opennetzteil import netzteile
-from opennetzteil.netzteil import BaseNetzteil
-
 from gallia.log import get_logger
 from gallia.transports import TargetURI
+from opennetzteil import netzteile
+from opennetzteil.netzteil import BaseNetzteil
 
 logger = get_logger(__name__)
 

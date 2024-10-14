@@ -9,6 +9,7 @@ from pathlib import Path
 
 import platformdirs
 import pytest
+
 from gallia.config import get_config_dirs, load_config_file
 
 

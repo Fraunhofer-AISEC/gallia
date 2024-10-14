@@ -4,6 +4,8 @@
 from abc import ABC
 from typing import Any, Literal, Self
 
+from pydantic import field_serializer, model_validator
+
 from gallia.cli import parse_and_run
 from gallia.command import AsyncScript
 from gallia.command.base import AsyncScriptConfig, ScannerConfig
@@ -11,8 +13,6 @@ from gallia.command.config import Field, Idempotent
 from gallia.powersupply import PowerSupplyURI
 from gallia.transports import TargetURI
 from gallia.utils import strtobool
-from pydantic import field_serializer, model_validator
-
 from opennetzteil import BaseNetzteil, netzteile
 
 
