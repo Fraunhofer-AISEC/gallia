@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import cast
 
 import msgspec
+
 from gallia import exitcodes
 from gallia.log import ColorMode, PenlogPriority, PenlogReader, resolve_color_mode
 
