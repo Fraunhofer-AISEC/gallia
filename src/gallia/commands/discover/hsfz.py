@@ -3,9 +3,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
-from argparse import Namespace
 
 from gallia.command import UDSDiscoveryScanner
+from gallia.command.config import AutoInt, Field
+from gallia.command.uds import UDSDiscoveryScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds.core.service import (
     DiagnosticSessionControlRequest,
@@ -15,28 +16,28 @@ from gallia.services.uds.core.service import (
 from gallia.services.uds.helpers import raise_for_mismatch
 from gallia.transports.base import TargetURI
 from gallia.transports.hsfz import HSFZConnection
-from gallia.utils import auto_int, write_target_list
+from gallia.utils import write_target_list
 
 logger = get_logger(__name__)
+
+
+class HSFZDiscovererConfig(UDSDiscoveryScannerConfig):
+    reversed: bool = Field(False, description="scan in reversed order")
+    src_addr: AutoInt = Field(0xF4, description="HSFZ source address")
+    start: AutoInt = Field(0x00, description="set start address", metavar="INT")
+    stop: AutoInt = Field(0xFF, description="set end address", metavar="INT")
 
 
 class HSFZDiscoverer(UDSDiscoveryScanner):
     """ECU and routing discovery scanner for HSFZ"""
 
-    COMMAND = "hsfz"
     SHORT_HELP = ""
 
-    def configure_parser(self) -> None:
-        self.parser.add_argument("--reversed", action="store_true", help="scan in reversed order")
-        self.parser.add_argument(
-            "--src-addr", type=auto_int, default=0xF4, help="HSFZ source address"
-        )
-        self.parser.add_argument(
-            "--start", metavar="INT", type=auto_int, default=0x00, help="set start address"
-        )
-        self.parser.add_argument(
-            "--stop", metavar="INT", type=auto_int, default=0xFF, help="set end address"
-        )
+    CONFIG_TYPE = HSFZDiscovererConfig
+
+    def __init__(self, config: HSFZDiscovererConfig):
+        super().__init__(config)
+        self.config: HSFZDiscovererConfig = config
 
     async def _probe(self, conn: HSFZConnection, req: UDSRequest, timeout: float) -> bool:
         data = req.pdu
@@ -92,17 +93,29 @@ class HSFZDiscoverer(UDSDiscoveryScanner):
             )
         return None
 
-    async def main(self, args: Namespace) -> None:
+    async def main(self) -> None:
         found = []
         gen = (
-            range(args.stop + 1, args.start) if args.reversed else range(args.start, args.stop + 1)
+            range(self.config.stop + 1, self.config.start)
+            if self.config.reversed
+            else range(self.config.start, self.config.stop + 1)
         )
 
         for dst_addr in gen:
             logger.info(f"testing target {dst_addr:#02x}")
 
+            hostname = self.config.target.hostname
+            port = self.config.target.port
+
+            assert hostname is not None
+            assert port is not None
+
             target = await self.probe(
-                args.target.hostname, args.target.port, args.src_addr, dst_addr, args.timeout
+                hostname,
+                port,
+                self.config.src_addr,
+                dst_addr,
+                self.config.timeout,
             )
 
             if target is not None:
