@@ -577,7 +577,7 @@ class Scanner(AsyncScript, ABC):
         # traffic might be missing.
         if args.dumpcap:
             if shutil.which("dumpcap") is None:
-                self.parser.error("--dumpcap specified but `dumpcap` is not available")
+                self.parser.error("--dumpcap specified but `dumpcap` is not available. `wireshark` is likely not installed. Install `wireshark` if you want to use `dumpcap`.")
             self.dumpcap = await Dumpcap.start(args.target, self.artifacts_dir)
             if self.dumpcap is None:
                 logger.error("`dumpcap` could not be started!")
