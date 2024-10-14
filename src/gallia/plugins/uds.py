@@ -6,6 +6,7 @@ import sys
 from collections.abc import Mapping
 
 from gallia.command import BaseCommand
+from gallia.commands import HSFZDiscoverer
 from gallia.commands.discover.doip import DoIPDiscoverer
 from gallia.commands.primitive.generic.pdu import GenericPDUPrimitive
 from gallia.commands.primitive.uds.dtc import (
@@ -62,7 +63,7 @@ class UDSPlugin(Plugin):
         tree = {
             "discover": CommandTree(
                 description="discover scanners for hosts and endpoints",
-                subtree={"doip": DoIPDiscoverer},
+                subtree={"doip": DoIPDiscoverer, "hsfz": HSFZDiscoverer},
             ),
             "primitive": CommandTree(
                 description="protocol specific primitives",
