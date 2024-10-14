@@ -10,6 +10,7 @@ import shutil
 import signal
 import sys
 from abc import ABC, abstractmethod
+from collections.abc import MutableMapping
 from datetime import UTC, datetime
 from enum import Enum, unique
 from logging import Handler
@@ -19,7 +20,6 @@ from tempfile import gettempdir
 from typing import Any, Protocol, Self, cast
 
 import msgspec
-from construct.core import Mapping
 from pydantic import ConfigDict, field_serializer, model_validator
 
 from gallia import exitcodes
@@ -53,7 +53,7 @@ class RunMeta(msgspec.Struct):
     start_time: str
     end_time: str
     exit_code: int
-    config: Mapping
+    config: MutableMapping[str, Any]
 
     def json(self) -> str:
         return msgspec.json.encode(self).decode()

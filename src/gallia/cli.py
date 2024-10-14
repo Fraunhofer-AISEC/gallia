@@ -11,7 +11,7 @@ from types import UnionType
 from typing import Any, Never
 
 import argcomplete
-from pydantic import BaseModel, Field, create_model
+from pydantic import Field, create_model
 from pydantic_argparse import ArgumentParser
 from pydantic_argparse import BaseCommand as PydanticBaseCommand
 
@@ -69,7 +69,7 @@ def _create_parser_from_tree(
 
 def create_parser(
     commands: type[BaseCommand] | MutableMapping[str, CommandTree | type[BaseCommand]],
-) -> ArgumentParser:
+) -> ArgumentParser[PydanticBaseCommand]:
     """Creates an argument parser out of the given command hierarchy.
     For accessing the command after parsing, see get_command().
     See parse_and_run() for an easy-to-use one call alternative.
@@ -89,14 +89,15 @@ def create_parser(
     return ArgumentParser(model=model, extra_defaults=extra_defaults)
 
 
-def get_command(config: BaseModel) -> BaseCommand:
+def get_command(config: BaseCommandConfig) -> BaseCommand:
     """Retrieve the command out of the config returned by an argument parser as created by create_parser().
 
     :param config:
     :return: The command initiated with the given config.
     """
+    cmd: type[BaseCommand] = getattr(config, _CLASS_ATTR)
 
-    return getattr(config, _CLASS_ATTR)(config)
+    return cmd(config)
 
 
 def parse_and_run(
