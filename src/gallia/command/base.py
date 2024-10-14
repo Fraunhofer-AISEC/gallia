@@ -110,7 +110,7 @@ if sys.platform == "win32":
 
 
 # TODO: Umbenennen in cli_group
-class BaseCommandConfig(GalliaBaseModel, argument_group="generic", config_section="gallia"):
+class BaseCommandConfig(GalliaBaseModel, cli_group="generic", config_section="gallia"):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     verbose: int = Field(0, description="increase verbosity on the console", short="v")
@@ -385,7 +385,7 @@ class BaseCommand(FlockMixin, ABC):
 class ScriptConfig(
     BaseCommandConfig,
     ABC,
-    argument_group=BaseCommandConfig._argument_group,
+    cli_group=BaseCommandConfig._cli_group,
     config_section=BaseCommandConfig._config_section,
 ):
     pass
@@ -418,7 +418,7 @@ class Script(BaseCommand, ABC):
 class AsyncScriptConfig(
     BaseCommandConfig,
     ABC,
-    argument_group=BaseCommandConfig._argument_group,
+    cli_group=BaseCommandConfig._cli_group,
     config_section=BaseCommandConfig._config_section,
 ):
     pass
@@ -450,7 +450,7 @@ class AsyncScript(BaseCommand, ABC):
         return exitcodes.OK
 
 
-class ScannerConfig(AsyncScriptConfig, argument_group="scanner", config_section="gallia.scanner"):
+class ScannerConfig(AsyncScriptConfig, cli_group="scanner", config_section="gallia.scanner"):
     dumpcap: bool = Field(
         sys.platform.startswith("linux"), description="Enable/Disable creating a pcap file"
     )

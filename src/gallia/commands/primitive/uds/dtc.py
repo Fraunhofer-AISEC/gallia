@@ -25,7 +25,7 @@ class DTCPrimitiveConfig(UDSScannerConfig):
     properties: bool = Field(
         False,
         description="Read and store the ECU proporties prior and after scan",
-        group=UDSScannerConfig._argument_group,
+        group=UDSScannerConfig._cli_group,
         config_section=UDSScannerConfig._config_section,
     )
     session: AutoInt = Field(
