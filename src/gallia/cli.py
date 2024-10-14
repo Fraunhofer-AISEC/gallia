@@ -155,7 +155,7 @@ def parse_and_run(
     if setup_log:
         setup_logging(
             level=get_log_level(config.verbose),
-            no_volatile_info=config.no_volatile_info,
+            no_volatile_info=not config.volatile_info,
         )
 
     sys.exit(get_command(config).entry_point())
