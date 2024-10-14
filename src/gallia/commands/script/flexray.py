@@ -72,7 +72,7 @@ class FRDump(AsyncScript):
 
 
 class FRConfigDumpConfig(ScriptConfig):
-    channel: str | None = Field(description="the channel number of the flexray device")
+    channel: int | None = Field(description="the channel number of the flexray device")
     pretty: bool = Field(False, description="pretty print the configuration", short="p")
 
 

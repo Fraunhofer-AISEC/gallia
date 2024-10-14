@@ -6,7 +6,6 @@ import sys
 from collections.abc import Mapping
 
 from gallia.command import BaseCommand
-from gallia.commands.discover.find_xcp import CanFindXCP, TcpFindXCP, UdpFindXCP
 from gallia.plugins.plugin import CommandTree, Plugin
 
 
@@ -21,9 +20,10 @@ class XCPPlugin(Plugin):
 
     @classmethod
     def commands(cls) -> Mapping[str, CommandTree | type[BaseCommand]]:
-        tree = {}
+        tree: dict[str, CommandTree | type[BaseCommand]] = {}
 
         if sys.platform.startswith("linux"):
+            from gallia.commands.discover.find_xcp import CanFindXCP, TcpFindXCP, UdpFindXCP
             from gallia.commands.primitive.uds.xcp import SimpleTestXCP
 
             tree = {

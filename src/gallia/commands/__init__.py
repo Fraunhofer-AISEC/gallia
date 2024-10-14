@@ -66,7 +66,6 @@ registry: list[type[BaseCommand]] = [
 
 # TODO: Investigate why linters didn't catch faulty strings in here.
 __all__ = [
-    "DTCPrimitive",
     "DoIPDiscoverer",
     "ECUResetPrimitive",
     "GenericPDUPrimitive",
@@ -132,7 +131,7 @@ if sys.platform.startswith("linux"):
 
 
 if sys.platform == "win32":
-    from gallia.commands.script.flexray import FRDump, FRDumpConfig
+    from gallia.commands.script.flexray import FRConfigDump, FRDump
 
-    registry += [FRDump, FRDumpConfig]
-    __all__ += ["FRDump", "FRDumpConfig"]
+    registry += [FRDump, FRConfigDump]
+    __all__ += ["FRDump", "FRConfigDump"]
