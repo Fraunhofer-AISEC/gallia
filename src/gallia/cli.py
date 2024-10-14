@@ -12,6 +12,8 @@ from typing import Any, Never
 
 import argcomplete
 from pydantic import BaseModel, Field, create_model
+
+from gallia import exitcodes
 from pydantic_argparse import ArgumentParser
 from pydantic_argparse import BaseCommand as PydanticBaseCommand
 
@@ -139,7 +141,7 @@ def parse_and_run(
                     option_string: str | None = None,
                 ) -> None:
                     self.f()
-                    sys.exit(0)
+                    sys.exit(exitcodes.OK)
 
             parser.add_argument(
                 name if name.startswith("-") else f"--{name}", nargs=0, action=Action
@@ -239,7 +241,7 @@ def show_config() -> None:
         pprint(config)
     else:
         print("no config available", file=sys.stderr)
-        sys.exit(1)
+        sys.exit(exitcodes.CONFIG)
 
 
 def template() -> None:
