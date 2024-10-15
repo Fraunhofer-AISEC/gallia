@@ -109,7 +109,6 @@ if sys.platform == "win32":
             pass
 
 
-# TODO: Umbenennen in cli_group
 class BaseCommandConfig(GalliaBaseModel, cli_group="generic", config_section="gallia"):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 

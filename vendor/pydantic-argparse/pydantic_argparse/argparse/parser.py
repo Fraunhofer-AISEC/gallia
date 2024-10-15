@@ -332,13 +332,14 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
                 ):
                     field.extra_default = self.extra_defaults[model][field.name]
                     try:
-                        # TODO: This does not work well with model validators, need to rethink
-                        # field.validated_extra_default = getattr(model.__pydantic_validator__.validate_assignment(validation_model, field.name, field.extra_default), field.name)
+                        # TODO: This does not work well with model validators, need to rethink, perhaps doesn't work at all
+                        field.validated_extra_default = getattr(model.__pydantic_validator__.validate_assignment(validation_model, field.name, field.extra_default), field.name)
                         field.validated_extra_default = field.extra_default
                     except AttributeError:
-                        sys.exit(0)
-                    except ValidationError:
+                        pass
+                    except ValidationError as e:
                         # TODO Print warning for invalid config
+                        print(field.name)
                         pass
 
                 if isinstance(field.info, ArgFieldInfo) and field.info.hidden:

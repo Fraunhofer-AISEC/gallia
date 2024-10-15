@@ -129,6 +129,25 @@ class ConfigArgFieldInfo(ArgFieldInfo):
         config_section: str | None,
         **kwargs: Unpack[_FromFieldInfoInputs],
     ):
+        """
+        Creates a new ConfigArgFieldInfo.
+
+        This is a special variant of pydantic's FieldInfo, which adds several arguments,
+        mainly related to CLI arguments and config sections.
+        For general usage and details on the generic parameters see https://docs.pydantic.dev/latest/concepts/fields.
+        Just as with pydantic's FieldInfo, this should usually not be called directly.
+        Instead use the Field() function of this module.
+
+        :param default: The default value, if non is given explicitly.
+        :param positional: Specifies, if the argument is shown as positional, as opposed to optional (default), on the CLI.
+        :param short: An optional alternative name for the CLI, which is auto-prefixed with "-".
+        :param metavar: The type hint which is shown on the CLI for an argument. If none is specified, it is automatically inferred from its type.
+        :param cli_group: The group in the CLI under which the argument is listed. If none is specified, it is automatically set to the CLI group of the config class to which this argument belongs.
+        :param const: Specifies, a default value, if the argument is set with no explicit value.
+        :param hidden: Specifies, that the argument is part of neither the CLI nor the config file.
+        :param config_section: Specifies the config section under which the argument is listed. If none is specified, it is automatically set to the config section of the config class to which this argument belongs.
+        :param kwargs: Generic pydantic Field() arguments (see https://docs.pydantic.dev/latest/api/fields/#pydantic.fields.FieldInfo).
+        """
         super().__init__(
             default=default,
             positional=positional,
@@ -143,20 +162,37 @@ class ConfigArgFieldInfo(ArgFieldInfo):
         self.config_section = config_section
 
 
-# TODO: Docstring
 def Field(
     default: Any = PydanticUndefined,
     positional: bool = False,
     short: str | None = None,
     metavar: str | None = None,
-    group: str | None = None,
+    cli_group: str | None = None,
     const: Any = PydanticUndefined,
     hidden: bool = False,
     config_section: str | None = None,
     **kwargs: Unpack[_FromFieldInfoInputs],
 ) -> Any:
+    """
+    Creates a new ConfigArgFieldInfo.
+
+    This is a special variant of pydantic's Field() function, which adds several arguments,
+    mainly related to CLI arguments and config sections.
+    For general usage and details on the generic parameters see https://docs.pydantic.dev/latest/concepts/fields.
+
+    :param default: The default value, if non is given explicitly.
+    :param positional: Specifies, if the argument is shown as positional, as opposed to optional (default), on the CLI.
+    :param short: An optional alternative name for the CLI, which is auto-prefixed with "-".
+    :param metavar: The type hint which is shown on the CLI for an argument. If none is specified, it is automatically inferred from its type.
+    :param cli_group: The group in the CLI under which the argument is listed. If none is specified, it is automatically set to the CLI group of the config class to which this argument belongs.
+    :param const: Specifies, a default value, if the argument is set with no explicit value.
+    :param hidden: Specifies, that the argument is part of neither the CLI nor the config file.
+    :param config_section: Specifies the config section under which the argument is listed. If none is specified, it is automatically set to the config section of the config class to which this argument belongs.
+    :param kwargs: Generic pydantic Field() arguments (see https://docs.pydantic.dev/latest/api/fields/#pydantic.fields.Field).
+    :return: A ConfigArgFieldInfo.
+    """
     return ConfigArgFieldInfo(
-        default, positional, short, metavar, group, const, hidden, config_section, **kwargs
+        default, positional, short, metavar, cli_group, const, hidden, config_section, **kwargs
     )
 
 

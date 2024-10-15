@@ -21,7 +21,7 @@ class WriteByIdentifierPrimitiveConfig(UDSScannerConfig):
     properties: bool = Field(
         False,
         description="Read and store the ECU proporties prior and after scan",
-        group=UDSScannerConfig._cli_group,
+        cli_group=UDSScannerConfig._cli_group,
         config_section=UDSScannerConfig._config_section,
     )
     data_identifier: AutoInt = Field(description="The data identifier", positional=True)
