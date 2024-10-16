@@ -9,17 +9,13 @@ from abc import ABC
 from collections.abc import Callable
 from enum import Enum
 from pathlib import Path
-from types import UnionType
 from typing import (
     TYPE_CHECKING,
     Annotated,
     Any,
     TypeAlias,
     TypeVar,
-    Union,
     Unpack,
-    get_args,
-    get_origin,
 )
 
 from pydantic import BeforeValidator
@@ -200,7 +196,7 @@ class GalliaBaseModel(BaseCommand, ABC):
     init_kwargs: dict[str, Any] | None = Field(None, hidden=True)
     _cli_group: str | None
     _config_section: str | None
-    __config_registry: dict[str, tuple[str, str, Any]]
+    __config_registry: dict[str, tuple[str, Any]]
 
     def __init__(self, **data: Any):
         init_kwargs = data.pop("init_kwargs", {})
@@ -242,22 +238,10 @@ class GalliaBaseModel(BaseCommand, ABC):
                         else attribute
                     )
                     description = "" if info.description is None else info.description
-                    type_annotation = cls.__annotations__[attribute]
-                    type_hint = (
-                        type_annotation.__origin__
-                        if get_origin(type_annotation) is Annotated
-                        else type_annotation
-                    )  # (...).__origin__ is not equivalent to using get_origin(...)
-
-                    if (origin := get_origin(type_hint)) is Union or origin is UnionType:
-                        type_ = " | ".join(x.__name__ for x in get_args(type_hint) if x is not None)
-                    else:
-                        type_ = type_hint.__name__
 
                     try:
                         GalliaBaseModel.__config_registry[config_attribute] = (
                             description,
-                            type_,
                             info.default,
                         )
                     except TypeError:
@@ -265,12 +249,11 @@ class GalliaBaseModel(BaseCommand, ABC):
 
                     GalliaBaseModel.__config_registry[config_attribute] = (
                         description,
-                        type_,
                         info.default,
                     )
 
     @staticmethod
-    def registry() -> dict[str, tuple[str, str, Any]]:
+    def registry() -> dict[str, tuple[str, Any]]:
         return GalliaBaseModel.__config_registry
 
     @classmethod
