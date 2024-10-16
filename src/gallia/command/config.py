@@ -262,7 +262,7 @@ class GalliaBaseModel(BaseCommand, ABC):
         return cls.attributes_from_config(Config(toml_config))
 
     @classmethod
-    def attributes_from_config(cls, config: Config) -> dict[str, Any]:
+    def attributes_from_config(cls, config: Config, source: str = "config file") -> dict[str, Any]:
         result = {}
 
         for name, info in cls.model_fields.items():
@@ -272,7 +272,7 @@ class GalliaBaseModel(BaseCommand, ABC):
                 )
 
                 if (value := config.get_value(config_attribute)) is not None:
-                    result[name] = value
+                    result[name] = (f"{source} ({info.config_section}:{name})", value)
 
         return result
 
@@ -285,6 +285,6 @@ class GalliaBaseModel(BaseCommand, ABC):
                 config_attribute = f"GALLIA_{name.upper()}"
 
                 if (value := os.getenv(config_attribute)) is not None:
-                    result[name] = value
+                    result[name] = (f"environment variable ({config_attribute})", value)
 
         return result
