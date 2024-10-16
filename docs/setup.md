@@ -10,8 +10,8 @@ SPDX-License-Identifier: CC0-1.0
 This project has the following system level dependencies:
 
 * [Linux](https://kernel.org) >= 5.10
-* [Python](https://python.org) >= 3.11
-* [poetry](https://python-poetry.org) >= 1.2 (optional, for development)
+* [Python](https://python.org) (latest and latest - 1)
+* [uv](https://docs.astral.sh/uv/) (optional, for development)
 * [dumpcap](https://www.wireshark.org/docs/man-pages/dumpcap.html) (optional, part of [wireshark](https://www.wireshark.org/))
 
 Python dependencies are listed in `pyproject.toml`.
@@ -30,6 +30,13 @@ Docker images are published via the [Github Container registry](https://github.c
 $ paru -S gallia
 ```
 
+### Debian/Ubuntu
+
+``` shell-session
+$ sudo apt install pipx
+$ pipx install gallia
+```
+
 ### NixOS
 
 ``` shell-session
@@ -38,20 +45,23 @@ $ nix shell nixpgks#gallia
 
 For persistance add `gallia` to your `environment.systemPackages`, or when you use `home-manager` to `home.packages`.
 
-### Manual
+### Generic
 
 ``` shell-session
-$ pip install gallia
+$ pipx install gallia
 ```
 
-```{note}
-`pip` installs executables to `~/.local/bin` which conforms to [XDG](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html).
-Make sure that `~/.local/bin` is included in your [`$PATH`](https://pubs.opengroup.org/onlinepubs/000095399/basedefs/xbd_chap08.html#tag_08_03).
+### Without Install
+
+The `uvx` tool is provided by `uv`.
+
+``` shell-session
+$ uvx gallia
 ```
 
 ## Development
 
-The [poetry build system](https://python-poetry.org/) is used to manage dependencies.
+[uv](https://docs.astral.sh/uv/) is used to manage dependencies.
 
 ### Clone repository
 
@@ -61,22 +71,27 @@ $ git clone https://github.com/Fraunhofer-AISEC/gallia.git
 
 ### Environment 
 
-Poetry will create a unique [virtual python environment](https://docs.python.org/3/library/venv.html) with all the required dependencies.
-All poetry commands must be invoked within the `gallia` repository.
+`uv` manages the project environment, including the python version.
+All `uv` commands must be invoked within the `gallia` repository.
 
 ```shell-session
-$ poetry install
+$ pipx install uv
+$ uv sync
 ```
 
-More poetry commands are documented [upstream](https://python-poetry.org/docs/cli/).
+If you want to use a different Python version from the one defined in `.python-version`, the flags `--python-preference only-system` or `--python` for `uv sync` might be helpful; e.g. to use your system provided Python 3.11:
+
+```shell-session
+$ uv sync --python-preference only-system --python 3.11
+```
 
 #### shell
 
-The created venv can be enabled via poetry with the `shell` command.
-A new shell will be spawned with the enabled environment.
+Enable the venv under `.venv` manually by sourcing:
 
-```shell-session
-$ poetry shell
+``` shell-session
+$ source .venv/bin/activate
+$ source .venv/bin/activate.fish
 ```
 
 #### run
@@ -84,20 +99,12 @@ $ poetry shell
 Run a single command inside the venv without changing the shell environment:
 
 ```shell-session
-$ poetry run gallia
+$ uv run gallia
 ```
 
 ## Development with Plugins
 
-If you want to develop gallia and plugins at the same time, then you need to add `gallia` as a development dependency to your plugin package.
-Use your plugin repo for `poetry install`  and `poetry shell`.
-
-This snippet in `pyproject.toml` is sufficiant to add a local, editable checkout to your repo:
-
-``` toml
-[tool.poetry.dependencies]
-gallia = { path = "/path/to/local/gallia", develop = true }
-```
+If you want to develop gallia and plugins at the same time, then you need to add `gallia` as a dependency to your plugin package.
 
 ### Shell Completion
 #### bash
@@ -114,13 +121,8 @@ $ register-python-argcomplete --shell fish gallia > ~/.config/fish/completions/g
 ```
 
 ### IDE Integration
-#### Pycharm
 
-`pycharm` offers [native support](https://www.jetbrains.com/help/pycharm/poetry.html) for the `poetry` build system.
-The `src` folder in the gallia repository needs to be configured as `Sources Root` in pycharm.
-
-#### LSP
-
+Just use [LSP](https://microsoft.github.io/language-server-protocol/).
 Most editors (e.g. [neovim](https://neovim.io/)) support the [Language Server Protocol](https://microsoft.github.io/language-server-protocol/).
-The required tools are listed as development dependencies in `pyproject.toml` and are installed automatically via poetry.
+The required tools are listed as development dependencies in `pyproject.toml` and are automatically managed by `uv`.
 Please refer to the documentation of your text editor of choice for configuring LSP support.
