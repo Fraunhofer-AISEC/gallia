@@ -10,7 +10,6 @@ from itertools import product
 from urllib.parse import parse_qs, urlparse
 
 import aiofiles
-import psutil
 
 from gallia.command import AsyncScript
 from gallia.log import get_logger
@@ -33,6 +32,7 @@ from gallia.transports.doip import (
     TimingAndCommunicationParameters,
     VehicleAnnouncementMessage,
 )
+from gallia.utils import AddrInfo, net_if_addrs
 
 logger = get_logger(__name__)
 
@@ -511,33 +511,40 @@ class DoIPDiscoverer(AsyncScript):
                 continue
             return None, payload.UserData
 
+    @staticmethod
+    def get_broadcast_addrs() -> list[AddrInfo]:
+        out = []
+        for iface in net_if_addrs():
+            if iface.is_up() or not iface.can_broadcast():
+                continue
+
+            for addr in iface.addr_info:
+                # We only work with broadcastable IPv4.
+                if not addr.is_v4() or addr.broadcast is None:
+                    continue
+                out.append(addr)
+        return out
+
     async def run_udp_discovery(self) -> list[tuple[str, int]]:
-        all_ips = []
+        addrs = self.get_broadcast_addrs()
         found = []
 
-        for iface in psutil.net_if_addrs().values():
-            for ip in iface:
-                # we only work with broadcastable IPv4
-                if ip.family != socket.AF_INET or ip.broadcast is None:
-                    continue
-                all_ips.append(ip)
-
-        for ip in all_ips:
-            logger.info(f"[💌] Sending DoIP VehicleIdentificationRequest to {ip.broadcast}")
+        for addr in addrs:
+            logger.info(f"[💌] Sending DoIP VehicleIdentificationRequest to {addr.broadcast}")
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
             sock.setblocking(False)
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-            sock.bind((ip.address, 0))
+            sock.bind((addr.local, 0))
             loop = asyncio.get_running_loop()
 
             hdr = GenericHeader(0xFF, PayloadTypes.VehicleIdentificationRequestMessage, 0x00)
-            await loop.sock_sendto(sock, hdr.pack(), (ip.broadcast, 13400))
+            await loop.sock_sendto(sock, hdr.pack(), (addr.broadcast, 13400))
             try:
                 while True:
-                    data, addr = await asyncio.wait_for(loop.sock_recvfrom(sock, 1024), 2)
+                    data, from_addr = await asyncio.wait_for(loop.sock_recvfrom(sock, 1024), 2)
                     info = VehicleAnnouncementMessage.unpack(data[8:])
                     logger.notice(f"[💝]: {addr} responded: {info}")
-                    found.append(addr)
+                    found.append(from_addr)
             except TimeoutError:
                 logger.info("[💔] Reached timeout...")
                 continue
