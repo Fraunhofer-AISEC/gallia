@@ -99,7 +99,7 @@ def can_id_repr(i: int) -> str:
     return f"{i:03x}"
 
 
-def _unravel(listing: str) -> list[int]:
+def unravel(listing: str) -> list[int]:
     listing_delimiter = ","
     range_delimiter = "-"
     result = set()
@@ -119,6 +119,28 @@ def _unravel(listing: str) -> list[int]:
     return sorted(result)
 
 
+def unravel_2d(listing: str) -> dict[int, list[int]]:
+    listing_delimiter = " "
+    level_delimiter = ":"
+
+    unsorted_result: dict[int, set[int]] = {}
+
+    for range_element in listing.split(listing_delimiter):
+        if level_delimiter in range_element:
+            first_tmp, second_tmp = range_element.split(level_delimiter)
+            first = unravel(first_tmp)
+            second = unravel(second_tmp)
+
+            for x in first:
+                if x not in unsorted_result:
+                    unsorted_result[x] = set()
+
+                for y in second:
+                    unsorted_result[x].add(y)
+
+    return {x: sorted(unsorted_result[x]) for x in sorted(unsorted_result)}
+
+
 class ParseSkips(Action):
     def __call__(
         self,
@@ -134,14 +156,14 @@ class ParseSkips(Action):
                 for session_skips in values:
                     # Whole sessions can be skipped by only giving the session number without ids
                     if ":" not in session_skips:
-                        session_ids = _unravel(session_skips)
+                        session_ids = unravel(session_skips)
 
                         for session_id in session_ids:
                             skip_sids[session_id] = None
                     else:
                         session_ids_tmp, identifier_ids_tmp = session_skips.split(":")
-                        session_ids = _unravel(session_ids_tmp)
-                        identifier_ids = _unravel(identifier_ids_tmp)
+                        session_ids = unravel(session_ids_tmp)
+                        identifier_ids = unravel(identifier_ids_tmp)
                         skips = session_skips
 
                         for session_id in session_ids:
@@ -215,7 +237,8 @@ def lazy_import(name: str) -> ModuleType:
     return module
 
 
-def dump_args(args: Namespace) -> dict[str, str | int | float]:
+# TODO: (Re)move these functions
+def dump_args(args: Any) -> dict[str, str | int | float]:
     settings = {}
     for key, value in args.__dict__.items():
         match value:
@@ -225,7 +248,7 @@ def dump_args(args: Namespace) -> dict[str, str | int | float]:
     return settings
 
 
-def get_log_level(args: Namespace) -> Loglevel:
+def get_log_level(args: Any) -> Loglevel:
     level = Loglevel.INFO
     if hasattr(args, "verbose"):
         if args.verbose == 1:
@@ -235,7 +258,7 @@ def get_log_level(args: Namespace) -> Loglevel:
     return level
 
 
-def get_file_log_level(args: Namespace) -> Loglevel:
+def get_file_log_level(args: Any) -> Loglevel:
     level = Loglevel.DEBUG
     if hasattr(args, "trace_log"):
         if args.trace_log:
