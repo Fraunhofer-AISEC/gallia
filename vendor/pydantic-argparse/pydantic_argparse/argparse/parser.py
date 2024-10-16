@@ -66,18 +66,18 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
         epilog: Optional[str] = None,
         add_help: bool = True,
         exit_on_error: bool = True,
-        extra_defaults: dict[Type, dict[str, Any]] | None = None,
+        extra_defaults: dict[Type, dict[str, tuple[str, Any]]] | None = None,
     ) -> None:
         """Instantiates the Typed Argument Parser with its `pydantic` model.
 
-        Args:
-            model (Type[PydanticModelT]): Pydantic argument model class.
-            prog (Optional[str]): Program name for CLI.
-            description (Optional[str]): Program description for CLI.
-            version (Optional[str]): Program version string for CLI.
-            epilog (Optional[str]): Optional text following help message.
-            add_help (bool): Whether to add a `-h`/`--help` flag.
-            exit_on_error (bool): Whether to exit on error.
+        :param model: Pydantic argument model class.
+        :param prog: Program name for CLI.
+        :param description: Program description for CLI.
+        :param version: Program version string for CLI.
+        :param epilog: Optional text following help message.
+        :param add_help: Whether to add a `-h`/`--help` flag.
+        :param exit_on_error: Whether to exit on error.
+        :param extra_defaults: Defaults coming from external sources, such as environment variables or config files.
         """
         # Initialise Super Class
         if sys.version_info < (3, 9):  # pragma: <3.9 cover
@@ -188,9 +188,18 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
             # which equals the name of the field
             if len(sources) > 0:
                 argument = sources[0]
-                # Use the same method, that was used for the CLI generation
-                argument_name = PydanticField(argument, fields[argument]).arg_names()
-                source = f"argument {', '.join(argument_name)}: "
+
+                if (
+                    self.extra_defaults is not None
+                    and model in self.extra_defaults
+                    and argument in self.extra_defaults[model]
+                    and self.extra_defaults[model][argument][1] == e["input"]
+                ):
+                    source = f"default of {argument} from {self.extra_defaults[model][argument][0]}: "
+                else:
+                    # Use the same method, that was used for the CLI generation
+                    argument_name = PydanticField(argument, fields[argument]).arg_names()
+                    source = f"argument {', '.join(argument_name)}: "
 
             try:
                 error_msg = str(e["ctx"]["error"])
@@ -296,7 +305,6 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
         parser = self if arg_group is None else arg_group
 
         explicit_groups = {}
-        validation_model = model.model_construct()
 
         # Loop through fields in model
         for field in PydanticField.parse_model(model):
@@ -331,16 +339,6 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
                     and field.name in self.extra_defaults[model]
                 ):
                     field.extra_default = self.extra_defaults[model][field.name]
-                    try:
-                        # TODO: This does not work well with model validators, need to rethink, perhaps doesn't work at all
-                        field.validated_extra_default = getattr(model.__pydantic_validator__.validate_assignment(validation_model, field.name, field.extra_default), field.name)
-                        field.validated_extra_default = field.extra_default
-                    except AttributeError:
-                        pass
-                    except ValidationError as e:
-                        # TODO Print warning for invalid config
-                        print(field.name)
-                        pass
 
                 if isinstance(field.info, ArgFieldInfo) and field.info.hidden:
                     continue

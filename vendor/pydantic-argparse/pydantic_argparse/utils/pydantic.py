@@ -58,8 +58,7 @@ class PydanticField:
 
     name: str
     info: FieldInfo
-    extra_default: Any = None
-    validated_extra_default: Any = None
+    extra_default: tuple[str, Any] | None = None
 
     @classmethod
     def parse_model(cls, model: BaseModel | Type[BaseModel]) -> Iterator["PydanticField"]:
@@ -235,7 +234,7 @@ class PydanticField:
         if self.extra_default is not None:
             if len(default) > 0:
                 default += "; "
-            default += f"config: {self.extra_default}"
+            default += f"{self.extra_default[0]}: {self.extra_default[1]}"
 
         if len(default) > 0:
             default = f" ({default})"
@@ -277,7 +276,7 @@ class PydanticField:
         return (
             {}
             if self.extra_default is None or isinstance(self.info, ArgFieldInfo) and self.info.positional
-            else {"default": self.extra_default}
+            else {"default": self.extra_default[1]}
         )
 
     def arg_const(self) -> dict[str, Any]:
