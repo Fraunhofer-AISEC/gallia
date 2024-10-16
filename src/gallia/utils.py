@@ -85,6 +85,15 @@ def camel_to_dash(s: str) -> str:
     return camel_to_snake(s).replace("_", "-")
 
 
+def format_table(data: list[list[Any]]) -> str:
+    out = ""
+    for row in data:
+        row_format ="{:>15}" * (len(row) + 1)
+        row_format += "\n"
+        out += row_format.format(*row)
+    return out
+
+
 def isotp_addr_repr(a: int) -> str:
     """
     Default string representation of a CAN id.
