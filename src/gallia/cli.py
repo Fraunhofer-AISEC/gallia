@@ -8,6 +8,7 @@ import sys
 from collections.abc import Callable, Mapping, MutableMapping, Sequence
 from importlib.metadata import version as meta_version
 from pprint import pprint
+from textwrap import wrap
 from types import UnionType
 from typing import Any, Never
 
@@ -15,6 +16,7 @@ import argcomplete
 from pydantic import Field, create_model
 from pydantic_argparse import ArgumentParser
 from pydantic_argparse import BaseCommand as PydanticBaseCommand
+from pydantic_core import PydanticUndefined
 
 from gallia import exitcodes
 from gallia.command import BaseCommand
@@ -262,7 +264,7 @@ def template() -> None:
     """
     Prints a template config with default according to the programmatic defaults.
     """
-    groups: dict[str, dict[str, tuple[str, str, Any]]] = {}
+    groups: dict[str, dict[str, tuple[str, Any]]] = {}
 
     for key, value in GalliaBaseModel.registry().items():
         tmp = key.split(".")
@@ -274,30 +276,33 @@ def template() -> None:
 
         groups[group][attribute] = value
 
-    first = True
+    output = ""
 
     for group in sorted(groups):
-        if not first:
-            print()
-
-        first = False
-
         if group != "":
-            print(f"# [{group}]")
+            output += f"[{group}]\n"
 
         for attribute in sorted(groups[group]):
-            description, type_name, default_value = groups[group][attribute]
+            description, default_value = groups[group][attribute]
+
+            output += "\n".join(wrap(f"# {description}\n", subsequent_indent="# ")) + "\n"
 
             # Heuristic TOML dump
-            if default_value is not None:
+            if default_value is not None and default_value is not PydanticUndefined:
                 try:
                     default_repr = json.dumps(default_value)
                 except TypeError:
                     default_repr = json.dumps(str(default_value))
 
-                print(f"{attribute} = {default_repr}  # {description} [{type_name}]")
+                output += f"{attribute} = {default_repr}\n"
             else:
-                print(f"# {attribute} = ...  # {description} [{type_name}]")
+                output += f"# {attribute} = ...\n"
+
+            output += "\n"
+
+        output += "\n"
+
+    print(output.strip())
 
 
 if __name__ == "__main__":
