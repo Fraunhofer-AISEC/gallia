@@ -34,7 +34,6 @@ packages = [
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.13"
-aiofiles = ">=24.1.0,<25.0"
 aiosqlite = ">=0.18"
 argcomplete = ">=2,<4"
 zstandard = ">=0.19"
@@ -56,7 +55,6 @@ pylsp-rope = "^0.1"
 pytest = ">=7.1,<9.0"
 pytest-asyncio = ">=0.20,<0.25"
 python-lsp-server = "^1.5"
-types-aiofiles = ">=23.1,<25.0"
 types-psutil = ">=5.9.5.10,<7.0.0.0"
 types-tabulate = "^0.9"
 myst-parser = ">=3.0.1,<4.1"

@@ -16,8 +16,6 @@ from types import ModuleType
 from typing import TYPE_CHECKING, Any, TypeVar
 from urllib.parse import urlparse
 
-import aiofiles
-
 from gallia.log import Loglevel
 
 if TYPE_CHECKING:
@@ -192,9 +190,9 @@ async def write_target_list(
     :params db_handler: if given, urls are also written to the database as discovery results
     :return: None
     """
-    async with aiofiles.open(path, "w") as f:
+    with path.open("w") as f:
         for target in targets:
-            await f.write(f"{target}\n")
+            f.write(f"{target}\n")
 
             if db_handler is not None:
                 await db_handler.insert_discovery_result(str(target))

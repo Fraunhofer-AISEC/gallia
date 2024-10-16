@@ -9,7 +9,6 @@ from collections.abc import Iterable
 from itertools import product
 from urllib.parse import parse_qs, urlparse
 
-import aiofiles
 import psutil
 
 from gallia.command import AsyncScript
@@ -316,10 +315,10 @@ class DoIPDiscoverer(AsyncScript):
                 f"doip://{tgt_hostname}:{tgt_port}?protocol_version={self.protocol_version}&activation_type={routing_activation_type:#x}&src_addr={source_address:#x}"
             )
             logger.notice(f"[🤯] Holy moly, it actually worked: {targets[-1]}")
-            async with aiofiles.open(
-                self.artifacts_dir.joinpath("1_valid_routing_activation_requests.txt"), "a"
+            with self.artifacts_dir.joinpath("1_valid_routing_activation_requests.txt").open(
+                "a"
             ) as f:
-                await f.write(f"{targets[-1]}\n")
+                f.write(f"{targets[-1]}\n")
 
         if len(targets) > 0:
             logger.notice("[⚔️] It's dangerous to test alone, take one of these:")
@@ -359,10 +358,8 @@ class DoIPDiscoverer(AsyncScript):
                 # If we reach this, the request was not denied due to unknown TargetAddress
                 known_targets.append(current_target)
                 logger.notice(f"[🥇] HEUREKA: target address {target_addr:#x} is valid! ")
-                async with aiofiles.open(
-                    self.artifacts_dir.joinpath("3_valid_targets.txt"), "a"
-                ) as f:
-                    await f.write(f"{current_target}\n")
+                with self.artifacts_dir.joinpath("3_valid_targets.txt").open("a") as f:
+                    f.write(f"{current_target}\n")
 
                 logger.info(f"[⏳] Waiting for reply of target {target_addr:#x}")
                 # Hardcoded loop to detect potential broadcasts
@@ -379,20 +376,16 @@ class DoIPDiscoverer(AsyncScript):
                     logger.notice(
                         f"[🤑] B-B-B-B-B-B-BROADCAST at TargetAddress {target_addr:#x}! Got reply from {pot_broadcast:#x}"
                     )
-                    async with aiofiles.open(
-                        self.artifacts_dir.joinpath("6_unsolicited_replies.txt"), "a"
-                    ) as f:
-                        await f.write(
+                    with self.artifacts_dir.joinpath("6_unsolicited_replies.txt").open("a") as f:
+                        f.write(
                             f"target_addr={target_addr:#x} yielded reply from {pot_broadcast:#x}; could also be late answer triggered by previous address!\n"
                         )
 
                 resp = TesterPresentResponse.parse_static(data)
                 logger.notice(f"[🥳] It cannot get nicer: {target_addr:#x} responded: {resp}")
                 responsive_targets.append(current_target)
-                async with aiofiles.open(
-                    self.artifacts_dir.joinpath("4_responsive_targets.txt"), "a"
-                ) as f:
-                    await f.write(f"{current_target}\n")
+                with self.artifacts_dir.joinpath("4_responsive_targets.txt").open("a") as f:
+                    f.write(f"{current_target}\n")
                 if self.db_handler is not None:
                     await self.db_handler.insert_discovery_result(current_target)
 
@@ -403,36 +396,28 @@ class DoIPDiscoverer(AsyncScript):
                 elif e.nack_code == DiagnosticMessageNegativeAckCodes.TargetUnreachable:
                     logger.info(f"[💤] {target_addr:#x} is (currently?) unreachable")
                     unreachable_targets.append(current_target)
-                    async with aiofiles.open(
-                        self.artifacts_dir.joinpath("5_unreachable_targets.txt"), "a"
-                    ) as f:
-                        await f.write(f"{current_target}\n")
+                    with self.artifacts_dir.joinpath("5_unreachable_targets.txt").open("a") as f:
+                        f.write(f"{current_target}\n")
                     continue
                 else:
                     logger.warning(
                         f"[🤷] {target_addr:#x} is behaving strangely: {e.nack_code.name}"
                     )
-                    async with aiofiles.open(
-                        self.artifacts_dir.joinpath("7_targets_with_errors.txt"), "a"
-                    ) as f:
-                        await f.write(f"{target_addr:#x}: {e.nack_code.name}\n")
+                    with self.artifacts_dir.joinpath("7_targets_with_errors.txt").open("a") as f:
+                        f.write(f"{target_addr:#x}: {e.nack_code.name}\n")
                     continue
 
             except TimeoutError:  # This triggers when DoIP ACK but no UDS reply
                 logger.info(f"[🙊] Presumably no active ECU on target address {target_addr:#x}")
-                async with aiofiles.open(
-                    self.artifacts_dir.joinpath("5_unresponsive_targets.txt"), "a"
-                ) as f:
-                    await f.write(f"{current_target}\n")
+                with self.artifacts_dir.joinpath("5_unresponsive_targets.txt").open("a") as f:
+                    f.write(f"{current_target}\n")
                 continue
 
             except ConnectionError as e:
                 # Whenever this triggers, but sometimes connections are closed not by us
                 logger.warn(f"[🫦] Sexy, but unexpected: {target_addr:#x} triggered {e!r}")
-                async with aiofiles.open(
-                    self.artifacts_dir.joinpath("7_targets_with_errors.txt"), "a"
-                ) as f:
-                    await f.write(f"{target_addr:#x}: {e}\n")
+                with self.artifacts_dir.joinpath("7_targets_with_errors.txt").open("a") as f:
+                    f.write(f"{target_addr:#x}: {e}\n")
                 # Re-establish DoIP connection
                 await conn.close()
                 await asyncio.sleep(tcp_connect_delay)
@@ -546,13 +531,12 @@ class DoIPDiscoverer(AsyncScript):
 
         if len(found) > 0:
             logger.notice("[💎] Look what valid hosts I've found:")
-            for item in found:
-                url = f"doip://{item[0]}:{item[1]}"
-                logger.notice(url)
-                async with aiofiles.open(
-                    self.artifacts_dir.joinpath("0_valid_hosts.txt"), "a"
-                ) as f:
-                    await f.write(f"{url}\n")
+
+            with self.artifacts_dir.joinpath("0_valid_hosts.txt").open() as f:
+                for item in found:
+                    url = f"doip://{item[0]}:{item[1]}"
+                    logger.notice(url)
+                    f.write(f"{url}\n")
         else:
             logger.notice(
                 "[👸] Your princess is in another castle: no DoIP endpoints here it seems..."
