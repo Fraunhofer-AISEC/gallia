@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import argparse
+import binascii
 import os
 import signal
 import sys
@@ -12,8 +13,51 @@ from typing import cast
 
 import msgspec
 
-from gallia import exitcodes
-from gallia.log import ColorMode, PenlogPriority, PenlogReader, resolve_color_mode
+from gallia import dissect, exitcodes
+from gallia.log import ColorMode, PenlogPriority, PenlogReader, PenlogRecord, resolve_color_mode
+
+
+def extract_tag_info(raw_tag: str) -> str:
+    parts = raw_tag.split("=", maxsplit=2)
+    if len(parts) != 2:
+        raise ValueError()
+    return parts[1]
+
+
+def get_io_info(tags: list[str]) -> tuple[str, str]:
+    found_iotype = False
+    found_proto = False
+    for tag in tags:
+        if tag.startswith("io"):
+            iotype = extract_tag_info(tag)
+            found_iotype = True
+        if tag.startswith("proto"):
+            proto = extract_tag_info(tag)
+            found_proto = True
+        if found_iotype and found_proto:
+            return iotype, proto
+    raise ValueError()
+
+
+def dissect_record(record: PenlogRecord) -> str | None:
+    if record.tags is None:
+        return None
+
+    try:
+        iotype, proto = get_io_info(record.tags)
+    except ValueError:
+        return None
+
+    if proto not in dissect.registry:
+        return None
+
+    dissector = dissect.registry[proto]
+    data = binascii.unhexlify(record.data)
+
+    out = ""
+    for field in dissector.dissect(data, iotype):
+        out += f"{field.name}: {field.dissected_data}"
+    return out
 
 
 def parse_args() -> argparse.Namespace:
@@ -50,7 +94,14 @@ def parse_args() -> argparse.Namespace:
         "--lines",
         type=int,
         default=100,
-        help="print the last n lines",
+        help="argument for --head/--tail)",
+    )
+    parser.add_argument(
+        "-d",
+        "--dissect",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="dissect log messages with io and proto tags",
     )
     parser.add_argument(
         "--color",
@@ -81,7 +132,13 @@ def _main() -> int:
 
             for record in record_generator:
                 record.colored = colored
-                print(record, end="")
+                if args.dissect:
+                    # TODO: Maybe a method of the record? record.dissect()?
+                    if (dissected := dissect_record(record)) is not None:
+                        print(f"     {dissected}")
+                    print(record, end="")
+                else:
+                    print(record, end="")
 
     return 0
 

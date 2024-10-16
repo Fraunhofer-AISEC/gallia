@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Protocol, Self
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
-from gallia.log import get_logger
+from gallia.log import get_logger, log_io
 from gallia.transports.schemes import TransportScheme
 from gallia.utils import join_host_port
 
@@ -233,13 +233,10 @@ class LinesTransportMixin:
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> int:
-        t = tags + ["write"] if tags is not None else ["write"]
-
-        logger.trace(data.hex() + "0a", extra={"tags": t})
-
         writer = self.get_writer()
         writer.write(binascii.hexlify(data) + b"\n")
         await asyncio.wait_for(writer.drain(), timeout)
+        log_io(logger, "write", "lines", data, trace=True)
         return len(data)
 
     async def read(
@@ -248,9 +245,6 @@ class LinesTransportMixin:
         tags: list[str] | None = None,
     ) -> bytes:
         data = await asyncio.wait_for(self.get_reader().readline(), timeout)
-        d = data.decode().strip()
+        log_io(logger, "read", "lines", data, trace=True)
 
-        t = tags + ["read"] if tags is not None else ["read"]
-        logger.trace(d + "0a", extra={"tags": t})
-
-        return binascii.unhexlify(d)
+        return binascii.unhexlify(data.decode().strip())
