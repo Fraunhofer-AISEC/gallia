@@ -24,21 +24,25 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
-    - uses: Gr1N/setup-poetry@v9
-    - uses: actions/cache@v4
-      with:
-        path: ~/.cache/pypoetry/virtualenvs
-        key: ${{ runner.os }}-poetry-${{ hashFiles('poetry.lock') }}-${{ hashFiles('pyproject.toml') }}
 
-    - name: Install Dependencies
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        enable-cache: true
+
+    - name: "Set up Python"
+      uses: actions/setup-python@v5
+      with:
+        python-version-file: ".python-version"
+
+    - name: Install the project
       run: |
-        poetry install
+        uv sync --all-extras --dev
+
     - name: Invoke sphinx-build
       run: |
-        poetry run make -C docs SPHINXOPTS="-W" html
+        uv run make -C docs SPHINXOPTS="-W" html
+
     - name: Archive webpage
       uses: actions/upload-artifact@v4
       with:
@@ -51,12 +55,6 @@ jobs:
     if: github.ref == 'refs/heads/master'
 
     steps:
-    - uses: Gr1N/setup-poetry@v9
-    - uses: actions/cache@v4
-      with:
-        path: ~/.cache/pypoetry/virtualenvs
-        key: ${{ runner.os }}-poetry-${{ hashFiles('poetry.lock') }}
-
     - name: Download all workflow run artifacts
       uses: actions/download-artifact@v4
 
