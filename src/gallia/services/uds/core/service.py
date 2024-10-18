@@ -1242,7 +1242,9 @@ class ReadDataByIdentifierResponse(
     def pdu(self) -> bytes:
         pdu = pack("!B", self.RESPONSE_SERVICE_ID)
 
-        for data_identifier, data_record in zip(self.data_identifiers, self.data_records):
+        for data_identifier, data_record in zip(
+            self.data_identifiers, self.data_records, strict=False
+        ):
             pdu = pdu + to_bytes(data_identifier, 2) + data_record
 
         return pdu
@@ -1272,7 +1274,9 @@ class ReadDataByIdentifierResponse(
 
             return all(
                 req_id == resp_id
-                for req_id, resp_id in zip(request.data_identifiers, self.data_identifiers)
+                for req_id, resp_id in zip(
+                    request.data_identifiers, self.data_identifiers, strict=False
+                )
             )
 
         return request.data_identifiers[0] == self.data_identifiers[0]

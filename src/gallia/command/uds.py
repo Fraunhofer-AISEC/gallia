@@ -29,7 +29,7 @@ class UDSScanner(Scanner):
     GROUP = "scan"
     SUBGROUP: str | None = "uds"
 
-    def __init__(self, parser: ArgumentParser, config: Config = Config()) -> None:
+    def __init__(self, parser: ArgumentParser, config: Config | None = None) -> None:
         super().__init__(parser, config)
         self.ecu: ECU
         self._implicit_logging = True

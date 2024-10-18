@@ -153,10 +153,10 @@ class BaseCommand(FlockMixin, ABC):
 
     log_file_handlers: list[Handler]
 
-    def __init__(self, parser: ArgumentParser, config: Config = Config()) -> None:
+    def __init__(self, parser: ArgumentParser, config: Config | None) -> None:
         self.id = camel_to_snake(self.__class__.__name__)
         self.parser = parser
-        self.config = config
+        self.config = config if config is not None else Config()
         self.artifacts_dir = Path()
         self.run_meta = RunMeta(
             command=sys.argv,
@@ -551,7 +551,7 @@ class Scanner(AsyncScript, ABC):
         UDSException,
     ]
 
-    def __init__(self, parser: ArgumentParser, config: Config = Config()) -> None:
+    def __init__(self, parser: ArgumentParser, config: Config | None = None) -> None:
         super().__init__(parser, config)
         self.power_supply: PowerSupply | None = None
         self.transport: BaseTransport
