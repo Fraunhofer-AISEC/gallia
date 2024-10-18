@@ -106,6 +106,7 @@ select = [
     "PTH",  # flake8-use-pathlib
     "Q",    # flake8-quotes
     "RSE",  # flake8-raise
+    "TD",   # flake8-todos
     "TID",  # flake8-tidy-imports
     "UP",   # pyupgrade
     # "A",    # flake8-builtins
@@ -118,7 +119,6 @@ select = [
     # "RUF",  # Ruff-specific rules
     # "S",    # flake8-bandit
     # "SIM",  # flake8-simplify
-    # "TD",   # flake8-todos
     # "TRY",  # tryceratops
 ]
 ignore = [
