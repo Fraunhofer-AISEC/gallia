@@ -153,7 +153,7 @@ class ResetScanner(UDSScanner):
             if session is not None and not args.skip_check_session:
                 try:
                     current_session = await self.ecu.read_session()
-                    logger.result(
+                    logger.info(
                         f"{g_repr(sub_func)}: Currently in session {g_repr(current_session)}, "
                         f"should be {g_repr(session)}"
                     )
