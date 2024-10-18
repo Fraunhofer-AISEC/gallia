@@ -210,11 +210,11 @@ class UDSServer(ABC):
         if isinstance(response, service.ECUResetResponse):
             self.state.reset()
 
-    async def setup(self) -> None:
-        pass
+    @abstractmethod
+    async def setup(self) -> None: ...
 
-    async def teardown(self) -> None:
-        pass
+    @abstractmethod
+    async def teardown(self) -> None: ...
 
     async def respond_without_state_change(
         self, request: service.UDSRequest
@@ -382,6 +382,9 @@ class RandomUDSServer(UDSServer):
             )
         )
 
+    async def teardown(self) -> None:
+        pass
+
     def randomize(self) -> None:
         rng = RNG(self.seed)
 
@@ -544,7 +547,7 @@ class RandomUDSServer(UDSServer):
 
             return service.NegativeResponse(request.service_id, UDSErrorCodes.invalidKey)
 
-        raise AssertionError()
+        raise AssertionError
 
     def routine_control(self, request: service.RoutineControlRequest) -> service.UDSResponse:
         rng = self.stateful_rng(request.service_id, request.routine_identifier)

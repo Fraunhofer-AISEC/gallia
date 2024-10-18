@@ -252,7 +252,7 @@ def setup_logging(
     colored = resolve_color_mode(color_mode)
 
     if level is None:
-        # FIXME why is this here and not in config?
+        # FIXME: why is this here and not in config?
         if (raw := os.getenv("GALLIA_LOGLEVEL")) is not None:
             level = PenlogPriority.from_str(raw).to_level()
         else:

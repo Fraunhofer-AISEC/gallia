@@ -489,7 +489,7 @@ class DoIPDiscoverer(AsyncScript):
                 await conn.write_routing_activation_request(
                     RoutingActivationRequestTypes(routing_activation_type)
                 )
-            except Exception as e:  # TODO this probably is too broad
+            except Exception as e:  # TODO: this probably is too broad
                 logger.warning(
                     f"[🫨] Got me some good errors when it should be working (dis an infinite loop): {e!r}"
                 )

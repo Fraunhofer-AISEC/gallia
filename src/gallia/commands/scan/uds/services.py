@@ -97,7 +97,7 @@ class ServicesScanner(UDSScanner):
                 except (
                     UDSException,
                     RuntimeError,
-                ) as e:  # FIXME why catch RuntimeError?
+                ) as e:  # FIXME: why catch RuntimeError?
                     logger.warning(
                         f"Could not complete session change to {g_repr(session)}: {g_repr(e)}; skipping session"
                     )

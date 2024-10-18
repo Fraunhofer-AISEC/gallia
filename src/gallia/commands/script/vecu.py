@@ -84,7 +84,7 @@ class VirtualECU(AsyncScript):
         elif cmd == "rng":
             server = RandomUDSServer(args.seed)
         else:
-            raise AssertionError()
+            raise AssertionError
 
         for key, value in vars(args).items():
             if key.startswith(dynamic_attr_prefix) and value is not None:

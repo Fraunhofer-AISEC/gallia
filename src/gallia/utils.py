@@ -205,7 +205,7 @@ def lazy_import(name: str) -> ModuleType:
         return sys.modules[name]
     spec = importlib.util.find_spec(name)
     if spec is None or spec.loader is None:
-        raise ImportError()
+        raise ImportError
 
     loader = importlib.util.LazyLoader(spec.loader)
     spec.loader = loader

@@ -71,7 +71,7 @@ class HMC804(BaseNetzteil):
         await self._send(cmd)
 
     async def get_channels(self) -> int:
-        raise OperationNotSupportedError()
+        raise OperationNotSupportedError
 
     async def get_current(self, channel: int) -> float:
         cmd = f"INST OUT{channel:d}"
@@ -116,19 +116,19 @@ class HMC804(BaseNetzteil):
         await self._send_multi(cmds)
 
     async def status(self) -> dict[str, Any]:
-        raise OperationNotSupportedError()
+        raise OperationNotSupportedError
 
     async def get_ocp(self, channel: int) -> bool:
-        raise OperationNotSupportedError()
+        raise OperationNotSupportedError
 
     async def set_ocp(self, channel: int, enabled: bool) -> None:
-        raise OperationNotSupportedError()
+        raise OperationNotSupportedError
 
     async def get_ovp(self, channel: int) -> bool:
-        raise OperationNotSupportedError()
+        raise OperationNotSupportedError
 
     async def set_ovp(self, channel: int, enabled: bool) -> None:
-        raise OperationNotSupportedError()
+        raise OperationNotSupportedError
 
     async def set_beep(self, enabled: bool) -> None:
-        raise OperationNotSupportedError()
+        raise OperationNotSupportedError

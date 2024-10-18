@@ -73,7 +73,7 @@ class UDSClient:
         last_exception: Exception = MissingResponse(request)
         max_retry = config.max_retry if config.max_retry else self.max_retry
         timeout = config.timeout if config.timeout else self.timeout
-        for i in range(0, max_retry):
+        for i in range(max_retry):
             # Exponential backoff
             wait_time = self.retry_wait * 2**i
 
@@ -124,7 +124,7 @@ class UDSClient:
                 except TimeoutError as e:
                     # Send a tester present to indicate that
                     # we are still there.
-                    # TODO Is this really necessary?
+                    # TODO: Is this really necessary?
                     await self._tester_present(suppress_resp=True)
                     n_timeout += 1
                     if n_timeout >= max_n_timeout:
@@ -154,7 +154,7 @@ class UDSClient:
             tags = config.tags if config.tags is not None else []
             logger.debug(pdu.hex(), extra={"tags": ["write", "uds"] + tags})
             await self.transport.write(pdu, timeout, config.tags)
-            # TODO This is not fail safe: What if there is an answer???
+            # TODO: This is not fail safe: What if there is an answer???
             return None
         return await self.tester_present(False, config)
 
