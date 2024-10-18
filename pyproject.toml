@@ -90,25 +90,52 @@ line-length = 100
 
 [tool.ruff.lint]
 select = [
+    "ASYNC",# flake8-async
     "B",    # flake8-bugbear
     "C4",   # flake8-comprehensions
     "E",    # pycodestlye
     "F",    # pyflakes
+    "FA",   # flake8-future-annotations
+    "FLY",  # flynt
+    "FURB", # refurb
     "I",    # isort
+    "IC",   # flake8-import-conventions
+    "LOG",  # flake8-logging
+    "PIE",  # flake8-pie
     "PL",   # pylint
     "PTH",  # flake8-use-pathlib
+    "Q",    # flake8-quotes
+    "RSE",  # flake8-raise
     "TID",  # flake8-tidy-imports
     "UP",   # pyupgrade
+    # "A",    # flake8-builtins
+    # "DTZ",  # flake8-datetimez
+    # "ERA001",# eradicate
+    # "ISC",  # flake8-implicit-str-concat
+    # "PERF", # perflint
+    # "PT",   # flake8-pytest-style
+    # "RET",  # flake8-return
+    # "RUF",  # Ruff-specific rules
+    # "S",    # flake8-bandit
+    # "SIM",  # flake8-simplify
+    # "TD",   # flake8-todos
+    # "TRY",  # tryceratops
 ]
 ignore = [
+    "ASYNC109", # Async function definition with a timeout parameter
     "E402",     # Module level import not at top of file
     "E501",     # line length
-    "PLR2004",  # magic value used in comparison
+    "PLC1901",  # empty string is falsey
     "PLR0911",  # too many return statements
     "PLR0912",  # too many branches
     "PLR0913",  # too many arguments to function call
     "PLR0915",  # too many statements
-    "PLC1901",  # empty string is falsey
+    "PLR2004",  # magic value used in comparison
+    "S101",     # Use of `assert` detected
+    "TD001",    # Invalid TODO tag: {tag}
+    "TD002",    # Missing author in TODO; try: # TODO(<author_name>): ... or # TODO @<author_name>: ...
+    "TD003",    # Missing issue link on the line following this TODO
+    "TRY003",   # Avoid specifying long messages outside the exception class
 ]
 
 [tool.pytest.ini_options]

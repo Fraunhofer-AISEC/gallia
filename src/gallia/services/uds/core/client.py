@@ -73,7 +73,7 @@ class UDSClient:
         last_exception: Exception = MissingResponse(request)
         max_retry = config.max_retry if config.max_retry else self.max_retry
         timeout = config.timeout if config.timeout else self.timeout
-        for i in range(0, max_retry):
+        for i in range(max_retry):
             # Exponential backoff
             wait_time = self.retry_wait * 2**i
 

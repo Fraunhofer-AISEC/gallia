@@ -85,7 +85,7 @@ class HTTPNetzteil(BaseNetzteil):
         return await self._put_value("voltage", channel, value)
 
     async def status(self) -> dict[str, Any]:
-        raise OperationNotSupportedError()
+        raise OperationNotSupportedError
 
     async def get_voltage(self, channel: int) -> float:
         return cast(float, await self._get_value("voltage", channel))
@@ -103,4 +103,4 @@ class HTTPNetzteil(BaseNetzteil):
         return cast(bool, await self._get_value("ovp", channel))
 
     async def set_beep(self, enabled: bool) -> None:
-        raise OperationNotSupportedError()
+        raise OperationNotSupportedError

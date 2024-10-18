@@ -44,7 +44,7 @@ class TCPServer:
         await self.server.wait_closed()
 
 
-@pytest.fixture()
+@pytest.fixture
 async def dummy_server() -> AsyncIterator[TCPServer]:
     dummy_server = TCPServer()
     await dummy_server.listen(listen_target)
@@ -52,7 +52,7 @@ async def dummy_server() -> AsyncIterator[TCPServer]:
     await dummy_server.close()
 
 
-@pytest.fixture()
+@pytest.fixture
 async def transports(dummy_server: TCPServer) -> AsyncIterator[tuple[BaseTransport, BaseTransport]]:
     hsfz_transport = await HSFZTransport.connect(target)
     dummy_transport = await dummy_server.accept()
