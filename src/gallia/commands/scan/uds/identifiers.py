@@ -210,7 +210,11 @@ class ScanIdentifiers(UDSScanner):
                         break
 
                 # RequestOutOfRange is a common reply for invalid/unknown DataIdentifiers
-                elif resp.response_code == UDSErrorCodes.requestOutOfRange:
+                # SubFunctionNotSupported is also not worth to be logged as result
+                elif resp.response_code in (
+                    UDSErrorCodes.requestOutOfRange,
+                    UDSErrorCodes.subFunctionNotSupported,
+                ):
                     logger.info(f"{g_repr(DID)}: {resp}")
 
                 else:
