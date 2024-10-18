@@ -66,7 +66,7 @@ class UDSScanner(Scanner):
             default=self.config.get_value("gallia.protocols.uds.max_retries", 3),
             type=int,
             metavar="INT",
-            help="Number of maximum retries while sending UDS requests",
+            help="Number of maximum retries while sending UDS requests. If supported by the transport, this will trigger reconnects if required.",
         )
         group.add_argument(
             "--ping",

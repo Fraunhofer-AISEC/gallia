@@ -52,8 +52,12 @@ class UDSClient:
     async def reconnect(self, timeout: int | None = None) -> None:
         """Calls the underlying transport to trigger a reconnect"""
         async with self.mutex:
-            self.transport = await self.transport.reconnect(timeout)
+            await self.reconnect_unsafe(timeout=timeout)
 
+    async def reconnect_unsafe(self, timeout: int | None = None) -> None:
+        """Calls the underlying transport to trigger a reconnect without locking"""
+        self.transport = await self.transport.reconnect(timeout)
+        logger.debug("Reconnected transport successfully")
         await self.connect()
 
     async def _read(self, timeout: float | None = None, tags: list[str] | None = None) -> bytes:
@@ -88,7 +92,17 @@ class UDSClient:
             except TimeoutError as e:
                 logger.debug(f"{request} failed with: {repr(e)}")
                 last_exception = MissingResponse(request, str(e))
-                await asyncio.sleep(wait_time)
+                if i < max_retry:
+                    logger.debug(f"Sleeping for {wait_time}s")
+                    await asyncio.sleep(wait_time)
+                continue
+            except ConnectionError as e:
+                logger.warning(f"{request} failed with: {e!r}")
+                last_exception = MissingResponse(request, str(e))
+                if i < max_retry:
+                    logger.info(f"Sleeping for {wait_time}s before attempting to reconnect")
+                    await asyncio.sleep(wait_time)
+                    await self.reconnect_unsafe()
                 continue
 
             logger.debug(raw_resp.hex(), extra={"tags": ["read", "uds"] + tags})
