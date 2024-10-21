@@ -551,11 +551,11 @@ class DoIPConnection:
                     continue
                 await self._read_queue.put((hdr, data))
         except asyncio.CancelledError:
-            logger.debug("read worker cancelled")
+            logger.debug("DoIP read worker got cancelled")
         except asyncio.IncompleteReadError as e:
-            logger.debug(f"read worker received EOF: {e}")
+            logger.debug(f"DoIP read worker received EOF: {e!r}")
         except Exception as e:
-            logger.critical(f"read worker died with {type(e)}: {e}")
+            logger.info(f"DoIP read worker died with {e!r}")
         finally:
             logger.debug("Feeding EOF to reader and requesting a close")
             self.reader.feed_eof()
