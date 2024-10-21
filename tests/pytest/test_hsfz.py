@@ -8,6 +8,7 @@ from collections.abc import AsyncIterator
 import pytest
 
 from gallia.services.uds.core.client import UDSClient
+from gallia.services.uds.core.exception import MissingResponse
 from gallia.services.uds.core.service import PositiveResponse
 from gallia.transports.base import BaseTransport, TargetURI
 from gallia.transports.hsfz import HSFZConnection, HSFZTransport
@@ -82,7 +83,7 @@ async def test_reconnect_after_powercycle(dummy_server: TCPServer) -> None:
 async def test_hsfz_timeout(transports: tuple[BaseTransport, BaseTransport]) -> None:
     hsfz_transport, _ = transports
     u = UDSClient(hsfz_transport, timeout=5)
-    with pytest.raises(BrokenPipeError):
+    with pytest.raises(MissingResponse):
         await u.read_data_by_identifier(0x1234)
 
 
