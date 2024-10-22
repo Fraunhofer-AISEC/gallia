@@ -6,7 +6,7 @@ import reprlib
 from itertools import product
 
 from gallia.command import UDSScanner
-from gallia.command.config import AutoInt, Field, HexBytes, Ranges, Ranges2D
+from gallia.command.config import AutoInt, EnumArg, Field, HexBytes, Ranges, Ranges2D
 from gallia.command.uds import UDSScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds.core.client import UDSRequestConfig
@@ -28,7 +28,7 @@ class ScanIdentifiersConfig(UDSScannerConfig):
     payload: HexBytes | None = Field(
         None, description="Payload which will be appended for each request as hex string"
     )
-    service: UDSIsoServices = Field(
+    service: EnumArg[UDSIsoServices] = Field(
         UDSIsoServices.ReadDataByIdentifier,
         description="\n            Service (ID) to scan; defaults to ReadDataByIdentifier;\n            currently supported:\n            0x27 Security Access;\n            0x22 Read Data By Identifier;\n            0x2e Write Data By Identifier;\n            0x31 Routine Control;\n            ",
     )

@@ -50,7 +50,7 @@ def parse_field(
     enum_type = cast(Type[enum.Enum], field.info.annotation)
 
     # Determine Argument Properties
-    metavar = f"{{{', '.join(f'{e.value}({e.name})' for e in enum_type)}}}"
+    metavar = f"{{{', '.join(f'{e.value}' for e in enum_type)}}}"
     action = argparse._StoreAction
 
     # Add Enum Field

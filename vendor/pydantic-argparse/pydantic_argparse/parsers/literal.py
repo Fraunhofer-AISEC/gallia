@@ -55,16 +55,7 @@ def parse_field(
     # Extract Choices
     choices = get_args(field.info.annotation)
 
-    # Determine Argument Properties
-    choice_reprs = []
-
-    for c in choices:
-        if isinstance(c, Enum):
-            choice_reprs.append(f"{c.name}({c.value})")
-        else:
-            choice_reprs.append(str(c))
-
-    metavar = f"{{{', '.join(choice_reprs)}}}"
+    metavar = f"{{{', '.join(str(c) for c in choices)}}}"
 
     action = argparse._StoreAction
 
