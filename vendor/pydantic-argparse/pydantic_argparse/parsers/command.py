@@ -15,7 +15,7 @@ from typing import Optional, Type, Any
 
 from pydantic_argparse.utils.pydantic import (
     PydanticField,
-    PydanticValidator,
+    PydanticValidator, as_validator,
 )
 
 
@@ -47,7 +47,7 @@ def parse_field(
         Optional[PydanticValidator]: Possible validator method.
     """
     # Add Command
-    subparser.add_parser(
+    sp = subparser.add_parser(
         field.info.title or field.info.alias or field.name,
         help=field.info.description,
         model=field.model_type,  # type: ignore[call-arg]
@@ -55,5 +55,4 @@ def parse_field(
         extra_defaults=extra_defaults,
     )
 
-    # Return
-    return None
+    return as_validator(field, lambda x: sp.model.__pydantic_validator__.validate_python(x), silent=False, expected_input_type=dict)

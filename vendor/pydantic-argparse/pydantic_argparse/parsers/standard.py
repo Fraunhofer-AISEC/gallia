@@ -47,4 +47,4 @@ def parse_field(
     )
 
     # Construct and Return Validator
-    return utils.pydantic.as_validator(field, lambda v: v)
+    return None

@@ -12,6 +12,7 @@ command-line arguments.
 
 import argparse
 import sys
+from enum import Enum
 from typing import Optional
 
 from pydantic_argparse import utils
@@ -55,7 +56,16 @@ def parse_field(
     choices = get_args(field.info.annotation)
 
     # Determine Argument Properties
-    metavar = f"{{{', '.join(str(c) for c in choices)}}}"
+    choice_reprs = []
+
+    for c in choices:
+        if isinstance(c, Enum):
+            choice_reprs.append(f"{c.name}({c.value})")
+        else:
+            choice_reprs.append(str(c))
+
+    metavar = f"{{{', '.join(choice_reprs)}}}"
+
     action = argparse._StoreAction
 
     # Add Literal Field
@@ -70,9 +80,4 @@ def parse_field(
         **field.arg_dest(),
     )
 
-    # Construct String Representation Mapping of Choices
-    # This allows us O(1) parsing of choices from strings
-    mapping = {str(choice): choice for choice in choices}
-
-    # Construct and Return Validator
-    return utils.pydantic.as_validator(field, lambda v: mapping[v])
+    return None

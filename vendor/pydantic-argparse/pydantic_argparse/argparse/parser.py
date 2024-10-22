@@ -324,8 +324,7 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
                     arg_group = self.add_argument_group(group_name)
 
                     # recurse and parse fields below this submodel
-                    # TODO: storage of submodels not needed
-                    self._submodels[field.name] = self._add_model(model=field.model_type, arg_group=arg_group)
+                    self._add_model(model=field.model_type, arg_group=arg_group)
 
                     validator = None
 

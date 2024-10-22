@@ -59,6 +59,5 @@ def parse_field(
         **field.arg_dest(),
     )
 
-    # Construct and Return Validator
-    # TODO: this is basically useless?
-    return utils.pydantic.as_validator(field, lambda v: v)
+    return None
+

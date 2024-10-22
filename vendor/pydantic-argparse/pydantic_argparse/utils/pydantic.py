@@ -293,6 +293,8 @@ class PydanticField:
 def as_validator(
     field: PydanticField,
     caster: Callable[[str], Any],
+    silent: bool = True,
+    expected_input_type: type = str
 ) -> PydanticValidator:
     """Shortcut to wrap a caster and construct a validator for a given field.
 
@@ -319,15 +321,18 @@ def as_validator(
     # multiple times when being decorated as a `pydantic` validator. Note that
     # despite the `__validator` function *name* being reused, each instance of
     # the validator function is uniquely constructed for the supplied field.
-    @pydantic.validator(field.name, pre=True, allow_reuse=True)
+    @pydantic.field_validator(field.name, mode="before")
     def __validator(cls: Type[Any], value: T) -> Optional[Union[T, Any]]:
-        if not isinstance(value, str):
+        if not isinstance(value, expected_input_type):
             return value
         if not value:
             return None
         try:
             return caster(value)
         except Exception:
+            if not silent:
+                raise
+
             return value
 
     # Rename the validator uniquely for this field to avoid any collisions. The
@@ -384,24 +389,6 @@ def model_with_validators(
         __validators__=validators,
     )
 
-    # Check if the model is a `BaseSettings`
-    # if issubclass(model, pydantic.BaseSettings):
-    #     # Hold a reference to the current `parse_env_var` classmethod
-    #     parse_env_var = model.__config__.parse_env_var
-
-    #     # Construct a new `parse_env_var` function which suppresses exceptions
-    #     # raised by the current `parse_env_var` classmethod. This allows the
-    #     # raw values to be passed through to the `pydantic` field validator
-    #     # methods if they cannot be parsed initially.
-    #     def __parse_env_var(field_name: str, raw_val: str) -> Any:
-    #         with contextlib.suppress(Exception):
-    #             return parse_env_var(field_name, raw_val)
-    #         return raw_val
-
-    #     # Monkeypatch `parse_env_var`
-    #     model.__config__.parse_env_var = __parse_env_var  # type: ignore[assignment]
-
-    # Return Constructed Model
     return model
 
 

@@ -21,7 +21,6 @@ from . import (
     container,
     enum,
     literal,
-    mapping,
     standard,
 )
 from .utils import SupportsAddArgument
@@ -49,9 +48,6 @@ def add_field(
 
     if container.should_parse(field):
         return container.parse_field(parser, field)
-
-    if mapping.should_parse(field):
-        return mapping.parse_field(parser, field)
 
     if literal.should_parse(field):
         return literal.parse_field(parser, field)
