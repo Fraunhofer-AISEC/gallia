@@ -23,9 +23,9 @@ class WMBAPrimitiveConfig(UDSScannerConfig):
     address: AutoInt = Field(
         description="The start address to which data should be written", positional=True
     )
-    data: HexBytes | None = Field(description="The data which should be written")
+    data: HexBytes | None = Field(None, description="The data which should be written")
     data_file: Path | None = Field(
-        description="The path to a file with the binary data which should be written"
+        None, description="The path to a file with the binary data which should be written"
     )
 
     @model_validator(mode="after")

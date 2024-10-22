@@ -16,6 +16,7 @@ from typing import (
     TypeAlias,
     TypeVar,
     Unpack,
+    get_args,
 )
 
 from pydantic import BeforeValidator
@@ -43,19 +44,44 @@ def err_int(x: str, base: int) -> int:
 
 
 AutoInt = Annotated[int, BeforeValidator(lambda x: x if isinstance(x, int) else err_int(x, 0))]
+"""
+Special type for a field, which automatically parses int from a string.
+
+See int() with base=0 for more information on the syntax.
+
+Usage: x: HexInt = ....
+"""
 
 
 HexInt = Annotated[int, BeforeValidator(lambda x: x if isinstance(x, int) else err_int(x, 16))]
+"""
+Special type for a field, which parses int from a hex string.
 
+See int() with base=16 for more information on the syntax.
+
+Usage: x: HexInt = ....
+"""
 
 HexBytes = Annotated[
     bytes,
     BeforeValidator(lambda x: x if isinstance(x, bytes) else binascii.unhexlify(x)),
 ]
+"""
+Special type for a field, which parses bytes from hex strings.
 
+See binascii.unhexlify() for more information on the syntax.
+
+Usage: x: HexBytes = ....
+"""
 
 Ranges = Annotated[list[int], BeforeValidator(lambda x: x if isinstance(x, list) else unravel(x))]
+"""
+Special type for a field, which parses one-dimensional ranges.
 
+See unravel() for more information on the syntax.
+
+Usage: x: Ranges = ....
+"""
 
 Ranges2D = Annotated[
     dict[int, list[int]],
@@ -67,15 +93,24 @@ Ranges2D = Annotated[
         else unravel_2d(x)
     ),
 ]
+"""
+Special type for a field, which parses two-dimensional ranges.
+
+See unravel_2d() for more information on the syntax.
+
+Usage: x: Ranges2D = ....
+"""
 
 
 T = TypeVar("T")
-
-
 EnumType = TypeVar("EnumType", bound=Enum)
+LiteralType = TypeVar("LiteralType")
 
 
 def auto_enum(x: str, enum_type: type[EnumType]) -> EnumType:
+    print(x)
+    print(enum_type)
+
     try:
         return enum_type[x]
     except KeyError:
@@ -93,6 +128,7 @@ def auto_enum(x: str, enum_type: type[EnumType]) -> EnumType:
 if TYPE_CHECKING:
     Idempotent: TypeAlias = Annotated[T, ""]
     EnumArg: TypeAlias = Annotated[EnumType, ""]
+    AutoLiteral: TypeAlias = Annotated[LiteralType, ""]
 else:
 
     class _TrickType:
@@ -105,11 +141,61 @@ else:
     Idempotent = _TrickType(
         lambda cls: Annotated[cls, BeforeValidator(lambda x: x if isinstance(x, cls) else cls(x))]
     )
+    """
+    Wrapper for fields of types which can be instantiated by a certain value, but not by an instance of its own type.
+    
+    This way, it is possible to fill the corresponding parameter of the model with both the value as well as an already instantiated object of that class.
+
+    Usage: x: Idempotent[SomeClass] = ...
+    """
+
     EnumArg = _TrickType(
         lambda cls: Annotated[
             cls, BeforeValidator(lambda x: x if isinstance(x, cls) else auto_enum(x, cls))
         ]
     )
+    """
+    Wrapper for enum fields to provide automatic parsing of enum values by either name or value similar to AutoInt.
+
+    Usage: x: EnumArg[SomeEnum] = ...
+    """
+
+    def auto_literal(cls: type[T]):
+        args = get_args(cls)
+
+        mapping = {}
+
+        for arg in args:
+            if isinstance(arg, Enum):
+                mapping[arg.value] = arg
+                mapping[arg.name] = arg
+            elif isinstance(arg, bytes):
+                mapping[binascii.hexlify(arg)] = arg
+
+        def try_auto_literal(value: Any):
+            if value in args:
+                return value
+
+            try:
+                return mapping[value]
+            except KeyError:
+                pass
+
+            try:
+                return mapping[err_int(value, 0)]
+            except (KeyError, ValueError):
+                pass
+
+            return value
+
+        return Annotated[cls, BeforeValidator(try_auto_literal)]
+
+    AutoLiteral = _TrickType(auto_literal)
+    """
+    Wrapper for Literal fields to provide automatic handling of enum, int and bytes parsing for values defined in Literals similar to EnumArg, AutoInt and HexBytes. 
+
+    Usage: x: AutoLiteral[Literal[1, 2, 3]] = ...
+    """
 
 
 class ConfigArgFieldInfo(ArgFieldInfo):
@@ -193,7 +279,17 @@ def Field(
 
 
 class GalliaBaseModel(BaseCommand, ABC):
-    init_kwargs: dict[str, Any] | None = Field(None, hidden=True)
+    """
+    Base class for config classes for commands.
+
+
+    """
+
+    init_kwargs: dict[str, Any] | None = Field(
+        None,
+        hidden=True,
+        description="This allows to initialize parts or all of the fields safely. Required args may be specified explicitly to please the linter",
+    )
     _cli_group: str | None
     _config_section: str | None
     __config_registry: dict[str, tuple[str, Any]]

@@ -12,14 +12,15 @@ import pydantic_argparse
 from typing import Optional
 
 
-class BuildCommand(pydantic.BaseModel):
+
+class BuildCommand(pydantic_argparse.BaseCommand):
     """Build Command Arguments."""
 
     # Required Args
     location: pydantic.FilePath = pydantic.Field(description="build location")
 
 
-class ServeCommand(pydantic.BaseModel):
+class ServeCommand(pydantic_argparse.BaseCommand):
     """Serve Command Arguments."""
 
     # Required Args
@@ -27,15 +28,15 @@ class ServeCommand(pydantic.BaseModel):
     port: int = pydantic.Field(description="serve port")
 
 
-class Arguments(pydantic.BaseModel):
+class Arguments(pydantic_argparse.BaseCommand):
     """Command-Line Arguments."""
 
     # Optional Args
     verbose: bool = pydantic.Field(False, description="verbose flag")
 
     # Commands
-    build: Optional[BuildCommand] = pydantic.Field(description="build command")
-    serve: Optional[ServeCommand] = pydantic.Field(description="serve command")
+    build: Optional[BuildCommand] = pydantic.Field(None, description="build command")
+    serve: Optional[ServeCommand] = pydantic.Field(None, description="serve command")
 
 
 def main() -> None:

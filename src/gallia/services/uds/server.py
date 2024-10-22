@@ -16,7 +16,7 @@ from typing import Any
 
 import aiosqlite
 
-from gallia.command.config import AutoInt, GalliaBaseModel
+from gallia.command.config import AutoInt, EnumArg, GalliaBaseModel
 from gallia.log import get_logger
 from gallia.services.uds.core import service
 from gallia.services.uds.core.constants import (
@@ -347,14 +347,13 @@ class RandomUDSServer(UDSServer):
         mandatory_sessions: list[AutoInt] = [1]
         optional_sessions: list[AutoInt] = [2, 3, 4] + list(range(0x40, 0x7F))
         p_session: float = 0.05
-
-        services: dict[int, dict[UDSIsoServices, list[int] | None]] = {}
-        mandatory_services: list[UDSIsoServices] = [UDSIsoServices.DiagnosticSessionControl]
-        optional_services: list[UDSIsoServices] = list(
+        mandatory_services: list[EnumArg[UDSIsoServices]] = [
+            UDSIsoServices.DiagnosticSessionControl
+        ]
+        optional_services: list[EnumArg[UDSIsoServices]] = list(
             set(UDSIsoServices) - set(mandatory_services + [UDSIsoServices.NegativeResponse])
         )
         p_service: float = 0.2
-
         p_sub_function: float = 0.05
         p_identifier: float = 0.005
         p_correct_payload_format: float = 0.1
@@ -370,6 +369,7 @@ class RandomUDSServer(UDSServer):
 
         self.state: RNGEcuState = RNGEcuState()
         self.seed = seed
+        self.services: dict[int, dict[UDSIsoServices, list[int] | None]] = {}
 
         if randomness_parameters is None:
             self.randomness_parameters = self.RandomnessParameters()
@@ -391,7 +391,7 @@ class RandomUDSServer(UDSServer):
                         else None
                         for s, sfs in services.items()
                     }
-                    for session, services in self.randomness_parameters.services.items()
+                    for session, services in self.services.items()
                 },
                 indent=4,
                 sort_keys=True,
@@ -445,13 +445,13 @@ class RandomUDSServer(UDSServer):
                 session_transitions[rng.choice(available_sessions)].add(session)
                 session_transitions[session] = {default_session}
 
-        self.randomness_parameters.services = {}
+        self.services = {}
 
         for session, session_specific_transitions in enumerate(session_transitions):
             if len(session_specific_transitions) == 0:
                 continue
 
-            self.randomness_parameters.services[session] = {}
+            self.services[session] = {}
 
             for supported_service in self.randomness_parameters.mandatory_services + [
                 s
@@ -490,15 +490,13 @@ class RandomUDSServer(UDSServer):
                             if rng.random() < self.randomness_parameters.p_sub_function
                         ]
 
-                self.randomness_parameters.services[session][supported_service] = (
-                    supported_sub_functions
-                )
+                self.services[session][supported_service] = supported_sub_functions
 
     @property
     def supported_services(
         self,
     ) -> dict[int, dict[UDSIsoServices, list[int] | None]]:
-        return self.randomness_parameters.services
+        return self.services
 
     def stateful_rng(self, *args: Any) -> RNG:
         return RNG(

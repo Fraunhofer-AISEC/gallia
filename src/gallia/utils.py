@@ -11,8 +11,7 @@ import ipaddress
 import logging
 import re
 import sys
-from argparse import Action, ArgumentError, ArgumentParser, Namespace
-from collections.abc import Awaitable, Callable, Sequence
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 from types import ModuleType
 from typing import TYPE_CHECKING, Any, TypeVar
@@ -102,6 +101,22 @@ def can_id_repr(i: int) -> str:
 
 
 def unravel(listing: str) -> list[int]:
+    """
+    Parses a string representing a one-dimensional list of ranges into an equivalent python data structure.
+
+    Ranges are delimited by hyphens ('-').
+    Enumerations are delimited by commas (',').
+
+    Ranges are allowed to overlap and are merged.
+    Ranges are always unraveled, which could lead to high memory consumption for distant limits.
+
+    Example: 0,10,8-11
+    This would result in [0,8,9,10,11].
+
+    :param listing: The string representation of the one-dimensional list of ranges.
+    :return: A list of numbers.
+    """
+
     listing_delimiter = ","
     range_delimiter = "-"
     result = set()
@@ -122,6 +137,24 @@ def unravel(listing: str) -> list[int]:
 
 
 def unravel_2d(listing: str) -> dict[int, list[int]]:
+    """
+    Parses a string representing a two-dimensional list of ranges into an equivalent python data structure.
+
+    The outer dimension entries are separated by spaces (' ').
+    Inner dimension ranges and outer dimension ranges are separated by colons (':').
+    Ranges in both dimensions are delimited by hyphens ('-').
+    Enumerations in both dimensions are delimited by commas (',').
+
+    Ranges are allowed to overlap and are merged.
+    Ranges are always unraveled, which could lead to high memory consumption for distant limits.
+
+    Example: "1:1,2  1-3:0,2-4"
+    This would result in {1: [0,1,2,3,4], 2: [0,2,3,4], 3: [0,2,3,4]}.
+
+    :param listing: The string representation of the two-dimensional list of ranges.
+    :return: A mapping of numbers in the outer dimension to numbers in the inner dimension.
+    """
+
     listing_delimiter = " "
     level_delimiter = ":"
 
@@ -141,45 +174,6 @@ def unravel_2d(listing: str) -> dict[int, list[int]]:
                     unsorted_result[x].add(y)
 
     return {x: sorted(unsorted_result[x]) for x in sorted(unsorted_result)}
-
-
-class ParseSkips(Action):
-    def __call__(
-        self,
-        parser: ArgumentParser,
-        namespace: Namespace,
-        values: str | Sequence[Any] | None,
-        option_string: str | None = None,
-    ) -> None:
-        skip_sids: dict[int, list[int] | None] = {}
-
-        try:
-            if values is not None:
-                for session_skips in values:
-                    # Whole sessions can be skipped by only giving the session number without ids
-                    if ":" not in session_skips:
-                        session_ids = unravel(session_skips)
-
-                        for session_id in session_ids:
-                            skip_sids[session_id] = None
-                    else:
-                        session_ids_tmp, identifier_ids_tmp = session_skips.split(":")
-                        session_ids = unravel(session_ids_tmp)
-                        identifier_ids = unravel(identifier_ids_tmp)
-                        skips = session_skips
-
-                        for session_id in session_ids:
-                            if session_id not in skip_sids:
-                                skip_sids[session_id] = []
-
-                            skips = skip_sids[session_id]
-
-                            if skips is not None:
-                                skips += identifier_ids
-
-            setattr(namespace, self.dest, skip_sids)
-        except Exception as e:
-            raise ArgumentError(self, "malformed argument") from e
 
 
 T = TypeVar("T")

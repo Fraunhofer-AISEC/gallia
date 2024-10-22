@@ -26,9 +26,9 @@ class WriteByIdentifierPrimitiveConfig(UDSScannerConfig):
     )
     data_identifier: AutoInt = Field(description="The data identifier", positional=True)
     session: AutoInt = Field(0x01, description="set session perform test in")
-    data: HexBytes | None = Field(description="The data which should be written")
+    data: HexBytes | None = Field(None, description="The data which should be written")
     data_file: Path | None = Field(
-        description="The path to a file with the binary data which should be written"
+        None, description="The path to a file with the binary data which should be written"
     )
 
     @model_validator(mode="after")
