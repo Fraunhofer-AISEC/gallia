@@ -31,7 +31,7 @@ def should_parse(field: PydanticField) -> bool:
         bool: Whether the field should be parsed as a `container`.
     """
     # Check and Return
-    return field.is_a(collections.abc.Container) and not field.is_a((collections.abc.Mapping, enum.Enum, str, bytes))
+    return field.is_a(collections.abc.Container) and not field.is_a((enum.Enum, str, bytes))
 
 
 def parse_field(

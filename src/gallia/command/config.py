@@ -84,7 +84,7 @@ Usage: x: Ranges = ....
 """
 
 Ranges2D = Annotated[
-    dict[int, list[int]],
+    dict[int, list[int] | None],
     BeforeValidator(
         lambda x: x
         if isinstance(x, dict)

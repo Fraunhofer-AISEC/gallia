@@ -136,7 +136,7 @@ def unravel(listing: str) -> list[int]:
     return sorted(result)
 
 
-def unravel_2d(listing: str) -> dict[int, list[int]]:
+def unravel_2d(listing: str) -> dict[int, list[int] | None]:
     """
     Parses a string representing a two-dimensional list of ranges into an equivalent python data structure.
 
@@ -147,9 +147,10 @@ def unravel_2d(listing: str) -> dict[int, list[int]]:
 
     Ranges are allowed to overlap and are merged.
     Ranges are always unraveled, which could lead to high memory consumption for distant limits.
+    If a range with only outer dimensions is given, this will result in None for the inner list and overrides other values.
 
-    Example: "1:1,2  1-3:0,2-4"
-    This would result in {1: [0,1,2,3,4], 2: [0,2,3,4], 3: [0,2,3,4]}.
+    Example: "1:1,2  1-3:0,2-4  3"
+    This would result in {1: [0,1,2,3,4], 2: [0,2,3,4], 3: None}.
 
     :param listing: The string representation of the two-dimensional list of ranges.
     :return: A mapping of numbers in the outer dimension to numbers in the inner dimension.
@@ -158,7 +159,7 @@ def unravel_2d(listing: str) -> dict[int, list[int]]:
     listing_delimiter = " "
     level_delimiter = ":"
 
-    unsorted_result: dict[int, set[int]] = {}
+    unsorted_result: dict[int, set[int] | None] = {}
 
     for range_element in listing.split(listing_delimiter):
         if level_delimiter in range_element:
@@ -170,10 +171,16 @@ def unravel_2d(listing: str) -> dict[int, list[int]]:
                 if x not in unsorted_result:
                     unsorted_result[x] = set()
 
-                for y in second:
-                    unsorted_result[x].add(y)
+                if unsorted_result[x] is not None:
+                    for y in second:
+                        unsorted_result[x].add(y)
+        else:
+            first = unravel(range_element)
 
-    return {x: sorted(unsorted_result[x]) for x in sorted(unsorted_result)}
+            for x in first:
+                unsorted_result[x] = None
+
+    return {x: None if unsorted_result[x] is None else sorted(unsorted_result[x]) for x in sorted(unsorted_result)}
 
 
 T = TypeVar("T")
