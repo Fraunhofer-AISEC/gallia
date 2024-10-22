@@ -68,7 +68,9 @@ class ResetScanner(UDSScanner):
         l_error: list[Any] = []
 
         for sub_func in range(0x01, 0x80):
-            if session in self.config.skip and sub_func in self.config.skip[session]:
+            if session in self.config.skip and (
+                (session_skip := self.config.skip[session]) is None or sub_func in session_skip
+            ):
                 logger.notice(f"skipping subFunc: {g_repr(sub_func)} because of --skip")
                 continue
 

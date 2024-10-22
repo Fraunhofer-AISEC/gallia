@@ -171,16 +171,19 @@ def unravel_2d(listing: str) -> dict[int, list[int] | None]:
                 if x not in unsorted_result:
                     unsorted_result[x] = set()
 
-                if unsorted_result[x] is not None:
+                if (ur := unsorted_result[x]) is not None:
                     for y in second:
-                        unsorted_result[x].add(y)
+                        ur.add(y)
         else:
             first = unravel(range_element)
 
             for x in first:
                 unsorted_result[x] = None
 
-    return {x: None if unsorted_result[x] is None else sorted(unsorted_result[x]) for x in sorted(unsorted_result)}
+    return {
+        x: None if (ur := unsorted_result[x]) is None else sorted(ur)
+        for x in sorted(unsorted_result)
+    }
 
 
 T = TypeVar("T")

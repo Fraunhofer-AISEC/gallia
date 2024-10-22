@@ -116,7 +116,9 @@ class ScanIdentifiers(UDSScanner):
         for DID, sub_function in product(
             range(self.config.start, self.config.end + 1), sub_functions
         ):
-            if session in self.config.skip and DID in self.config.skip[session]:
+            if session in self.config.skip and (
+                (session_skip := self.config.skip[session]) is None or DID in session_skip
+            ):
                 logger.info(f"{g_repr(DID)}: skipped")
                 continue
 

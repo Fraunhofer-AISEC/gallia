@@ -109,7 +109,9 @@ class ServicesScanner(UDSScanner):
             if sid & 0x40 and (not self.config.scan_response_ids):
                 continue
 
-            if session in self.config.skip and sid in self.config.skip[session]:
+            if session in self.config.skip and (
+                (session_skip := self.config.skip[session]) is None or sid in session_skip
+            ):
                 logger.info(f"{g_repr(sid)}: skipped")
                 continue
 
