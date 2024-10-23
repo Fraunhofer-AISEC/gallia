@@ -18,8 +18,8 @@
           shfmt
           bats
           nodePackages_latest.bash-language-server
-          python311
           python312
+          python313
         ];
         shellHook = ''
           LD_LIBRARY_PATH=${pkgs.lib.makeLibraryPath [stdenv.cc.cc]}
