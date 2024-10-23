@@ -6,10 +6,11 @@
 
 set -eu
 
-gallia script vecu --no-volatile-info rng "unix-lines:///tmp/vecu.sock" \
+gallia script vecu rng "unix-lines:///tmp/vecu.sock" \
+	--no-volatile-info \
 	--seed 3 \
-	--mandatory_sessions "1 2 3" \
-	--mandatory_services "DiagnosticSessionControl EcuReset ReadDataByIdentifier WriteDataByIdentifier RoutineControl SecurityAccess ReadMemoryByAddress WriteMemoryByAddress RequestDownload RequestUpload TesterPresent ReadDTCInformation ClearDiagnosticInformation InputOutputControlByIdentifier" 2>vecu.log &
+	--mandatory-sessions 1 2 3 \
+	--mandatory-services DiagnosticSessionControl EcuReset ReadDataByIdentifier WriteDataByIdentifier RoutineControl SecurityAccess ReadMemoryByAddress WriteMemoryByAddress RequestDownload RequestUpload TesterPresent ReadDTCInformation ClearDiagnosticInformation InputOutputControlByIdentifier 2>vecu.log &
 
 # https://superuser.com/a/553236
 trap 'kill "$(jobs -p)"' SIGINT SIGTERM EXIT
