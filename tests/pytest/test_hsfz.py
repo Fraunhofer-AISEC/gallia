@@ -52,6 +52,8 @@ async def dummy_server() -> AsyncIterator[TCPServer]:
     await dummy_server.close()
 
 
+# FIXME: This is not a real hsfz server stack. If more than one connection is requested
+# (aka. reconnects from the transport), the relevant test case might hang.
 @pytest.fixture()
 async def transports(dummy_server: TCPServer) -> AsyncIterator[tuple[BaseTransport, BaseTransport]]:
     hsfz_transport = await HSFZTransport.connect(target)
