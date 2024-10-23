@@ -27,21 +27,24 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
-    - uses: Gr1N/setup-poetry@v9
-    - uses: actions/cache@v4
-      with:
-        path: ~/.cache/pypoetry/virtualenvs
-        key: ${{ runner.os }}-poetry-${{ hashFiles('poetry.lock') }}-${{ hashFiles('pyproject.toml') }}
 
-    - name: Install Dependencies
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        enable-cache: true
+
+    - name: Set up Python ${{ matrix.python-version }}
       run: |
-        poetry install
+        uv python install ${{ matrix.python-version }}
+        uv python pin ${{ matrix.python-version }}
+
+    - name: Install the project
+      run: |
+        uv sync --all-extras --dev
+
     - name: Run pytest
       run: |
-        poetry run make pytest
+        uv run make pytest
 
   bats:
     strategy:
@@ -52,14 +55,24 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/cache@v4
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
       with:
-        path: ~/.cache/pypoetry/virtualenvs
-        key: ${{ runner.os }}-poetry-${{ hashFiles('poetry.lock') }}-${{ hashFiles('pyproject.toml') }}
+        enable-cache: true
+
+    - name: Set up Python ${{ matrix.python-version }}
+      run: |
+        uv python install ${{ matrix.python-version }}
+
     - name: Install Dependencies
       run: |
         apt-get update -y && apt-get install -y bats python3 python3-poetry jq zstd
-        poetry install
+
+    - name: Install the project
+      run: |
+        uv sync --all-extras --dev
+
     - name: Run bats
       run: |
-        poetry run make bats
+        uv run make bats
