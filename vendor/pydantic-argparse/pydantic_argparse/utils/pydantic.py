@@ -16,8 +16,6 @@ from enum import Enum
 from types import UnionType
 from typing import (
     Any,
-    Callable,
-    Dict,
     Iterator,
     Literal,
     Optional,
@@ -30,7 +28,6 @@ from typing import (
     get_origin,
 )
 
-import pydantic
 from pydantic import BaseModel
 from pydantic.fields import FieldInfo
 from pydantic_core import PydanticUndefined
@@ -288,108 +285,6 @@ class PydanticField:
 
     def arg_dest(self) -> dict[str, str]:
         return {} if isinstance(self.info, ArgFieldInfo) and self.info.positional else {"dest": self.name}
-
-
-def as_validator(
-    field: PydanticField,
-    caster: Callable[[str], Any],
-    silent: bool = True,
-    expected_input_type: type = str
-) -> PydanticValidator:
-    """Shortcut to wrap a caster and construct a validator for a given field.
-
-    The provided caster function must cast from a string to the type required
-    by the field. Once wrapped, the constructed validator will pass through any
-    non-string values, or any values that cause the caster function to raise an
-    exception to let the built-in `pydantic` field validation handle them. The
-    validator will also cast empty strings to `None`.
-
-    Args:
-        name (str): field name
-        field (pydantic.fields.FieldInfo): Field to construct validator for.
-        caster (Callable[[str], Any]): String to field type caster function.
-
-    Returns:
-        PydanticValidator: Constructed field validator function.
-    """
-
-    # Dynamically construct a `pydantic` validator function for the supplied
-    # field. The constructed validator must be `pre=True` so that the validator
-    # is called before the built-in `pydantic` field validation occurs and is
-    # provided with the raw input data. The constructed validator must also be
-    # `allow_reuse=True` so the `__validator` function name can be reused
-    # multiple times when being decorated as a `pydantic` validator. Note that
-    # despite the `__validator` function *name* being reused, each instance of
-    # the validator function is uniquely constructed for the supplied field.
-    @pydantic.field_validator(field.name, mode="before")
-    def __validator(cls: Type[Any], value: T) -> Optional[Union[T, Any]]:
-        if not isinstance(value, expected_input_type):
-            return value
-        if not value:
-            return None
-        try:
-            return caster(value)
-        except Exception:
-            if not silent:
-                raise
-
-            return value
-
-    # Rename the validator uniquely for this field to avoid any collisions. The
-    # leading `__` and prefix of `pydantic_argparse` should guard against any
-    # potential collisions with user defined validators.
-    __validator.__name__ = f"__pydantic_argparse_{field.name}"  # type: ignore
-
-    # Return the constructed validator
-    return __validator  # type: ignore
-
-
-def update_validators(
-    validators: Dict[str, PydanticValidator],
-    validator: Optional[PydanticValidator],
-) -> None:
-    """Updates a validators dictionary with a possible new field validator.
-
-    Note that this function mutates the validators dictionary *in-place*, and
-    does not return the dictionary.
-
-    Args:
-        validators (Dict[str, PydanticValidator]): Validators to update.
-        validator (Optional[PydanticValidator]): Possible field validator.
-    """
-    # Check for Validator
-    if validator:
-        # Add Validator
-        validators[validator.__name__] = validator
-
-
-def model_with_validators(
-    model: Type[BaseModel],
-    validators: Dict[str, PydanticValidator],
-) -> Type[BaseModel]:
-    """Generates a new `pydantic` model class with the supplied validators.
-
-    If the supplied base model is a subclass of `pydantic.BaseSettings`, then
-    the newly generated model will also have a new `parse_env_var` classmethod
-    monkeypatched onto it that suppresses any exceptions raised when initially
-    parsing the environment variables. This allows the raw values to still be
-    passed through to the `pydantic` field validators if initial parsing fails.
-
-    Args:
-        model (Type[BaseModel]): Model type to use as base class.
-        validators (Dict[str, PydanticValidator]): Field validators to add.
-
-    Returns:
-        Type[BaseModel]: New `pydantic` model type with field validators.
-    """
-    # Construct New Model with Validators
-    model = pydantic.create_model(
-        model.__name__,
-        __base__=model,
-        __validators__=validators,
-    )
-
-    return model
 
 
 def is_subcommand(model: BaseModel | Type[BaseModel]) -> bool:

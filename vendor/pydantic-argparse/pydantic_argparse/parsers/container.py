@@ -13,10 +13,8 @@ whether this module should be used to parse the field, as well as the
 import argparse
 import collections.abc
 import enum
-from typing import Optional
 
-from pydantic_argparse import utils
-from pydantic_argparse.utils.pydantic import PydanticField, PydanticValidator
+from pydantic_argparse.utils.pydantic import PydanticField
 
 from .utils import SupportsAddArgument
 
@@ -37,15 +35,12 @@ def should_parse(field: PydanticField) -> bool:
 def parse_field(
     parser: SupportsAddArgument,
     field: PydanticField,
-) -> Optional[PydanticValidator]:
+) -> None:
     """Adds container pydantic field to argument parser.
 
     Args:
         parser (argparse.ArgumentParser): Argument parser to add to.
         field (PydanticField): Field to be added to parser.
-
-    Returns:
-        Optional[PydanticValidator]: Possible validator method.
     """
     parser.add_argument(
         *field.arg_names(),
@@ -58,6 +53,4 @@ def parse_field(
         **field.arg_const(),
         **field.arg_dest(),
     )
-
-    return None
 

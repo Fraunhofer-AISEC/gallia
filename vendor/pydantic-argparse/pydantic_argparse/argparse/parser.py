@@ -20,11 +20,11 @@ be compatible with an IDE, linter or type checker.
 
 import argparse
 import sys
-from typing import Dict, Generic, List, NoReturn, Optional, Tuple, Type, Any
+from typing import Generic, List, NoReturn, Optional, Tuple, Type, Any
 
 from pydantic import BaseModel, ValidationError
 
-from pydantic_argparse import parsers, utils
+from pydantic_argparse import parsers
 from pydantic_argparse.argparse import actions
 from pydantic_argparse.utils.field import ArgFieldInfo
 from pydantic_argparse.utils.nesting import _NestedArgumentParser
@@ -301,7 +301,6 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
             Type[PydanticModelT]: Pydantic model possibly with new validators.
         """
         # Initialise validators dictionary
-        validators: Dict[str, utils.pydantic.PydanticValidator] = dict()
         parser = self if arg_group is None else arg_group
 
         explicit_groups = {}
@@ -310,7 +309,7 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
         for field in PydanticField.parse_model(model):
             if field.is_a(BaseModel):
                 if field.is_subcommand():
-                    validator = parsers.command.parse_field(self._commands(), field, self.extra_defaults)
+                    parsers.command.parse_field(self._commands(), field, self.extra_defaults)
                 else:
                     # for any nested pydantic models, set default factory to model_construct
                     # method. This allows pydantic to handle if no arguments from a nested
@@ -325,9 +324,6 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
 
                     # recurse and parse fields below this submodel
                     self._add_model(model=field.model_type, arg_group=arg_group)
-
-                    validator = None
-
             else:
                 # Add field
                 added = False
@@ -346,14 +342,10 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
                     if field.info.group not in explicit_groups:
                         explicit_groups[field.info.group] = self.add_argument_group(field.info.group)
 
-                    validator = parsers.add_field(explicit_groups[field.info.group], field)
+                    parsers.add_field(explicit_groups[field.info.group], field)
                     added = True
 
                 if not added:
-                    validator = parsers.add_field(parser, field)
+                    parsers.add_field(parser, field)
 
-            # Update validators
-            utils.pydantic.update_validators(validators, validator)
-
-        # Construct and return model with validators
-        return utils.pydantic.model_with_validators(model, validators)
+        return model

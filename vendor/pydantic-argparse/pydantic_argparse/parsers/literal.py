@@ -12,11 +12,8 @@ command-line arguments.
 
 import argparse
 import sys
-from enum import Enum
-from typing import Optional
 
-from pydantic_argparse import utils
-from pydantic_argparse.utils.pydantic import PydanticField, PydanticValidator
+from pydantic_argparse.utils.pydantic import PydanticField
 
 from .utils import SupportsAddArgument
 
@@ -42,15 +39,12 @@ def should_parse(field: PydanticField) -> bool:
 def parse_field(
     parser: SupportsAddArgument,
     field: PydanticField,
-) -> Optional[PydanticValidator]:
+) -> None:
     """Adds enum pydantic field to argument parser.
 
     Args:
         parser (argparse.ArgumentParser): Argument parser to add to.
         field (PydanticField): Field to be added to parser.
-
-    Returns:
-        Optional[PydanticValidator]: Possible validator method.
     """
     # Extract Choices
     choices = get_args(field.info.annotation)
@@ -70,5 +64,3 @@ def parse_field(
         **field.arg_const(),
         **field.arg_dest(),
     )
-
-    return None
