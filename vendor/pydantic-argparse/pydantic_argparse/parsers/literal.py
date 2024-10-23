@@ -11,16 +11,13 @@ command-line arguments.
 """
 
 import argparse
-import sys
 
 from pydantic_argparse.utils.pydantic import PydanticField
 
 from .utils import SupportsAddArgument
+from ..utils.field import ArgFieldInfo
 
-if sys.version_info < (3, 8):  # pragma: <3.8 cover
-    from typing_extensions import Literal, get_args
-else:  # pragma: >=3.8 cover
-    from typing import Literal, get_args
+from typing import Literal, get_args
 
 
 def should_parse(field: PydanticField) -> bool:
@@ -50,6 +47,9 @@ def parse_field(
     choices = get_args(field.info.annotation)
 
     metavar = f"{{{', '.join(str(c) for c in choices)}}}"
+
+    if isinstance(field.info, ArgFieldInfo) and field.info.metavar is not None:
+        metavar = field.info.metavar
 
     action = argparse._StoreAction
 

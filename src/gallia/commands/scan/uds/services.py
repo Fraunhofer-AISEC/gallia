@@ -34,7 +34,7 @@ class ServicesScannerConfig(UDSScannerConfig):
     skip: Ranges2D = Field(
         {},
         metavar="SESSION_ID:ID",
-        description="\n                 The service IDs to be skipped per session.\n                 A session specific skip is given by <session id>:<service ids>\n                 where <service ids> is a comma separated list of single ids or id ranges using a dash.\n                 Examples:\n                  - 0x01:0xf3\n                  - 0x10-0x2f\n                  - 0x01:0xf3,0x10-0x2f\n                 Multiple session specific skips are separated by space.\n                 Only takes affect if --sessions is given.\n                 ",
+        description="\nThe service IDs to be skipped per session.\nA session specific skip is given by <session id>:<service ids>\nwhere <service ids> is a comma separated list of single ids or id ranges using a dash.\nExamples:\n - 0x01:0xf3\n - 0x10-0x2f\n - 0x01:0xf3,0x10-0x2f\nMultiple session specific skips are separated by space.\nOnly takes affect if --sessions is given.\n",
     )
 
 

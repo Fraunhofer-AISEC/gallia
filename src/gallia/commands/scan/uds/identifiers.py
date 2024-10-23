@@ -30,7 +30,7 @@ class ScanIdentifiersConfig(UDSScannerConfig):
     )
     service: EnumArg[UDSIsoServices] = Field(
         UDSIsoServices.ReadDataByIdentifier,
-        description="\n            Service (ID) to scan; defaults to ReadDataByIdentifier;\n            currently supported:\n            0x27 Security Access;\n            0x22 Read Data By Identifier;\n            0x2e Write Data By Identifier;\n            0x31 Routine Control;\n            ",
+        description="Service (ID) to scan; defaults to ReadDataByIdentifier;\ncurrently supported:\n0x27 Security Access;\n0x22 Read Data By Identifier;\n0x2e Write Data By Identifier;\n0x31 Routine Control;\n",
     )
     check_session: int | None = Field(
         None,
@@ -40,7 +40,7 @@ class ScanIdentifiersConfig(UDSScannerConfig):
     skip: Ranges2D = Field(
         {},
         metavar="SESSION_ID:ID",
-        description="\n                 The data identifiers to be skipped per session.\n                 A session specific skip is given by <session_id>:<identifiers>\n                 where <identifiers> is a comma separated list of single ids or id ranges using a dash.\n                 Examples:\n                  - 0x01:0xf3\n                  - 0x10-0x2f\n                  - 0x01:0xf3,0x10-0x2f\n                 Multiple session specific skips are separated by space.\n                 Only takes affect if --sessions is given.\n                 ",
+        description="The data identifiers to be skipped per session.\nA session specific skip is given by <session_id>:<identifiers>\nwhere <identifiers> is a comma separated list of single ids or id ranges using a dash.\nExamples:\n - 0x01:0xf3\n - 0x10-0x2f\n - 0x01:0xf3,0x10-0x2f\nMultiple session specific skips are separated by space.\nOnly takes affect if --sessions is given.\n",
     )
     skip_not_supported: bool = Field(
         False, description="Stop scanning in session if service seems to be not available"

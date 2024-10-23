@@ -23,7 +23,7 @@ class ResetScannerConfig(UDSScannerConfig):
     skip: Ranges2D = Field(
         {},
         metavar="SESSION_ID:ID",
-        description="\n                 The sub functions to be skipped per session.\n                 A session specific skip is given by <session_id>:<sub_functions>\n                 where <sub_functions> is a comma separated list of single ids or id ranges using a dash.\n                 Examples:\n                  - 0x01:0xf3\n                  - 0x10-0x2f\n                  - 0x01:0xf3,0x10-0x2f\n                 Multiple session specific skips are separated by space.\n                 Only takes affect if --sessions is given.\n                 ",
+        description="The sub functions to be skipped per session.\nA session specific skip is given by <session_id>:<sub_functions>\nwhere <sub_functions> is a comma separated list of single ids or id ranges using a dash.\nExamples:\n - 0x01:0xf3\n - 0x10-0x2f\n - 0x01:0xf3,0x10-0x2f\nMultiple session specific skips are separated by space.\nOnly takes affect if --sessions is given.\n",
     )
     skip_check_session: bool = Field(
         False, description="skip check current session; only takes affect if --sessions is given"

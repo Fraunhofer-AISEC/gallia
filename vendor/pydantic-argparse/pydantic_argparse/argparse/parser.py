@@ -80,24 +80,15 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
         :param extra_defaults: Defaults coming from external sources, such as environment variables or config files.
         """
         # Initialise Super Class
-        if sys.version_info < (3, 9):  # pragma: <3.9 cover
-            super().__init__(
-                prog=prog,
-                description=description,
-                epilog=epilog,
-                add_help=False,  # Always disable the automatic help flag.
-                argument_default=argparse.SUPPRESS,  # Allow `pydantic` to handle defaults.
-            )
-
-        else:  # pragma: >=3.9 cover
-            super().__init__(
-                prog=prog,
-                description=description,
-                epilog=epilog,
-                exit_on_error=exit_on_error,
-                add_help=False,  # Always disable the automatic help flag.
-                argument_default=argparse.SUPPRESS,  # Allow `pydantic` to handle defaults.
-            )
+        super().__init__(
+            prog=prog,
+            description=description,
+            epilog=epilog,
+            exit_on_error=exit_on_error,
+            add_help=False,  # Always disable the automatic help flag.
+            argument_default=argparse.SUPPRESS,  # Allow `pydantic` to handle defaults.
+            formatter_class=argparse.RawTextHelpFormatter
+        )
 
         # Set Version, Add Help and Exit on Error Flag
         self.version = version

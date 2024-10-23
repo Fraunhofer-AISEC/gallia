@@ -34,7 +34,9 @@ class UDSScannerConfig(ScannerConfig, cli_group="uds", config_section="gallia.pr
         2, description="Timeout value to wait for a response from the ECU", metavar="SECONDS"
     )
     max_retries: int = Field(
-        3, description="Number of maximum retries while sending UDS requests. If supported by the transport, this will trigger reconnects if required.", metavar="INT"
+        3,
+        description="Number of maximum retries while sending UDS requests. If supported by the transport, this will trigger reconnects if required.",
+        metavar="INT",
     )
     ping: bool = Field(True, description="Enable/Disable initial TesterPresent request")
     tester_present_interval: float = Field(

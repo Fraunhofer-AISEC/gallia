@@ -17,6 +17,7 @@ from typing import Type, cast
 from pydantic_argparse.utils.pydantic import PydanticField
 
 from .utils import SupportsAddArgument
+from ..utils.field import ArgFieldInfo
 
 
 def should_parse(field: PydanticField) -> bool:
@@ -46,8 +47,11 @@ def parse_field(
     enum_type = cast(Type[enum.Enum], field.info.annotation)
 
     # Determine Argument Properties
-    # TODO: Short metavar
-    metavar = f"{{{', '.join(f'{e.value}' for e in enum_type)}}}"
+    metavar = enum_type.__name__
+
+    if isinstance(field.info, ArgFieldInfo) and field.info.metavar is not None:
+        metavar = field.info.metavar
+
     action = argparse._StoreAction
 
     # Add Enum Field
