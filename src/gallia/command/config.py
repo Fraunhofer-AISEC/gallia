@@ -74,12 +74,14 @@ See binascii.unhexlify() for more information on the syntax.
 Usage: x: HexBytes = ....
 """
 
+
 def _process_ranges(value: Any) -> Any:
     if isinstance(value, str):
         return unravel(",".join(value.split()))
     elif isinstance(value, list) and all(isinstance(x, str) for x in value):
         return unravel(",".join(value))
     return value
+
 
 Ranges = Annotated[list[int], BeforeValidator(_process_ranges)]
 """

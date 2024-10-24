@@ -14,7 +14,6 @@ from typing import Any, Never
 
 import argcomplete
 from pydantic import Field, create_model
-
 from pydantic_argparse import ArgumentParser
 from pydantic_argparse import BaseCommand as PydanticBaseCommand
 from pydantic_core import PydanticUndefined
@@ -110,7 +109,7 @@ def parse_and_run(
     auto_complete: bool = True,
     setup_log: bool = True,
     top_level_options: Mapping[str, Callable[[], None]] | None = None,
-    show_help_on_zero_args: bool = True
+    show_help_on_zero_args: bool = True,
 ) -> Never:
     """
     Creates an argument parser out of the given command hierarchy and runs the command with its argument.

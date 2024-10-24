@@ -19,7 +19,9 @@ logger = get_logger(__name__)
 
 
 class ResetScannerConfig(UDSScannerConfig):
-    sessions: Ranges | None = Field(description="Set list of sessions to be tested; all if None")
+    sessions: Ranges | None = Field(
+        None, description="Set list of sessions to be tested; all if None"
+    )
     skip: Ranges2D = Field(
         {},
         metavar="SESSION_ID:ID",
