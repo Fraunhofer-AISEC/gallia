@@ -1,0 +1,5 @@
+# SPDX-FileCopyrightText: AISEC Pentesting Team
+#
+# SPDX-License-Identifier: CC0-1.0
+
+KERNEL=="ttyACM[0-9]*", SUBSYSTEM=="tty", SUBSYSTEMS=="usb", ATTRS{idVendor}=="0416", ATTRS{idProduct}=="5011", SYMLINK+="rnd-netzteil"
