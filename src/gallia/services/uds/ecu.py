@@ -196,7 +196,7 @@ class ECU(UDSClient):
         )
         return False
 
-    async def power_cycle(self, sleep: int = 5) -> bool:
+    async def power_cycle(self, sleep: float = 5) -> bool:
         if self.power_supply is None:
             logger.debug("no power_supply available")
             return False
@@ -212,7 +212,7 @@ class ECU(UDSClient):
         self,
         level: int,
         config: UDSRequestConfig | None = None,
-        sleep: int | None = None,
+        sleep: float | None = None,
     ) -> bool:
         """leave_session() is a hook which can be called explicitly by a
         scanner when a session is to be disabled. Use this hook if resetting

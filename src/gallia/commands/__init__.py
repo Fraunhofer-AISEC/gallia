@@ -8,7 +8,11 @@ from gallia.command.base import BaseCommand
 from gallia.commands.discover.doip import DoIPDiscoverer
 from gallia.commands.discover.hsfz import HSFZDiscoverer
 from gallia.commands.primitive.generic.pdu import GenericPDUPrimitive
-from gallia.commands.primitive.uds.dtc import DTCPrimitive
+from gallia.commands.primitive.uds.dtc import (
+    ClearDTCPrimitive,
+    ControlDTCPrimitive,
+    ReadDTCPrimitive,
+)
 from gallia.commands.primitive.uds.ecu_reset import ECUResetPrimitive
 from gallia.commands.primitive.uds.iocbi import IOCBIPrimitive
 from gallia.commands.primitive.uds.pdu import SendPDUPrimitive
@@ -27,7 +31,6 @@ from gallia.commands.scan.uds.services import ServicesScanner
 from gallia.commands.scan.uds.sessions import SessionsScanner
 
 registry: list[type[BaseCommand]] = [
-    DTCPrimitive,
     DoIPDiscoverer,
     ECUResetPrimitive,
     GenericPDUPrimitive,
@@ -41,6 +44,18 @@ registry: list[type[BaseCommand]] = [
     ResetScanner,
     SASeedsDumper,
     ScanIdentifiers,
+    SessionsScanner,
+    ServicesScanner,
+    ClearDTCPrimitive,
+    ControlDTCPrimitive,
+    ReadDTCPrimitive,
+    ECUResetPrimitive,
+    VINPrimitive,
+    IOCBIPrimitive,
+    PingPrimitive,
+    RMBAPrimitive,
+    RTCLPrimitive,
+    GenericPDUPrimitive,
     SendPDUPrimitive,
     ServicesScanner,
     SessionsScanner,
@@ -51,7 +66,6 @@ registry: list[type[BaseCommand]] = [
 
 # TODO: Investigate why linters didn't catch faulty strings in here.
 __all__ = [
-    "DTCPrimitive",
     "DoIPDiscoverer",
     "ECUResetPrimitive",
     "GenericPDUPrimitive",
@@ -65,6 +79,18 @@ __all__ = [
     "ResetScanner",
     "SASeedsDumper",
     "ScanIdentifiers",
+    "SessionsScanner",
+    "ServicesScanner",
+    "ClearDTCPrimitive",
+    "ControlDTCPrimitive",
+    "ReadDTCPrimitive",
+    "ECUResetPrimitive",
+    "VINPrimitive",
+    "IOCBIPrimitive",
+    "PingPrimitive",
+    "RMBAPrimitive",
+    "RTCLPrimitive",
+    "GenericPDUPrimitive",
     "SendPDUPrimitive",
     "ServicesScanner",
     "SessionsScanner",
@@ -75,31 +101,37 @@ __all__ = [
 
 
 if sys.platform.startswith("linux"):
-    from gallia.commands.discover.find_xcp import FindXCP
+    from gallia.commands.discover.find_xcp import CanFindXCP, TcpFindXCP, UdpFindXCP
     from gallia.commands.discover.uds.isotp import IsotpDiscoverer
     from gallia.commands.fuzz.uds.pdu import PDUFuzzer
     from gallia.commands.primitive.uds.xcp import SimpleTestXCP
-    from gallia.commands.script.vecu import VirtualECU
+    from gallia.commands.script.vecu import DbVirtualECU, RngVirtualECU
 
     registry += [
-        FindXCP,
+        CanFindXCP,
+        UdpFindXCP,
+        TcpFindXCP,
         IsotpDiscoverer,
         PDUFuzzer,
         SimpleTestXCP,
-        VirtualECU,
+        DbVirtualECU,
+        RngVirtualECU,
     ]
 
     __all__ += [
-        "FindXCP",
+        "CanFindXCP",
+        "UDSFindXCP",
+        "TCPFindXCP",
         "IsotpDiscoverer",
         "PDUFuzzer",
         "SimpleTestXCP",
-        "VirtualECU",
+        "DbVirtualECU",
+        "RngVirtualECU",
     ]
 
 
 if sys.platform == "win32":
-    from gallia.commands.script.flexray import FRDump, FRDumpConfig
+    from gallia.commands.script.flexray import FRConfigDump, FRDump
 
-    registry += [FRDump, FRDumpConfig]
-    __all__ += ["FRDump", "FRDumpConfig"]
+    registry += [FRDump, FRConfigDump]
+    __all__ += ["FRDump", "FRConfigDump"]
