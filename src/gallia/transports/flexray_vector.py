@@ -448,7 +448,10 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="fr-tp-legacy"):
             if self._require_fc_frame(self.config.fc_block_size, read_bytes):
                 await self._send_flow_control_frame()
 
-            frame = await self.read_tp_frame()
+            # TODO: Make this configurable. Maybe align with separation_time.
+            async with asyncio.timeout(10):
+                frame = await self.read_tp_frame()
+
             if not isinstance(frame, FlexRayTPConsecutiveFrame):
                 raise RuntimeError(f"expected consecutive frame, got: {frame}")
             if frame.counter != (counter & 0x0F):
