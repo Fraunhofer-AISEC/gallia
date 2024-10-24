@@ -9,9 +9,9 @@ internals of `pydantic`, such as constructing field validators, updating
 field validator dictionaries and constructing new model classes with
 dynamically generated validators and environment variable parsers.
 """
-
+import sys
 from collections.abc import Container
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from types import UnionType
 from typing import (
@@ -25,7 +25,7 @@ from typing import (
     Union,
     cast,
     get_args,
-    get_origin,
+    get_origin, Annotated,
 )
 
 from pydantic import BaseModel
@@ -67,13 +67,7 @@ class PydanticField:
         for name, info in model.model_fields.items():
             yield cls(name, info)
 
-    def get_type(self) -> Union[Type, Tuple[Type, ...], None]:
-        """Return the type annotation for the `pydantic` field.
-
-        Returns:
-            Union[Type, Tuple[Type, ...], None]
-        """
-        annotation = self.info.annotation
+    def _get_type(self, annotation: type | None) -> Union[Type, Tuple[Type, ...], None]:
         origin = get_origin(annotation)
 
         if origin is Literal or isinstance(origin, type) and issubclass(origin, Container):
@@ -91,12 +85,28 @@ class PydanticField:
         for t in types:
             origin = get_origin(t)
 
-            if origin is not None:
+            if origin is Annotated:
+                sub_types = self._get_type(get_args(t)[0])
+
+                if isinstance(sub_types, tuple):
+                    base_types += sub_types
+                else:
+                    base_types.append(sub_types)
+            elif origin is not None:
                 base_types.append(origin)
             else:
                 base_types.append(t)
 
         return tuple(base_types)
+
+    def get_type(self) -> Union[Type, Tuple[Type, ...], None]:
+        """Return the type annotation for the `pydantic` field.
+
+        Returns:
+            Union[Type, Tuple[Type, ...], None]
+        """
+        annotation = self.info.annotation
+        return self._get_type(annotation)
 
     def is_a(self, types: Union[Any, Tuple[Any, ...]]) -> bool:
         """Checks whether the subject *is* any of the supplied types.
