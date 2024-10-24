@@ -303,7 +303,6 @@ class ExcelGenerator(Operator):
         """
         fill response field in summary sheet.
         """
-        print(raw_df)
         try:
             sess_vec = np.array(dft_err_df.columns)
             if scan_mode == ScanMode.SERV:
