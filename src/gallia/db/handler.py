@@ -385,15 +385,19 @@ class DBHandler:
                     logger.warning(
                         f"Could not log message for {query_parameter[5]} to database. Retrying ..."
                     )
+                except asyncio.CancelledError:
+                    logger.warning("Database query was cancelled.")
+                    done = True
 
             if commit:
                 await self.connection.commit()
 
-        self.tasks.append(asyncio.create_task(execute()))
-        self.tasks[-1].add_done_callback(
+        task = asyncio.create_task(execute())
+        task.add_done_callback(
             handle_task_error,
             context=set_task_handler_ctx_variable(__name__, "DbHandler"),
         )
+        self.tasks.append(task)
 
     async def insert_session_transition(self, destination: int, steps: list[int]) -> None:
         assert self.connection is not None, "Not connected to the database"
