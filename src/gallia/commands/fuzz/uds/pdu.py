@@ -10,7 +10,7 @@ from typing import Literal
 assert sys.platform.startswith("linux"), "unsupported platform"
 
 from gallia.command import UDSScanner
-from gallia.command.config import AutoInt, Field, HexBytes, Ranges
+from gallia.command.config import AutoInt, AutoLiteral, Field, HexBytes, Ranges
 from gallia.command.uds import UDSScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds.core.client import UDSRequestConfig
@@ -26,9 +26,11 @@ logger = get_logger(__name__)
 
 class PDUFuzzerConfig(UDSScannerConfig):
     sessions: Ranges = Field([1], description="Set list of sessions to be tested; 0x01 if None")
-    serviceid: Literal[0x2E, 0x31] = Field(
-        0x2E,
-        description="\n            Service ID to create payload for; defaults to 0x2e WriteDataByIdentifier;\n            currently supported:\n            0x2e WriteDataByIdentifier, 0x31 RoutineControl (startRoutine)\n            ",
+    service: AutoLiteral[
+        Literal[UDSIsoServices.WriteDataByIdentifier, UDSIsoServices.RoutineControl]
+    ] = Field(
+        UDSIsoServices.WriteDataByIdentifier,
+        description="Service ID to create payload for; defaults to 0x2e WriteDataByIdentifier;\ncurrently supported:\n0x2e WriteDataByIdentifier, 0x31 RoutineControl (startRoutine)\n",
     )
     max_length: AutoInt = Field(42, description="maximum length of the payload")
     min_length: AutoInt = Field(1, description="minimum length of the payload")
@@ -88,10 +90,10 @@ class PDUFuzzer(UDSScanner):
         logger.info(f"testing sessions {self.config.sessions}")
 
         for did in self.config.dids:
-            if self.config.serviceid == UDSIsoServices.RoutineControl.value:
-                pdu = bytes([self.config.serviceid, 0x01, did >> 8, did & 0xFF])
-            elif self.config.serviceid == UDSIsoServices.WriteDataByIdentifier.value:
-                pdu = bytes([self.config.serviceid, did >> 8, did & 0xFF])
+            if self.config.service == UDSIsoServices.RoutineControl:
+                pdu = bytes([self.config.service.value, 0x01, did >> 8, did & 0xFF])
+            elif self.config.service == UDSIsoServices.WriteDataByIdentifier:
+                pdu = bytes([self.config.service.value, did >> 8, did & 0xFF])
             for session in self.config.sessions:
                 logger.notice(f"Switching to session 0x{session:02x}")
                 resp: UDSResponse = await self.ecu.set_session(session)
