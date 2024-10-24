@@ -36,6 +36,7 @@ class SendPDUPrimitive(UDSScanner):
             "pdu",
             type=binascii.unhexlify,
             help="The raw pdu to send to the ECU",
+            nargs='+'
         )
         self.parser.add_argument(
             "-r",
@@ -52,31 +53,31 @@ class SendPDUPrimitive(UDSScanner):
         )
 
     async def main(self, args: Namespace) -> None:
-        pdu = args.pdu
         if args.session is not None:
             resp: UDSResponse = await self.ecu.set_session(args.session)
             raise_for_error(resp)
 
-        parsed_request = UDSRequest.parse_dynamic(pdu)
+        for pdu in args.pdu:
+            parsed_request = UDSRequest.parse_dynamic(pdu)
 
-        if isinstance(parsed_request, RawRequest):
-            logger.warning("Could not parse the request pdu")
+            if isinstance(parsed_request, RawRequest):
+                logger.warning("Could not parse the request pdu")
 
-        logger.info(f"Sending {parsed_request}")
+            logger.info(f"Sending {parsed_request}")
 
-        try:
-            response = await self.ecu.send_raw(
-                pdu,
-                config=UDSRequestConfig(max_retry=args.max_retry),
-            )
-        except UDSException as e:
-            logger.error(repr(e))
-            sys.exit(1)
+            try:
+                response = await self.ecu.send_raw(
+                    pdu,
+                    config=UDSRequestConfig(max_retry=args.max_retry),
+                )
+            except UDSException as e:
+                logger.error(repr(e))
+                sys.exit(1)
 
-        if isinstance(response, NegativeResponse):
-            logger.warning(f"Received {response}")
-        else:
-            if isinstance(response, RawResponse):
-                logger.warning("Could not parse the response pdu")
+            if isinstance(response, NegativeResponse):
+                logger.warning(f"Received {response}")
+            else:
+                if isinstance(response, RawResponse):
+                    logger.warning("Could not parse the response pdu")
 
-            logger.result(f"Received {response}")
+                logger.result(f"Received {response}")

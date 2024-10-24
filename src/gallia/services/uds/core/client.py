@@ -139,7 +139,7 @@ class UDSClient:
                     # Send a tester present to indicate that
                     # we are still there.
                     # TODO Is this really necessary?
-                    await self._tester_present(suppress_resp=True)
+                    #await self._tester_present(suppress_resp=True)
                     n_timeout += 1
                     if n_timeout >= max_n_timeout:
                         last_exception = MissingResponse(request, str(e))

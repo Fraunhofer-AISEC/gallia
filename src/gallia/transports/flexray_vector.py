@@ -421,17 +421,31 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="fr-tp-legacy"):
         logger.trace("read FlexRayTPFrame %s", repr(frame))
         return frame
 
+    async def _send_flow_control_frame(self):
+        block_size = self.config.fc_block_size
+        fc_frame = FlexRayTPFlowControlFrame(
+            flag=FlexRayTPFlowControlFlag.CONTINUE_TO_SEND,
+            separation_time=self.config.fc_separation_time,
+            block_size=block_size,
+        )
+        await self.write_tp_frame(fc_frame)
+        return block_size
+
     async def _handle_fragmented(self, expected_len: int) -> bytes:
         # 6 bytes already read in first frame.
         # Headersize is 2 byte.
         read_bytes = 6
         counter = 1
         data = b""
+        ack_counter = 0
 
         while read_bytes < expected_len:
+            if ack_counter <= len(data):
+                ack_counter += await self._send_flow_control_frame()
             # Reordering is not implemented.
             logger.debug(f"expected_len: {expected_len}; read_bytes: {read_bytes}")
-            frame = await self.read_tp_frame()
+            async with asyncio.timeout(10):
+                frame = await self.read_tp_frame()
             if not isinstance(frame, FlexRayTPConsecutiveFrame):
                 raise RuntimeError(f"expected consecutive frame, got: {frame}")
             if frame.counter != (counter & 0x0F):
@@ -449,21 +463,13 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="fr-tp-legacy"):
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> bytes:
+        logger.trace(f"FR read_unsafe <timeout: {timeout}>")
         async with asyncio.timeout(timeout):
             frame = await self.read_tp_frame()
             match frame:
                 case FlexRayTPSingleFrame():
                     return frame.data
                 case FlexRayTPFirstFrame():
-                    fc_frame = FlexRayTPFlowControlFrame(
-                        flag=FlexRayTPFlowControlFlag.CONTINUE_TO_SEND,
-                        separation_time=self.config.fc_separation_time,
-                        # TODO: send again after block_size number of frames is read.
-                        # Maybe move sending the flow control frame into the
-                        # _handle_fragmented() function and create a loop.
-                        block_size=self.config.fc_block_size,
-                    )
-                    await self.write_tp_frame(fc_frame)
                     data = frame.data + await self._handle_fragmented(frame.size)
                     data = data[: frame.size]
                     logger.debug("read data: %s", data.hex())

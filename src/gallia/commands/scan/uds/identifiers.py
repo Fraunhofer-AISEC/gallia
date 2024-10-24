@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import sys
 import binascii
 import reprlib
 from argparse import Namespace
@@ -103,6 +104,7 @@ class ScanIdentifiers(UDSScanner):
         )
 
     async def main(self, args: Namespace) -> None:
+        error = False
         if args.sessions is None:
             logger.notice("Performing scan in current session")
             await self.perform_scan(args)
@@ -118,9 +120,10 @@ class ScanIdentifiers(UDSScanner):
 
             for session in sessions:
                 logger.notice(f"Switching to session {g_repr(session)}")
-                resp: UDSResponse = await self.ecu.set_session(session)
-                if isinstance(resp, NegativeResponse):
+                resp: bool = await self.ecu.check_and_set_session(session)
+                if not resp:
                     logger.warning(f"Switching to session {g_repr(session)} failed: {resp}")
+                    error = True
                     continue
 
                 logger.result(f"Starting scan in session: {g_repr(session)}")
@@ -130,6 +133,8 @@ class ScanIdentifiers(UDSScanner):
                 logger.result(f"Scan in session {g_repr(session)} is complete!")
                 logger.info(f"Leaving session {g_repr(session)} via hook")
                 await self.ecu.leave_session(session, sleep=args.power_cycle_sleep)
+        if error:
+            sys.exit(1)
 
     async def perform_scan(self, args: Namespace, session: None | int = None) -> None:
         positive_DIDs = 0

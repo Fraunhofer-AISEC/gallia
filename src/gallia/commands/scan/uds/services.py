@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import sys
 import reprlib
 from argparse import BooleanOptionalAction, Namespace
 from typing import Any
@@ -78,6 +79,7 @@ class ServicesScanner(UDSScanner):
         self.result: list[tuple[int, int]] = []
         self.ecu.max_retry = 0
         found: dict[int, dict[int, Any]] = {}
+        error = False
 
         if args.sessions is None:
             found[0] = await self.perform_scan(args)
@@ -91,8 +93,8 @@ class ServicesScanner(UDSScanner):
             for session in sessions:
                 logger.info(f"Changing to session {g_repr(session)}")
                 try:
-                    resp: UDSResponse = await self.ecu.set_session(
-                        session, UDSRequestConfig(tags=["preparation"])
+                    resp: bool = await self.ecu.check_and_set_session(
+                        session
                     )
                 except (
                     UDSException,
@@ -101,11 +103,13 @@ class ServicesScanner(UDSScanner):
                     logger.warning(
                         f"Could not complete session change to {g_repr(session)}: {g_repr(e)}; skipping session"
                     )
+                    error = True
                     continue
-                if isinstance(resp, NegativeResponse):
+                if not resp:
                     logger.warning(
                         f"Could not complete session change to {g_repr(session)}: {resp}; skipping session"
                     )
+                    error = True
                     continue
 
                 logger.result(f"scanning in session {g_repr(session)}")
@@ -122,6 +126,8 @@ class ServicesScanner(UDSScanner):
                     logger.result(f"  [{g_repr(sid)}] {UDSIsoServices(sid).name}: {data}")
                 except Exception:
                     logger.result(f"  [{g_repr(sid)}] vendor specific sid: {data}")
+        if error:
+            sys.exit(1)
 
     async def perform_scan(self, args: Namespace, session: None | int = None) -> dict[int, Any]:
         result: dict[int, Any] = {}

@@ -228,6 +228,9 @@ class FlexRayCtypesBackend:
                     _ctypes_vector_xl.XLportHandle(self.port_handle),
                 )
                 break
+            except _ctypes_vector_xl.VectorOperationError as e:
+                logger.error(f"VectorOperationError: {e}")
+                break
 
             if event.tag != _ctypes_vector_xl.XL_FR_RX_FRAME:
                 continue

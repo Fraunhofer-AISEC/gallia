@@ -19,6 +19,7 @@ from gallia.services.uds.core.exception import (
     ResponseException,
     UDSException,
     UnexpectedNegativeResponse,
+    MissingResponse
 )
 from gallia.services.uds.core.utils import from_bytes, g_repr
 from gallia.services.uds.helpers import (
@@ -168,7 +169,11 @@ class ECU(UDSClient):
             logger.info(
                 f"Switching to session {g_repr(expected_session)}; attempt {i + 1} of {retries}"
             )
-            resp = await self.set_session(expected_session)
+            try:
+                resp = await self.set_session(expected_session)
+            except MissingResponse:
+                logger.warning(f"MissingResponse while switching to session {g_repr(expected_session)}; retry")
+                continue
 
             if isinstance(resp, service.NegativeResponse):
                 logger.warning(f"Switching to session {g_repr(expected_session)} failed: {resp}")

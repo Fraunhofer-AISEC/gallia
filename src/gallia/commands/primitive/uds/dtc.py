@@ -123,6 +123,7 @@ class DTCPrimitive(UDSScanner):
         failed_dtcs: list[list[str]] = []
         uncompleted_dtcs: list[list[str]] = []
 
+        logger.result(f'Found {len(dtcs)} DTC entries')
         for dtc, error_state in dtcs.items():
             raw_output = f"{dtc:06X} {error_state:02X}"
             bit_string = bin(error_state + 0x100)[

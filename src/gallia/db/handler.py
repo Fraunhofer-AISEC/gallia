@@ -168,7 +168,7 @@ class DBHandler:
         for task in self.tasks:
             try:
                 await task
-            except Exception as e:
+            except (Exception, asyncio.exceptions.CancelledError) as e:
                 logger.error(f"Inside task: {g_repr(e)}")
 
         try:
@@ -314,6 +314,8 @@ class DBHandler:
 
         if isinstance(request, SubFunctionRequest):
             request_attributes["sub_function"] = request.sub_function
+        if request.service_id == 0x27 and len(request.pdu) > 1:
+            request_attributes["sub_function"] = request.pdu[1]
 
         for attr, value in request.__dict__.items():
             if not attr.startswith("_"):
