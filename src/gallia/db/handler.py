@@ -380,6 +380,9 @@ class DBHandler:
                     logger.warning(
                         f"Could not log message for {query_parameter[5]} to database. Retrying ..."
                     )
+                except asyncio.CancelledError:
+                    logger.warning("Database query was cancelled.")
+                    done = True
 
             if commit:
                 await self.connection.commit()
