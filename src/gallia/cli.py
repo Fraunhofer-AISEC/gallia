@@ -14,6 +14,7 @@ from typing import Any, Never
 
 import argcomplete
 from pydantic import Field, create_model
+
 from pydantic_argparse import ArgumentParser
 from pydantic_argparse import BaseCommand as PydanticBaseCommand
 from pydantic_core import PydanticUndefined
@@ -109,6 +110,7 @@ def parse_and_run(
     auto_complete: bool = True,
     setup_log: bool = True,
     top_level_options: Mapping[str, Callable[[], None]] | None = None,
+    show_help_on_zero_args: bool = True
 ) -> Never:
     """
     Creates an argument parser out of the given command hierarchy and runs the command with its argument.
@@ -123,9 +125,14 @@ def parse_and_run(
     :param top_level_options: Optional top-level actions, such as "--version", given by a mapping of arguments and
                               functions. The program redirects control to the given function, once the program is
                               called with the corresponding argument and terminates after it returns.
+    :param show_help_on_zero_args: Show the help message instead of an error in case no arguments are submitted at all.
     """
 
     parser = create_parser(commands)
+
+    if show_help_on_zero_args and len(sys.argv) == 1:
+        parser.print_help(sys.stderr)
+        sys.exit(exitcodes.USAGE)
 
     def make_f(c: Callable[[], None]) -> Callable[[Any], None]:
         def f(_: Any) -> None:
