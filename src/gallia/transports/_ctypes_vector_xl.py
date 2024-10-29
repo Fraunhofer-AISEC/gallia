@@ -35,6 +35,7 @@ XLstatus = ctypes.c_short
 XLportHandle = ctypes.c_long
 XLeventTag = ctypes.c_ubyte
 XLstringType = ctypes.c_char_p
+XLlicInfoType = ctypes.c_uint64 * 4
 
 xlGetErrorString = _xlapi_dll.xlGetErrorString
 xlGetErrorString.argtypes = [XLstatus]
@@ -1170,6 +1171,16 @@ xlGetKeymanBoxes.argtypes = [
 ]
 xlGetKeymanBoxes.restype = XLstatus
 xlGetKeymanBoxes.errcheck = check_status_initialization
+
+xlGetKeymanInfo = _xlapi_dll.xlGetKeymanInfo
+xlGetKeymanInfo.argtypes = [
+    ctypes.c_uint,
+    ctypes.POINTER(ctypes.c_uint),
+    ctypes.POINTER(ctypes.c_uint),
+    ctypes.POINTER(XLlicInfoType),
+]
+xlGetKeymanInfo.restype = XLstatus
+xlGetKeymanInfo.errcheck = check_status_initialization
 
 xlSetNotification = _xlapi_dll.xlSetNotification
 xlSetNotification.argtypes = [

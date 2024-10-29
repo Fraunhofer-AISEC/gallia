@@ -100,6 +100,17 @@ class FlexRayCtypesBackend:
     def _enable_vector_license() -> None:
         out = ctypes.c_uint()
         _ctypes_vector_xl.xlGetKeymanBoxes(ctypes.byref(out))
+        logger.info(f"GetKeymanBoxes: {out.value} Keyman License Dongle(s) found")
+        for i in range(out.value):
+            boxMask = ctypes.c_uint()
+            boxSerial = ctypes.c_uint()
+            tmpLicInfo = _ctypes_vector_xl.XLlicInfoType()
+            _ctypes_vector_xl.xlGetKeymanInfo(
+                i, ctypes.byref(boxMask), ctypes.byref(boxSerial), ctypes.byref(tmpLicInfo)
+            )
+            logger.info(
+                f"GetKeymanInfo: Keyman Dongle ({i}) with SerialNumber: {boxMask.value}-{boxSerial.value}"
+            )
 
     @staticmethod
     def _open_flexray_port(user_name: str, channel_mask: int, rx_queue_size: int) -> int:
