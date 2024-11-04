@@ -249,8 +249,6 @@ def setup_logging(
     :param path: The path to the logfile containing json records.
     :param color_mode: The color mode to use for the console.
     """
-    colored = resolve_color_mode(color_mode)
-
     if level is None:
         # FIXME why is this here and not in config?
         if (raw := os.getenv("GALLIA_LOGLEVEL")) is not None:
