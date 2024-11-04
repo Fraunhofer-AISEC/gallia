@@ -386,7 +386,9 @@ def _format_record(  # noqa: PLR0913
     colored: bool = False,
     volatile_info: bool = False,
 ) -> str:
-    msg = "\33[2K"
+    msg = ""
+    if volatile_info:
+        msg += "\33[2K"
     extra_len = 4
     msg += dt.strftime("%b %d %H:%M:%S.%f")[:-3]
     msg += " "
