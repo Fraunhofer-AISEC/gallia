@@ -22,12 +22,19 @@ from pydantic import ConfigDict, field_serializer, model_validator
 from gallia import exitcodes
 from gallia.command.config import Field, GalliaBaseModel, Idempotent
 from gallia.db.handler import DBHandler
-from gallia.log import _ZstdFileHandler, add_zst_log_handler, get_logger, remove_zst_log_handler, tz
+from gallia.log import (
+    Loglevel,
+    _ZstdFileHandler,
+    add_zst_log_handler,
+    get_logger,
+    remove_zst_log_handler,
+    tz,
+)
 from gallia.power_supply import PowerSupply
 from gallia.power_supply.uri import PowerSupplyURI
 from gallia.services.uds.core.exception import UDSException
 from gallia.transports import BaseTransport, TargetURI
-from gallia.utils import camel_to_snake, get_file_log_level
+from gallia.utils import camel_to_snake
 
 
 @unique
@@ -66,6 +73,24 @@ class BaseCommandConfig(GalliaBaseModel, cli_group="generic", config_section="ga
         True, description="Overwrite log lines with level info or lower in terminal output"
     )
     trace_log: bool = Field(False, description="set the loglevel of the logfile to TRACE")
+    syslog_format: bool = Field(
+        False, description="Logs in a format which is appropriate for systemd-journald"
+    )
+    pre_hook: str | None = Field(
+        None,
+        description="shell script to run before the main entry_point",
+        metavar="SCRIPT",
+        config_section="gallia.hooks",
+    )
+    post_hook: str | None = Field(
+        None,
+        description="shell script to run after the main entry_point",
+        metavar="SCRIPT",
+        config_section="gallia.hooks",
+    )
+    hooks: bool = Field(
+        True, description="execute pre and post hooks", config_section="gallia.hooks"
+    )
     db: Path | None = Field(None, description="Path to sqlite3 database")
     artifacts_base: Path | None = Field(
         None,
@@ -192,11 +217,15 @@ class BaseCommand(ABC):
     async def entry_point(self) -> int:
         self.artifacts_dir = self.prepare_artifacts_dir()
         if self.artifacts_dir is not None:
+            file_log_level = Loglevel.DEBUG
+            if self.config.verbose >= 2 or self.config.trace_log:
+                file_log_level = Loglevel.TRACE
+
             self.log_file_handlers.append(
                 add_zst_log_handler(
                     logger_name="gallia",
                     filepath=self.artifacts_dir.joinpath(FileNames.LOGFILE.value),
-                    file_log_level=get_file_log_level(self.config),
+                    file_log_level=file_log_level,
                 )
             )
 
