@@ -23,11 +23,10 @@ from gallia.command import BaseCommand
 from gallia.command.base import BaseCommandConfig
 from gallia.command.config import GalliaBaseModel
 from gallia.config import Config, load_config_file
-from gallia.log import setup_logging
+from gallia.log import Loglevel, setup_logging
 from gallia.plugins.plugin import CommandTree, load_commands, load_plugins
 from gallia.pydantic_argparse import ArgumentParser
 from gallia.pydantic_argparse import BaseCommand as PydanticBaseCommand
-from gallia.utils import get_log_level
 
 defaults = dict[type, dict[str, Any]]
 _CLASS_ATTR = "_dynamic_gallia_command_class_reference"
@@ -119,6 +118,15 @@ def get_command(config: BaseCommandConfig) -> BaseCommand:
     return cmd(config)
 
 
+def _get_log_level(cli_level: int) -> Loglevel:
+    level = Loglevel.INFO
+    if cli_level == 1:
+        level = Loglevel.DEBUG
+    elif cli_level == 2:
+        level = Loglevel.TRACE
+    return level
+
+
 # TODO: Move this function into some CLI library package.
 def parse_and_run(
     commands: type[BaseCommand] | MutableMapping[str, CommandTree | type[BaseCommand]],
@@ -178,10 +186,15 @@ def parse_and_run(
 
     assert isinstance(config, BaseCommandConfig)
 
+    volatile_info = config.volatile_info
+    if sys.stderr.isatty() is False:
+        volatile_info = False
+
     if setup_log:
         setup_logging(
-            level=get_log_level(config.verbose),
-            no_volatile_info=not config.volatile_info,
+            level=_get_log_level(config.verbose),
+            volatile_info=volatile_info,
+            syslog_format=config.syslog_format,
             logger_name="",  # Take over the root logger
         )
 
