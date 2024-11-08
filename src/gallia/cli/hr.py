@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import cast
 
 from gallia import exitcodes
-from gallia.log import ColorMode, PenlogPriority, PenlogReader, resolve_color_mode
+from gallia.log import PenlogPriority, PenlogReader, guess_color_setting_for_stream
 
 
 def parse_args() -> argparse.Namespace:
@@ -51,12 +51,6 @@ def parse_args() -> argparse.Namespace:
         default=100,
         help="print the last n lines",
     )
-    parser.add_argument(
-        "--color",
-        choices=["auto", "always", "never"],
-        default="auto",
-        help="when to use terminal colors",
-    )
     return parser.parse_args()
 
 
@@ -69,7 +63,7 @@ def _main() -> int:
             print(f"not a regular file: {path}", file=sys.stderr)
             return 1
 
-        colored = resolve_color_mode(ColorMode(args.color), stream=sys.stdout)
+        colors = guess_color_setting_for_stream(sys.stdout)
 
         with PenlogReader(path) as reader:
             record_generator = reader.records(args.priority, reverse=args.reverse)
@@ -79,7 +73,7 @@ def _main() -> int:
                 record_generator = reader.records(args.priority, offset=-args.lines)
 
             for record in record_generator:
-                record.colored = colored
+                record.colors = colors
                 print(record, end="")
 
     return 0

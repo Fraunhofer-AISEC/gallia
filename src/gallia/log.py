@@ -36,39 +36,13 @@ gmt_offset = time.localtime().tm_gmtoff
 tz = datetime.timezone(datetime.timedelta(seconds=gmt_offset))
 
 
-@unique
-class ColorMode(Enum):
-    """ColorMode is used as an argument to :func:`set_color_mode`."""
-
-    #: Colors are always turned on.
-    ALWAYS = "always"
-    #: Colors are turned off if the target
-    #: stream (e.g. stderr) is not a tty.
-    AUTO = "auto"
-    #: No colors are used. In other words,
-    #: no ANSI escape codes are included.
-    NEVER = "never"
-
-
-def resolve_color_mode(mode: ColorMode, stream: TextIO = sys.stderr) -> bool:
-    """Sets the color mode of the console log handler.
-
-    :param mode: The available options are described in :class:`ColorMode`.
-    :param stream: Used as a reference for :attr:`ColorMode.AUTO`.
-    """
+def guess_color_setting_for_stream(stream: TextIO) -> bool:
     if sys.platform == "win32":
         return False
-
-    match mode:
-        case ColorMode.ALWAYS:
-            return True
-        case ColorMode.AUTO:
-            if os.getenv("NO_COLOR") is not None:
-                return False
-            else:
-                return stream.isatty()
-        case ColorMode.NEVER:
-            return False
+    # https://no-color.org/
+    if os.getenv("NO_COLOR") is not None:
+        return False
+    return stream.isatty()
 
 
 # https://stackoverflow.com/a/35804945
@@ -229,9 +203,10 @@ class PenlogPriority(IntEnum):
 
 def setup_logging(
     level: Loglevel | None = None,
-    color_mode: ColorMode = ColorMode.AUTO,
-    no_volatile_info: bool = False,
     logger_name: str = "gallia",
+    volatile_info: bool = False,
+    colors: bool = True,
+    syslog_format: bool = False,
 ) -> None:
     """Enable and configure gallia's logging system.
     If this fuction is not called as early as possible,
@@ -268,15 +243,16 @@ def setup_logging(
     while len(logger.handlers) > 0:
         logger.handlers[0].close()
         logger.removeHandler(logger.handlers[0])
-    colored = resolve_color_mode(color_mode)
-    add_stderr_log_handler(logger_name, level, no_volatile_info, colored)
+
+    add_stderr_log_handler(logger_name, level, volatile_info, colors, syslog_format)
 
 
 def add_stderr_log_handler(
     logger_name: str,
     level: Loglevel,
-    no_volatile_info: bool,
-    colored: bool,
+    volatile_info: bool,
+    colors: bool,
+    syslog_format: bool,
 ) -> None:
     queue: Queue[Any] = Queue()
     logger = logging.getLogger(logger_name)
@@ -284,12 +260,14 @@ def add_stderr_log_handler(
 
     stderr_handler = logging.StreamHandler(sys.stderr)
     stderr_handler.setLevel(level)
-    console_formatter = _ConsoleFormatter()
-
-    console_formatter.colored = colored
     stderr_handler.terminator = ""  # We manually handle the terminator while formatting
-    if no_volatile_info is False:
-        console_formatter.volatile_info = True
+
+    console_formatter = _ConsoleFormatter()
+    console_formatter.colors = colors
+    console_formatter.volatile_info = (
+        volatile_info and level == Loglevel.INFO
+    )  # Disable volatile info for DEBUG/TRACE
+    console_formatter.syslog_format = syslog_format
 
     stderr_handler.setFormatter(console_formatter)
 
@@ -303,7 +281,9 @@ def add_stderr_log_handler(
 
 
 def add_zst_log_handler(
-    logger_name: str, filepath: Path, file_log_level: Loglevel
+    logger_name: str,
+    filepath: Path,
+    file_log_level: Loglevel,
 ) -> _ZstdFileHandler:
     queue: Queue[Any] = Queue()
     logger = get_logger(logger_name)
@@ -385,28 +365,52 @@ def _colorize_msg(data: str, levelno: int) -> tuple[str, int]:
     return out, len(style)
 
 
-def _format_record(
+def _format_tags(tags: list[str] | None) -> str:
+    if tags is None or len(tags) == 0:
+        return ""
+    return f" [{', '.join(tags)}]"
+
+
+def _format_record_for_syslog(
     dt: datetime.datetime,
     name: str,
     data: str,
     levelno: int,
     tags: list[str] | None,
     stacktrace: str | None,
-    colored: bool = False,
-    volatile_info: bool = False,
 ) -> str:
+    priority = PenlogPriority.from_level(levelno).value
+    msg = f"<{priority}>{name}{_format_tags(tags)} {data}\n"
+    if stacktrace is not None:
+        return msg + "\n" + stacktrace
+    return msg
+
+
+def _format_record(  # noqa: PLR0913
+    dt: datetime.datetime,
+    name: str,
+    data: str,
+    levelno: int,
+    tags: list[str] | None,
+    stacktrace: str | None,
+    colors: bool = False,
+    volatile_info: bool = False,
+    syslog_format: bool = False,
+) -> str:
+    if syslog_format:
+        return _format_record_for_syslog(dt, name, data, levelno, tags, stacktrace)
+
     msg = ""
     if volatile_info:
-        msg += "\33[2K"
+        msg += "\33[2K"  # Clean current line
     extra_len = 4
     msg += dt.strftime("%b %d %H:%M:%S.%f")[:-3]
     msg += " "
     msg += name
-    if tags is not None and len(tags) > 0:
-        msg += f" [{', '.join(tags)}]"
+    msg += _format_tags(tags)
     msg += ": "
 
-    if colored:
+    if colors:
         tmp_msg, extra_len_tmp = _colorize_msg(data, levelno)
         msg += tmp_msg
         extra_len += extra_len_tmp
@@ -437,7 +441,7 @@ class PenlogRecord:
     # FIXME: Enums are slow.
     priority: PenlogPriority
     tags: list[str] | None = None
-    colored: bool = False
+    colors: bool = False
     line: str | None = None
     stacktrace: str | None = None
     _python_level_no: int | None = None
@@ -454,7 +458,7 @@ class PenlogRecord:
             else self.priority.to_level(),
             tags=self.tags,
             stacktrace=self.stacktrace,
-            colored=self.colored,
+            colors=self.colors,
         )
 
     @classmethod
@@ -713,8 +717,9 @@ class _JSONFormatter(logging.Formatter):
 
 
 class _ConsoleFormatter(logging.Formatter):
-    colored: bool = False
+    colors: bool = False
     volatile_info: bool = False
+    syslog_format: bool = False
 
     def format(
         self,
@@ -738,8 +743,9 @@ class _ConsoleFormatter(logging.Formatter):
             levelno=record.levelno,
             tags=record.__dict__["tags"] if "tags" in record.__dict__ else None,
             stacktrace=stacktrace,
-            colored=self.colored,
+            colors=self.colors,
             volatile_info=self.volatile_info,
+            syslog_format=self.syslog_format,
         )
 
 
