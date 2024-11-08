@@ -217,18 +217,12 @@ def setup_logging(
     logging.
 
     :param level: The loglevel to enable for the console handler.
-                  If this argument is None, the env variable
-                  ``GALLIA_LOGLEVEL`` (see :doc:`../env`) is read.
     :param file_level: The loglevel to enable for the file handler.
     :param path: The path to the logfile containing json records.
     :param color_mode: The color mode to use for the console.
     """
     if level is None:
-        # FIXME: why is this here and not in config?
-        if (raw := os.getenv("GALLIA_LOGLEVEL")) is not None:
-            level = PenlogPriority.from_str(raw).to_level()
-        else:
-            level = Loglevel.DEBUG
+        level = Loglevel.DEBUG
 
     # These are slow and not used by gallia.
     logging.logMultiprocessing = False
