@@ -22,7 +22,10 @@ logger = get_logger(__name__)
 
 
 class SASeedsDumper(UDSScanner):
-    """This scanner tries to enable ProgrammingSession and dump seeds for 12h."""
+    """
+    This scanner attempts to switch to a specified Diagnostic Session
+    and continuously dumps security access seeds from the ECU.
+    """    
 
     COMMAND = "dump-seeds"
     SHORT_HELP = "dump security access seeds"
@@ -38,20 +41,20 @@ class SASeedsDumper(UDSScanner):
             metavar="INT",
             type=auto_int,
             default=0x02,
-            help="Set diagnostic session to perform test in",
+            help="Set diagnostic session to switch into before performing the seed dumping (default: 0x%(default)x)",
         )
         self.parser.add_argument(
             "--check-session",
             action="store_true",
             default=False,
-            help="Check current session with read DID",
+            help="Verify the current session by reading DID `0xF186`.",
         )
         self.parser.add_argument(
             "--level",
             default=0x11,
             metavar="INT",
             type=auto_int,
-            help="Set security access level to request seed from",
+            help="Set security access level to request seeds from (default: 0x%(default)x)",
         )
         self.parser.add_argument(
             "--send-zero-key",
@@ -60,8 +63,8 @@ class SASeedsDumper(UDSScanner):
             const=96,
             default=0,
             type=int,
-            help="Attempt to fool brute force protection by pretending to send a key after requesting a seed "
-            "(all zero bytes, length can be specified)",
+            help="Attempt to fool brute force protection by sending a zero-filled key after requesting a seed "
+            "(specify key length in bytes). (default: 0 - disabled)",
         )
         self.parser.add_argument(
             "--reset",
@@ -69,21 +72,21 @@ class SASeedsDumper(UDSScanner):
             const=1,
             default=None,
             type=int,
-            help="Attempt to fool brute force protection by resetting the ECU after every nth requested seed.",
+            help="Attempt to fool brute force protection by resetting the ECU after every Nth requested seed (default: None - no reset).",
         )
         self.parser.add_argument(
             "--duration",
             default=0,
             type=float,
             metavar="FLOAT",
-            help="Run script for N minutes; zero or negative for infinite runtime (default)",
+            help="Run the dumping for a specified number of minutes (0 or negative for infinite runtime). (default: 0 - infinite)",
         )
         self.parser.add_argument(
             "--data-record",
             metavar="HEXSTRING",
             type=binascii.unhexlify,
             default=b"",
-            help="Append an optional data record to each seed request",
+            help="Optional data record to be appended to the seed request message (provide as hex string). (default: empty data)",
         )
         self.parser.add_argument(
             "--sleep",
@@ -93,6 +96,20 @@ class SASeedsDumper(UDSScanner):
         )
 
     async def request_seed(self, level: int, data: bytes) -> bytes | None:
+        """This coroutine requests a security access seed from the connected ECU.
+
+            - Calls the `ecu.security_access_request_seed` method to send the seed request.
+            - Handles potential `NegativeResponse` from the ECU, logging the error and returning None.
+            - If the request is successful, extracts and returns the security seed from the response.
+
+        :param level: The security access level to request the seed from.
+        :type level: int
+        :param data: Optional data to be included in the seed request message.
+        :type data: bytes
+        :return: The requested security access seed on success, None otherwise.
+        :rtype: bytes | None
+        """
+        
         resp = await self.ecu.security_access_request_seed(
             level, data, config=UDSRequestConfig(tags=["ANALYZE"])
         )
@@ -112,6 +129,38 @@ class SASeedsDumper(UDSScanner):
         return True
 
     def log_size(self, path: Path, time_delta: float) -> None:
+        """This method calculates and displays the size and dump speed of captured data.
+
+        **Details:**
+
+        1. **Get File Size:**
+        - Calls `path.stat().st_size` to get the size of the file pointed to by `path` in bytes.
+        - Divides the file size by 1024 to convert it to KiB (Kilobytes).
+
+        2. **Calculate Data Dump Speed:**
+        - Checks if `time_delta` (elapsed time) is zero.
+            - If zero, sets the dump speed (`rate`) to 0 as there's no time for calculation.
+        - Otherwise, calculates the dump speed in KiB/h (Kilobytes per hour):
+            - Divides the file size (`size`) by the elapsed time (`time_delta`) and multiplies by 3600 (conversion factor from seconds to hours).
+
+        3. **Format Units (Size and Speed):**
+        - Checks if the calculated `rate` is greater than 1024.
+            - If so, converts `rate` to MiB (Megabytes) by dividing by 1024 and updates the unit (`rate_unit`).
+        - Similarly, checks if the file `size` is greater than 1024.
+            - If so, converts `size` to MiB and updates the unit (`size_unit`).
+
+        4. **Log Information:**
+        - Uses the logger object (`logger`) to log a message at the 'notice' level.
+        - The message includes:
+            - Dump speed (formatted with 2 decimal places) followed by the unit (KiB/h or MiB/h).
+            - Captured data size (formatted with 2 decimal places) followed by the unit (KiB or MiB).
+
+        :param path: Path object representing the file containing the captured data.
+        :type path: Path
+        :param time_delta: Time elapsed since the start of data capture in seconds.
+        :type time_delta: float
+        """
+
         size = path.stat().st_size / 1024
         size_unit = "KiB"
         rate = size / time_delta * 3600 if time_delta != 0 else 0
@@ -125,6 +174,37 @@ class SASeedsDumper(UDSScanner):
         logger.notice(f"Dumping seeds with {rate:.2f}{rate_unit}/h: {size:.2f}{size_unit}")
 
     async def main(self, args: Namespace) -> None:
+        """This coroutine is the main entry point for the SASeedsDumper scanner.
+
+        **Functionality:**
+
+        1. **Session Management:**
+            - Attempts to switch to the diagnostic session specified by `args.session`.
+            - Logs errors if the ECU fails to change sessions using `logger.critical()`.
+            - Optionally verifies the current session before proceeding (`--check-session`).
+
+        2. **Seed Dumping Loop:**
+            - Opens a file named "seeds.bin" in the scanner's artifacts directory for writing seeds.
+            - Enters a loop that continues for a user-defined duration (`--duration`) or indefinitely.
+            - Within the loop:
+                - Requests a security access seed from the ECU at the specified level (`--level`).
+                - Handles potential timeouts and errors during seed requests with logging and termination.
+                - Appends the received seed to the open file.
+                - Optionally sends a zero-filled key after requesting a seed (`--send-zero-key`).
+                    - Useful for bypassing certain ECU security mechanisms.
+                - Optionally resets the ECU periodically (`--reset`).
+                    - Aims to overcome seed rate limiting imposed by the ECU.
+                    - Handles ECU recovery and reconnection after reset.
+
+        3. **Cleanup:**
+            - Closes the seed data file.
+            - Logs the total size and dump speed of the captured seeds.
+            - Leaves the current diagnostic session on the ECU (optional sleep after power cycle).
+
+        :param args: Namespace object containing parsed command-line arguments.
+        :type args: Namespace
+        """
+     
         session = args.session
         logger.info(f"scanning in session: {g_repr(session)}")
 

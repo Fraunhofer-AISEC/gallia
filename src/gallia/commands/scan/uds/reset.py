@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""Module for scanning ECU reset functionality."""
+
 import reprlib
 import sys
 from argparse import Namespace
@@ -20,45 +22,57 @@ from gallia.utils import ParseSkips, auto_int
 
 logger = get_logger(__name__)
 
-
 class ResetScanner(UDSScanner):
-    """Scan ecu_reset"""
+    """Scan ECU reset functionality.
+
+    This scanner tests various ECU reset sub-functions (0x01 to 0x7F) and observes the ECU's response. It can 
+    handle session switching, skips specific sub-functions, and attempts recovery in case of errors.
+    """
 
     SHORT_HELP = "identifier scan in ECUReset"
     COMMAND = "reset"
 
     def configure_parser(self) -> None:
+        """Configure arguments for the command line parser."""
         self.parser.add_argument(
             "--sessions",
             type=auto_int,
             nargs="*",
-            help="Set list of sessions to be tested; all if None",
+            metavar="SESSION_ID",
+            help="List of session IDs to scan (e.g., 1 3). If not provided, all sessions will be scanned.",
         )
         self.parser.add_argument(
             "--skip",
             nargs="+",
             default={},
             type=str,
+            metavar="SESSION_ID:SUB_FUNCTIONS",
             action=ParseSkips,
             help="""
-                 The sub functions to be skipped per session.
-                 A session specific skip is given by <session_id>:<sub_functions>
-                 where <sub_functions> is a comma separated list of single ids or id ranges using a dash.
-                 Examples:
-                  - 0x01:0xf3
-                  - 0x10-0x2f
-                  - 0x01:0xf3,0x10-0x2f
-                 Multiple session specific skips are separated by space.
-                 Only takes affect if --sessions is given.
-                 """,
+                Skip specific sub-functions within sessions. Format: 'SESSION_ID:SUB_FUNCTIONS'
+                
+                SESSION_ID: ID of the session
+                SUB_FUNCTIONS: Comma-separated list of:
+                    - Single sub-function IDs (e.g., 0xf3)
+                    - Sub-function ID ranges (e.g., 0x10-0x2f)
+
+                Examples:
+                - '0x01:0xf3' (Skips sub-function 0xf3 in session 0x01)
+                - '0x10-0x2f' (Skips sub-functions 0x10 to 0x2f in all sessions)
+                - '0x01:0xf3,0x10-0x2f' (Multiple skips in session 0x01)
+
+                Multiple session-specific skips can be provided, separated by spaces.
+                Only applicable if the --sessions option is used.
+                """,
         )
         self.parser.add_argument(
             "--skip-check-session",
             action="store_true",
-            help="skip check current session; only takes affect if --sessions is given",
+            help="Disable checking the current session before each sub-function test. Only applicable if the --sessions option is used.",
         )
 
     async def main(self, args: Namespace) -> None:
+        """Execute the ECU reset scan, potentially across multiple sessions."""
         if args.sessions is None:
             await self.perform_scan(args)
         else:

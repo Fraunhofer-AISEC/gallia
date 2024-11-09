@@ -16,45 +16,62 @@ logger = get_logger(__name__)
 
 
 class MemoryFunctionsScanner(UDSScanner):
-    """This scanner scans functions with direct access to memory.
-    Specifically, these are service 0x3d WriteMemoryByAddress, 0x34 RequestDownload
-    and 0x35 RequestUpload, which all share the same packet structure, except for
-    0x3d which requires an additional data field.
+    """This scanner targets ECUs (Electronic Control Units) and scans functions that provide direct access to memory.
+
+    Currently supports:
+    * ReadMemoryByAddress (0x23)
+    * WriteMemoryByAddress (0x3D) - requires additional data field
+    * RequestDownload (0x34)
+    * RequestUpload (0x35)
     """
 
     SHORT_HELP = "scan services with direct memory access"
     COMMAND = "memory"
 
     def configure_parser(self) -> None:
+        """Adds arguments specific to the memory scanner to the argument parser.
+        """
+
         self.parser.add_argument(
             "--session",
             type=auto_int,
             default=0x03,
-            help="set session to perform test",
+            help="Set a session to perform the test in (default: 0x%(default)x)",
         )
         self.parser.add_argument(
             "--check-session",
             nargs="?",
             const=1,
             type=int,
-            help="Check current session via read DID [for every nth MemoryAddress] and try to recover session",
+            help="Check the current session via a DID read (`0xF186`) [for every nth MemoryAddress] and try to recover session if lost (e.g., `--check-session 10` to check after every 10th address).",
         )
         self.parser.add_argument(
             "--sid",
             required=True,
             choices=[0x23, 0x3D, 0x34, 0x35],
             type=auto_int,
-            help="Choose between 0x23 ReadMemoryByAddress 0x3d WriteMemoryByAddress, "
-            "0x34 RequestDownload and 0x35 RequestUpload",
+            help="UDS Service ID to test. Choose between: "
+            "0x23 ReadMemoryByAddress; 0x3d WriteMemoryByAddress; "
+            "0x34 RequestDownload; 0x35 RequestUpload",
         )
         self.parser.add_argument(
             "--data",
             default="0000000000000000",
             type=unhexlify,
-            help="Service 0x3d requires a data payload which can be specified with this flag as a hex string",
+            help="Service 0x3d WriteMemoryByAddress requires a data payload which can be specified with this flag as a hex string (8 bytes of zeroes by default).",
         )
 
     async def main(self, args: Namespace) -> None:
+        """
+        The main entry point for the memory scanner.
+
+        Establishes the target session, then scans several memory addresses using 
+        `scan_memory_address`.
+
+        Args:
+            args: Namespace object containing parsed command-line arguments.
+        """
+
         resp = await self.ecu.set_session(args.session)
         if isinstance(resp, NegativeResponse):
             logger.critical(f"could not change to session: {resp}")
@@ -68,6 +85,15 @@ class MemoryFunctionsScanner(UDSScanner):
         await self.ecu.leave_session(args.session, sleep=args.power_cycle_sleep)
 
     async def scan_memory_address(self, args: Namespace, addr_offset: int = 0) -> None:
+        """
+        Scans a single memory address using the specified service and parameters.
+
+        Args:
+            args: Namespace object containing parsed command-line arguments.
+            addr_offset: Optional offset to apply to the base memory address during scanning 
+                         (default: 0). Useful for scanning consecutive memory regions.
+        """
+
         sid = args.sid
         data = args.data if sid == 0x3D else None  # Only service 0x3d has a data field
         memory_size = len(data) if data else 0x1000

@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""Module for database handling in Gallia."""
+
 import asyncio
 import json
 from datetime import datetime
@@ -25,6 +27,7 @@ from gallia.utils import handle_task_error, set_task_handler_ctx_variable
 
 
 def bytes_repr(data: bytes) -> str:
+    """Converts bytes data to a hexadecimal string representation without a '0x' prefix."""
     return bytes_repr_(data, False, None)
 
 
@@ -136,7 +139,11 @@ logger = get_logger(__name__)
 
 
 class DBHandler:
+    """Handles database operations for logging and storing results of Gallia scans."""
+
     def __init__(self, database: Path):
+        """Initializes the database handler."""
+
         self.tasks: list[asyncio.Task[None]] = []
         self.path = database
         self.connection: aiosqlite.Connection | None = None
@@ -146,6 +153,8 @@ class DBHandler:
         self.meta: int | None = None
 
     async def connect(self) -> None:
+        """Establishes a connection to the SQLite database."""
+
         assert self.connection is None, "Already connected to the database"
 
         self.path.parent.mkdir(exist_ok=True, parents=True)
@@ -163,6 +172,8 @@ class DBHandler:
         await self.check_version()
 
     async def disconnect(self) -> None:
+        """Closes the database connection after completing pending tasks."""
+        
         assert self.connection is not None, "Not connected to the database"
 
         for task in self.tasks:
@@ -178,6 +189,8 @@ class DBHandler:
             self.connection = None
 
     async def check_version(self) -> None:
+        """Verifies the compatibility of the database schema version."""
+        
         assert self.connection is not None, "Not connected to the database"
 
         query = 'SELECT version FROM version WHERE schema = "main"'
@@ -205,6 +218,8 @@ class DBHandler:
         start_time: datetime,
         path: Path,
     ) -> None:
+        """Inserts metadata about the scan run into the database."""
+
         assert self.connection is not None, "Not connected to the database"
 
         query = (
@@ -230,6 +245,8 @@ class DBHandler:
         await self.connection.commit()
 
     async def complete_run_meta(self, end_time: datetime, exit_code: int, path: Path) -> None:
+        """Completes the run metadata by adding the end time, exit code, and final path."""
+
         assert self.connection is not None, "Not connected to the database"
         assert self.meta is not None, "Run meta not yet created"
 
@@ -241,6 +258,8 @@ class DBHandler:
         await self.connection.commit()
 
     async def insert_scan_run(self, target: str) -> None:
+        """Inserts information about the target ECU and the associated scan run."""
+
         assert self.connection is not None, "Not connected to the database"
         assert self.meta is not None, "Run meta not yet created"
 
@@ -257,6 +276,8 @@ class DBHandler:
         await self.connection.commit()
 
     async def insert_scan_run_properties_pre(self, properties_pre: dict[str, Any]) -> None:
+        """Inserts the properties of the target ECU before the scan."""
+
         assert self.connection is not None, "Not connected to the database"
         assert self.scan_run is not None, "Scan run not yet created"
 
@@ -265,6 +286,8 @@ class DBHandler:
         await self.connection.commit()
 
     async def complete_scan_run(self, properties_post: dict[str, Any]) -> None:
+        """Updates the scan run entry with the ECU's properties after the scan."""
+
         assert self.connection is not None, "Not connected to the database"
         assert self.scan_run is not None, "Scan run not yet created"
 
@@ -273,6 +296,8 @@ class DBHandler:
         await self.connection.commit()
 
     async def insert_discovery_run(self, protocol: str) -> None:
+        """Inserts a record for a discovery run using the given protocol."""
+
         assert self.connection is not None, "Not connected to the database"
         assert self.meta is not None, "Run meta not yet created"
 
@@ -282,6 +307,8 @@ class DBHandler:
         await self.connection.commit()
 
     async def insert_discovery_result(self, target: str) -> None:
+        """Inserts a discovered target address from a discovery run."""
+
         assert self.connection is not None, "Not connected to the database"
         assert self.discovery_run is not None, "Discovery run not yet created"
 
@@ -303,6 +330,8 @@ class DBHandler:
         log_mode: LogMode,
         commit: bool = True,
     ) -> None:
+        """Inserts detailed results of a single UDS request and its response (or exception)."""
+
         assert self.connection is not None, "Not connected to the database"
         assert self.scan_run is not None, "Scan run not yet created"
 
@@ -396,6 +425,8 @@ class DBHandler:
         )
 
     async def insert_session_transition(self, destination: int, steps: list[int]) -> None:
+        """Records a transition to a new session, along with the steps taken to reach it."""
+
         assert self.connection is not None, "Not connected to the database"
 
         query = "INSERT INTO session_transition VALUES(?, ?, ?)"
@@ -403,6 +434,8 @@ class DBHandler:
         await self.connection.execute(query, parameters)
 
     async def get_sessions(self) -> list[int]:
+        """Retrieves a list of all discovered sessions for the current target."""
+
         assert self.connection is not None, "Not connected to the database"
         assert self.target is not None, "Scan run not yet created, target unknown"
 
@@ -420,6 +453,8 @@ class DBHandler:
         return [x[0] for x in await cursor.fetchall()]
 
     async def get_session_transition(self, destination: int) -> list[int] | None:
+        """Retrieves the steps taken to transition to a specific session."""
+
         assert self.connection is not None, "Not connected to the database"
         assert self.target is not None, "Scan run not yet created, target unknown"
 
