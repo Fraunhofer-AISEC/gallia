@@ -30,6 +30,21 @@ if TYPE_CHECKING:
 def auto_int(arg: str) -> int:
     return int(arg, 0)
 
+def string_dict(arg: str) -> str:
+    """Dictionary of specific string arguments
+
+    :param arg: Received argument
+    :type arg: str
+    :return: Returned argument
+    :rtype: str
+    """
+    arg_lower = arg.lower()
+    if arg_lower == "auto":
+        return arg
+    elif arg_lower == "none":
+        return None
+    else:
+        auto_int(arg)
 
 def strtobool(val: str) -> bool:
     val = val.lower()
