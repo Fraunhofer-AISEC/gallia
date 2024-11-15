@@ -183,7 +183,7 @@ class FindXCP(AsyncScript):
             try:
                 _, _, data_ret = self.unpack_xcp_eth(self.socket.recv(1024))
                 ret = bytes_repr(data_ret)
-                logger.info(f"Receive data on TCP port {port}: {ret}")
+                logger.info(f"Receive data on UDP port {port}: {ret}")
                 if len(data_ret) > 0 and data_ret[0] == 0xFF:
                     logger.result(f"XCP Slave on UDP port {port}, data: {ret}")
                     endpoints.append(port)
