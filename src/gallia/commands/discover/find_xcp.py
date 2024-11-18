@@ -157,9 +157,9 @@ class TcpFindXCP(FindXCP):
             except Exception as e:
                 logger.info(f"send/recv: {g_repr(e)} on TCP port {port:d}")
                 continue
-
-            self.xcp_disconnect(server)
-            self.socket.close()
+            finally:
+                self.xcp_disconnect(server)
+                self.socket.close()
 
         logger.result(f"Finished; Found {len(endpoints)} XCP endpoints via TCP")
 
@@ -200,8 +200,9 @@ class UdpFindXCP(FindXCP):
             except TimeoutError:
                 logger.info(f"Timeout on UDP port {port}")
 
-            self.xcp_disconnect(server)
-            self.socket.close()
+            finally:
+                self.xcp_disconnect(server)
+                self.socket.close()
 
         logger.result(f"Finished; Found {len(endpoints)} XCP endpoints via UDP")
 
