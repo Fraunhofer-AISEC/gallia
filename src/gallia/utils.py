@@ -283,32 +283,34 @@ def get_file_log_level(args: Any) -> Loglevel:
 
 
 CONTEXT_SHARED_VARIABLE = "logger_name"
-ctxVar: contextvars.ContextVar[tuple[str, str | None]] = contextvars.ContextVar(
+context: contextvars.ContextVar[tuple[str, str | None]] = contextvars.ContextVar(
     CONTEXT_SHARED_VARIABLE
 )
 
 
 def set_task_handler_ctx_variable(
-    logger_name: str, task_name: str | None = None
+    logger_name: str,
+    task_name: str | None = None,
 ) -> contextvars.Context:
     ctx = contextvars.copy_context()
-    ctx.run(ctxVar.set, (logger_name, task_name))
+    ctx.run(context.set, (logger_name, task_name))
     return ctx
 
 
 def handle_task_error(fut: asyncio.Future[Any]) -> None:
-    (logger_name, task_name) = ctxVar.get((__name__, "Task"))
+    logger_name, task_name = context.get((__name__, "Task"))
     logger = get_logger(logger_name)
     if logger.name is __name__:
-        logger.warning(
-            f"<DEV> {fut} did not have context variable '{CONTEXT_SHARED_VARIABLE}' set; please fix this for proper logging"
-        )
+        logger.warning(f"BUG: {fut} had no context '{CONTEXT_SHARED_VARIABLE}' set")
+        logger.warning("BUG: please fix this to ensure the task name is logged correctly")
 
     try:
         fut.result()
     except BaseException as e:
+        task_name = task_name if task_name is not None else "Task"
+
         # Info level is enough, since our aim is only to consume the stack trace
-        logger.info(f"{task_name if task_name is not None else 'Task'} ended with error: {e!r}")
+        logger.info(f"{task_name} ended with error: {e!r}")
 
 
 class AddrInfo(pydantic.BaseModel):
