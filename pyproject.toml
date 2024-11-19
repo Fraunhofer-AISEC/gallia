@@ -93,6 +93,7 @@ select = [
     "E",    # pycodestlye
     "F",    # pyflakes
     "FLY",  # flynt
+    "FURB", # refurb
     "I",    # isort
     "PIE",  # flake8-pie
     "PL",   # pylint
