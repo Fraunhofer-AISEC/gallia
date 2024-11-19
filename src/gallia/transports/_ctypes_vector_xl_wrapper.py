@@ -156,7 +156,7 @@ class FlexRayCtypesBackend:
         )
 
     def add_block_all_filter(self) -> None:
-        filter = _ctypes_vector_xl.XLfrAcceptanceFilter(
+        filter_ = _ctypes_vector_xl.XLfrAcceptanceFilter(
             _ctypes_vector_xl.XL_FR_FILTER_BLOCK,
             _ctypes_vector_xl.XL_FR_FILTER_TYPE_DATA
             | _ctypes_vector_xl.XL_FR_FILTER_TYPE_NF
@@ -169,7 +169,7 @@ class FlexRayCtypesBackend:
         _ctypes_vector_xl.xlFrSetAcceptanceFilter(
             _ctypes_vector_xl.XLportHandle(self.port_handle),
             _ctypes_vector_xl.XLaccess(self.channel_mask),
-            ctypes.byref(filter),
+            ctypes.byref(filter_),
         )
 
     def set_acceptance_filter(
@@ -177,7 +177,7 @@ class FlexRayCtypesBackend:
         from_slot: int,
         to_slot: int,
     ) -> None:
-        filter = _ctypes_vector_xl.XLfrAcceptanceFilter(
+        filter_ = _ctypes_vector_xl.XLfrAcceptanceFilter(
             _ctypes_vector_xl.XL_FR_FILTER_PASS,
             _ctypes_vector_xl.XL_FR_FILTER_TYPE_DATA,
             ctypes.c_uint(from_slot),
@@ -188,7 +188,7 @@ class FlexRayCtypesBackend:
         _ctypes_vector_xl.xlFrSetAcceptanceFilter(
             _ctypes_vector_xl.XLportHandle(self.port_handle),
             _ctypes_vector_xl.XLaccess(self.channel_mask),
-            ctypes.byref(filter),
+            ctypes.byref(filter_),
         )
 
     def start_queue(self) -> None:

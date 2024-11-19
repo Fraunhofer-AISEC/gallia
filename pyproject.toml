@@ -87,6 +87,7 @@ line-length = 100
 select = [
     # TODO: Enable this
     # "B",    # flake8-bugbear
+    "A",    # flake8-builtins
     "C4",   # flake8-comprehensions
     "E",    # pycodestlye
     "F",    # pyflakes
