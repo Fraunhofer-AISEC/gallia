@@ -92,6 +92,7 @@ select = [
     "C4",   # flake8-comprehensions
     "E",    # pycodestlye
     "F",    # pyflakes
+    "FA",   # flake8-future-annotations
     "FLY",  # flynt
     "FURB", # refurb
     "I",    # isort
