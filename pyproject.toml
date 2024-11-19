@@ -96,6 +96,7 @@ select = [
     "FLY",  # flynt
     "FURB", # refurb
     "I",    # isort
+    "IC",   # flake8-import-conventions
     "PIE",  # flake8-pie
     "PL",   # pylint
     "PTH",  # flake8-use-pathlib
