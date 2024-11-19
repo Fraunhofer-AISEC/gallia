@@ -95,6 +95,7 @@ select = [
     "I",    # isort
     "PL",   # pylint
     "PTH",  # flake8-use-pathlib
+    "Q",    # flake8-quotes
     "RSE",  # flake8-raise
     "TID",  # flake8-tidy-imports
     "TD",   # flake8-todos
