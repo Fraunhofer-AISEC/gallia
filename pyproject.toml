@@ -88,6 +88,7 @@ select = [
     # TODO: Enable this
     # "B",    # flake8-bugbear
     "A",    # flake8-builtins
+    "ASYNC",# flake8-async
     "C4",   # flake8-comprehensions
     "E",    # pycodestlye
     "F",    # pyflakes
@@ -99,6 +100,7 @@ select = [
     "UP",   # pyupgrade
 ]
 ignore = [
+    "ASYNC109", # Async function definition with a timeout parameter
     "E402",     # Module level import not at top of file
     "E501",     # line length
     "PLR2004",  # magic value used in comparison
