@@ -360,7 +360,7 @@ class ECU(UDSClient):
         while task is not None and task.cancelling() == 0:
             try:
                 await asyncio.sleep(interval)
-                # TODO Only ping if there was no other UDS traffic for `interval` amount of time
+                # TODO: Only ping if there was no other UDS traffic for `interval` amount of time
                 await self.ping(UDSRequestConfig(max_retry=0))
             except asyncio.CancelledError:
                 logger.debug("tester present worker terminated")

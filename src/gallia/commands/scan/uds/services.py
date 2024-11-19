@@ -74,7 +74,7 @@ class ServicesScanner(UDSScanner):
                     resp: UDSResponse = await self.ecu.set_session(
                         session, UDSRequestConfig(tags=["preparation"])
                     )
-                except (UDSException, RuntimeError) as e:  # FIXME why catch RuntimeError?
+                except (UDSException, RuntimeError) as e:  # FIXME: why catch RuntimeError?
                     logger.warning(
                         f"Could not complete session change to {g_repr(session)}: {g_repr(e)}; skipping session"
                     )
