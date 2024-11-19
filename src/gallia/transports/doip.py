@@ -565,7 +565,7 @@ class DoIPConnection:
         # Avoid waiting on the queue forever when
         # the connection has been terminated.
         if self._is_closed:
-            raise ConnectionError()
+            raise ConnectionError
         return await self._read_queue.get()
 
     async def read_frame(self) -> DoIPFrame:

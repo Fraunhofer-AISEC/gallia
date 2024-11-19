@@ -93,6 +93,7 @@ select = [
     "I",    # isort
     "PL",   # pylint
     "PTH",  # flake8-use-pathlib
+    "RSE",  # flake8-raise
     "TID",  # flake8-tidy-imports
     "UP",   # pyupgrade
 ]

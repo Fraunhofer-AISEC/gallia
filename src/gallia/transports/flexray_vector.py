@@ -94,7 +94,7 @@ class RawFlexRayTransport(BaseTransport, scheme="fr-raw"):
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> int:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     async def read_frame_unsafe(
         self,
@@ -123,7 +123,7 @@ class RawFlexRayTransport(BaseTransport, scheme="fr-raw"):
             return await self.read_frame_unsafe(slot_id, timeout, tags)
 
     async def read(self, timeout: float | None = None, tags: list[str] | None = None) -> bytes:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     async def close(self) -> None:
         async with self.mutex:
