@@ -92,6 +92,7 @@ select = [
     "C4",   # flake8-comprehensions
     "E",    # pycodestlye
     "F",    # pyflakes
+    "FLY",  # flynt
     "I",    # isort
     "PIE",  # flake8-pie
     "PL",   # pylint
