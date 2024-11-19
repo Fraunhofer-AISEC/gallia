@@ -97,6 +97,7 @@ select = [
     "PTH",  # flake8-use-pathlib
     "RSE",  # flake8-raise
     "TID",  # flake8-tidy-imports
+    "TD",   # flake8-todos
     "UP",   # pyupgrade
 ]
 ignore = [
@@ -109,6 +110,9 @@ ignore = [
     "PLR0913",  # too many arguments to function call
     "PLR0915",  # too many statements
     "PLC1901",  # empty string is falsey
+    "TD001",    # Invalid TODO tag: {tag}
+    "TD002",    # Missing author in TODO; try: # TODO(<author_name>): ... or # TODO @<author_name>: ...
+    "TD003",    # Missing issue link on the line following this TODO
 ]
 
 [tool.pytest.ini_options]
