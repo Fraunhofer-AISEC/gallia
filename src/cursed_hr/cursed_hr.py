@@ -394,7 +394,7 @@ class CursedHR:
             if entry_id >= zone.start and (zone.end is None or entry_id <= zone.end):
                 return zone
 
-        raise AssertionError()
+        raise AssertionError
 
     def update_zones(self, new_zone: PriorityZone) -> None:
         """
