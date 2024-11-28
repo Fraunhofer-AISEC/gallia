@@ -3,14 +3,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import argparse
+import json
 import os
 import signal
 import sys
 from itertools import islice
 from pathlib import Path
 from typing import cast
-
-import msgspec
 
 from gallia import exitcodes
 from gallia.log import ColorMode, PenlogPriority, PenlogReader, resolve_color_mode
@@ -89,7 +88,7 @@ def _main() -> int:
 def main() -> None:
     try:
         sys.exit(_main())
-    except (msgspec.DecodeError, msgspec.ValidationError) as e:
+    except json.JSONDecodeError as e:
         print(f"invalid file format: {e}", file=sys.stderr)
         sys.exit(exitcodes.DATAERR)
     # BrokenPipeError appears when stuff is piped to | head.
