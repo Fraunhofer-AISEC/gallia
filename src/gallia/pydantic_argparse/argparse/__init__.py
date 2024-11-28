@@ -14,7 +14,7 @@ argument parsing.
 """
 
 # Local
-from pydantic_argparse.argparse.parser import ArgumentParser
+from gallia.pydantic_argparse.argparse.parser import ArgumentParser
 
 # Public Re-Exports
 __all__ = ("ArgumentParser",)

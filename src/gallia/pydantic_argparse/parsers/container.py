@@ -15,7 +15,7 @@ import collections.abc
 import enum
 from typing import Any
 
-from pydantic_argparse.utils.pydantic import PydanticField
+from gallia.pydantic_argparse.utils.pydantic import PydanticField
 
 from .utils import SupportsAddArgument
 

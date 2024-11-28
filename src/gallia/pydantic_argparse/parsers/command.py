@@ -13,7 +13,7 @@ sub-commands.
 import argparse
 from typing import Type, Any
 
-from pydantic_argparse.utils.pydantic import (
+from gallia.pydantic_argparse.utils.pydantic import (
     PydanticField,
 )
 

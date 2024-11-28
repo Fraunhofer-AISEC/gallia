@@ -15,14 +15,7 @@ The public interface exposed by this package is the declarative and typed
 # Local
 from pydantic import BaseModel, ConfigDict
 
-from pydantic_argparse.__metadata__ import (
-    __author__,
-    __description__,
-    __license__,
-    __title__,
-    __version__,
-)
-from pydantic_argparse.argparse import ArgumentParser
+from gallia.pydantic_argparse.argparse import ArgumentParser
 
 from . import argparse, parsers, utils
 
@@ -49,9 +42,4 @@ __all__ = (
     "ArgumentParser",
     "BaseArgument",
     "BaseCommand",
-    "__title__",
-    "__description__",
-    "__version__",
-    "__author__",
-    "__license__",
 )

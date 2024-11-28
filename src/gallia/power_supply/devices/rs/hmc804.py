@@ -2,17 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
-
 import asyncio
 from typing import Any
 
+from gallia.power_supply.base import BasePowerSupplyDriver
+from gallia.power_supply.exceptions import OperationNotSupportedError
 from gallia.utils import strtobool
-from opennetzteil.exceptions import OperationNotSupportedError
-from opennetzteil.netzteil import BaseNetzteil
 
 
-class HMC804(BaseNetzteil):
+class HMC804(BasePowerSupplyDriver):
     """Rohde&Schwarz power supply: R&S HMC804x
     https://www.rohde-schwarz.com/de/produkte/messtechnik/dc-netzgeraete/rs-hmc804x-dc-netzgeraeteserie_63493-61542.html
     """

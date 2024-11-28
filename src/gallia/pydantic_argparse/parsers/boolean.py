@@ -12,8 +12,8 @@ command-line arguments.
 
 from typing import Any
 
-from pydantic_argparse.argparse import actions
-from pydantic_argparse.utils.pydantic import PydanticField
+from gallia.pydantic_argparse.argparse import actions
+from gallia.pydantic_argparse.utils.pydantic import PydanticField
 
 from .utils import SupportsAddArgument
 

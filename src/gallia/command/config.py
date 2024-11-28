@@ -21,11 +21,11 @@ from typing import (
 
 from pydantic import BeforeValidator
 from pydantic.fields import _FromFieldInfoInputs
-from pydantic_argparse import BaseCommand
-from pydantic_argparse.utils.field import ArgFieldInfo
 from pydantic_core import PydanticUndefined
 
 from gallia.config import Config
+from gallia.pydantic_argparse import BaseCommand
+from gallia.pydantic_argparse.utils.field import ArgFieldInfo
 from gallia.utils import unravel, unravel_2d
 
 

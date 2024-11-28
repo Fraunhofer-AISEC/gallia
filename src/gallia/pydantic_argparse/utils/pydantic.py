@@ -31,7 +31,7 @@ from pydantic import BaseModel
 from pydantic.fields import FieldInfo
 from pydantic_core import PydanticUndefined
 
-from pydantic_argparse.utils.field import ArgFieldInfo
+from gallia.pydantic_argparse.utils.field import ArgFieldInfo
 
 from .types import all_types
 

@@ -14,8 +14,6 @@ from typing import Any, Never
 
 import argcomplete
 from pydantic import Field, create_model
-from pydantic_argparse import ArgumentParser
-from pydantic_argparse import BaseCommand as PydanticBaseCommand
 from pydantic_core import PydanticUndefined
 
 from gallia import exitcodes
@@ -25,6 +23,8 @@ from gallia.command.config import GalliaBaseModel
 from gallia.config import Config, load_config_file
 from gallia.log import Loglevel, setup_logging
 from gallia.plugins.plugin import CommandTree, load_commands, load_plugins
+from gallia.pydantic_argparse import ArgumentParser
+from gallia.pydantic_argparse import BaseCommand as PydanticBaseCommand
 from gallia.utils import get_log_level
 
 setup_logging(Loglevel.DEBUG)
@@ -82,6 +82,7 @@ def _create_parser_from_tree(
     )
 
 
+# TODO: Move this function into some CLI library package.
 def create_parser(
     commands: type[BaseCommand] | MutableMapping[str, CommandTree | type[BaseCommand]],
 ) -> ArgumentParser[PydanticBaseCommand]:
@@ -118,6 +119,7 @@ def get_command(config: BaseCommandConfig) -> BaseCommand:
     return cmd(config)
 
 
+# TODO: Move this function into some CLI library package.
 def parse_and_run(
     commands: type[BaseCommand] | MutableMapping[str, CommandTree | type[BaseCommand]],
     auto_complete: bool = True,

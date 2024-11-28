@@ -27,7 +27,8 @@ from gallia.command.config import Field, GalliaBaseModel, Idempotent
 from gallia.db.handler import DBHandler
 from gallia.dumpcap import Dumpcap
 from gallia.log import add_zst_log_handler, get_logger, tz
-from gallia.powersupply import PowerSupply, PowerSupplyURI
+from gallia.power_supply import PowerSupply
+from gallia.power_supply.uri import PowerSupplyURI
 from gallia.services.uds.core.exception import UDSException
 from gallia.transports import BaseTransport, TargetURI
 from gallia.utils import camel_to_snake, get_file_log_level

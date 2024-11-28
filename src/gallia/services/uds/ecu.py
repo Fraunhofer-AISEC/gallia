@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any
 
 from gallia.db.log import LogMode
 from gallia.log import get_logger
-from gallia.powersupply import PowerSupply
+from gallia.power_supply import PowerSupply
 from gallia.services.uds.core import service
 from gallia.services.uds.core.client import UDSClient, UDSRequestConfig
 from gallia.services.uds.core.constants import DataIdentifier
