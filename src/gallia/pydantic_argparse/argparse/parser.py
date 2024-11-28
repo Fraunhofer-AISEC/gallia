@@ -24,11 +24,11 @@ from typing import Generic, NoReturn, Optional, Type, Any, Never
 
 from pydantic import BaseModel, ValidationError
 
-from pydantic_argparse import parsers
-from pydantic_argparse.argparse import actions
-from pydantic_argparse.utils.field import ArgFieldInfo
-from pydantic_argparse.utils.nesting import _NestedArgumentParser
-from pydantic_argparse.utils.pydantic import PydanticField, PydanticModelT
+from gallia.pydantic_argparse import parsers
+from gallia.pydantic_argparse.argparse import actions
+from gallia.pydantic_argparse.utils.field import ArgFieldInfo
+from gallia.pydantic_argparse.utils.nesting import _NestedArgumentParser
+from gallia.pydantic_argparse.utils.pydantic import PydanticField, PydanticModelT
 
 
 class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):

@@ -11,13 +11,11 @@ SPDX-License-Identifier: CC0-1.0
 Power supplies are mostly used for power cycling the current device under test.
 There is no limit in accessing power supplies, e.g. voltage or current settings can be controlled as well.
 
-Own drivers can be included by implementing the {class}`opennetzteil.netzteil.BaseNetzteil` interface[^1].
+Own drivers can be included by implementing the {class}`gallia.power_supply.BasePowerSupply` interface.
 On the commandline there is the `--power-supply` argument to specify a relevant power supply.
 Further, there is `--power-cycle` to automatically power-cycle the device under test.
-There is an experimental cli tool `opennetzteil` included in `gallia`.
+There is an experimental cli tool `netzteil` included in `gallia`.
 This cli tool can be used to control all supported power supplies via the cli.
-
-[^1]: `opennetzteil` is included and shipped with `gallia`.
 
 The argument for `--power-supply` is a URI of the following form:
 

@@ -47,11 +47,3 @@ All available transports are documented in {doc}`../transports`.
     :members:
     :show-inheritance:
 ```
-
-## opennetzteil.netzteil
-
-```{eval-rst}
-.. automodule:: opennetzteil.netzteil
-    :members:
-    :show-inheritance:
-```

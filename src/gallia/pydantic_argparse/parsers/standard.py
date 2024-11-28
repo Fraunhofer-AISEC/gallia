@@ -15,7 +15,7 @@ that do not match any other types and require no special handling are parsed.
 import argparse
 from typing import Any
 
-from pydantic_argparse.utils.pydantic import PydanticField
+from gallia.pydantic_argparse.utils.pydantic import PydanticField
 
 from .utils import SupportsAddArgument
 

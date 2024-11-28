@@ -13,7 +13,7 @@ each contain the `should_parse()` and `parse_field()` functions.
 
 from typing import Optional
 
-from pydantic_argparse.utils.pydantic import PydanticField, PydanticValidator
+from gallia.pydantic_argparse.utils.pydantic import PydanticField, PydanticValidator
 
 from . import (
     boolean,

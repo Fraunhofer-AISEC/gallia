@@ -6,15 +6,15 @@ from typing import Any, Literal, Self
 
 from pydantic import field_serializer, model_validator
 
-from gallia.cli import parse_and_run
+from gallia.cli.gallia import parse_and_run
 from gallia.command import AsyncScript
 from gallia.command.base import AsyncScriptConfig, ScannerConfig
 from gallia.command.config import Field, Idempotent
-from gallia.powersupply import PowerSupplyURI
+from gallia.power_supply import power_supply_drivers
+from gallia.power_supply.base import BasePowerSupplyDriver
+from gallia.power_supply.uri import PowerSupplyURI
 from gallia.transports import TargetURI
 from gallia.utils import strtobool
-from opennetzteil import netzteile
-from opennetzteil.netzteil import BaseNetzteil
 
 
 class CLIConfig(AsyncScriptConfig):
@@ -38,8 +38,8 @@ class CLIConfig(AsyncScriptConfig):
 
     @model_validator(mode="after")
     def check_power_supply_requirements(self) -> Self:
-        for netzteil in netzteile:
-            if self.power_supply.product_id == netzteil.PRODUCT_ID:
+        for driver in power_supply_drivers:
+            if self.power_supply.product_id == driver.PRODUCT_ID:
                 break
         else:
             raise ValueError(f"powersupply {self.power_supply.product_id} is not supported")
@@ -60,10 +60,10 @@ class CLI(AsyncScript, ABC):
         super().__init__(config)
         self.config: CLIConfig = config
 
-    async def _client(self) -> BaseNetzteil:
-        for netzteil in netzteile:
-            if self.config.power_supply.product_id == netzteil.PRODUCT_ID:
-                return await netzteil.connect(self.config.power_supply, timeout=1.0)
+    async def _client(self) -> BasePowerSupplyDriver:
+        for driver in power_supply_drivers:
+            if self.config.power_supply.product_id == driver.PRODUCT_ID:
+                return await driver.connect(self.config.power_supply, timeout=1.0)
 
         assert False
 

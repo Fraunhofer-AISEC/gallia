@@ -2,15 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Self
 
 from gallia.transports import TargetURI
 
 
-class BaseNetzteil(ABC):
+class BasePowerSupplyDriver(ABC):
     #: The product_id is used to choose the relevant implementation.
     PRODUCT_ID = ""
 
@@ -20,7 +18,7 @@ class BaseNetzteil(ABC):
         self.ident = ""
 
     @classmethod
-    async def connect(cls, target: TargetURI, timeout: float | None) -> BaseNetzteil:
+    async def connect(cls, target: TargetURI, timeout: float | None) -> Self:
         """Connects to ``target`` and checks for connectivity using :meth:`probe()`."""
         nt = cls(target, timeout)
         await nt.probe()

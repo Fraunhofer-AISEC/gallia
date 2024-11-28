@@ -1316,8 +1316,8 @@ class CursedHR:
         add_entries("")
         add_entries("Action keys:")
 
-        for option in options:
-            add_entries(f"{options[option]}", f"    {option}: ")
+        for key, val in options.items():
+            add_entries(f"{key}", f"    {val}: ")
 
         add_entries("")
         add_entries("Log level keys (ordered from highest to lowest):")

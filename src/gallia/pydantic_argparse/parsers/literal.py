@@ -12,7 +12,7 @@ command-line arguments.
 
 import argparse
 
-from pydantic_argparse.utils.pydantic import PydanticField
+from gallia.pydantic_argparse.utils.pydantic import PydanticField
 
 from .utils import SupportsAddArgument
 from ..utils.field import ArgFieldInfo

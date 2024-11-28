@@ -30,6 +30,7 @@ dependencies = [
     "aiofiles >=24.1.0,<25.0",
     "aiosqlite >=0.18",
     "argcomplete >=2,<4",
+    "boltons>=24.1.0",
     "construct >=2.10,<3.0",
     "more-itertools >=10.3.0,<11.0.0",
     "msgspec >=0.11,<0.19",
@@ -39,15 +40,15 @@ dependencies = [
     "zstandard >=0.19",
 ]
 
-[project.entry_points."gallia_plugins"]
+[project.entry-points."gallia_plugins"]
 "uds" = "gallia.plugins.uds:UDSPlugin"
 "xcp" = "gallia.plugins.xcp:XCPPlugin"
 
 [project.scripts]
-"gallia" = "gallia.cli:main"
-"netzteil" = "opennetzteil.cli:main"
-"cursed-hr" = "cursed_hr.cursed_hr:main"
-"hr" = "hr:main"
+"gallia" = "gallia.cli.gallia:main"
+"netzteil" = "gallia.cli.netzteil:main"
+"cursed-hr" = "gallia.cli.cursed_hr:main"
+"hr" = "gallia.cli.hr:main"
 
 [dependency-groups]
 dev = [
@@ -78,10 +79,26 @@ strict = true
 plugins = [
     "pydantic.mypy"
 ]
+exclude = [
+    "src/gallia/pydantic_argparse/.*"
+]
+
+# TODO: Make this compatible to --strict.
+[[tool.mypy.overrides]]
+module = ["gallia.pydantic_argparse"]
+check_untyped_defs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_decorators = true
+disallow_any_unimported = true
+warn_return_any = true
+warn_unused_ignores = true
+no_implicit_optional = true
 
 [tool.ruff]
 target-version = "py311"
 line-length = 100
+extend-exclude = ["src/gallia/pydantic_argparse"]
 
 [tool.ruff.lint]
 select = [

@@ -80,6 +80,15 @@ wheels = [
 ]
 
 [[package]]
+name = "boltons"
+version = "24.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/84/76/dfc34232b3e88634025563f52a430be0838182647c063f99569086922554/boltons-24.1.0.tar.gz", hash = "sha256:4a49b7d57ee055b83a458c8682a2a6f199d263a8aa517098bda9bab813554b87", size = 240916 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b8/96/e44606e60a0c005ac5f2a641960a93ca8f449ebdce7479f9bc4f10bead6d/boltons-24.1.0-py3-none-any.whl", hash = "sha256:a1776d47fdc387fb730fba1fe245f405ee184ee0be2fb447dd289773a84aed3b", size = 192196 },
+]
+
+[[package]]
 name = "boolean-py"
 version = "4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -266,6 +275,7 @@ dependencies = [
     { name = "aiofiles" },
     { name = "aiosqlite" },
     { name = "argcomplete" },
+    { name = "boltons" },
     { name = "construct" },
     { name = "more-itertools" },
     { name = "msgspec" },
@@ -299,6 +309,7 @@ requires-dist = [
     { name = "aiofiles", specifier = ">=24.1.0,<25.0" },
     { name = "aiosqlite", specifier = ">=0.18" },
     { name = "argcomplete", specifier = ">=2,<4" },
+    { name = "boltons", specifier = ">=24.1.0" },
     { name = "construct", specifier = ">=2.10,<3.0" },
     { name = "more-itertools", specifier = ">=10.3.0,<11.0.0" },
     { name = "msgspec", specifier = ">=0.11,<0.19" },
