@@ -79,21 +79,6 @@ strict = true
 plugins = [
     "pydantic.mypy"
 ]
-exclude = [
-    "src/gallia/pydantic_argparse/.*"
-]
-
-# TODO: Make this compatible to --strict.
-[[tool.mypy.overrides]]
-module = ["gallia.pydantic_argparse"]
-check_untyped_defs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-disallow_untyped_decorators = true
-disallow_any_unimported = true
-warn_return_any = true
-warn_unused_ignores = true
-no_implicit_optional = true
 
 [tool.ruff]
 target-version = "py311"
