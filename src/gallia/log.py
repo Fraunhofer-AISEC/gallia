@@ -5,9 +5,11 @@
 from __future__ import annotations
 
 import atexit
+import dataclasses
 import datetime
 import gzip
 import io
+import json
 import logging
 import mmap
 import os
@@ -18,7 +20,6 @@ import tempfile
 import time
 import traceback
 from collections.abc import Iterator
-from dataclasses import dataclass
 from enum import Enum, IntEnum, unique
 from logging.handlers import QueueHandler, QueueListener
 from pathlib import Path
@@ -26,7 +27,6 @@ from queue import Queue
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, BinaryIO, Self, TextIO, TypeAlias, cast
 
-import msgspec
 import zstandard
 
 if TYPE_CHECKING:
@@ -327,12 +327,14 @@ def add_zst_log_handler(
     return zstd_handler
 
 
-class _PenlogRecordV2(msgspec.Struct, omit_defaults=True, tag=2, tag_field="version"):
+@dataclasses.dataclass
+class _PenlogRecordV2:
     module: str
     host: str
     data: str
     datetime: str
     priority: int
+    version: int
     tags: list[str] | None = None
     line: str | None = None
     stacktrace: str | None = None
@@ -417,7 +419,7 @@ def _format_record(  # noqa: PLR0913
     return msg
 
 
-@dataclass
+@dataclasses.dataclass
 class PenlogRecord:
     module: str
     host: str
@@ -459,20 +461,26 @@ class PenlogRecord:
         if data.startswith(b"<"):
             data = data[data.index(b">") + 1 :]
 
-        record = msgspec.json.decode(data, type=_PenlogRecordV2)
+        record = json.loads(data.decode())
+        if (v := record["version"]) != 2:
+            raise json.JSONDecodeError(f"invalid log record version {v}", data.decode(), 0)
 
         return cls(
-            module=record.module,
-            host=record.host,
-            data=record.data,
-            datetime=datetime.datetime.fromisoformat(record.datetime),
-            priority=PenlogPriority(record.priority),
-            tags=record.tags,
-            line=record.line,
-            stacktrace=record.stacktrace,
-            _python_level_no=record._python_level_no,
-            _python_level_name=record._python_level_name,
-            _python_func_name=record._python_func_name,
+            module=record["module"],
+            host=record["host"],
+            data=record["data"],
+            datetime=datetime.datetime.fromisoformat(record["datetime"]),
+            priority=PenlogPriority(record["priority"]),
+            tags=record["tags"] if "tags" in record else None,
+            line=record["line"] if "line" in record else None,
+            stacktrace=record["stacktrace"] if "stacktrace" in record else None,
+            _python_level_no=record["_python_level_no"] if "_python_level_no" in record else None,
+            _python_level_name=record["_python_level_name"]
+            if "_python_level_name" in record
+            else None,
+            _python_func_name=record["_python_func_name"]
+            if "_python_func_name" in record
+            else None,
         )
 
     def to_log_record(self) -> logging.LogRecord:
@@ -692,9 +700,9 @@ class _JSONFormatter(logging.Formatter):
             _python_level_no=record.levelno,
             _python_level_name=record.levelname,
             _python_func_name=record.funcName,
+            version=2,
         )
-
-        return msgspec.json.encode(penlog_record).decode()
+        return json.dumps(dataclasses.asdict(penlog_record))
 
 
 class _ConsoleFormatter(logging.Formatter):

@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+import dataclasses
 import json
 import os
 import os.path
@@ -19,7 +20,6 @@ from subprocess import CalledProcessError, run
 from tempfile import gettempdir
 from typing import Any, Protocol, Self, cast
 
-import msgspec
 from pydantic import ConfigDict, field_serializer, model_validator
 
 from gallia import exitcodes
@@ -49,7 +49,8 @@ class HookVariant(Enum):
     POST = "post"
 
 
-class RunMeta(msgspec.Struct):
+@dataclasses.dataclass
+class RunMeta:
     command: str
     start_time: str
     end_time: str
@@ -57,7 +58,7 @@ class RunMeta(msgspec.Struct):
     config: MutableMapping[str, Any]
 
     def json(self) -> str:
-        return msgspec.json.encode(self).decode()
+        return json.dumps(dataclasses.asdict(self))
 
 
 logger = get_logger(__name__)
