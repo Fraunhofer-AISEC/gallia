@@ -9,11 +9,10 @@ comparing the types of `pydantic fields.
 """
 
 from collections.abc import Iterable
+from typing import Any
 
-# Version-Guarded
 
-
-def all_types(types: Iterable) -> bool:
+def all_types(types: Iterable[Any]) -> bool:
     """Check if all inputs are `type`s and not instances.
 
     Args:

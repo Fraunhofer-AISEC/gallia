@@ -98,7 +98,7 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
         self.extra_defaults = extra_defaults
 
         # Add Arguments Groups
-        self._subcommands: argparse._SubParsersAction | None = None
+        self._subcommands: argparse._SubParsersAction[Any] | None = None
 
         # Add Arguments from Model
         self._submodels: dict[str, type[BaseModel]] = {}
@@ -136,7 +136,9 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
             # to report it to the user
             self._validation_error(exc, nested_parser)
 
-    def _validation_error(self, error: ValidationError, parser: _NestedArgumentParser) -> Never:
+    def _validation_error(
+        self, error: ValidationError, parser: _NestedArgumentParser[Any]
+    ) -> Never:
         self.print_usage(sys.stderr)
 
         model = parser.model
@@ -216,7 +218,7 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
         # Raise Error
         # raise argparse.ArgumentError(None, msg)
 
-    def _commands(self) -> argparse._SubParsersAction:
+    def _commands(self) -> argparse._SubParsersAction:  # type: ignore
         """Creates and Retrieves Subcommands Action for the ArgumentParser.
 
         Returns:

@@ -22,7 +22,7 @@ from typing import (
 T = TypeVar("T")
 
 
-class SubParsersAction(argparse._SubParsersAction):
+class SubParsersAction(argparse._SubParsersAction):  # type: ignore
     """Recursively Nesting Sub-Parsers Action for Typed Argument Parsing.
 
     This custom action differs in functionality from the existing standard

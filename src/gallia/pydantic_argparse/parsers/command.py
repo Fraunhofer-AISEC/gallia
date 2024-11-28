@@ -19,7 +19,7 @@ from gallia.pydantic_argparse.utils.pydantic import (
 
 
 def parse_field(
-    subparser: argparse._SubParsersAction,
+    subparser: argparse._SubParsersAction,  # type: ignore
     field: PydanticField,
     extra_defaults: dict[type, dict[str, Any]] | None = None,
 ) -> None:

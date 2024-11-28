@@ -16,7 +16,7 @@ default:
 
 .PHONY: lint
 lint:
-	uv run mypy src tests
+	uv run mypy --pretty src tests
 	uv run ruff check src tests
 	uv run ruff format --check src tests
 	find tests/bats \( -iname "*.bash" -or -iname "*.bats" -or -iname "*.sh" \) | xargs shellcheck
