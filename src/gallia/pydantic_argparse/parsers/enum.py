@@ -14,10 +14,10 @@ import argparse
 import enum
 from typing import Any
 
+from gallia.pydantic_argparse.utils.field import ArgFieldInfo
 from gallia.pydantic_argparse.utils.pydantic import PydanticField
 
 from .utils import SupportsAddArgument
-from ..utils.field import ArgFieldInfo
 
 
 def should_parse(field: PydanticField) -> bool:
@@ -68,4 +68,6 @@ def parse_field(
     args.update(field.arg_dest())
 
     # Add Enum Field
-    parser.add_argument(*field.arg_names(), action=action, help=field.description(), metavar=metavar, **args)
+    parser.add_argument(
+        *field.arg_names(), action=action, help=field.description(), metavar=metavar, **args
+    )

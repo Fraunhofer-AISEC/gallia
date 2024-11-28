@@ -9,10 +9,10 @@ converting `argparse.Namespace`s to regular Python `dict`s.
 """
 
 import argparse
-from typing import Any, Dict
+from typing import Any
 
 
-def to_dict(namespace: argparse.Namespace) -> Dict[str, Any]:
+def to_dict(namespace: argparse.Namespace) -> dict[str, Any]:
     """Converts a nested namespace to a dictionary recursively.
 
     Args:

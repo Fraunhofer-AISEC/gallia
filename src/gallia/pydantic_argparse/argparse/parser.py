@@ -20,12 +20,13 @@ be compatible with an IDE, linter or type checker.
 
 import argparse
 import sys
-from typing import Generic, NoReturn, Optional, Type, Any, Never
+from typing import Any, Generic, Never, NoReturn
 
 from pydantic import BaseModel, ValidationError
 
 from gallia.pydantic_argparse import parsers
 from gallia.pydantic_argparse.argparse import actions
+from gallia.pydantic_argparse.parsers import command
 from gallia.pydantic_argparse.utils.field import ArgFieldInfo
 from gallia.pydantic_argparse.utils.nesting import _NestedArgumentParser
 from gallia.pydantic_argparse.utils.pydantic import PydanticField, PydanticModelT
@@ -97,10 +98,10 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
         self.extra_defaults = extra_defaults
 
         # Add Arguments Groups
-        self._subcommands: Optional[argparse._SubParsersAction] = None
+        self._subcommands: argparse._SubParsersAction | None = None
 
         # Add Arguments from Model
-        self._submodels: dict[str, Type[BaseModel]] = dict()
+        self._submodels: dict[str, type[BaseModel]] = {}
         self.model = model
         self._add_model(model)
 
@@ -170,7 +171,9 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
                     and argument in self.extra_defaults[model]
                     and self.extra_defaults[model][argument][1] == e["input"]
                 ):
-                    source = f"default of {argument} from {self.extra_defaults[model][argument][0]}: "
+                    source = (
+                        f"default of {argument} from {self.extra_defaults[model][argument][0]}: "
+                    )
                 else:
                     # Use the same method, that was used for the CLI generation
                     argument_name = PydanticField(argument, fields[argument]).arg_names()
@@ -256,7 +259,7 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
 
     def _add_model(
         self,
-        model: Type[BaseModel],
+        model: type[BaseModel],
         arg_group: argparse._ArgumentGroup | None = None,
     ) -> None:
         """Adds the `pydantic` model to the argument parser.
@@ -278,7 +281,7 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
         for field in PydanticField.parse_model(model):
             if field.is_a(BaseModel):
                 if field.is_subcommand():
-                    parsers.command.parse_field(self._commands(), field, self.extra_defaults)
+                    command.parse_field(self._commands(), field, self.extra_defaults)
                 else:
                     # for any nested pydantic models, set default factory to model_construct
                     # method. This allows pydantic to handle if no arguments from a nested
@@ -309,7 +312,9 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
 
                 if isinstance(field.info, ArgFieldInfo) and field.info.group is not None:
                     if field.info.group not in explicit_groups:
-                        explicit_groups[field.info.group] = self.add_argument_group(field.info.group)
+                        explicit_groups[field.info.group] = self.add_argument_group(
+                            field.info.group
+                        )
 
                     parsers.add_field(explicit_groups[field.info.group], field)
                     added = True

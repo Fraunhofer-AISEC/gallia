@@ -6,7 +6,7 @@
 
 from argparse import Action, FileType
 from collections.abc import Callable, Iterable
-from typing import Any, Protocol, TypeVar, Union
+from typing import Any, Protocol, TypeVar
 
 _T = TypeVar("_T")
 
@@ -17,11 +17,11 @@ class SupportsAddArgument(Protocol):
     def add_argument(  # noqa: D102
         self,
         *name_or_flags: str,
-        action: Union[str, type[Action]] = ...,
-        nargs: Union[int, str] = ...,
+        action: str | type[Action] = ...,
+        nargs: int | str = ...,
         const: Any = ...,
         default: Any = ...,
-        type: Union[Callable[[str], _T], FileType] = ...,  # noqa: A002
+        type: Callable[[str], _T] | FileType = ...,  # noqa: A002
         choices: Iterable[_T] | None = ...,
         required: bool = ...,
         help: str | None = ...,  # noqa: A002

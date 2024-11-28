@@ -13,5 +13,3 @@ interacting with the internals of `pydantic` and determining the types of
 The public interface exposed by this package is the various described utility
 modules each containing helper functions.
 """
-
-from . import namespaces, pydantic, types

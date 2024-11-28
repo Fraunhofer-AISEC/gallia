@@ -17,13 +17,11 @@ from pydantic import BaseModel, ConfigDict
 
 from gallia.pydantic_argparse.argparse import ArgumentParser
 
-from . import argparse, parsers, utils
-
 
 class BaseArgument(BaseModel):
     """Base pydantic model for argument groups."""
 
-    model_config = ConfigDict(json_schema_extra=dict(subcommand=False))
+    model_config = ConfigDict(json_schema_extra={"subcommand": False})
 
 
 class BaseCommand(BaseModel):
@@ -34,7 +32,7 @@ class BaseCommand(BaseModel):
     have `subcommand=True`.
     """
 
-    model_config = ConfigDict(json_schema_extra=dict(subcommand=True), defer_build=True)
+    model_config = ConfigDict(json_schema_extra={"subcommand": True}, defer_build=True)
 
 
 # Public Re-Exports

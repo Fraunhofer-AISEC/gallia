@@ -11,7 +11,7 @@ sub-commands.
 """
 
 import argparse
-from typing import Type, Any
+from typing import Any
 
 from gallia.pydantic_argparse.utils.pydantic import (
     PydanticField,
@@ -21,7 +21,7 @@ from gallia.pydantic_argparse.utils.pydantic import (
 def parse_field(
     subparser: argparse._SubParsersAction,
     field: PydanticField,
-    extra_defaults: dict[Type, dict[str, Any]] | None = None,
+    extra_defaults: dict[type, dict[str, Any]] | None = None,
 ) -> None:
     """Adds command pydantic field to argument parser.
 

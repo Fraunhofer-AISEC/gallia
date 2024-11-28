@@ -5,7 +5,7 @@
 """Utilities to help with parsing arbitrarily nested `pydantic` models."""
 
 from argparse import Namespace
-from typing import Any, Generic, Type, TypeAlias
+from typing import Any, Generic, TypeAlias
 
 from boltons.iterutils import get_path, remap
 from pydantic import BaseModel
@@ -13,7 +13,7 @@ from pydantic import BaseModel
 from .namespaces import to_dict
 from .pydantic import PydanticField, PydanticModelT
 
-ModelT: TypeAlias = PydanticModelT | Type[PydanticModelT] | BaseModel | Type[BaseModel]
+ModelT: TypeAlias = PydanticModelT | type[PydanticModelT] | BaseModel | type[BaseModel]
 
 
 class _NestedArgumentParser(Generic[PydanticModelT]):
@@ -21,12 +21,12 @@ class _NestedArgumentParser(Generic[PydanticModelT]):
 
     def __init__(
         self,
-        model: PydanticModelT | Type[PydanticModelT],
+        model: PydanticModelT | type[PydanticModelT],
         namespace: Namespace,
     ) -> None:
         self.model = model
         self.args = to_dict(namespace)
-        self.subcommand_path: tuple[str, ...] = tuple()
+        self.subcommand_path: tuple[str, ...] = ()
         self.schema: dict[str, Any] = self._get_nested_model_fields(self.model, namespace)
         self.schema = self._remove_null_leaves(self.schema)
 
@@ -42,7 +42,7 @@ class _NestedArgumentParser(Generic[PydanticModelT]):
 
             return True
 
-        model_fields: dict[str, Any] = dict()
+        model_fields: dict[str, Any] = {}
 
         for field in PydanticField.parse_model(model):
             key = field.name

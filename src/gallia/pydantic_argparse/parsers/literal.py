@@ -11,13 +11,12 @@ command-line arguments.
 """
 
 import argparse
+from typing import Any, Literal, get_args
 
+from gallia.pydantic_argparse.utils.field import ArgFieldInfo
 from gallia.pydantic_argparse.utils.pydantic import PydanticField
 
 from .utils import SupportsAddArgument
-from ..utils.field import ArgFieldInfo
-
-from typing import Literal, get_args, Any
 
 
 def should_parse(field: PydanticField) -> bool:
@@ -60,4 +59,6 @@ def parse_field(
     args.update(field.arg_dest())
 
     # Add Literal Field
-    parser.add_argument(*field.arg_names(), action=action, help=field.description(), metavar=metavar, **args)
+    parser.add_argument(
+        *field.arg_names(), action=action, help=field.description(), metavar=metavar, **args
+    )
