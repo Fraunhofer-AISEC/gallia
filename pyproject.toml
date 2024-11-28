@@ -98,7 +98,6 @@ no_implicit_optional = true
 [tool.ruff]
 target-version = "py311"
 line-length = 100
-extend-exclude = ["src/gallia/pydantic_argparse"]
 
 [tool.ruff.lint]
 select = [

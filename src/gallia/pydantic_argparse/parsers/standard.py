@@ -38,5 +38,9 @@ def parse_field(
 
     # Add Standard Field
     parser.add_argument(
-        *field.arg_names(), action=argparse._StoreAction, help=field.description(), metavar=field.metavar(), **args
+        *field.arg_names(),
+        action=argparse._StoreAction,
+        help=field.description(),
+        metavar=field.metavar(),
+        **args,
     )

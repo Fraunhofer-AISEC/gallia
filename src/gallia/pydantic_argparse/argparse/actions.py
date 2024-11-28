@@ -11,16 +11,10 @@ Python standard library `argparse` class of the same name.
 """
 
 import argparse
+from collections.abc import Callable, Iterable, Sequence
 from typing import (
     Any,
-    Callable,
-    Iterable,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
     TypeVar,
-    Union,
     cast,
 )
 
@@ -79,8 +73,8 @@ class SubParsersAction(argparse._SubParsersAction):
         self,
         parser: argparse.ArgumentParser,
         namespace: argparse.Namespace,
-        values: Union[str, Sequence[Any], None],
-        option_string: Optional[str] = None,
+        values: str | Sequence[Any] | None,
+        option_string: str | None = None,
     ) -> None:
         """Parses arguments into a namespace with the specified subparser.
 
@@ -102,7 +96,7 @@ class SubParsersAction(argparse._SubParsersAction):
         # such, this function signature also accepts 'str' and 'None' types for
         # the values argument. However, in reality, this should only ever be a
         # list of strings here, so we just do a type cast.
-        values = cast(List[str], values)
+        values = cast(list[str], values)
 
         # Get Parser Name and Remaining Argument Strings
         parser_name, *arg_strings = values
@@ -151,14 +145,12 @@ class BooleanOptionalAction(argparse.Action):  # pragma: no cover
         self,
         option_strings: Sequence[str],
         dest: str,
-        default: Optional[Union[T, str]] = None,
-        type: Optional[  # noqa: A002]
-            Union[Callable[[str], T], argparse.FileType]
-        ] = None,
-        choices: Optional[Iterable[T]] = None,
+        default: T | str | None = None,
+        type_: Callable[[str], T] | argparse.FileType | None = None,
+        choices: Iterable[T] | None = None,
         required: bool = False,
-        help: Optional[str] = None,  # noqa: A002
-        metavar: Optional[Union[str, Tuple[str, ...]]] = None,
+        help: str | None = None,  # noqa: A002
+        metavar: str | tuple[str, ...] | None = None,
     ) -> None:
         """Instantiates the Boolean Optional Action.
 
@@ -189,10 +181,7 @@ class BooleanOptionalAction(argparse.Action):  # pragma: no cover
             # Check if this option string is a "--<OPT>" option string
             if option_string.startswith("--"):
                 # Create a "--no-<OPT>" negated option string
-                option_string = "--no-" + option_string[2:]
-
-                # Append the negated option string to the new list as well
-                _option_strings.append(option_string)
+                _option_strings.append(f"--no-{option_string[2:]}")
 
         # Initialise Super Class
         super().__init__(
@@ -200,7 +189,7 @@ class BooleanOptionalAction(argparse.Action):  # pragma: no cover
             dest=dest,
             nargs=0,
             default=default,
-            type=type,
+            type=type_,
             choices=choices,
             required=required,
             help=help,
@@ -211,8 +200,8 @@ class BooleanOptionalAction(argparse.Action):  # pragma: no cover
         self,
         parser: argparse.ArgumentParser,
         namespace: argparse.Namespace,
-        values: Optional[Union[str, Sequence[Any]]],
-        option_string: Optional[str] = None,
+        values: str | Sequence[Any] | None,
+        option_string: str | None = None,
     ) -> None:
         """Parses the provided boolean arguments into a namespace.
 

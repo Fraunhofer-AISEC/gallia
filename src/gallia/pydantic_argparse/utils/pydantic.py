@@ -10,21 +10,19 @@ field validator dictionaries and constructing new model classes with
 dynamically generated validators and environment variable parsers.
 """
 
-from collections.abc import Container
+from collections.abc import Container, Iterator
 from dataclasses import dataclass
 from enum import Enum
 from types import UnionType
 from typing import (
+    Annotated,
     Any,
-    Iterator,
     Literal,
-    Type,
     TypeVar,
     Union,
     cast,
     get_args,
     get_origin,
-    Annotated,
 )
 
 from pydantic import BaseModel
@@ -57,7 +55,7 @@ class PydanticField:
     extra_default: tuple[str, Any] | None = None
 
     @classmethod
-    def parse_model(cls, model: BaseModel | Type[BaseModel]) -> Iterator["PydanticField"]:
+    def parse_model(cls, model: BaseModel | type[BaseModel]) -> Iterator["PydanticField"]:
         """Iterator over the pydantic model fields, yielding this wrapper class.
 
         Yields:
@@ -73,13 +71,15 @@ class PydanticField:
             return origin
         elif origin is Union or origin is UnionType:
             args = get_args(annotation)
-            types = list(arg for arg in args if arg is not NoneType)
+            types = [arg for arg in args if arg is not NoneType]
         elif origin is None:
             types = [annotation]
         else:
-            raise AssertionError(f"Unsupported origin {origin} for field {self.name} with annotation {annotation}")
+            raise AssertionError(
+                f"Unsupported origin {origin} for field {self.name} with annotation {annotation}"
+            )
 
-        base_types: list[Type | None] = []
+        base_types: list[type | None] = []
 
         for t in types:
             origin = get_origin(t)
@@ -143,13 +143,16 @@ class PydanticField:
         is_type = False
         for t in field_type:
             is_type = (
-                is_type or t in types or (is_valid and isinstance(t, types)) or (is_valid and issubclass(t, types))  # type: ignore
+                is_type
+                or t in types
+                or (is_valid and isinstance(t, types))
+                or (is_valid and issubclass(t, types))  # type: ignore
             )
 
         return is_type
 
     @property
-    def model_type(self) -> Type[BaseModel]:
+    def model_type(self) -> type[BaseModel]:
         """Try to return the `pydantic.BaseModel` type.
 
         Raises:
@@ -160,13 +163,12 @@ class PydanticField:
 
         types = self.get_type()
         if not isinstance(types, tuple):
-            return cast(Type[BaseModel], types)
+            return cast(type[BaseModel], types)
 
         for t in types:
             if isinstance(t, type) and issubclass(t, BaseModel):
                 return t
-        else:
-            raise TypeError("No `pydantic.BaseModel`s were found associated with this field.")
+        raise TypeError("No `pydantic.BaseModel`s were found associated with this field.")
 
     def is_subcommand(self) -> bool:
         """Check whether the input pydantic Model is a subcommand.
@@ -283,7 +285,9 @@ class PydanticField:
     def arg_default(self) -> dict[str, Any]:
         return (
             {}
-            if self.extra_default is None or isinstance(self.info, ArgFieldInfo) and self.info.positional
+            if self.extra_default is None
+            or isinstance(self.info, ArgFieldInfo)
+            and self.info.positional
             else {"default": self.extra_default[1]}
         )
 
@@ -295,10 +299,14 @@ class PydanticField:
         )
 
     def arg_dest(self) -> dict[str, str]:
-        return {} if isinstance(self.info, ArgFieldInfo) and self.info.positional else {"dest": self.name}
+        return (
+            {}
+            if isinstance(self.info, ArgFieldInfo) and self.info.positional
+            else {"dest": self.name}
+        )
 
 
-def is_subcommand(model: BaseModel | Type[BaseModel]) -> bool:
+def is_subcommand(model: BaseModel | type[BaseModel]) -> bool:
     """Check whether the input pydantic Model is a subcommand.
 
     The default is that all pydantic Models are not subcommands, so this
