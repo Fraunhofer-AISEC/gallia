@@ -126,7 +126,10 @@ async def test_tcp_linesep_request(tcp_server: TCPServer) -> None:
 @pytest.mark.asyncio
 async def test_tcp_timeout(tcp_server: TCPServer) -> None:
     client = await TCPLinesTransport.connect(TargetURI("tcp-lines://127.0.0.1:1234"))
-    await tcp_server.accept()
+    server = await tcp_server.accept()
 
-    with pytest.raises(asyncio.TimeoutError):
-        await client.request(b"hello", timeout=0.5)
+    async with asyncio.TaskGroup() as tg:
+        tg.create_task(server.read())
+
+        with pytest.raises(asyncio.TimeoutError):
+            await client.request(b"hello", timeout=0.5)
