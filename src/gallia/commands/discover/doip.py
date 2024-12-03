@@ -16,7 +16,6 @@ from gallia.command.config import AutoInt, Field
 from gallia.log import get_logger
 from gallia.services.uds.core.service import TesterPresentRequest, TesterPresentResponse
 from gallia.transports.doip import (
-    DiagnosticMessage,
     DiagnosticMessageNegativeAckCodes,
     DoIPConnection,
     DoIPEntityStatusResponse,
@@ -320,16 +319,19 @@ class DoIPDiscoverer(AsyncScript):
     ) -> None:  # noqa: PLR0913
         known_targets = []
         unreachable_targets = []
-        responsive_targets = []
         search_space = range(start, stop + 1)
 
-        conn = await self.create_DoIP_conn(tgt_hostname, tgt_port, correct_rat, correct_src, 0xAFFE)
+        target_template = f"doip://{tgt_hostname}:{tgt_port}?protocol_version={self.protocol_version}&activation_type={correct_rat:#x}&src_addr={correct_src:#x}&target_addr={{:#x}}"
+        conn = await self.create_DoIP_conn(
+            tgt_hostname, tgt_port, correct_rat, correct_src, 0xAFFE, fast_queue=True
+        )
+        reader_task = asyncio.create_task(self.task_read_diagnostic_messages(conn, target_template))
 
         for target_addr in search_space:
             logger.debug(f"[🚧] Attempting connection to {target_addr:#x}")
 
             conn.target_addr = target_addr
-            current_target = f"doip://{tgt_hostname}:{tgt_port}?protocol_version={self.protocol_version}&activation_type={correct_rat:#x}&src_addr={correct_src:#x}&target_addr={target_addr:#x}"
+            current_target = target_template.format(target_addr)
 
             try:
                 req = TesterPresentRequest(suppress_response=False)
@@ -343,37 +345,7 @@ class DoIPDiscoverer(AsyncScript):
                 ) as f:
                     await f.write(f"{current_target}\n")
 
-                logger.info(f"[⏳] Waiting for reply of target {target_addr:#x}")
-                # Hardcoded loop to detect potential broadcasts
-                while True:
-                    pot_broadcast, data = await asyncio.wait_for(
-                        self.read_diag_request_custom(conn),
-                        TimingAndCommunicationParameters.DiagnosticMessageMessageTimeout / 1000
-                        if timeout is None
-                        else timeout,
-                    )
-                    if pot_broadcast is None:
-                        break
-
-                    logger.notice(
-                        f"[🤑] B-B-B-B-B-B-BROADCAST at TargetAddress {target_addr:#x}! Got reply from {pot_broadcast:#x}"
-                    )
-                    async with aiofiles.open(
-                        self.artifacts_dir.joinpath("6_unsolicited_replies.txt"), "a"
-                    ) as f:
-                        await f.write(
-                            f"target_addr={target_addr:#x} yielded reply from {pot_broadcast:#x}; could also be late answer triggered by previous address!\n"
-                        )
-
-                resp = TesterPresentResponse.parse_static(data)
-                logger.notice(f"[🥳] It cannot get nicer: {target_addr:#x} responded: {resp}")
-                responsive_targets.append(current_target)
-                async with aiofiles.open(
-                    self.artifacts_dir.joinpath("4_responsive_targets.txt"), "a"
-                ) as f:
-                    await f.write(f"{current_target}\n")
-                if self.db_handler is not None:
-                    await self.db_handler.insert_discovery_result(current_target)
+                # Here is where "reader_task" comes into play, which monitors incoming DiagnosticMessage replies
 
             except DoIPNegativeAckError as e:
                 if e.nack_code == DiagnosticMessageNegativeAckCodes.UnknownTargetAddress:
@@ -397,14 +369,6 @@ class DoIPDiscoverer(AsyncScript):
                         await f.write(f"{target_addr:#x}: {e.nack_code.name}\n")
                     continue
 
-            except TimeoutError:  # This triggers when DoIP ACK but no UDS reply
-                logger.info(f"[🙊] Presumably no active ECU on target address {target_addr:#x}")
-                async with aiofiles.open(
-                    self.artifacts_dir.joinpath("5_unresponsive_targets.txt"), "a"
-                ) as f:
-                    await f.write(f"{current_target}\n")
-                continue
-
             except ConnectionError as e:
                 # Whenever this triggers, but sometimes connections are closed not by us
                 logger.warning(f"[🫦] Sexy, but unexpected: {target_addr:#x} triggered {e!r}")
@@ -421,9 +385,6 @@ class DoIPDiscoverer(AsyncScript):
                 )
                 continue
 
-        await conn.close()
-        await asyncio.sleep(tcp_connect_delay)
-
         logger.notice(
             f"[⚔️] It's dangerous to test alone, take one of these {len(known_targets)} known targets:"
         )
@@ -439,15 +400,64 @@ class DoIPDiscoverer(AsyncScript):
         for item in unreachable_targets:
             logger.notice(item)
 
-        logger.notice(
-            f"[💰] For even more profit, try one of the {len(responsive_targets)} targets that actually responded:"
-        )
-        for item in responsive_targets:
-            logger.notice(item)
+        logger.info("[😴] Giving all ECUs a chance to reply...")
+        await asyncio.sleep(TimingAndCommunicationParameters.DiagnosticMessageMessageTimeout / 1000)
+        reader_task.cancel()
+        await reader_task
+        await conn.close()
 
         logger.notice(
             f"[🧭] Check out the content of the log files at {self.artifacts_dir} as well!"
         )
+
+    async def task_read_diagnostic_messages(
+        self, conn: DoIPConnection, target_template: str
+    ) -> None:
+        responsive_targets = []
+        potential_broadcasts = []
+        try:
+            while True:
+                _, payload = await conn.read_diag_request_raw()
+                (source_address, data) = (payload.SourceAddress, payload.UserData)
+                current_target = target_template.format(source_address)
+
+                resp = TesterPresentResponse.parse_static(data)
+                logger.notice(f"[🥇] It cannot get nicer: {source_address:#x} responded: {resp}")
+
+                if current_target not in responsive_targets:
+                    responsive_targets.append(current_target)
+                    async with aiofiles.open(
+                        self.artifacts_dir.joinpath("4_responsive_targets.txt"), "a"
+                    ) as f:
+                        await f.write(f"{current_target}\n")
+                    if self.db_handler is not None:
+                        await self.db_handler.insert_discovery_result(current_target)
+
+                if (
+                    abs(source_address - conn.target_addr) > 10
+                    and conn.target_addr not in potential_broadcasts
+                ):
+                    potential_broadcasts.append(conn.target_addr)
+
+        except asyncio.CancelledError:
+            logger.debug("Diagnostic Message reader got cancelled")
+        except Exception as e:
+            logger.error(f"Diagnostic Message reader died with {e!r}")
+
+        finally:
+            logger.notice(
+                f"[💰] For even more profit, try one of the {len(responsive_targets)} targets that actually responded:"
+            )
+            for item in responsive_targets:
+                logger.notice(item)
+
+            # TODO: the discoverer could be extended to search for and validate the broadcast address(es) automatically
+            if len(potential_broadcasts) > 0:
+                logger.notice(
+                    "[🕵️] You could also investigate these target addresses that appear to be near broadcasts:"
+                )
+            for target_addr in potential_broadcasts:
+                logger.notice(f"[🤑] B-B-B-B-B-B-BROADCAST around TargetAddress {target_addr:#x}!")
 
     async def create_DoIP_conn(
         self,
@@ -456,6 +466,7 @@ class DoIPDiscoverer(AsyncScript):
         routing_activation_type: int,
         src_addr: int,
         target_addr: int,
+        fast_queue: bool = False,
     ) -> DoIPConnection:  # noqa: PLR0913
         while True:
             try:  # Ensure that connections do not remain in TIME_WAIT
@@ -466,6 +477,7 @@ class DoIPDiscoverer(AsyncScript):
                     target_addr,
                     so_linger=True,
                     protocol_version=self.protocol_version,
+                    separate_diagnostic_message_queue=fast_queue,
                 )
                 logger.info("[📫] Sending RoutingActivationRequest")
                 await conn.write_routing_activation_request(
@@ -473,25 +485,10 @@ class DoIPDiscoverer(AsyncScript):
                 )
             except Exception as e:  # TODO: this probably is too broad
                 logger.warning(
-                    f"[\U0001fae8] Got me some good errors when it should be working (dis an infinite loop): {e!r}"
+                    f"[🫨] Got me some good errors when it should be working (dis an infinite loop): {e!r}"
                 )
                 continue
             return conn
-
-    async def read_diag_request_custom(self, conn: DoIPConnection) -> tuple[int | None, bytes]:
-        while True:
-            hdr, payload = await conn.read_frame()
-            if not isinstance(payload, DiagnosticMessage):
-                logger.warning(f"[🧨] Unexpected DoIP message: {hdr} {payload}")
-                return (None, b"")
-            if payload.SourceAddress != conn.target_addr:
-                return (payload.SourceAddress, payload.UserData)
-            if payload.TargetAddress != conn.src_addr:
-                logger.warning(
-                    f"[🤌] You talking to me?! Unexpected DoIP target address: {payload.TargetAddress:#04x}"
-                )
-                continue
-            return (None, payload.UserData)
 
     @staticmethod
     def get_broadcast_addrs() -> list[AddrInfo]:
