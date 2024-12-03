@@ -494,7 +494,7 @@ class DoIPConnection:
         target_addr: int,
         so_linger: bool = False,
         protocol_version: int = ProtocolVersions.ISO_13400_2_2019,
-    ) -> DoIPConnection:
+    ) -> Self:
         reader, writer = await asyncio.open_connection(host, port)
 
         if so_linger is True:
