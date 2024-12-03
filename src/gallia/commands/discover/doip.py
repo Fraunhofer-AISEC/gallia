@@ -335,9 +335,9 @@ class DoIPDiscoverer(AsyncScript):
                 req = TesterPresentRequest(suppress_response=False)
                 await conn.write_diag_request(req.pdu)
 
-                # If we reach this, the request was not denied due to unknown TargetAddress
+                # If we reach this, the request was not denied due to unknown TargetAddress or other DoIP errors
                 known_targets.append(current_target)
-                logger.notice(f"[🥇] HEUREKA: target address {target_addr:#x} is valid! ")
+                logger.notice(f"[🥈] HEUREKA: target address {target_addr:#x} is valid! ")
                 async with aiofiles.open(
                     self.artifacts_dir.joinpath("3_valid_targets.txt"), "a"
                 ) as f:
@@ -427,8 +427,11 @@ class DoIPDiscoverer(AsyncScript):
         logger.notice(
             f"[⚔️] It's dangerous to test alone, take one of these {len(known_targets)} known targets:"
         )
-        for item in known_targets:
-            logger.notice(item)
+        if len(known_targets) > 100:
+            logger.notice("[💯] Too many to print, check the artifacts instead!")
+        else:
+            for item in known_targets:
+                logger.notice(item)
 
         logger.notice(
             f"[❓] Those {len(unreachable_targets)} targets were unreachable by the gateway (could be just temporary):"
