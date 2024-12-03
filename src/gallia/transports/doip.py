@@ -732,7 +732,10 @@ class DoIPConnection:
         self._read_task.cancel()
         self.writer.close()
         logger.debug("Awaiting confirmation of closed writer")
-        await self.writer.wait_closed()
+        try:
+            await self.writer.wait_closed()
+        except ConnectionError as e:
+            logger.debug(f"Exception while waiting for the writer to close: {e!r}")
 
 
 class DoIPConfig(BaseModel):
