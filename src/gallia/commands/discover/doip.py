@@ -239,7 +239,7 @@ class DoIPDiscoverer(AsyncScript):
             elif hdr.PayloadType == PayloadTypes.DoIPEntityStatusResponse:
                 status = DoIPEntityStatusResponse.unpack(data[8:])
                 logger.notice(
-                    f"[👏] This DoIP entity is a {status.NodeType.name} with {status.CurrentlyOpenTCP_DATASockets}/{status.MaximumConcurrentTCP_DATASockets} concurrent TCP sockets currently open and a maximum data size of {status.MaximumDataSize}."
+                    f"[👏] This DoIP entity is a {status.NodeType.name} with {status.CurrentlyOpenTCP_DATASockets}/{status.MaximumConcurrentTCP_DATASockets} concurrent TCP sockets currently open and a maximum data size of {status.MaximumDataSize} ({status.MaximumDataSize:#0x})."
                 )
 
         sock.close()
@@ -407,7 +407,7 @@ class DoIPDiscoverer(AsyncScript):
 
             except ConnectionError as e:
                 # Whenever this triggers, but sometimes connections are closed not by us
-                logger.warn(f"[🫦] Sexy, but unexpected: {target_addr:#x} triggered {e!r}")
+                logger.warning(f"[🫦] Sexy, but unexpected: {target_addr:#x} triggered {e!r}")
                 async with aiofiles.open(
                     self.artifacts_dir.joinpath("7_targets_with_errors.txt"), "a"
                 ) as f:
