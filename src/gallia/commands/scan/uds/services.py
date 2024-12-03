@@ -30,7 +30,9 @@ class ServicesScannerConfig(UDSScannerConfig):
         False, description="check current session; only takes affect if --sessions is given"
     )
     scan_response_ids: bool = Field(False, description="Include IDs in scan with reply flag set")
-    auto_reset: bool = Field(False, description="Reset ECU with UDS ECU Reset before every request")
+    auto_reset: bool = Field(
+        False, description="Reset ECU with UDS ECU Reset before every request"
+    )  # FIXME: Currently not in use
     skip: Ranges2D = Field(
         {},
         metavar="SESSION_ID:ID",
