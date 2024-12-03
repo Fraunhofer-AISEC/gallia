@@ -544,9 +544,7 @@ class DoIPConnection:
                 hdr, data = await self._read_frame()
                 if hdr is None or data is None:
                     continue
-                if hdr.PayloadType == PayloadTypes.DiagnosticMessage and isinstance(
-                    data, AliveCheckRequest
-                ):
+                if hdr.PayloadType == PayloadTypes.AliveCheckRequest:
                     await self.write_alive_check_response()
                     continue
                 await self._read_queue.put((hdr, data))
