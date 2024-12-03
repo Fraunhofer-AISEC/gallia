@@ -470,12 +470,15 @@ class DoIPConnection:
         src_addr: int,
         target_addr: int,
         protocol_version: int,
+        separate_diagnostic_message_queue: bool = False,
     ):
         self.reader = reader
         self.writer = writer
         self.src_addr = src_addr
         self.target_addr = target_addr
         self.protocol_version = protocol_version
+        self.separate_diagnostic_message_queue = separate_diagnostic_message_queue
+        self._diagnostic_message_queue: asyncio.Queue[DoIPDiagFrame] = asyncio.Queue()
         self._read_queue: asyncio.Queue[DoIPFrame] = asyncio.Queue()
         self._read_task = asyncio.create_task(self._read_worker())
         self._read_task.add_done_callback(
@@ -494,6 +497,7 @@ class DoIPConnection:
         target_addr: int,
         so_linger: bool = False,
         protocol_version: int = ProtocolVersions.ISO_13400_2_2019,
+        separate_diagnostic_message_queue: bool = False,
     ) -> Self:
         reader, writer = await asyncio.open_connection(host, port)
 
@@ -508,7 +512,14 @@ class DoIPConnection:
             sock = writer.get_extra_info("socket")
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("ii", 1, 0))
 
-        return cls(reader, writer, src_addr, target_addr, protocol_version)
+        return cls(
+            reader,
+            writer,
+            src_addr,
+            target_addr,
+            protocol_version,
+            separate_diagnostic_message_queue,
+        )
 
     async def _read_frame(self) -> DoIPFrame | tuple[None, None]:
         # Header is fixed size 8 byte.
@@ -547,6 +558,9 @@ class DoIPConnection:
                 if hdr.PayloadType == PayloadTypes.AliveCheckRequest:
                     await self.write_alive_check_response()
                     continue
+                if isinstance(data, DiagnosticMessage) and self.separate_diagnostic_message_queue:
+                    await self._diagnostic_message_queue.put((hdr, data))
+                    continue
                 await self._read_queue.put((hdr, data))
         except asyncio.CancelledError:
             logger.debug("DoIP read worker got cancelled")
@@ -573,6 +587,8 @@ class DoIPConnection:
     async def read_diag_request_raw(self) -> DoIPDiagFrame:
         unexpected_packets: list[tuple[Any, Any]] = []
         while True:
+            if self.separate_diagnostic_message_queue:
+                return await self._diagnostic_message_queue.get()
             hdr, payload = await self.read_frame()
             if not isinstance(payload, DiagnosticMessage):
                 logger.warning(f"expected DoIP DiagnosticMessage, instead got: {hdr} {payload}")
