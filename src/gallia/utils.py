@@ -361,3 +361,17 @@ def net_if_addrs() -> list[Interface]:
         logger.error("https://github.com/Fraunhofer-AISEC/gallia/issues")
         logger.error(e.json())
         raise
+
+
+def net_if_broadcast_addrs() -> list[AddrInfo]:
+    out = []
+    for iface in net_if_addrs():
+        if not (iface.is_up() and iface.can_broadcast()):
+            continue
+
+        for addr in iface.addr_info:
+            # We only work with broadcastable IPv4.
+            if not addr.is_v4() or addr.broadcast is None:
+                continue
+            out.append(addr)
+    return out
