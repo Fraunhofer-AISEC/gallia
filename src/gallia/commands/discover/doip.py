@@ -29,7 +29,7 @@ from gallia.transports.doip import (
     TimingAndCommunicationParameters,
     VehicleAnnouncementMessage,
 )
-from gallia.utils import AddrInfo, net_if_addrs
+from gallia.utils import net_if_broadcast_addrs
 
 logger = get_logger(__name__)
 
@@ -490,22 +490,8 @@ class DoIPDiscoverer(AsyncScript):
                 continue
             return conn
 
-    @staticmethod
-    def get_broadcast_addrs() -> list[AddrInfo]:
-        out = []
-        for iface in net_if_addrs():
-            if not (iface.is_up() and iface.can_broadcast()):
-                continue
-
-            for addr in iface.addr_info:
-                # We only work with broadcastable IPv4.
-                if not addr.is_v4() or addr.broadcast is None:
-                    continue
-                out.append(addr)
-        return out
-
     async def run_udp_discovery(self) -> list[tuple[str, int]]:
-        addrs = self.get_broadcast_addrs()
+        addrs = net_if_broadcast_addrs()
         found = []
 
         for addr in addrs:
