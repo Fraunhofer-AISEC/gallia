@@ -494,7 +494,7 @@ class DoIPDiscoverer(AsyncScript):
     def get_broadcast_addrs() -> list[AddrInfo]:
         out = []
         for iface in net_if_addrs():
-            if iface.is_up() or not iface.can_broadcast():
+            if not (iface.is_up() and iface.can_broadcast()):
                 continue
 
             for addr in iface.addr_info:
