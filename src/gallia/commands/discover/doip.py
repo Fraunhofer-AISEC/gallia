@@ -499,11 +499,11 @@ class DoIPDiscoverer(AsyncScript):
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
             sock.setblocking(False)
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-            sock.bind((addr.local, 0))
+            sock.bind((str(addr.local), 0))
             loop = asyncio.get_running_loop()
 
             hdr = GenericHeader(0xFF, PayloadTypes.VehicleIdentificationRequestMessage, 0x00)
-            await loop.sock_sendto(sock, hdr.pack(), (addr.broadcast, 13400))
+            await loop.sock_sendto(sock, hdr.pack(), (str(addr.broadcast), 13400))
             try:
                 while True:
                     data, from_addr = await asyncio.wait_for(loop.sock_recvfrom(sock, 1024), 2)
