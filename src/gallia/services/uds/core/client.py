@@ -897,6 +897,86 @@ class UDSClient:
             config,
         )
 
+    async def define_by_identifier(
+        self,
+        dynamically_defined_data_identifier: int,
+        source_data_identifiers: int | Sequence[int],
+        positions_in_source_data_record: int | Sequence[int],
+        memory_sizes: int | Sequence[int],
+        suppress_response: bool = False,
+    ) -> service.NegativeResponse | service.DefineByIdentifierResponse:
+        """Defines a data identifier which combines data from multiple existing data identifiers on the UDS server.
+        This is an implementation of the UDS request for the defineByIdentifier sub-function of the
+        service DynamicallyDefineDataIdentifier (0x2C).
+
+        :param dynamically_defined_data_identifier: The new data identifier.
+        :param source_data_identifiers: The source data identifiers which refer to the data to be included in the new data identifier.
+        :param positions_in_source_data_record: The start positions for each source data identifier. Note, that the position is 1-indexed.
+        :param memory_sizes: The number of bytes for each source data identifier, starting from the starting position.
+        :param suppress_response: If set to True, the server is advised to not send back a positive
+                                  response.
+        """
+        return await self.request(
+            service.DefineByIdentifierRequest(
+                dynamically_defined_data_identifier,
+                source_data_identifiers,
+                positions_in_source_data_record,
+                memory_sizes,
+                suppress_response,
+            )
+        )
+
+    async def define_by_memory_address(
+        self,
+        dynamically_defined_data_identifier: int,
+        memory_addresses: int | Sequence[int],
+        memory_sizes: int | Sequence[int],
+        address_and_length_format_identifier: int | None = None,
+        suppress_response: bool = False,
+    ) -> service.NegativeResponse | service.DefineByMemoryAddressResponse:
+        """Defines a data identifier which combines data from multiple existing memory regions on the UDS server.
+        This is an implementation of the UDS request for the defineByMemoryAddress sub-function of the
+        service DynamicallyDefineDataIdentifier (0x2C).
+        While it exposes each parameter of the corresponding specification,
+        some parameters can be computed from the remaining ones and can therefore be omitted.
+
+        :param dynamically_defined_data_identifier: The new data identifier.
+        :param memory_addresses: The memory addresses for each source data.
+        :param memory_sizes: The number of bytes for each source data, starting from the memory address.
+        :param address_and_length_format_identifier: The byte lengths of the memory address and
+                                                     size. If omitted, this parameter is computed
+                                                     based on the memory_address and memory_size
+                                                     or data_record parameters.
+        :param suppress_response: If set to True, the server is advised to not send back a positive
+                                  response.
+        """
+        return await self.request(
+            service.DefineByMemoryAddressRequest(
+                dynamically_defined_data_identifier,
+                memory_addresses,
+                memory_sizes,
+                address_and_length_format_identifier,
+                suppress_response,
+            )
+        )
+
+    async def clear_dynamically_defined_data_identifier(
+        self, dynamically_defined_data_identifier: int | None, suppress_response: bool = False
+    ) -> service.ClearDynamicallyDefinedDataIdentifierResponse:
+        """Clears either a specific dynamically defined data identifier or all if no data identifier is given.
+        This is an implementation of the UDS request for the clearDynamicallyDefinedDataIdentifier sub-function of the
+        service DynamicallyDefineDataIdentifier (0x2C).
+
+        :param dynamically_defined_data_identifier: The dynamically defined data identifier to be cleared, or None if all are to be cleared.
+        :param suppress_response: If set to True, the server is advised to not send back a positive
+                                  response.
+        """
+        return await self.request(
+            service.ClearDynamicallyDefinedDataIdentifierRequest(
+                dynamically_defined_data_identifier, suppress_response
+            )
+        )
+
     @overload
     async def request(
         self, request: service.RawRequest, config: UDSRequestConfig | None = None
@@ -1083,6 +1163,23 @@ class UDSClient:
         request: service.RequestTransferExitRequest,
         config: UDSRequestConfig | None = None,
     ) -> service.NegativeResponse | service.RequestTransferExitResponse: ...
+
+    @overload
+    async def request(
+        self, request: service.DefineByIdentifierRequest, config: UDSRequestConfig | None = None
+    ) -> service.DefineByIdentifierResponse: ...
+
+    @overload
+    async def request(
+        self, request: service.DefineByMemoryAddressRequest, config: UDSRequestConfig | None = None
+    ) -> service.DefineByMemoryAddressResponse: ...
+
+    @overload
+    async def request(
+        self,
+        request: service.ClearDynamicallyDefinedDataIdentifierRequest,
+        config: UDSRequestConfig | None = None,
+    ) -> service.ClearDynamicallyDefinedDataIdentifierResponse: ...
 
     async def request(
         self, request: service.UDSRequest, config: UDSRequestConfig | None = None
