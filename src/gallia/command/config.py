@@ -301,8 +301,14 @@ class GalliaBaseModel(BaseCommand, ABC):
     __config_registry: dict[str, tuple[str, Any]]
 
     def __init__(self, **data: Any):
-        # Copy to avoid side effects when reusing init_kwargs
-        init_kwargs = dict(data.pop("init_kwargs", {}))
+        init_kwargs = data.pop("init_kwargs", {})
+
+        if init_kwargs is None:
+            init_kwargs = {}
+        else:
+            # Copy to avoid side effects when reusing init_kwargs
+            init_kwargs = dict(init_kwargs)
+
         init_kwargs.update(data)
 
         super().__init__(**init_kwargs)
