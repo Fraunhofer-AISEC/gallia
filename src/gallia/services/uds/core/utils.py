@@ -219,6 +219,19 @@ def address_and_size_length(address_and_length_fmt: int) -> tuple[int, int]:
     return addr_length, size_length
 
 
+def address_and_length_fmt(address_length: int, size_length: int) -> int:
+    """Computes the addressAndLengthFormatIdentifier which is used throughout multiple UDS services from its individual lengths.
+
+    :param address_length: The memory address length.
+    :param size_length: The memory size length.
+    :return: The addressAndLengthFormatIdentifier combining the individual lengths.
+    """
+    check_range(address_length, "address length", 0, 15)
+    check_range(size_length, "size length", 0, 15)
+
+    return (size_length << 4) + address_length
+
+
 def sub_function_split(sub_function: int) -> tuple[int, bool]:
     """
     Returns the subFunction without suppress bit and if the bit was set.
