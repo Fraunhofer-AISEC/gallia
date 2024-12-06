@@ -9,6 +9,11 @@ from gallia.command import BaseCommand
 from gallia.commands import HSFZDiscoverer
 from gallia.commands.discover.doip import DoIPDiscoverer
 from gallia.commands.primitive.generic.pdu import GenericPDUPrimitive
+from gallia.commands.primitive.uds.dddi import (
+    ClearDynamicallyDefinedDataIdentifierDDDIPrimitive,
+    DefineByIdentifierDDDIPrimitive,
+    DefineByMemoryAddressDDDIPrimitive,
+)
 from gallia.commands.primitive.uds.dtc import (
     ClearDTCPrimitive,
     ControlDTCPrimitive,
@@ -72,6 +77,14 @@ class UDSPlugin(Plugin):
                         description="Universal Diagnostic Services",
                         subtree={
                             "rdbi": ReadByIdentifierPrimitive,
+                            "dddi": CommandTree(
+                                description="DynamicallyDefineDataIdentifiers",
+                                subtree={
+                                    "identifier": DefineByIdentifierDDDIPrimitive,
+                                    "memory": DefineByMemoryAddressDDDIPrimitive,
+                                    "clear": ClearDynamicallyDefinedDataIdentifierDDDIPrimitive,
+                                },
+                            ),
                             "dtc": CommandTree(
                                 description="DiagnosticTroubleCodes",
                                 subtree={
