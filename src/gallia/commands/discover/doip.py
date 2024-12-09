@@ -14,6 +14,7 @@ from gallia.command import AsyncScript
 from gallia.command.base import AsyncScriptConfig
 from gallia.command.config import AutoInt, Field
 from gallia.log import get_logger
+from gallia.net import net_if_broadcast_addrs
 from gallia.services.uds.core.service import TesterPresentRequest, TesterPresentResponse
 from gallia.transports.doip import (
     DiagnosticMessageNegativeAckCodes,
@@ -29,7 +30,6 @@ from gallia.transports.doip import (
     TimingAndCommunicationParameters,
     VehicleAnnouncementMessage,
 )
-from gallia.utils import net_if_broadcast_addrs
 
 logger = get_logger(__name__)
 
