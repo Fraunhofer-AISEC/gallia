@@ -371,7 +371,6 @@ def net_if_broadcast_addrs() -> list[AddrInfo]:
             continue
 
         for addr in iface.addr_info:
-            # We only work with broadcastable IPv4.
             if not addr.is_v4() or addr.broadcast is None:
                 continue
             out.append(addr)
