@@ -11,7 +11,7 @@ from gallia.services.uds.core.utils import (
 )
 from gallia.utils import split_host_port
 
-setup_logging()
+setup_logging("gallia")
 
 
 def test_split_host_port_v4() -> None:
