@@ -9,6 +9,7 @@ from gallia.command import UDSScanner
 from gallia.command.config import Field, Ranges, Ranges2D
 from gallia.command.uds import UDSScannerConfig
 from gallia.log import get_logger
+from gallia.progress import ProgressSetter, progress_bar
 from gallia.services.uds import (
     NegativeResponse,
     UDSErrorCodes,
@@ -58,7 +59,7 @@ class ServicesScanner(UDSScanner):
         found: dict[int, dict[int, Any]] = {}
 
         if self.config.sessions is None:
-            found[0] = await self.perform_scan()
+            found[0] = await self.perform_scan_wrapper(session=None)
         else:
             sessions = [
                 s
@@ -89,7 +90,7 @@ class ServicesScanner(UDSScanner):
 
                 logger.result(f"scanning in session {g_repr(session)}")
 
-                found[session] = await self.perform_scan(session)
+                found[session] = await self.perform_scan_wrapper(session)
 
                 await self.ecu.leave_session(session, sleep=self.config.power_cycle_sleep)
 
@@ -102,13 +103,10 @@ class ServicesScanner(UDSScanner):
                 except Exception:
                     logger.result(f"  [{g_repr(sid)}] vendor specific sid: {data}")
 
-    async def perform_scan(self, session: None | int = None) -> dict[int, Any]:
+    async def perform_scan(self, session: None | int, progress: ProgressSetter) -> dict[int, Any]:
         result: dict[int, Any] = {}
 
-        # Starts at 0x00, see first loop iteration.
-        sid = -1
-        while sid < 0xFF:
-            sid += 1
+        for sid in range(0xFF):
             if sid & 0x40 and (not self.config.scan_response_ids):
                 continue
 
@@ -117,6 +115,8 @@ class ServicesScanner(UDSScanner):
             ):
                 logger.info(f"{g_repr(sid)}: skipped")
                 continue
+
+            progress(sid, 0xFF, "scanning services")
 
             if session is not None and self.config.check_session:
                 if not await self.ecu.check_and_set_session(session):
@@ -140,7 +140,7 @@ class ServicesScanner(UDSScanner):
                     UDSErrorCodes.serviceNotSupported,
                     UDSErrorCodes.serviceNotSupportedInActiveSession,
                 ]:
-                    logger.info(f"{g_repr(sid)}: not supported [{resp}]")
+                    logger.debug(f"{g_repr(sid)}: not supported [{resp}]")
                     break
 
                 if isinstance(resp, NegativeResponse) and resp.response_code in [
@@ -153,3 +153,7 @@ class ServicesScanner(UDSScanner):
                 break
 
         return result
+
+    async def perform_scan_wrapper(self, session: None | int) -> dict[int, Any]:
+        with progress_bar() as p:
+            return await self.perform_scan(session, p)
