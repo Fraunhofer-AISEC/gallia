@@ -236,3 +236,10 @@ UDSIsoServicesEchoLength = {
 @unique
 class DataIdentifier(IntEnum):
     ActiveDiagnosticSessionDataIdentifier = 0xF186
+
+
+@unique
+class DynamicallyDefineDataIdentifierSubFuncs(IntEnum):
+    defineByIdentifier = 0x01
+    defineByMemoryAddress = 0x02
+    clearDynamicallyDefinedDataIdentifier = 0x03
