@@ -115,9 +115,6 @@ class BaseCommandConfig(GalliaBaseModel, cli_group="generic", config_section="ga
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     verbose: int = Field(0, description="increase verbosity on the console", short="v")
-    volatile_info: bool = Field(
-        True, description="Overwrite log lines with level info or lower in terminal output"
-    )
     trace_log: bool = Field(False, description="set the loglevel of the logfile to TRACE")
     pre_hook: str | None = Field(
         None,

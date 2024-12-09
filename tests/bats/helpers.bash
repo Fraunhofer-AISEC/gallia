@@ -13,7 +13,6 @@ common_setup() {
 setup_gallia_toml() {
 	{
 		echo "[gallia]"
-		echo "no-volatile-info = true"
 		echo "verbosity = 1"
 
 		echo "[gallia.scanner]"

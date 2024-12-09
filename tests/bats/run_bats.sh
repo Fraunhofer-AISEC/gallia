@@ -7,7 +7,6 @@
 set -eu
 
 gallia script vecu rng "unix-lines:///tmp/vecu.sock" \
-	--no-volatile-info \
 	--seed 3 \
 	--mandatory-sessions 1 2 3 \
 	--mandatory-services DiagnosticSessionControl EcuReset ReadDataByIdentifier WriteDataByIdentifier RoutineControl SecurityAccess ReadMemoryByAddress WriteMemoryByAddress RequestDownload RequestUpload TesterPresent ReadDTCInformation ClearDiagnosticInformation InputOutputControlByIdentifier 2>vecu.log &
