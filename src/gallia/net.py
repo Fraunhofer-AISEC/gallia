@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import json
 import subprocess
 import sys
 
@@ -59,7 +58,8 @@ def net_if_addrs() -> list[Interface]:
         return []
 
     try:
-        return [Interface(**item) for item in json.loads(p.stdout.decode())]
+        iface_list_type = pydantic.TypeAdapter(list[Interface])
+        return iface_list_type.validate_json(p.stdout.decode())
     except pydantic.ValidationError as e:
         logger.error("BUG: A special case for `ip -j address show` is not handled!")
         logger.error("Please report a bug including the following json string.")
