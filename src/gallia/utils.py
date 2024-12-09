@@ -12,6 +12,7 @@ import logging
 import re
 import sys
 from collections.abc import Awaitable, Callable
+from functools import wraps
 from pathlib import Path
 from types import ModuleType
 from typing import TYPE_CHECKING, Any
@@ -304,3 +305,24 @@ def handle_task_error(fut: asyncio.Future[Any]) -> None:
 
         # Info level is enough, since our aim is only to consume the stack trace
         logger.info(f"{task_name} ended with error: {e!r}")
+
+
+def supports_platform[T, **P](*platform: str) -> Callable[[Callable[P, T]], Callable[P, T]]:
+    def decorator(function: Callable[P, T]) -> Callable[P, T]:
+        @wraps(function)
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+            supported = False
+            for p in platform:
+                if sys.platform == p:
+                    supported = True
+                    break
+            if supported is False:
+                raise NotImplementedError(
+                    f'`{function.__name__}()` is not supported on: "{sys.platform}"'
+                )
+
+            return function(*args, **kwargs)
+
+        return wrapper
+
+    return decorator

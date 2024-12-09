@@ -3,12 +3,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import subprocess
-import sys
 
 import pydantic
 from pydantic.networks import IPvAnyAddress
 
 from gallia.log import get_logger
+from gallia.utils import supports_platform
 
 logger = get_logger(__name__)
 
@@ -47,10 +47,8 @@ class Interface(pydantic.BaseModel):
         return "BROADCAST" in self.flags
 
 
+@supports_platform("linux")
 def net_if_addrs() -> list[Interface]:
-    if sys.platform != "linux":
-        raise NotImplementedError("net_if_addrs() is only supported on Linux platforms")
-
     try:
         p = subprocess.run(["ip", "-j", "address", "show"], capture_output=True, check=True)
     except FileNotFoundError as e:
