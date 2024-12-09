@@ -66,6 +66,7 @@ def net_if_addrs() -> list[Interface]:
         raise
 
 
+@supports_platform("linux")
 def net_if_broadcast_addrs() -> list[AddrInfo]:
     out = []
     for iface in net_if_addrs():
