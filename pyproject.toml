@@ -12,6 +12,7 @@ name = "gallia"
 version = "1.9.0"
 description = "Extendable Pentesting Framework"
 readme = "README.md"
+authors = [{name = "AISEC Pentesting Team"}]
 maintainers = [
     { name = "Stefan Tatschner", email = "stefan.tatschner@aisec.fraunhofer.de" },
     { name = "Tobias Specht", email = "tobias.specht@aisec.fraunhofer.de" },
@@ -48,7 +49,8 @@ dependencies = [
 "cursed-hr" = "gallia.cli.cursed_hr:main"
 "hr" = "gallia.cli.hr:main"
 
-[dependency-groups]
+# TODO: Change to dependency-groups once https://github.com/pypa/pip/issues/12963 is resolved
+[project.optional-dependencies]
 dev = [
     "Sphinx >=8.0",
     "construct-typing >=0.5.2,<0.7.0",
