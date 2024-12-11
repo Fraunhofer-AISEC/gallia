@@ -17,8 +17,8 @@ default:
 .PHONY: lint
 lint:
 	mypy --pretty src tests
-	ruff check src tests
-	ruff format --check src tests
+	ruff check
+	ruff format --check
 	find tests/bats \( -iname "*.bash" -or -iname "*.bats" -or -iname "*.sh" \) | xargs shellcheck
 	reuse lint
 
@@ -29,8 +29,8 @@ lint-win32:
 
 .PHONY: fmt
 fmt:
-	ruff check --fix-only src tests/pytest
-	ruff format src tests/pytest
+	ruff check --fix-only
+	ruff format
 	find tests/bats \( -iname "*.bash" -or -iname "*.bats" -or -iname "*.sh" \) | xargs shfmt -w
 
 .PHONY: docs
