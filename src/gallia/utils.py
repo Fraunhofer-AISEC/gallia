@@ -351,7 +351,11 @@ def net_if_addrs() -> list[Interface]:
     if sys.platform != "linux":
         raise NotImplementedError("net_if_addrs() is only supported on Linux platforms")
 
-    p = subprocess.run(["ip", "-j", "address", "show"], capture_output=True, check=True)
+    try:
+        p = subprocess.run(["ip", "-j", "address", "show"], capture_output=True, check=True)
+    except FileNotFoundError as e:
+        logger.warning(f"Could not query information about interfaces: {e}")
+        return []
 
     try:
         return [Interface(**item) for item in json.loads(p.stdout.decode())]
