@@ -149,7 +149,7 @@ else:
     )
     """
     Wrapper for fields of types which can be instantiated by a certain value, but not by an instance of its own type.
-    
+
     This way, it is possible to fill the corresponding parameter of the model with both the value as well as an already instantiated object of that class.
 
     Usage: x: Idempotent[SomeClass] = ...
@@ -198,7 +198,7 @@ else:
 
     AutoLiteral = _TrickType(auto_literal)
     """
-    Wrapper for Literal fields to provide automatic handling of enum, int and bytes parsing for values defined in Literals similar to EnumArg, AutoInt and HexBytes. 
+    Wrapper for Literal fields to provide automatic handling of enum, int and bytes parsing for values defined in Literals similar to EnumArg, AutoInt and HexBytes.
 
     Usage: x: AutoLiteral[Literal[1, 2, 3]] = ...
     """
@@ -296,9 +296,9 @@ class GalliaBaseModel(BaseCommand, ABC):
         hidden=True,
         description="This allows to initialize parts or all of the fields safely. Required args may be specified explicitly to please the linter",
     )
-    _cli_group: str | None
-    _config_section: str | None
-    __config_registry: dict[str, tuple[str, Any]]
+    _cli_group: str | None = None
+    _config_section: str | None = None
+    __config_registry: dict[str, tuple[str, Any]] = {}
 
     def __init__(self, **data: Any):
         init_kwargs = data.pop("init_kwargs", {})
@@ -344,6 +344,8 @@ class GalliaBaseModel(BaseCommand, ABC):
                     )
                     description = "" if info.description is None else info.description
 
+                    # TODO: Private attributes are write protected and throw a TypeError
+                    # This is a quick hack to make it work nonetheless
                     try:
                         GalliaBaseModel.__config_registry[config_attribute] = (
                             description,
