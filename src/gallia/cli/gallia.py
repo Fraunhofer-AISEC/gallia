@@ -124,7 +124,7 @@ def parse_and_run(
     commands: type[BaseCommand] | MutableMapping[str, CommandTree | type[BaseCommand]],
     auto_complete: bool = True,
     setup_log: bool = True,
-    top_level_options: Mapping[str, Callable[[], None]] | None = None,
+    top_level_options: Mapping[str, tuple[Callable[[], None], str]] | None = None,
     show_help_on_zero_args: bool = True,
 ) -> Never:
     """
@@ -145,17 +145,11 @@ def parse_and_run(
 
     parser = create_parser(commands)
 
-    def make_f(c: Callable[[], None]) -> Callable[[Any], None]:
-        def f(_: Any) -> None:
-            c()
-
-        return f
-
     if top_level_options is not None:
-        for name, func in top_level_options.items():
+        for name, (func, help_) in top_level_options.items():
 
             class Action(argparse.Action):
-                f = make_f(func)
+                cmd = staticmethod(func)
 
                 def __call__(
                     self,
@@ -164,11 +158,14 @@ def parse_and_run(
                     values: str | Sequence[Any] | None,
                     option_string: str | None = None,
                 ) -> None:
-                    self.f()
+                    self.cmd()
                     sys.exit(exitcodes.OK)
 
             parser.add_argument(
-                name if name.startswith("-") else f"--{name}", nargs=0, action=Action
+                name,
+                nargs=0,
+                action=Action,
+                help=help_,
             )
 
     if show_help_on_zero_args and len(sys.argv) == 1:
@@ -189,21 +186,6 @@ def parse_and_run(
         )
 
     sys.exit(get_command(config).entry_point())
-
-
-def main() -> None:
-    gallia_commands = load_commands()
-    parse_and_run(
-        gallia_commands,
-        top_level_options={
-            "version": version,
-            "-v": version,
-            "show-plugins": show_plugins,
-            "show-config": show_config,
-            "template": template,
-        },
-        show_help_on_zero_args=True,
-    )
 
 
 def version() -> None:
@@ -326,6 +308,20 @@ def template() -> None:
         output += "\n"
 
     print(output.strip())
+
+
+def main() -> None:
+    gallia_commands = load_commands()
+    parse_and_run(
+        gallia_commands,
+        top_level_options={
+            "--version": (version, "show version and exit"),
+            "--show-plugins": (show_plugins, "show registered plugins"),
+            "--show-config": (show_config, "show loaded config"),
+            "--template": (template, "generate a annotated config template"),
+        },
+        show_help_on_zero_args=True,
+    )
 
 
 if __name__ == "__main__":
