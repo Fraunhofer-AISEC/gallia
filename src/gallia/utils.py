@@ -16,7 +16,7 @@ import sys
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 
 import aiofiles
@@ -193,10 +193,7 @@ def unravel_2d(listing: str) -> dict[int, list[int] | None]:
     }
 
 
-T = TypeVar("T")
-
-
-async def catch_and_log_exception(
+async def catch_and_log_exception[T](
     func: Callable[..., Awaitable[T]],
     *args: Any,
     **kwargs: Any,

@@ -14,12 +14,8 @@ import argparse
 from collections.abc import Callable, Iterable, Sequence
 from typing import (
     Any,
-    TypeVar,
     cast,
 )
-
-# Constants
-T = TypeVar("T")
 
 
 class SubParsersAction(argparse._SubParsersAction):  # type: ignore
@@ -141,7 +137,7 @@ class BooleanOptionalAction(argparse.Action):  # pragma: no cover
     <https://github.com/python/cpython/blob/v3.11.0/Lib/argparse.py#L878-L914>
     """
 
-    def __init__(
+    def __init__[T](
         self,
         option_strings: Sequence[str],
         dest: str,
