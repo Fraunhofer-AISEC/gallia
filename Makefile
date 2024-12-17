@@ -12,6 +12,7 @@ default:
 	@echo " tests       run testsuite"
 	@echo " pytest      run pytest tests"
 	@echo " bats        run bats end to end tests"
+	@echo " constants   generate transport constants for compat reasons"
 	@echo " clean       delete build artifacts"
 
 .PHONY: lint
@@ -47,6 +48,10 @@ pytest:
 .PHONY: bats
 bats:
 	./tests/bats/run_bats.sh
+
+.PHONY: constants
+constants:
+	./scripts/gen_constants.py | ruff format - > src/gallia/transports/_can_constants.py
 
 .PHONY: clean
 clean:

@@ -15,22 +15,31 @@ assert sys.platform.startswith("linux"), "unsupported platform"
 from pydantic import BaseModel, field_validator
 
 from gallia.log import get_logger
+from gallia.transports._can_constants import (
+    CAN_EFF_FLAG,
+    CAN_EFF_MASK,
+    CAN_ERR_FLAG,
+    CAN_HEADER_FMT,
+    CAN_INV_FILTER,
+    CAN_RAW,
+    CAN_RAW_FD_FRAMES,
+    CAN_RAW_FILTER,
+    CAN_RAW_JOIN_FILTERS,
+    CAN_RTR_FLAG,
+    CAN_SFF_MASK,
+    CANFD_BRS,
+    CANFD_ESI,
+    CANFD_MTU,
+    SOL_CAN_RAW,
+)
 from gallia.transports.base import BaseTransport, TargetURI
 from gallia.utils import auto_int
 
 logger = get_logger(__name__)
 
-CANFD_MTU = 72
-CAN_MTU = 16
-
 
 @dataclass(kw_only=True, slots=True, frozen=True)
 class CANMessage:
-    # https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/linux/can.h
-    CAN_HEADER_FMT = struct.Struct("=IBB2x")
-    CANFD_BRS = 0x01
-    CANFD_ESI = 0x02
-
     timestamp: float = 0.0
     arbitration_id: int = 0
 
@@ -54,27 +63,27 @@ class CANMessage:
     def _compose_arbitration_id(self) -> int:
         can_id = self.arbitration_id
         if self.is_extended_id:
-            can_id |= s.CAN_EFF_FLAG
+            can_id |= CAN_EFF_FLAG
         if self.is_remote_frame:
-            can_id |= s.CAN_RTR_FLAG
+            can_id |= CAN_RTR_FLAG
         if self.is_error_frame:
-            can_id |= s.CAN_ERR_FLAG
+            can_id |= CAN_ERR_FLAG
         return can_id
 
     def pack(self) -> bytes:
         can_id = self._compose_arbitration_id()
         flags = 0
         if self.bitrate_switch:
-            flags |= self.CANFD_BRS
+            flags |= CANFD_BRS
         if self.error_state_indicator:
-            flags |= self.CANFD_ESI
+            flags |= CANFD_ESI
         max_len = 64 if self.is_fd else 8
         data = bytes(self.data).ljust(max_len, b"\x00")
-        return self.CAN_HEADER_FMT.pack(can_id, self.dlc, flags) + data
+        return CAN_HEADER_FMT.pack(can_id, self.dlc, flags) + data
 
     @staticmethod
     def _dissect_can_frame(frame: bytes) -> tuple[int, int, int, bytes]:
-        can_id, can_dlc, flags = CANMessage.CAN_HEADER_FMT.unpack_from(frame)
+        can_id, can_dlc, flags = CAN_HEADER_FMT.unpack_from(frame)
         if len(frame) != CANFD_MTU:
             # Flags not valid in non-FD frames
             flags = 0
@@ -89,17 +98,17 @@ class CANMessage:
         #   #define CAN_EFF_FLAG 0x80000000U /* EFF/SFF is set in the MSB */
         #   #define CAN_RTR_FLAG 0x40000000U /* remote transmission request */
         #   #define CAN_ERR_FLAG 0x20000000U /* error frame */
-        is_extended_frame_format = bool(can_id & s.CAN_EFF_FLAG)
-        is_remote_transmission_request = bool(can_id & s.CAN_RTR_FLAG)
-        is_error_frame = bool(can_id & s.CAN_ERR_FLAG)
+        is_extended_frame_format = bool(can_id & CAN_EFF_FLAG)
+        is_remote_transmission_request = bool(can_id & CAN_RTR_FLAG)
+        is_error_frame = bool(can_id & CAN_ERR_FLAG)
         is_fd = len(frame) == CANFD_MTU
-        bitrate_switch = bool(flags & cls.CANFD_BRS)
-        error_state_indicator = bool(flags & cls.CANFD_ESI)
+        bitrate_switch = bool(flags & CANFD_BRS)
+        error_state_indicator = bool(flags & CANFD_ESI)
 
         if is_extended_frame_format:
-            arbitration_id = can_id & s.CAN_EFF_MASK
+            arbitration_id = can_id & CAN_EFF_MASK
         else:
-            arbitration_id = can_id & s.CAN_SFF_MASK
+            arbitration_id = can_id & CAN_SFF_MASK
 
         return cls(
             arbitration_id=arbitration_id,
@@ -128,9 +137,6 @@ class RawCANConfig(BaseModel):
 
 
 class RawCANTransport(BaseTransport, scheme="can-raw"):
-    # Flags for setsockopt CAN_RAW_FILTER
-    CAN_INV_FILTER = 0x20000000
-
     def __init__(self, target: TargetURI, config: RawCANConfig, sock: s.socket) -> None:
         super().__init__(target)
 
@@ -149,12 +155,12 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
         if t.hostname is None:
             raise ValueError("empty interface")
 
-        sock = s.socket(s.PF_CAN, s.SOCK_RAW, s.CAN_RAW)
+        sock = s.socket(s.PF_CAN, s.SOCK_RAW, CAN_RAW)
         sock.bind((t.hostname,))
         config = RawCANConfig(**t.qs_flat)
 
         if config.is_fd is True:
-            sock.setsockopt(s.SOL_CAN_RAW, s.CAN_RAW_FD_FRAMES, 1)
+            sock.setsockopt(SOL_CAN_RAW, CAN_RAW_FD_FRAMES, 1)
 
         sock.setblocking(False)
 
@@ -163,15 +169,15 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
     def set_filter(self, can_ids: list[int], inv_filter: bool = False) -> None:
         if not can_ids:
             return
-        filter_mask = s.CAN_EFF_MASK if self.config.is_extended else s.CAN_SFF_MASK
+        filter_mask = CAN_EFF_MASK if self.config.is_extended else CAN_SFF_MASK
         data = b""
         for can_id in can_ids:
             if inv_filter:
-                can_id |= self.CAN_INV_FILTER  # noqa: PLW2901
+                can_id |= CAN_INV_FILTER  # noqa: PLW2901
             data += struct.pack("@II", can_id, filter_mask)
-        self._sock.setsockopt(s.SOL_CAN_RAW, s.CAN_RAW_FILTER, data)
+        self._sock.setsockopt(SOL_CAN_RAW, CAN_RAW_FILTER, data)
         if inv_filter:
-            self._sock.setsockopt(s.SOL_CAN_RAW, s.CAN_RAW_JOIN_FILTERS, 1)
+            self._sock.setsockopt(SOL_CAN_RAW, CAN_RAW_JOIN_FILTERS, 1)
 
     async def read(
         self,
