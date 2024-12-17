@@ -7,8 +7,6 @@ import sys
 import time
 from pathlib import Path
 
-import aiofiles
-
 from gallia.command import UDSScanner
 from gallia.command.config import AutoInt, Field, HexBytes
 from gallia.command.uds import UDSScannerConfig
@@ -106,7 +104,7 @@ class SASeedsDumper(UDSScanner):
 
         i = -1
         seeds_file = Path.joinpath(self.artifacts_dir, "seeds.bin")
-        file = await aiofiles.open(seeds_file, "wb", buffering=0)
+        file = seeds_file.open("wb", buffering=0)
         duration = self.config.duration * 60
         start_time = time.time()
         last_seed = b""
@@ -148,7 +146,7 @@ class SASeedsDumper(UDSScanner):
 
             logger.info(f"Received seed of length {len(seed)}")
 
-            await file.write(seed)
+            file.write(seed)
             if last_seed == seed:
                 logger.warning("Received the same seed as before")
 
@@ -192,6 +190,6 @@ class SASeedsDumper(UDSScanner):
                 logger.info(f"Sleeping for {self.config.sleep} seconds between seed requests…")
                 await asyncio.sleep(self.config.sleep)
 
-        await file.close()
+        file.close()
         self.log_size(seeds_file, time.time() - start_time)
         await self.ecu.leave_session(session, sleep=self.config.power_cycle_sleep)
