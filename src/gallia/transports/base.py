@@ -10,8 +10,8 @@ from typing import Any, Protocol, Self
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 from gallia.log import get_logger
+from gallia.net import join_host_port
 from gallia.transports.schemes import TransportScheme
-from gallia.utils import join_host_port
 
 logger = get_logger(__name__)
 
