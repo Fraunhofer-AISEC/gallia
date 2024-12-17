@@ -25,7 +25,18 @@ from logging.handlers import QueueHandler, QueueListener
 from pathlib import Path
 from queue import Queue
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, BinaryIO, Self, TextIO, TypeAlias, cast
+from typing import (
+    IO,
+    TYPE_CHECKING,
+    Any,
+    BinaryIO,
+    Literal,
+    Self,
+    TextIO,
+    TypeAlias,
+    cast,
+    overload,
+)
 
 import zstandard
 
@@ -35,41 +46,6 @@ if TYPE_CHECKING:
 
 gmt_offset = time.localtime().tm_gmtoff
 tz = datetime.timezone(datetime.timedelta(seconds=gmt_offset))
-
-
-@unique
-class ColorMode(Enum):
-    """ColorMode is used as an argument to :func:`set_color_mode`."""
-
-    #: Colors are always turned on.
-    ALWAYS = "always"
-    #: Colors are turned off if the target
-    #: stream (e.g. stderr) is not a tty.
-    AUTO = "auto"
-    #: No colors are used. In other words,
-    #: no ANSI escape codes are included.
-    NEVER = "never"
-
-
-def resolve_color_mode(mode: ColorMode, stream: TextIO = sys.stderr) -> bool:
-    """Sets the color mode of the console log handler.
-
-    :param mode: The available options are described in :class:`ColorMode`.
-    :param stream: Used as a reference for :attr:`ColorMode.AUTO`.
-    """
-    if sys.platform == "win32":
-        return False
-
-    match mode:
-        case ColorMode.ALWAYS:
-            return True
-        case ColorMode.AUTO:
-            if os.getenv("NO_COLOR") is not None:
-                return False
-            else:
-                return stream.isatty()
-        case ColorMode.NEVER:
-            return False
 
 
 # https://stackoverflow.com/a/35804945
@@ -106,6 +82,41 @@ def _add_logging_level(level_name: str, level_num: int) -> None:
 
 _add_logging_level("TRACE", 5)
 _add_logging_level("NOTICE", 25)
+
+
+@unique
+class ColorMode(Enum):
+    """ColorMode is used as an argument to :func:`set_color_mode`."""
+
+    #: Colors are always turned on.
+    ALWAYS = "always"
+    #: Colors are turned off if the target
+    #: stream (e.g. stderr) is not a tty.
+    AUTO = "auto"
+    #: No colors are used. In other words,
+    #: no ANSI escape codes are included.
+    NEVER = "never"
+
+
+def resolve_color_mode(mode: ColorMode, stream: TextIO = sys.stderr) -> bool:
+    """Sets the color mode of the console log handler.
+
+    :param mode: The available options are described in :class:`ColorMode`.
+    :param stream: Used as a reference for :attr:`ColorMode.AUTO`.
+    """
+    if sys.platform == "win32":
+        return False
+
+    match mode:
+        case ColorMode.ALWAYS:
+            return True
+        case ColorMode.AUTO:
+            if os.getenv("NO_COLOR") is not None:
+                return False
+            else:
+                return stream.isatty()
+        case ColorMode.NEVER:
+            return False
 
 
 @unique
@@ -228,103 +239,163 @@ class PenlogPriority(IntEnum):
                 raise ValueError("invalid value")
 
 
+class LoggingSetupHandler:
+    def __init__(self) -> None:
+        self.listeners: list[QueueListener] = []
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        tb: TracebackType | None,
+    ) -> None:
+        self.stop_logging()
+
+    def add_stream_handler(
+        self,
+        logger_name: str,
+        level: Loglevel,
+        stream: IO[str],
+        volatile_info: bool,
+        colored: bool,
+    ) -> None:
+        queue: Queue[logging.LogRecord] = Queue()
+        logger = logging.getLogger(logger_name)
+        logger.addHandler(QueueHandler(queue))
+
+        handler = logging.StreamHandler(stream)
+        handler.setLevel(level)
+
+        formatter: logging.Formatter
+        if stream.isatty():
+            formatter = _ConsoleFormatter(colored=colored, volatile_info=volatile_info)
+        else:
+            formatter = _StreamFormatter()
+
+        handler.terminator = ""  # We manually handle the terminator while formatting
+
+        handler.setFormatter(formatter)
+
+        listener = QueueListener(
+            queue,
+            handler,
+            respect_handler_level=True,
+        )
+        listener.start()
+        self.listeners.append(listener)
+
+    def add_zst_file_handler(
+        self,
+        logger_name: str,
+        filepath: Path | str,
+        log_level: Loglevel,
+    ) -> None:
+        queue: Queue[Any] = Queue()
+        logger = get_logger(logger_name)
+        logger.addHandler(QueueHandler(queue))
+
+        handler = _ZstdFileHandler(
+            filepath,
+            level=log_level,
+        )
+        handler.setLevel(log_level)
+        handler.setFormatter(_JSONFormatter())
+
+        queue_listener = QueueListener(
+            queue,
+            handler,
+            respect_handler_level=True,
+        )
+        queue_listener.start()
+        self.listeners.append(queue_listener)
+
+    def stop_logging(self) -> None:
+        for listener in self.listeners:
+            listener.stop()
+
+
+def get_log_level(verbose: int) -> Loglevel:
+    level = Loglevel.INFO
+    if verbose == 1:
+        level = Loglevel.DEBUG
+    elif verbose >= 2:
+        level = Loglevel.TRACE
+    return level
+
+
+@overload
 def setup_logging(
-    level: Loglevel | None = None,
+    logger_name: str,
+    stderr_level: Loglevel | None = ...,
+    color_mode: ColorMode = ...,
+    volatile_info: bool = ...,
+    close_on_exit: Literal[False] = False,
+    logfile: Path | str | None = ...,
+    logfile_level: Loglevel = ...,
+) -> LoggingSetupHandler: ...
+
+
+@overload
+def setup_logging(
+    logger_name: str,
+    stderr_level: Loglevel | None = ...,
+    color_mode: ColorMode = ...,
+    volatile_info: bool = ...,
+    close_on_exit: Literal[True] = ...,
+    logfile: Path | str | None = ...,
+    logfile_level: Loglevel = ...,
+) -> None: ...
+
+
+def setup_logging(
+    logger_name: str,
+    stderr_level: Loglevel | None = Loglevel.INFO,
     color_mode: ColorMode = ColorMode.AUTO,
-    no_volatile_info: bool = False,
-    logger_name: str = "gallia",
-) -> None:
+    volatile_info: bool = False,  # deprecated: Introduce progress info
+    close_on_exit: bool = False,
+    logfile: Path | str | None = None,
+    logfile_level: Loglevel = Loglevel.INFO,
+) -> LoggingSetupHandler | None:
     """Enable and configure gallia's logging system.
     If this fuction is not called as early as possible,
     the logging system is in an undefined state und might
     not behave as expected. Always use this function to
-    initialize gallia's logging. For instance, ``setup_logging()``
-    initializes a QueueHandler to avoid blocking calls during
-    logging.
-
-    :param level: The loglevel to enable for the console handler.
-                  If this argument is None, the env variable
-                  ``GALLIA_LOGLEVEL`` (see :doc:`../env`) is read.
-    :param file_level: The loglevel to enable for the file handler.
-    :param path: The path to the logfile containing json records.
-    :param color_mode: The color mode to use for the console.
+    initialize gallia's logging.
     """
-    if level is None:
-        # FIXME: why is this here and not in config?
-        if (raw := os.getenv("GALLIA_LOGLEVEL")) is not None:
-            level = PenlogPriority.from_str(raw).to_level()
-        else:
-            level = Loglevel.DEBUG
-
     # These are slow and not used by gallia.
     logging.logMultiprocessing = False
     logging.logThreads = False
     logging.logProcesses = False
 
     logger = logging.getLogger(logger_name)
-    # LogLevel cannot be 0 (NOTSET), because only the root logger sends it to its handlers then
+
+    # FIXME: Randomly setting loglevels seems wrong. Address this better.
     logger.setLevel(1)
 
-    # Clean up potentially existing handlers and create a new async QueueHandler for stderr output
-    while len(logger.handlers) > 0:
-        logger.handlers[0].close()
-        logger.removeHandler(logger.handlers[0])
-    colored = resolve_color_mode(color_mode)
-    add_stderr_log_handler(logger_name, level, no_volatile_info, colored)
+    # Clean up potentially existing handlers.
+    for h in logger.handlers[:]:
+        logger.removeHandler(h)
+        h.close()
 
+    handler = LoggingSetupHandler()
 
-def add_stderr_log_handler(
-    logger_name: str,
-    level: Loglevel,
-    no_volatile_info: bool,
-    colored: bool,
-) -> None:
-    queue: Queue[Any] = Queue()
-    logger = logging.getLogger(logger_name)
-    logger.addHandler(QueueHandler(queue))
+    if stderr_level is not None:
+        colored = resolve_color_mode(color_mode, sys.stderr)
+        handler.add_stream_handler(
+            logger_name, stderr_level, sys.stderr, volatile_info, colored=colored
+        )
 
-    stderr_handler = logging.StreamHandler(sys.stderr)
-    stderr_handler.setLevel(level)
-    console_formatter = _ConsoleFormatter()
+    if logfile:
+        handler.add_zst_file_handler(logger_name, logfile, logfile_level)
 
-    console_formatter.colored = colored
-    stderr_handler.terminator = ""  # We manually handle the terminator while formatting
-    if no_volatile_info is False:
-        console_formatter.volatile_info = True
+    if close_on_exit:
+        atexit.register(handler.stop_logging)
+        return None
 
-    stderr_handler.setFormatter(console_formatter)
-
-    queue_listener = QueueListener(
-        queue,
-        *[stderr_handler],
-        respect_handler_level=True,
-    )
-    queue_listener.start()
-    atexit.register(queue_listener.stop)
-
-
-def add_zst_log_handler(
-    logger_name: str, filepath: Path, file_log_level: Loglevel
-) -> logging.Handler:
-    queue: Queue[Any] = Queue()
-    logger = get_logger(logger_name)
-    logger.addHandler(QueueHandler(queue))
-
-    zstd_handler = _ZstdFileHandler(
-        filepath,
-        level=file_log_level,
-    )
-    zstd_handler.setLevel(file_log_level)
-    zstd_handler.setFormatter(_JSONFormatter())
-
-    queue_listener = QueueListener(
-        queue,
-        *[zstd_handler],
-        respect_handler_level=True,
-    )
-    queue_listener.start()
-    atexit.register(queue_listener.stop)
-    return zstd_handler
+    return handler
 
 
 @dataclasses.dataclass
@@ -705,9 +776,41 @@ class _JSONFormatter(logging.Formatter):
         return json.dumps(dataclasses.asdict(penlog_record))
 
 
+class _StreamFormatter(logging.Formatter):
+    def __init__(self) -> None:
+        pass
+
+    def format(
+        self,
+        record: logging.LogRecord,
+    ) -> str:
+        stacktrace = None
+
+        if record.exc_info:
+            exc_type, exc_value, exc_traceback = record.exc_info
+            assert exc_type
+            assert exc_value
+            assert exc_traceback
+
+            stacktrace = "\n"
+            stacktrace += "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+
+        return _format_record(
+            dt=datetime.datetime.fromtimestamp(record.created),
+            name=record.name,
+            data=record.getMessage(),
+            levelno=record.levelno,
+            tags=record.__dict__["tags"] if "tags" in record.__dict__ else None,
+            stacktrace=stacktrace,
+            colored=False,
+            volatile_info=False,
+        )
+
+
 class _ConsoleFormatter(logging.Formatter):
-    colored: bool = False
-    volatile_info: bool = False
+    def __init__(self, colored: bool, volatile_info: bool) -> None:
+        self.colored = colored
+        self.volatile_info = volatile_info  # deprecated: will be removed
 
     def format(
         self,
@@ -737,7 +840,7 @@ class _ConsoleFormatter(logging.Formatter):
 
 
 class _ZstdFileHandler(logging.Handler):
-    def __init__(self, path: Path, level: int | str = logging.NOTSET) -> None:
+    def __init__(self, path: Path | str, level: int | str = logging.NOTSET) -> None:
         super().__init__(level)
         self.file = zstandard.open(
             filename=path,

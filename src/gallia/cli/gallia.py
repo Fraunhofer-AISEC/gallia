@@ -25,9 +25,8 @@ from gallia.log import Loglevel, setup_logging
 from gallia.plugins.plugin import CommandTree, load_commands, load_plugins
 from gallia.pydantic_argparse import ArgumentParser
 from gallia.pydantic_argparse import BaseCommand as PydanticBaseCommand
-from gallia.utils import get_log_level
 
-setup_logging(Loglevel.DEBUG)
+setup_logging("gallia", Loglevel.DEBUG)
 
 
 defaults = dict[type, dict[str, Any]]
@@ -123,7 +122,6 @@ def get_command(config: BaseCommandConfig) -> BaseCommand:
 def parse_and_run(
     commands: type[BaseCommand] | MutableMapping[str, CommandTree | type[BaseCommand]],
     auto_complete: bool = True,
-    setup_log: bool = True,
     top_level_options: Mapping[str, Callable[[], None]] | None = None,
     show_help_on_zero_args: bool = True,
 ) -> Never:
@@ -136,7 +134,6 @@ def parse_and_run(
 
     :param commands: A hierarchy of commands.
     :param auto_complete: Turns auto-complete functionality on.
-    :param setup_log: Setup logging according to the parameters in the parsed config.
     :param top_level_options: Optional top-level actions, such as "--version", given by a mapping of arguments and
                               functions. The program redirects control to the given function, once the program is
                               called with the corresponding argument and terminates after it returns.
@@ -181,12 +178,6 @@ def parse_and_run(
     _, config = parser.parse_typed_args()
 
     assert isinstance(config, BaseCommandConfig)
-
-    if setup_log:
-        setup_logging(
-            level=get_log_level(config.verbose),
-            no_volatile_info=not config.volatile_info,
-        )
 
     sys.exit(get_command(config).entry_point())
 

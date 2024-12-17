@@ -14,7 +14,6 @@ from abc import ABC, abstractmethod
 from collections.abc import MutableMapping
 from datetime import UTC, datetime
 from enum import Enum, unique
-from logging import Handler
 from pathlib import Path
 from subprocess import CalledProcessError, run
 from tempfile import gettempdir
@@ -26,12 +25,12 @@ from gallia import exitcodes
 from gallia.command.config import Field, GalliaBaseModel, Idempotent
 from gallia.db.handler import DBHandler
 from gallia.dumpcap import Dumpcap
-from gallia.log import add_zst_log_handler, get_logger, tz
+from gallia.log import LoggingSetupHandler, Loglevel, get_log_level, get_logger, setup_logging, tz
 from gallia.power_supply import PowerSupply
 from gallia.power_supply.uri import PowerSupplyURI
 from gallia.services.uds.core.exception import UDSException
 from gallia.transports import BaseTransport, TargetURI
-from gallia.utils import camel_to_snake, get_file_log_level
+from gallia.utils import camel_to_snake
 
 
 @unique
@@ -180,9 +179,11 @@ class BaseCommand(FlockMixin, ABC):
     #: a log message with level critical is logged.
     CATCHED_EXCEPTIONS: list[type[Exception]] = []
 
-    log_file_handlers: list[Handler]
-
-    def __init__(self, config: BaseCommandConfig) -> None:
+    def __init__(
+        self,
+        config: BaseCommandConfig = BaseCommandConfig(),
+        logging_handler: LoggingSetupHandler | None = None,
+    ) -> None:
         self.id = camel_to_snake(self.__class__.__name__)
         self.config = config
         self.artifacts_dir = Path()
@@ -195,7 +196,7 @@ class BaseCommand(FlockMixin, ABC):
         )
         self._lock_file_fd: int | None = None
         self.db_handler: DBHandler | None = None
-        self.log_file_handlers = []
+        self.provided_logging_handler = logging_handler
 
     @abstractmethod
     def run(self) -> int: ...
@@ -323,15 +324,25 @@ class BaseCommand(FlockMixin, ABC):
 
         if self.HAS_ARTIFACTS_DIR:
             self.artifacts_dir = self.prepare_artifactsdir(
-                self.config.artifacts_base, self.config.artifacts_dir
+                self.config.artifacts_base,
+                self.config.artifacts_dir,
             )
-            self.log_file_handlers.append(
-                add_zst_log_handler(
+
+        if self.provided_logging_handler is None:
+            stderr_level = get_log_level(self.config.verbose)
+            logging_handler = setup_logging(
+                logger_name="gallia",
+                stderr_level=stderr_level,
+                close_on_exit=False,
+            )
+            if self.HAS_ARTIFACTS_DIR:
+                logging_handler.add_zst_file_handler(
                     logger_name="gallia",
                     filepath=self.artifacts_dir.joinpath(FileNames.LOGFILE.value),
-                    file_log_level=get_file_log_level(self.config),
+                    log_level=stderr_level if self.config.trace_log is False else Loglevel.TRACE,
                 )
-            )
+        else:
+            logging_handler = self.provided_logging_handler
 
         if self.config.hooks:
             self.run_hook(HookVariant.PRE)
@@ -379,6 +390,9 @@ class BaseCommand(FlockMixin, ABC):
 
         if self._lock_file_fd is not None:
             self._release_flock()
+
+        if self.provided_logging_handler is None:
+            logging_handler.stop_logging()
 
         return exit_code
 
