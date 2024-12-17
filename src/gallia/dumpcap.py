@@ -17,8 +17,9 @@ from typing import Self, cast
 from urllib.parse import urlparse
 
 from gallia.log import get_logger
+from gallia.net import split_host_port
 from gallia.transports import TargetURI, TransportScheme
-from gallia.utils import auto_int, handle_task_error, set_task_handler_ctx_variable, split_host_port
+from gallia.utils import auto_int, handle_task_error, set_task_handler_ctx_variable
 
 logger = get_logger(__name__)
 

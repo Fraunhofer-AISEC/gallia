@@ -2,7 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import ipaddress
 import subprocess
+from urllib.parse import urlparse
 
 import pydantic
 from pydantic.networks import IPvAnyAddress
@@ -11,6 +13,39 @@ from gallia.log import get_logger
 from gallia.utils import supports_platform
 
 logger = get_logger(__name__)
+
+
+def split_host_port(
+    hostport: str,
+    default_port: int | None = None,
+) -> tuple[str, int | None]:
+    """Splits a combination of ip address/hostname + port into hostname/ip address
+    and port.  The default_port argument can be used to return a port if it is
+    absent in the hostport argument."""
+    # Special case: If hostport is an ipv6 then the urlparser does some weird
+    # things with the colons and tries to parse ports. Catch this case early.
+    host = ""
+    port = default_port
+    try:
+        # If hostport is a valid ip address (v4 or v6) there
+        # is no port included
+        host = str(ipaddress.ip_address(hostport))
+    except ValueError:
+        pass
+
+    # Only parse if hostport is not a valid ip address.
+    if host == "":
+        # urlparse() and urlsplit() insists on absolute URLs starting with "//".
+        url = urlparse(f"//{hostport}")
+        host = url.hostname if url.hostname else url.netloc
+        port = url.port if url.port else default_port
+    return host, port
+
+
+def join_host_port(host: str, port: int) -> str:
+    if ":" in host:
+        return f"[{host}]:port"
+    return f"{host}:{port}"
 
 
 class AddrInfo(pydantic.BaseModel):

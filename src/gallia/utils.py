@@ -7,7 +7,6 @@ from __future__ import annotations
 import asyncio
 import contextvars
 import importlib.util
-import ipaddress
 import logging
 import re
 import sys
@@ -16,7 +15,6 @@ from functools import wraps
 from pathlib import Path
 from types import ModuleType
 from typing import TYPE_CHECKING, Any
-from urllib.parse import urlparse
 
 import aiofiles
 
@@ -43,39 +41,6 @@ def strtobool(val: str) -> bool:
             return False
         case _:
             raise ValueError(f"invalid truth value {val!r}")
-
-
-def split_host_port(
-    hostport: str,
-    default_port: int | None = None,
-) -> tuple[str, int | None]:
-    """Splits a combination of ip address/hostname + port into hostname/ip address
-    and port.  The default_port argument can be used to return a port if it is
-    absent in the hostport argument."""
-    # Special case: If hostport is an ipv6 then the urlparser does some weird
-    # things with the colons and tries to parse ports. Catch this case early.
-    host = ""
-    port = default_port
-    try:
-        # If hostport is a valid ip address (v4 or v6) there
-        # is no port included
-        host = str(ipaddress.ip_address(hostport))
-    except ValueError:
-        pass
-
-    # Only parse if hostport is not a valid ip address.
-    if host == "":
-        # urlparse() and urlsplit() insists on absolute URLs starting with "//".
-        url = urlparse(f"//{hostport}")
-        host = url.hostname if url.hostname else url.netloc
-        port = url.port if url.port else default_port
-    return host, port
-
-
-def join_host_port(host: str, port: int) -> str:
-    if ":" in host:
-        return f"[{host}]:port"
-    return f"{host}:{port}"
 
 
 def camel_to_snake(s: str) -> str:
