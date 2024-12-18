@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
-
 import asyncio
 import contextvars
 import importlib.util
@@ -177,8 +175,8 @@ async def catch_and_log_exception(
 
 async def write_target_list(
     path: Path,
-    targets: list[TargetURI],
-    db_handler: DBHandler | None = None,
+    targets: list["TargetURI"],
+    db_handler: "DBHandler | None" = None,
 ) -> None:
     """Write a list of ECU connection strings (urls) into file
 
