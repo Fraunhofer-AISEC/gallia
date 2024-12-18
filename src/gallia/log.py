@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
-
 import atexit
 import dataclasses
 import datetime
@@ -25,13 +23,9 @@ from logging.handlers import QueueHandler, QueueListener
 from pathlib import Path
 from queue import Queue
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, BinaryIO, Self, TextIO, TypeAlias, cast
+from typing import Any, BinaryIO, Self, TextIO, TypeAlias, cast
 
 import zstandard
-
-if TYPE_CHECKING:
-    from logging import _ExcInfoType
-
 
 gmt_offset = time.localtime().tm_gmtoff
 tz = datetime.timezone(datetime.timedelta(seconds=gmt_offset))
@@ -153,7 +147,7 @@ class PenlogPriority(IntEnum):
     TRACE = 8
 
     @classmethod
-    def from_str(cls, string: str) -> PenlogPriority:
+    def from_str(cls, string: str) -> "PenlogPriority":
         """Converts a string to an instance of PenlogPriority.
         ``string`` can be a numeric value (0 to 8 inclusive)
         or a string with a case insensitive name of the level
@@ -185,7 +179,7 @@ class PenlogPriority(IntEnum):
                 raise ValueError(f"{string} not a valid priority")
 
     @classmethod
-    def from_level(cls, value: int) -> PenlogPriority:
+    def from_level(cls, value: int) -> "PenlogPriority":
         """Converts an int value (e.g. from python's logging module)
         to an instance of this class.
         """
@@ -765,7 +759,7 @@ class Logger(logging.Logger):
         self,
         msg: Any,
         *args: Any,
-        exc_info: _ExcInfoType = None,
+        exc_info: Any = None,
         stack_info: bool = False,
         extra: dict[str, Any] | None = None,
         **kwargs: Any,
@@ -785,7 +779,7 @@ class Logger(logging.Logger):
         self,
         msg: Any,
         *args: Any,
-        exc_info: _ExcInfoType = None,
+        exc_info: Any = None,
         stack_info: bool = False,
         extra: dict[str, Any] | None = None,
         **kwargs: Any,
@@ -805,7 +799,7 @@ class Logger(logging.Logger):
         self,
         msg: Any,
         *args: Any,
-        exc_info: _ExcInfoType = None,
+        exc_info: Any = None,
         stack_info: bool = False,
         extra: dict[str, Any] | None = None,
         **kwargs: Any,
