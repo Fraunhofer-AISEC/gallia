@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
-
 import asyncio
 from abc import ABC
 from typing import Any
@@ -72,7 +70,7 @@ class UnexpectedResponse(ResponseException):
 
 class UnexpectedNegativeResponse(UnexpectedResponse, ABC):
     RESPONSE_CODE: UDSErrorCodes
-    _CONCRETE_EXCEPTIONS: dict[UDSErrorCodes | None, type[UnexpectedNegativeResponse]] = {}
+    _CONCRETE_EXCEPTIONS: dict[UDSErrorCodes | None, type["UnexpectedNegativeResponse"]] = {}
 
     def __init_subclass__(cls, /, response_code: UDSErrorCodes, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
@@ -93,7 +91,7 @@ class UnexpectedNegativeResponse(UnexpectedResponse, ABC):
     @staticmethod
     def parse_dynamic(
         request: UDSRequest, response: NegativeResponse, message: str | None = None
-    ) -> UnexpectedNegativeResponse:
+    ) -> "UnexpectedNegativeResponse":
         return UnexpectedNegativeResponse._CONCRETE_EXCEPTIONS[response.response_code](
             request, response, message
         )

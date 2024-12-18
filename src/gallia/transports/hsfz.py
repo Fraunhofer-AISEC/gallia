@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
-
 import asyncio
 import errno
 import struct
@@ -38,7 +36,7 @@ class HSFZStatus(IntEnum):
     OutOfMemory = 0xFF
 
     @classmethod
-    def _missing_(cls, value: Any) -> HSFZStatus:
+    def _missing_(cls, value: Any) -> "HSFZStatus":
         return cls.UNDEFINED
 
 
@@ -65,7 +63,7 @@ class HSFZDiagReqHeader:
         return struct.pack("!BB", self.src_addr, self.dst_addr)
 
     @classmethod
-    def unpack(cls, data: bytes) -> HSFZDiagReqHeader:
+    def unpack(cls, data: bytes) -> Self:
         src_addr, dst_addr = struct.unpack("!BB", data)
         return cls(src_addr, dst_addr)
 
@@ -105,7 +103,7 @@ class HSFZConnection:
         src_addr: int,
         dst_addr: int,
         ack_timeout: float,
-    ) -> HSFZConnection:
+    ) -> Self:
         reader, writer = await asyncio.open_connection(host, port)
         return cls(
             reader,
@@ -332,7 +330,7 @@ class HSFZTransport(BaseTransport, scheme="hsfz"):
         cls,
         target: str | TargetURI,
         timeout: float | None = None,
-    ) -> HSFZTransport:
+    ) -> Self:
         t = TargetURI(target) if isinstance(target, str) else target
         if t.hostname is None:
             raise ValueError("no hostname specified")

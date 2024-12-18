@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
-
 import asyncio
 import socket
 import struct
@@ -40,7 +38,7 @@ class RoutingActivationRequestTypes(IntEnum):
     CentralSecurity = 0xE0
 
     @classmethod
-    def _missing_(cls, value: Any) -> RoutingActivationRequestTypes:
+    def _missing_(cls, value: Any) -> "RoutingActivationRequestTypes":
         if value in range(0xE1, 0x100):
             return cls.ManufacturerSpecific
         return cls.RESERVED
@@ -62,7 +60,7 @@ class RoutingActivationResponseCodes(IntEnum):
     SuccessConfirmationRequired = 0x11
 
     @classmethod
-    def _missing_(cls, value: Any) -> RoutingActivationResponseCodes:
+    def _missing_(cls, value: Any) -> "RoutingActivationResponseCodes":
         if value in range(0xE0, 0xFF):
             return cls.ManufacturerSpecific
         return cls.RESERVED
@@ -113,7 +111,7 @@ class DiagnosticMessageNegativeAckCodes(IntEnum):
     TransportProtocolError = 0x08
 
     @classmethod
-    def _missing_(cls, value: Any) -> DiagnosticMessageNegativeAckCodes:
+    def _missing_(cls, value: Any) -> "DiagnosticMessageNegativeAckCodes":
         return cls.RESERVED
 
 
@@ -135,7 +133,7 @@ class GenericDoIPHeaderNACKCodes(IntEnum):
     InvalidPayloadLength = 0x04
 
     @classmethod
-    def _missing_(cls, value: Any) -> GenericDoIPHeaderNACKCodes:
+    def _missing_(cls, value: Any) -> "GenericDoIPHeaderNACKCodes":
         return cls.RESERVED
 
 
@@ -178,7 +176,7 @@ class GenericHeader:
         )
 
     @classmethod
-    def unpack(cls, data: bytes) -> GenericHeader:
+    def unpack(cls, data: bytes) -> Self:
         (
             protocol_version,
             inverse_protocol_version,
@@ -205,7 +203,7 @@ class GenericDoIPHeaderNACK:
         )
 
     @classmethod
-    def unpack(cls, data: bytes) -> GenericDoIPHeaderNACK:
+    def unpack(cls, data: bytes) -> Self:
         (generic_header_NACK_code,) = struct.unpack("!B", data)
         return cls(
             GenericDoIPHeaderNACKCodes(generic_header_NACK_code),
@@ -218,6 +216,31 @@ class VehicleIdentificationRequestMessage:
         return b""
 
 
+@unique
+class FurtherActionCodes(IntEnum):
+    RESERVED = 0x0F
+    ManufacturerSpecific = 0xFF
+    NoFurtherActionRequired = 0x00
+    RoutingActivationRequiredToInitiateCentralSecurity = 0x10
+
+    @classmethod
+    def _missing_(cls, value: Any) -> "FurtherActionCodes":
+        if value in range(0x11, 0x100):
+            return cls.ManufacturerSpecific
+        return cls.RESERVED
+
+
+@unique
+class SynchronisationStatusCodes(IntEnum):
+    RESERVED = 0xFF
+    VINGIDSynchronized = 0x00
+    IncompleteVINGIDNotSynchronized = 0x10
+
+    @classmethod
+    def _missing_(cls, value: Any) -> "SynchronisationStatusCodes":
+        return cls.RESERVED
+
+
 @dataclass
 class VehicleAnnouncementMessage:
     VIN: bytes
@@ -228,7 +251,7 @@ class VehicleAnnouncementMessage:
     VINGIDSyncStatus: SynchronisationStatusCodes | None
 
     @classmethod
-    def unpack(cls, data: bytes) -> VehicleAnnouncementMessage:
+    def unpack(cls, data: bytes) -> Self:
         if len(data) == 32:
             # VINGIDSyncStatus is optional
             (vin, logical_address, eid, gid, further_action_required) = struct.unpack(
@@ -257,35 +280,21 @@ class VehicleAnnouncementMessage:
         )
 
 
-@unique
-class FurtherActionCodes(IntEnum):
-    RESERVED = 0x0F
-    ManufacturerSpecific = 0xFF
-    NoFurtherActionRequired = 0x00
-    RoutingActivationRequiredToInitiateCentralSecurity = 0x10
-
-    @classmethod
-    def _missing_(cls, value: Any) -> FurtherActionCodes:
-        if value in range(0x11, 0x100):
-            return cls.ManufacturerSpecific
-        return cls.RESERVED
-
-
-@unique
-class SynchronisationStatusCodes(IntEnum):
-    RESERVED = 0xFF
-    VINGIDSynchronized = 0x00
-    IncompleteVINGIDNotSynchronized = 0x10
-
-    @classmethod
-    def _missing_(cls, value: Any) -> SynchronisationStatusCodes:
-        return cls.RESERVED
-
-
 @dataclass
 class DoIPEntityStatusRequest:
     def pack(self) -> bytes:
         return b""
+
+
+@unique
+class NodeTypes(IntEnum):
+    RESERVED = 0xFF
+    Gateway = 0x00
+    Node = 0x01
+
+    @classmethod
+    def _missing_(cls, value: Any) -> "NodeTypes":
+        return cls.RESERVED
 
 
 @dataclass
@@ -296,7 +305,7 @@ class DoIPEntityStatusResponse:
     MaximumDataSize: int | None
 
     @classmethod
-    def unpack(cls, data: bytes) -> DoIPEntityStatusResponse:
+    def unpack(cls, data: bytes) -> Self:
         if len(data) == 3:
             # MaximumDataSize is optional
             (nt, mcts, ncts) = struct.unpack("!BBB", data)
@@ -305,17 +314,6 @@ class DoIPEntityStatusResponse:
             (nt, mcts, ncts, mds) = struct.unpack("!BBBI", data)
 
         return cls(NodeTypes(nt), mcts, ncts, mds)
-
-
-@unique
-class NodeTypes(IntEnum):
-    RESERVED = 0xFF
-    Gateway = 0x00
-    Node = 0x01
-
-    @classmethod
-    def _missing_(cls, value: Any) -> NodeTypes:
-        return cls.RESERVED
 
 
 @dataclass
@@ -338,7 +336,7 @@ class RoutingActivationResponse:
     # OEMReserved uint32
 
     @classmethod
-    def unpack(cls, data: bytes) -> RoutingActivationResponse:
+    def unpack(cls, data: bytes) -> Self:
         (
             source_address,
             target_address,
@@ -372,7 +370,7 @@ class DiagnosticMessage:
         )
 
     @classmethod
-    def unpack(cls, data: bytes) -> DiagnosticMessage:
+    def unpack(cls, data: bytes) -> Self:
         source_address, target_address = struct.unpack("!HH", data[:4])
         data = data[4:]
         return cls(source_address, target_address, data)
@@ -401,7 +399,7 @@ class DiagnosticMessagePositiveAcknowledgement(DiagnosticMessageAcknowledgement)
     ACKCode: DiagnosticMessagePositiveAckCodes
 
     @classmethod
-    def unpack(cls, data: bytes) -> DiagnosticMessagePositiveAcknowledgement:
+    def unpack(cls, data: bytes) -> Self:
         source_address, target_address, ack_code = struct.unpack("!HHB", data[:5])
         prev_data = data[5:]
 
@@ -417,7 +415,7 @@ class DiagnosticMessageNegativeAcknowledgement(DiagnosticMessageAcknowledgement)
     ACKCode: DiagnosticMessageNegativeAckCodes
 
     @classmethod
-    def unpack(cls, data: bytes) -> DiagnosticMessageNegativeAcknowledgement:
+    def unpack(cls, data: bytes) -> Self:
         source_address, target_address, ack_code = struct.unpack("!HHB", data[:5])
         prev_data = data[5:]
 
