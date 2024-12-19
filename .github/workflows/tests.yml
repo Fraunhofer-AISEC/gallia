@@ -49,6 +49,8 @@ jobs:
   bats:
     strategy:
       fail-fast: false
+      matrix:
+        python-version: ['3.12', '3.13']
 
     runs-on: ubuntu-latest
     container: debian:trixie
@@ -64,6 +66,7 @@ jobs:
     - name: Set up Python ${{ matrix.python-version }}
       run: |
         uv python install ${{ matrix.python-version }}
+        uv python pin ${{ matrix.python-version }}
 
     - name: Install Dependencies
       run: |
