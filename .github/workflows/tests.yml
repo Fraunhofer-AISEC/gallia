@@ -44,7 +44,7 @@ jobs:
 
     - name: Run pytest
       run: |
-        uv run make pytest
+        uv run just run-test-pytest
 
   bats:
     strategy:
@@ -78,4 +78,4 @@ jobs:
 
     - name: Run bats
       run: |
-        uv run make bats
+        uv run just run-test-bats

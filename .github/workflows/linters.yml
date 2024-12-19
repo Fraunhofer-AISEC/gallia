@@ -44,18 +44,18 @@ jobs:
       run: |
         uv sync --all-extras --dev
 
-    - name: Run ruff
+    - name: Run reuse lint
       run: |
-        uv run ruff check src tests
-
-    - name: Run mypy
-      run: |
-        uv run mypy src tests
+        uv run just lint-reuse
 
     - name: Run ruff format
       run: |
-        uv run ruff format --check src tests
+        uv run just lint-ruff-format
 
-    - name: Run reuse lint
+    - name: Run ruff check
       run: |
-        uv run reuse lint
+        uv run just lint-ruff-check
+
+    - name: Run mypy
+      run: |
+        uv run just lint-mypy

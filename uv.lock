@@ -188,6 +188,27 @@ wheels = [
 ]
 
 [[package]]
+name = "commitizen"
+version = "4.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "argcomplete" },
+    { name = "charset-normalizer" },
+    { name = "colorama" },
+    { name = "decli" },
+    { name = "jinja2" },
+    { name = "packaging" },
+    { name = "pyyaml" },
+    { name = "questionary" },
+    { name = "termcolor" },
+    { name = "tomlkit" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/7a/c5/66f1b977b48501a33f5fd33253aba14786483b08aba987718d272e99e732/commitizen-4.1.0.tar.gz", hash = "sha256:4f2d9400ec411aec1c738d4c63fc7fd5807cd6ddf6be970869e03e68b88ff718", size = 51252 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/48/f7/7f70adfbf3553ffdbe391eaacde72b21dbc1b4226ae56ca32e8ded1bf70b/commitizen-4.1.0-py3-none-any.whl", hash = "sha256:2e6c5fbd442cab4bcc5a04bc86ef2196ef84bcf611317d6c596e87f5bb4c09f5", size = 72282 },
+]
+
+[[package]]
 name = "construct"
 version = "2.10.68"
 source = { registry = "https://pypi.org/simple" }
@@ -245,6 +266,15 @@ wheels = [
 ]
 
 [[package]]
+name = "decli"
+version = "0.6.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/3d/a0/a4658f93ecb589f479037b164dc13c68d108b50bf6594e54c820749f97ac/decli-0.6.2.tar.gz", hash = "sha256:36f71eb55fd0093895efb4f416ec32b7f6e00147dda448e3365cf73ceab42d6f", size = 7424 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/bf/70/3ea48dc9e958d7d66c44c9944809181f1ca79aaef25703c023b5092d34ff/decli-0.6.2-py3-none-any.whl", hash = "sha256:2fc84106ce9a8f523ed501ca543bdb7e416c064917c12a59ebdc7f311a97b7ed", size = 7854 },
+]
+
+[[package]]
 name = "docstring-to-markdown"
 version = "0.15"
 source = { registry = "https://pypi.org/simple" }
@@ -273,12 +303,14 @@ dependencies = [
     { name = "construct" },
     { name = "platformdirs" },
     { name = "pydantic" },
+    { name = "rust-just" },
     { name = "tabulate" },
     { name = "zstandard" },
 ]
 
 [package.optional-dependencies]
 dev = [
+    { name = "commitizen" },
     { name = "construct-typing" },
     { name = "mypy" },
     { name = "myst-parser" },
@@ -300,6 +332,7 @@ requires-dist = [
     { name = "aiosqlite", specifier = ">=0.18" },
     { name = "argcomplete", specifier = ">=2,<4" },
     { name = "boltons", specifier = ">=24.1.0" },
+    { name = "commitizen", marker = "extra == 'dev'", specifier = ">=4.1.0" },
     { name = "construct", specifier = ">=2.10,<3.0" },
     { name = "construct-typing", marker = "extra == 'dev'", specifier = ">=0.5.2,<0.7.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.0,<2.0" },
@@ -314,6 +347,7 @@ requires-dist = [
     { name = "python-lsp-server", marker = "extra == 'dev'", specifier = ">=1.5,<2.0" },
     { name = "reuse", marker = "extra == 'dev'", specifier = ">=4.0,<5.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.8.0" },
+    { name = "rust-just", specifier = ">=1.38.0" },
     { name = "sphinx", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'dev'", specifier = ">=3" },
     { name = "tabulate", specifier = ">=0.9" },
@@ -541,6 +575,18 @@ wheels = [
 ]
 
 [[package]]
+name = "prompt-toolkit"
+version = "3.0.36"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "wcwidth" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/fb/93/180be2342f89f16543ec4eb3f25083b5b84eba5378f68efff05409fb39a9/prompt_toolkit-3.0.36.tar.gz", hash = "sha256:3e163f254bef5a03b146397d7c1963bd3e2812f0964bb9a24e6ec761fd28db63", size = 423863 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/eb/37/791f1a6edd13c61cac85282368aa68cb0f3f164440fdf60032f2cc6ca34e/prompt_toolkit-3.0.36-py3-none-any.whl", hash = "sha256:aa64ad242a462c5ff0363a7b9cfe696c20d55d9fc60c11fd8e632d064804d305", size = 386414 },
+]
+
+[[package]]
 name = "pycparser"
 version = "2.22"
 source = { registry = "https://pypi.org/simple" }
@@ -761,6 +807,18 @@ wheels = [
 ]
 
 [[package]]
+name = "questionary"
+version = "2.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "prompt-toolkit" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/84/d0/d73525aeba800df7030ac187d09c59dc40df1c878b4fab8669bdc805535d/questionary-2.0.1.tar.gz", hash = "sha256:bcce898bf3dbb446ff62830c86c5c6fb9a22a54146f0f5597d3da43b10d8fc8b", size = 24726 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0b/e7/2dd8f59d1d328773505f78b85405ddb1cfe74126425d076ce72e65540b8b/questionary-2.0.1-py3-none-any.whl", hash = "sha256:8ab9a01d0b91b68444dff7f6652c1e754105533f083cbe27597c8110ecc230a2", size = 34248 },
+]
+
+[[package]]
 name = "requests"
 version = "2.32.3"
 source = { registry = "https://pypi.org/simple" }
@@ -825,6 +883,28 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/79/e9/5b81dc9afc8a80884405b230b9429efeef76d04caead904bd213f453b973/ruff-0.8.3-py3-none-win32.whl", hash = "sha256:19048f2f878f3ee4583fc6cb23fb636e48c2635e30fb2022b3a1cd293402f964", size = 8807651 },
     { url = "https://files.pythonhosted.org/packages/ea/67/7291461066007617b59a707887b90e319b6a043c79b4d19979f86b7a20e7/ruff-0.8.3-py3-none-win_amd64.whl", hash = "sha256:f7df94f57d7418fa7c3ffb650757e0c2b96cf2501a0b192c18e4fb5571dfada9", size = 9625289 },
     { url = "https://files.pythonhosted.org/packages/03/8f/e4fa95288b81233356d9a9dcaed057e5b0adc6399aa8fd0f6d784041c9c3/ruff-0.8.3-py3-none-win_arm64.whl", hash = "sha256:fe2756edf68ea79707c8d68b78ca9a58ed9af22e430430491ee03e718b5e4936", size = 9078754 },
+]
+
+[[package]]
+name = "rust-just"
+version = "1.38.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/33/5c/b043e498dc10fcbc02cd06e776ca9e3ef9d888afa8ed6963588964147f76/rust_just-1.38.0.tar.gz", hash = "sha256:05d092602075b4ef244dee4a94267f998a66523ca39b8ac8320630c82662dac9", size = 1387350 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d8/6b/5f416dfdee8ab1c3e73088dca4e10ac14956239f8c289f4f1b2ffda6511a/rust_just-1.38.0-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:cae21f93bd10223b6e5b50be32aab2b449e46ce1cdf2c8e576b2d85a751fee79", size = 1758552 },
+    { url = "https://files.pythonhosted.org/packages/53/45/fe3a456cd39e674c27149b907f802c89e21ad5fa8617178f5d765fbc6495/rust_just-1.38.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:b64d750ded84f71fcd49271d88e162e0cbb111e9383b1dc9aa8b8a157e92fd06", size = 1628336 },
+    { url = "https://files.pythonhosted.org/packages/c2/46/a4fa7b053af1c80942049f2f22b8a91298776292cdb0cbd2d66b2faa9560/rust_just-1.38.0-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:443548c03f1dcf46b82347c10f2ef3faf75cf6bee1fc382f9b6bea2b92c59516", size = 1754360 },
+    { url = "https://files.pythonhosted.org/packages/44/16/b53cc27a514bd60928338fc61437bf5e6b45d80a4ba88321f882f355e155/rust_just-1.38.0-py3-none-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:573ba5bcf94f446ef0e269ab99e3d2de201193dc41906339ca346cbc9ef336fd", size = 1770210 },
+    { url = "https://files.pythonhosted.org/packages/45/ea/98235bb6d63ae11fba81e6f1d936b3e54e14d4fbf3430d9598b1407942c1/rust_just-1.38.0-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:744e2fe7a33f5cbf02a04bda7c07d9e0e4e924c7a47e35096cb034a45609b18a", size = 1893101 },
+    { url = "https://files.pythonhosted.org/packages/72/a7/5ee28651daf9c0f214cf9d0f1d90e5c78e1b2561c12a8a716431081a52be/rust_just-1.38.0-py3-none-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:4a1687535ce940149b825ca12a6afe485fcbd8d55766e5e18fef95a4c820c189", size = 1947836 },
+    { url = "https://files.pythonhosted.org/packages/2a/96/f352440ccb18a2848bd5aacd309f80fc63b42413a13a651885d248500efd/rust_just-1.38.0-py3-none-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:b7bd519d9d03460b6c32b5d2a082af5080a63e836e8e291c875a62ce3fb2c187", size = 2423371 },
+    { url = "https://files.pythonhosted.org/packages/9c/bc/df996131791814f476f10441a5122fa28d8849dc3d77ceaea8ede0ea4eda/rust_just-1.38.0-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:3d0018f1cf151161307e7c3f340da290819fc2c5cf240c20a0f6b4de71884a14", size = 1877732 },
+    { url = "https://files.pythonhosted.org/packages/ca/25/c6290d129faae0c872869a119e7946e4ae8738b2aa073e40734b5001ade5/rust_just-1.38.0-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:b71eae6d358d0d7fb10f9ba7add658da0a3fc00d9e4d1473741901a0c8920450", size = 1769910 },
+    { url = "https://files.pythonhosted.org/packages/f8/a3/6640b29f0bb080c3ffcfe10c7a5e9ba05dd244d0d030204079ca650f1443/rust_just-1.38.0-py3-none-musllinux_1_2_armv7l.whl", hash = "sha256:5c0dd27a3616745d5d30e7dc59b1f539c95821da0b3a27bae1837a6202ea0bd4", size = 1799174 },
+    { url = "https://files.pythonhosted.org/packages/92/8c/df133ec92d583232a3a78030eb538b093d51a8c9b4b8fd4054a1015e2411/rust_just-1.38.0-py3-none-musllinux_1_2_i686.whl", hash = "sha256:ac4965aefc741faaa3106b6c8d6231353e067ce93582677cebc338ae25637430", size = 1887808 },
+    { url = "https://files.pythonhosted.org/packages/3a/e8/4ba3b2405db0864f9ea5cee2aaa7c057d5ee6c122e996428e9c2b749ddf0/rust_just-1.38.0-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:c626588d64b5fd39bbe5072c6ddd0e0f443b1682a4143be45429046f42be66e3", size = 1938453 },
+    { url = "https://files.pythonhosted.org/packages/23/17/0f10aca56132d47e085c33a46d4a016a08ec081cd9efb8e55953ddc2067e/rust_just-1.38.0-py3-none-win32.whl", hash = "sha256:bcbaa423988d94218a457f44aa1310e959a2e634a93147d70cb9940b6a687a5d", size = 1559911 },
+    { url = "https://files.pythonhosted.org/packages/a1/78/0a8b305c9fcd16a639ad6dd56268c642828769cd736041d554c82dc135ea/rust_just-1.38.0-py3-none-win_amd64.whl", hash = "sha256:2590b0a3eed6090129a618b7cbd94e107407b618eef95baba8c596fcf598f7a7", size = 1679295 },
 ]
 
 [[package]]
@@ -953,6 +1033,15 @@ wheels = [
 ]
 
 [[package]]
+name = "termcolor"
+version = "2.5.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/37/72/88311445fd44c455c7d553e61f95412cf89054308a1aa2434ab835075fc5/termcolor-2.5.0.tar.gz", hash = "sha256:998d8d27da6d48442e8e1f016119076b690d962507531df4890fcd2db2ef8a6f", size = 13057 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7f/be/df630c387a0a054815d60be6a97eb4e8f17385d5d6fe660e1c02750062b4/termcolor-2.5.0-py3-none-any.whl", hash = "sha256:37b17b5fc1e604945c2642c872a3764b5d547a48009871aea3edd3afa180afb8", size = 7755 },
+]
+
+[[package]]
 name = "tomlkit"
 version = "0.13.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1014,6 +1103,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/ed/63/22ba4ebfe7430b76388e7cd448d5478814d3032121827c12a2cc287e2260/urllib3-2.2.3.tar.gz", hash = "sha256:e7d814a81dad81e6caf2ec9fdedb284ecc9c73076b62654547cc64ccdcae26e9", size = 300677 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ce/d9/5f4c13cecde62396b0d3fe530a50ccea91e7dfc1ccf0e09c228841bb5ba8/urllib3-2.2.3-py3-none-any.whl", hash = "sha256:ca899ca043dcb1bafa3e262d73aa25c465bfb49e0bd9dd5d59f1d0acba2f8fac", size = 126338 },
+]
+
+[[package]]
+name = "wcwidth"
+version = "0.2.13"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/6c/63/53559446a878410fc5a5974feb13d31d78d752eb18aeba59c7fef1af7598/wcwidth-0.2.13.tar.gz", hash = "sha256:72ea0c06399eb286d978fdedb6923a9eb47e1c486ce63e9b4e64fc18303972b5", size = 101301 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/fd/84/fd2ba7aafacbad3c4201d395674fc6348826569da3c0937e75505ead3528/wcwidth-0.2.13-py2.py3-none-any.whl", hash = "sha256:3da69048e4540d84af32131829ff948f1e022c1c6bdb8d6102117aac784f6859", size = 34166 },
 ]
 
 [[package]]
