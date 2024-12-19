@@ -13,7 +13,6 @@ from typing import (
     TYPE_CHECKING,
     Annotated,
     Any,
-    TypeAlias,
     TypeVar,
     Unpack,
     get_args,
@@ -132,9 +131,9 @@ def auto_enum(x: str, enum_type: type[EnumType]) -> EnumType:
 
 
 if TYPE_CHECKING:
-    Idempotent: TypeAlias = Annotated[T, ""]
-    EnumArg: TypeAlias = Annotated[EnumType, ""]
-    AutoLiteral: TypeAlias = Annotated[LiteralType, ""]
+    type Idempotent[T] = Annotated[T, ""]
+    type EnumArg[EnumType: Enum] = Annotated[EnumType, ""]
+    type AutoLiteral[LiteralType] = Annotated[LiteralType, ""]
 else:
 
     class _TrickType:

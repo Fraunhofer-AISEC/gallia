@@ -18,7 +18,7 @@ from typing import (
     Annotated,
     Any,
     Literal,
-    TypeVar,
+    Self,
     Union,
     cast,
     get_args,
@@ -32,12 +32,6 @@ from pydantic_core import PydanticUndefined
 from gallia.pydantic_argparse.utils.field import ArgFieldInfo
 
 from .types import all_types
-
-# Constants
-T = TypeVar("T")
-PydanticModelT = TypeVar("PydanticModelT", bound=BaseModel)
-PydanticValidator = classmethod
-NoneType = type(None)
 
 
 @dataclass
@@ -55,7 +49,7 @@ class PydanticField:
     extra_default: tuple[str, Any] | None = None
 
     @classmethod
-    def parse_model(cls, model: BaseModel | type[BaseModel]) -> Iterator["PydanticField"]:
+    def parse_model(cls, model: BaseModel | type[BaseModel]) -> Iterator[Self]:
         """Iterator over the pydantic model fields, yielding this wrapper class.
 
         Yields:
@@ -71,7 +65,7 @@ class PydanticField:
             return origin
         elif origin is Union or origin is UnionType:
             args = get_args(annotation)
-            types = [arg for arg in args if arg is not NoneType]
+            types = [arg for arg in args if arg is not type(None)]
         elif origin is None:
             types = [annotation]
         else:

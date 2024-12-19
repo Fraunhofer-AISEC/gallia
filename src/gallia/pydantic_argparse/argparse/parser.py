@@ -20,7 +20,7 @@ be compatible with an IDE, linter or type checker.
 
 import argparse
 import sys
-from typing import Any, Generic, Never, NoReturn
+from typing import Any, Never, NoReturn
 
 from pydantic import BaseModel, ValidationError
 
@@ -29,10 +29,10 @@ from gallia.pydantic_argparse.argparse import actions
 from gallia.pydantic_argparse.parsers import command
 from gallia.pydantic_argparse.utils.field import ArgFieldInfo
 from gallia.pydantic_argparse.utils.nesting import _NestedArgumentParser
-from gallia.pydantic_argparse.utils.pydantic import PydanticField, PydanticModelT
+from gallia.pydantic_argparse.utils.pydantic import PydanticField
 
 
-class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
+class ArgumentParser[T: BaseModel](argparse.ArgumentParser):
     """Declarative and Typed Argument Parser.
 
     The `ArgumentParser` declaratively generates a command-line interface using
@@ -60,7 +60,7 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
 
     def __init__(
         self,
-        model: type[PydanticModelT],
+        model: type[T],
         prog: str | None = None,
         description: str | None = None,
         version: str | None = None,
@@ -116,7 +116,7 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
     def parse_typed_args(
         self,
         args: list[str] | None = None,
-    ) -> tuple[PydanticModelT, BaseModel]:
+    ) -> tuple[T, BaseModel]:
         """Parses command line arguments.
 
         If `args` are not supplied by the user, then they are automatically
