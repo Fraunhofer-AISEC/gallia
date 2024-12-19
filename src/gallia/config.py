@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
-import shutil
 import subprocess
 import tomllib
 from pathlib import Path
@@ -29,13 +28,14 @@ class Config(dict[str, Any]):
 
 
 def get_git_root() -> Path | None:
-    git_path = shutil.which("git")
-    if git_path is None:
-        return None
     try:
         p = subprocess.run(
-            [git_path, "rev-parse", "--show-toplevel"], capture_output=True, check=True
+            ["git", "rev-parse", "--show-toplevel"],
+            capture_output=True,
+            check=True,
         )
+    except FileNotFoundError:
+        return None
     except subprocess.CalledProcessError:
         return None
     return Path(p.stdout.decode().strip())
