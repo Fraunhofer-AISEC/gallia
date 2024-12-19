@@ -46,4 +46,4 @@ jobs:
 
     - name: Run mypy
       run: |
-        uv run make lint-win32
+        uv run just win32-lint-mypy
