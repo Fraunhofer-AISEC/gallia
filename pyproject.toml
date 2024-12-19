@@ -9,7 +9,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "gallia"
-version = "1.9.0"
+version = "2.0.0a0"
 description = "Extendable Pentesting Framework"
 readme = "README.md"
 authors = [{name = "AISEC Pentesting Team"}]
