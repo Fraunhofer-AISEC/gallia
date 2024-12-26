@@ -5,23 +5,21 @@
 """Utilities to help with parsing arbitrarily nested `pydantic` models."""
 
 from argparse import Namespace
-from typing import Any, Generic, TypeAlias
+from typing import Any
 
 from boltons.iterutils import get_path, remap  # type: ignore
 from pydantic import BaseModel
 
 from .namespaces import to_dict
-from .pydantic import PydanticField, PydanticModelT
-
-ModelT: TypeAlias = PydanticModelT | type[PydanticModelT] | BaseModel | type[BaseModel]
+from .pydantic import PydanticField
 
 
-class _NestedArgumentParser(Generic[PydanticModelT]):
+class _NestedArgumentParser[T: BaseModel]:
     """Parses arbitrarily nested `pydantic` models and inserts values passed at the command line."""
 
     def __init__(
         self,
-        model: PydanticModelT | type[PydanticModelT],
+        model: T | type[T],
         namespace: Namespace,
     ) -> None:
         self.model = model
@@ -30,7 +28,9 @@ class _NestedArgumentParser(Generic[PydanticModelT]):
         self.schema: dict[str, Any] = self._get_nested_model_fields(self.model, namespace)
         self.schema = self._remove_null_leaves(self.schema)
 
-    def _get_nested_model_fields(self, model: ModelT[Any], namespace: Namespace) -> dict[str, Any]:
+    def _get_nested_model_fields(
+        self, model: T | type[T] | BaseModel | type[BaseModel], namespace: Namespace
+    ) -> dict[str, Any]:
         def contains_subcommand(ns: Namespace, subcommand_path: tuple[str, ...]) -> bool:
             for step in subcommand_path:
                 tmp = getattr(ns, step, None)
@@ -82,7 +82,7 @@ class _NestedArgumentParser(Generic[PydanticModelT]):
         # the schema
         return remap(schema, visit=lambda p, k, v: v is not None)
 
-    def validate(self) -> tuple[PydanticModelT, BaseModel]:
+    def validate(self) -> tuple[T, BaseModel]:
         """Return the root of the model, as well as the sub-model for the bottom subcommand"""
         model = self.model.model_validate(self.schema)
         subcommand = model

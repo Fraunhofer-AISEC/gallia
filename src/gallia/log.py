@@ -25,7 +25,7 @@ from logging.handlers import QueueHandler, QueueListener
 from pathlib import Path
 from queue import Queue
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, BinaryIO, Self, TextIO, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, BinaryIO, Self, TextIO, cast
 
 import zstandard
 
@@ -343,7 +343,7 @@ class _PenlogRecordV2:
     _python_func_name: str | None = None
 
 
-_PenlogRecord: TypeAlias = _PenlogRecordV2
+type _PenlogRecord = _PenlogRecordV2
 
 
 def _colorize_msg(data: str, levelno: int) -> tuple[str, int]:
