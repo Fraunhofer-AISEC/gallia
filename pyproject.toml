@@ -123,6 +123,7 @@ ignore = [
     "TD002",    # Missing author in TODO; try: # TODO(<author_name>): ... or # TODO @<author_name>: ...
     "TD003",    # Missing issue link on the line following this TODO
     "UP040",    # Type alias uses `TypeAlias` annotation instead of the `type` keyword
+    "A005",     # Module `types` shadows a Python standard-library module
 ]
 
 [tool.pytest.ini_options]
