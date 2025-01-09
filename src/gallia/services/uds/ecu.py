@@ -43,7 +43,7 @@ class ECUState:
         self.security_access_level = None
 
     def __repr__(self) -> str:
-        return f'{type(self).__name__}({", ".join(f"{key}={g_repr(value)}" for key, value in self.__dict__.items())})'
+        return f"{type(self).__name__}({', '.join(f'{key}={g_repr(value)}' for key, value in self.__dict__.items())})"
 
 
 logger = get_logger(__name__)
@@ -305,7 +305,7 @@ class ECU(UDSClient):
             counter += 1
             payload = data[i : i + payload_size]
             logger.debug(
-                f"Transferring block {g_repr(counter)} " f"with payload size {g_repr(len(payload))}"
+                f"Transferring block {g_repr(counter)} with payload size {g_repr(len(payload))}"
             )
             resp: service.UDSResponse = await self.transfer_data(
                 counter & 0xFF, payload, config=config
@@ -320,7 +320,7 @@ class ECU(UDSClient):
         i = -1
         while True:
             i = (i + 1) % 4
-            logger.info(f"Waiting for ECU{'.'*i}")
+            logger.info(f"Waiting for ECU{'.' * i}")
             try:
                 await asyncio.sleep(sleep_time)
                 await self.ping(config=config)

@@ -12,7 +12,7 @@ from gallia.log import setup_logging
 from gallia.transports import BaseTransport, TargetURI, TCPLinesTransport, TCPTransport
 
 listen_target = TargetURI("tcp://127.0.0.1:1234")
-test_data = [b"hello" b"tcp"]
+test_data = [b"hello", b"tcp"]
 
 
 setup_logging()

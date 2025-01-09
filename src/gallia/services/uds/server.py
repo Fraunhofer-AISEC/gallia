@@ -125,9 +125,9 @@ class UDSServer(ABC):
                     UDSIsoServices(request.service_id)
                 ]
 
-                assert (
-                    supported_sub_functions is not None
-                ), "Sub function services must have a (potentially empty) list of supported sub functions"
+                assert supported_sub_functions is not None, (
+                    "Sub function services must have a (potentially empty) list of supported sub functions"
+                )
 
                 sub_function = request.pdu[1] % 0x80
 
@@ -726,8 +726,7 @@ class DBUDSServer(UDSServer):
 
         if self.properties is not None and self.ecu is None:
             query = (
-                "SELECT r.id, r.response_pdu "
-                "FROM scan_result r, scan_run s WHERE r.run = s.id AND "
+                "SELECT r.id, r.response_pdu FROM scan_result r, scan_run s WHERE r.run = s.id AND "
             )
 
         if self.ecu is not None:

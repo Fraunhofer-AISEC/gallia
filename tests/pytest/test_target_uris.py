@@ -33,7 +33,8 @@ uris = [
 
 invalid_uris = [
     "doip://127.0.0.1:13400?src_addr=1",
-    "doip://127.0.0.1:13400?target_addr=1" "doip://127.0.0.1:13400?src_addr=0x01&target_addr=hans",
+    "doip://127.0.0.1:13400?target_addr=1",
+    "doip://127.0.0.1:13400?src_addr=0x01&target_addr=hans",
     "doip://127.0.0.1:13400?src_addr=hans&target_addr=0x01",
     "isotp://can0?src_addr=1",
     "isotp://can0?dst_addr=1",

@@ -21,8 +21,7 @@ def to_bytes(x: int, length: int) -> bytes:
 def check_range(data: int, name: str, min_value: int, max_value: int) -> None:
     if not min_value <= data <= max_value:
         raise ValueError(
-            f"The {name} parameter must be between {int_repr(min_value)} and "
-            f"{int_repr(max_value)}"
+            f"The {name} parameter must be between {int_repr(min_value)} and {int_repr(max_value)}"
         )
 
 
@@ -68,7 +67,7 @@ def any_repr(x: Any) -> str:
         case bytes() | bytearray():
             return bytes_repr(x)
         case list():
-            return f'[{", ".join(any_repr(y) for y in x)}]'
+            return f"[{', '.join(any_repr(y) for y in x)}]"
 
     return str(x)
 
@@ -89,9 +88,9 @@ def g_repr(x: Any) -> str:
         case bytes() | bytearray():
             return bytes_repr(x)
         case list():
-            return f'[{", ".join(g_repr(y) for y in x)}]'
+            return f"[{', '.join(g_repr(y) for y in x)}]"
         case dict():
-            return f'{{{", ".join(f"{g_repr(k)}: {g_repr(v)}" for k, v in x.items())}}}'
+            return f"{{{', '.join(f'{g_repr(k)}: {g_repr(v)}' for k, v in x.items())}}}"
 
     # XXX: Avoid the import which causes cyclic imports.
     # TODO: Find out how to replace this helper.
@@ -174,8 +173,7 @@ def uds_memory_parameters(
             )
         if size_length > 0xF:
             raise OverflowError(
-                "The memory size is too big to be encoded in the "
-                "addressAndLengthFormatIdentifier"
+                "The memory size is too big to be encoded in the addressAndLengthFormatIdentifier"
             )
 
         addr_bytes = memory_address.to_bytes(addr_length, "big")
@@ -206,7 +204,7 @@ def address_and_size_length(address_and_length_fmt: int) -> tuple[int, int]:
     """
     if not 0x00 <= address_and_length_fmt <= 0xFF:
         raise ValueError(
-            "The addressAndLengthFormatIdentifier must not be negative " "nor exceed 0xff"
+            "The addressAndLengthFormatIdentifier must not be negative nor exceed 0xff"
         )
     if address_and_length_fmt & 0xF0 == 0:
         raise ValueError("The addressAndLengthFormatIdentifier's first nibble must not be 0")

@@ -109,7 +109,7 @@ class ScanIdentifiers(UDSScanner):
         if self.config.service == UDSIsoServices.SecurityAccess and self.config.end > 0xFF:
             logger.warning(
                 "Service 0x27 SecurityAccess only accepts subFunctions (1-byte identifiers); "
-                + f"limiting END to {g_repr(0xff)} instead of {g_repr(self.config.end)}"
+                + f"limiting END to {g_repr(0xFF)} instead of {g_repr(self.config.end)}"
             )
             self.config.end = 0xFF
 

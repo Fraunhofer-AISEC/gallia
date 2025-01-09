@@ -242,8 +242,7 @@ class DBHandler:
         await self.connection.execute("INSERT OR IGNORE INTO address(url) VALUES(?)", (target,))
 
         query = (
-            "INSERT INTO scan_run(address, meta) VALUES "
-            "((SELECT id FROM address WHERE url = ?), ?)"
+            "INSERT INTO scan_run(address, meta) VALUES ((SELECT id FROM address WHERE url = ?), ?)"
         )
         cursor = await self.connection.execute(query, (target, self.meta))
 

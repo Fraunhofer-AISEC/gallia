@@ -68,7 +68,7 @@ class Rerunner(Script):
     def db(self) -> tuple[str, Mapping[str, Any]]:
         assert self.config.id is not None
 
-        query = "SELECT script, config " "FROM run_meta " "WHERE id = ?"
+        query = "SELECT script, config FROM run_meta WHERE id = ?"
         parameters = (self.config.id,)
 
         assert self.db_handler is not None

@@ -324,8 +324,7 @@ class NegativeResponse(
 
         if pdu[0] != UDSIsoServices.NegativeResponse:
             raise ValueError(
-                f"Not a negative response: {hex(pdu[0])} != "
-                f"{hex(UDSIsoServices.NegativeResponse)}"
+                f"Not a negative response: {hex(pdu[0])} != {hex(UDSIsoServices.NegativeResponse)}"
             )
 
     def matches(self, request: UDSRequest) -> bool:
@@ -494,7 +493,7 @@ class SpecializedSubFunctionResponse(
 
         if pdu[1] != cls.SUB_FUNCTION_ID:
             raise ValueError(
-                f"Sub-function ID mismatch: {hex(pdu[1])} != " f"{hex(cls.SUB_FUNCTION_ID)}"
+                f"Sub-function ID mismatch: {hex(pdu[1])} != {hex(cls.SUB_FUNCTION_ID)}"
             )
 
     @property
@@ -526,7 +525,7 @@ class SpecializedSubFunctionRequest(
 
         if pdu[1] % 0x80 != cls.SUB_FUNCTION_ID:
             raise ValueError(
-                f"Sub-function ID mismatch: {hex(pdu[1])} != " f"{hex(cls.SUB_FUNCTION_ID)}"
+                f"Sub-function ID mismatch: {hex(pdu[1])} != {hex(cls.SUB_FUNCTION_ID)}"
             )
 
     @property
@@ -3367,7 +3366,7 @@ class _RequestUpOrDownloadResponse(
         if length_format_identifier is not None:
             if not 0 <= length_format_identifier <= 0xF0 or length_format_identifier % 2**4 > 0:
                 raise ValueError(
-                    f"Invalid value for lengthFormatIdentifier: " f"{length_format_identifier}"
+                    f"Invalid value for lengthFormatIdentifier: {length_format_identifier}"
                 )
 
             uds_memory_parameters(0, max_number_of_block_length, length_format_identifier + 1)
