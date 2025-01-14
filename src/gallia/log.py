@@ -660,8 +660,7 @@ class PenlogReader:
         exc_value: BaseException | None,
         tb: TracebackType | None,
     ) -> None:
-        if exc_type is not None:
-            self.close()
+        self.close()
 
 
 @unique
