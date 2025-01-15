@@ -7,8 +7,10 @@ import sys
 from enum import IntEnum, unique
 from typing import ClassVar, Self, TypeAlias
 
-if sys.version_info[0] == 3 and sys.version_info[1] < 12:
-    from more_itertools import chunked as batched
+if sys.version_info < (3, 12):
+    # NOTE: mypy's detection of these magic sys.foo checks is buggy
+    #       and for some reason does not work here.
+    from more_itertools import chunked as batched  # type: ignore[import-not-found]
 else:
     from itertools import batched
 
@@ -19,7 +21,6 @@ from gallia.transports import BaseTransport, TargetURI, _ctypes_vector_xl, _ctyp
 from gallia.utils import auto_int
 
 assert sys.platform == "win32", "unsupported platform"
-
 
 logger = get_logger(__name__)
 
