@@ -5,8 +5,12 @@
 import asyncio
 import sys
 from enum import IntEnum, unique
-from itertools import batched
 from typing import ClassVar, Self, TypeAlias
+
+if sys.version_info[0] == 3 and sys.version_info[1] < 12:
+    from more_itertools import chunked as batched
+else:
+    from itertools import batched
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
