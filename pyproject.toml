@@ -26,7 +26,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
 ]
-requires-python = ">=3.12,<3.14"
+requires-python = ">=3.11,<3.14"
 dependencies = [
     "aiosqlite >=0.18",
     "argcomplete >=2,<4",
@@ -36,6 +36,7 @@ dependencies = [
     "pydantic >=2.0,<3.0",
     "tabulate >=0.9",
     "zstandard >=0.19",
+    "more-itertools >=10.3.0,<11.0.0; sys_platform == 'win32' and python_version < '3.12'",
 ]
 
 [project.entry-points."gallia_plugins"]
@@ -81,7 +82,7 @@ plugins = [
 ]
 
 [tool.ruff]
-target-version = "py312"
+target-version = "py311"
 line-length = 100
 exclude = ["docs/"]
 
