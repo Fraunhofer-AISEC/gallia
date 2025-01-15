@@ -6,13 +6,15 @@
 
 from argparse import Action, FileType
 from collections.abc import Callable, Iterable
-from typing import Any, Protocol
+from typing import Any, Protocol, TypeVar
+
+T = TypeVar("T")
 
 
 class SupportsAddArgument(Protocol):
     """ArgumentParser protocol that captures the base parser and argument groups."""
 
-    def add_argument[T](  # noqa: D102
+    def add_argument(  # noqa: D102
         self,
         *name_or_flags: str,
         action: str | type[Action] = ...,

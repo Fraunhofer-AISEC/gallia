@@ -14,7 +14,7 @@ from collections.abc import Awaitable, Callable
 from functools import wraps
 from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar
 
 from gallia.log import Loglevel, get_logger
 
@@ -153,7 +153,10 @@ def unravel_2d(listing: str) -> dict[int, list[int] | None]:
     }
 
 
-async def catch_and_log_exception[T](
+T = TypeVar("T")
+
+
+async def catch_and_log_exception(
     func: Callable[..., Awaitable[T]],
     *args: Any,
     **kwargs: Any,
@@ -270,7 +273,10 @@ def handle_task_error(fut: asyncio.Future[Any]) -> None:
         logger.info(f"{task_name} ended with error: {e!r}")
 
 
-def supports_platform[T, **P](*platform: str) -> Callable[[Callable[P, T]], Callable[P, T]]:
+P = ParamSpec("P")
+
+
+def supports_platform(*platform: str) -> Callable[[Callable[P, T]], Callable[P, T]]:
     def decorator(function: Callable[P, T]) -> Callable[P, T]:
         @wraps(function)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:

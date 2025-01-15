@@ -14,6 +14,7 @@ import argparse
 from collections.abc import Callable, Iterable, Sequence
 from typing import (
     Any,
+    TypeVar,
     cast,
 )
 
@@ -121,6 +122,9 @@ class SubParsersAction(argparse._SubParsersAction):  # type: ignore
             getattr(namespace, argparse._UNRECOGNIZED_ARGS_ATTR).extend(arg_strings)
 
 
+T = TypeVar("T")
+
+
 class BooleanOptionalAction(argparse.Action):  # pragma: no cover
     """Action for parsing paired GNU-style boolean arguments.
 
@@ -137,7 +141,7 @@ class BooleanOptionalAction(argparse.Action):  # pragma: no cover
     <https://github.com/python/cpython/blob/v3.11.0/Lib/argparse.py#L878-L914>
     """
 
-    def __init__[T](
+    def __init__(
         self,
         option_strings: Sequence[str],
         dest: str,
