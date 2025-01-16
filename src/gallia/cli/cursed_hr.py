@@ -19,7 +19,7 @@ from datetime import datetime
 from enum import IntEnum, unique
 from math import ceil
 from pathlib import Path
-from typing import Any, BinaryIO
+from typing import TYPE_CHECKING, Any, BinaryIO
 
 import platformdirs
 import zstandard as zstd
@@ -86,6 +86,14 @@ class PriorityZone:
     priority: PenlogPriority
 
 
+# NOTE: Workaround for compatibility with Python 3.11 and older, see:
+# https://github.com/python/mypy/issues/13942
+if TYPE_CHECKING:
+    IntArray = array[int]
+else:
+    IntArray = array
+
+
 class EntryCache:
     """
     A simple two level cache that stores the latest accessed penlog entries.
@@ -97,7 +105,7 @@ class EntryCache:
     def __init__(
         self,
         file: BinaryIO | mmap.mmap,
-        entry_positions: array[int],
+        entry_positions: IntArray,
         cache_size: int = 20_000,
     ):
         self.file = file
