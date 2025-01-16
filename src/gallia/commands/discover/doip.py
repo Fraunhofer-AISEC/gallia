@@ -497,7 +497,7 @@ class DoIPDiscoverer(AsyncScript):
                 while True:
                     data, from_addr = await asyncio.wait_for(loop.sock_recvfrom(sock, 1024), 2)
                     info = VehicleAnnouncementMessage.unpack(data[8:])
-                    logger.notice(f"[💝]: {addr} responded: {info}")
+                    logger.notice(f"[💝]: {from_addr} responded: {info}")
                     found.append(from_addr)
             except TimeoutError:
                 logger.info("[💔] Reached timeout...")
