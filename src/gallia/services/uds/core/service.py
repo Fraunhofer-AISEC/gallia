@@ -1640,7 +1640,7 @@ class DefineByIdentifierRequest(
         return pdu
 
     @classmethod
-    def _from_pdu(cls, pdu: bytes) -> DefineByIdentifierRequest:
+    def _from_pdu(cls, pdu: bytes) -> Self:
         dynamically_defined_data_identifier = from_bytes(pdu[2:4])
         source_data_identifiers: list[int] = []
         positions_in_source_data_record: list[int] = []
@@ -1654,7 +1654,7 @@ class DefineByIdentifierRequest(
             positions_in_source_data_record.append(pdu[i + 2])
             memory_sizes.append(pdu[i + 3])
 
-        return DefineByIdentifierRequest(
+        return cls(
             dynamically_defined_data_identifier,
             source_data_identifiers,
             positions_in_source_data_record,
@@ -1783,7 +1783,7 @@ class DefineByMemoryAddressRequest(
         return pdu
 
     @classmethod
-    def _from_pdu(cls, pdu: bytes) -> DefineByMemoryAddressRequest:
+    def _from_pdu(cls, pdu: bytes) -> Self:
         dynamically_defined_data_identifier = from_bytes(pdu[2:4])
         address_and_length_format_identifier = pdu[4]
         address_length, size_length = address_and_size_length(address_and_length_format_identifier)
@@ -1799,7 +1799,7 @@ class DefineByMemoryAddressRequest(
                 from_bytes(pdu[i + address_length : i + address_length + size_length])
             )
 
-        return DefineByMemoryAddressRequest(
+        return cls(
             dynamically_defined_data_identifier,
             memory_addresses,
             memory_sizes,
@@ -1856,7 +1856,7 @@ class ClearDynamicallyDefinedDataIdentifierRequest(
             )
 
     @classmethod
-    def _from_pdu(cls, pdu: bytes) -> ClearDynamicallyDefinedDataIdentifierRequest:
+    def _from_pdu(cls, pdu: bytes) -> Self:
         dynamically_defined_data_identifier: int | None = None
 
         if len(pdu) > 2:
