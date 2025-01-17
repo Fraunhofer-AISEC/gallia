@@ -14,8 +14,8 @@ This project has the following system level dependencies:
 * [uv](https://docs.astral.sh/uv/) (optional, for development)
 * [dumpcap](https://www.wireshark.org/docs/man-pages/dumpcap.html) (optional, part of [wireshark](https://www.wireshark.org/))
 
-The Python version is roughly aligned with the Debian release cycle.
-It is guaranteed, that gallia is compatible with the current Debian stable release.
+The Python version is roughly aligned with the Debian release and Ubuntu cycles.
+It is guaranteed, that gallia is compatible with the current Debian stable and Ubuntu LTS releases.
 Python dependencies are listed in `pyproject.toml`.
 
 ## Install
