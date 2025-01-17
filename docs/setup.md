@@ -10,10 +10,12 @@ SPDX-License-Identifier: CC0-1.0
 This project has the following system level dependencies:
 
 * [Linux](https://kernel.org) >= 5.10
-* [Python](https://python.org) (latest and latest - 1)
+* [Python](https://python.org) (latest - 2 up to latest)
 * [uv](https://docs.astral.sh/uv/) (optional, for development)
 * [dumpcap](https://www.wireshark.org/docs/man-pages/dumpcap.html) (optional, part of [wireshark](https://www.wireshark.org/))
 
+The Python version is roughly aligned with the Debian release cycle.
+It is guaranteed, that gallia is compatible with the current Debian stable release.
 Python dependencies are listed in `pyproject.toml`.
 
 ## Install
