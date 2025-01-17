@@ -38,10 +38,7 @@ class CLIConfig(AsyncScriptConfig):
 
     @model_validator(mode="after")
     def check_power_supply_requirements(self) -> Self:
-        for driver in power_supply_drivers:
-            if self.power_supply.product_id == driver.PRODUCT_ID:
-                break
-        else:
+        if self.power_supply.product_id not in power_supply_drivers:
             raise ValueError(f"powersupply {self.power_supply.product_id} is not supported")
 
         return self
@@ -61,11 +58,8 @@ class CLI(AsyncScript, ABC):
         self.config: CLIConfig = config
 
     async def _client(self) -> BasePowerSupplyDriver:
-        for driver in power_supply_drivers:
-            if self.config.power_supply.product_id == driver.PRODUCT_ID:
-                return await driver.connect(self.config.power_supply, timeout=1.0)
-
-        assert False
+        driver = power_supply_drivers[self.config.power_supply.product_id]
+        return await driver.connect(self.config.power_supply, timeout=1.0)
 
 
 class GetCLI(CLI, ABC):
