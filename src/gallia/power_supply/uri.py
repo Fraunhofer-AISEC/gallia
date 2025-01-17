@@ -28,5 +28,5 @@ class PowerSupplyURI(TargetURI):
     @property
     def product_id(self) -> str:
         if "product_id" in self.qs:
-            return self.qs["product_id"][0]
+            return self.qs["product_id"][0].lower()
         return ""

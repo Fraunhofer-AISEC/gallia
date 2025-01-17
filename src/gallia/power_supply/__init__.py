@@ -8,10 +8,14 @@ from typing import Self
 
 from gallia.log import get_logger
 from gallia.power_supply.base import BasePowerSupplyDriver
+from gallia.power_supply.devices.rnd import RND320
 from gallia.power_supply.devices.rs.hmc804 import HMC804
 from gallia.power_supply.uri import PowerSupplyURI
 
-power_supply_drivers: list[type[BasePowerSupplyDriver]] = [HMC804]
+power_supply_drivers: dict[str, type[BasePowerSupplyDriver]] = {
+    HMC804.PRODUCT_ID.lower(): HMC804,
+    RND320.PRODUCT_ID.lower(): RND320,
+}
 
 logger = get_logger(__name__)
 
@@ -27,11 +31,9 @@ class PowerSupply:
         if target.product_id == "":
             raise ValueError("no device_id specified")
 
-        for driver in power_supply_drivers:
-            if target.product_id == driver.PRODUCT_ID:
-                client = await driver.connect(target, timeout=1.0)
-                return cls(client, target.channel)
-        raise ValueError(f"{target.product_id} is not supported")
+        driver = power_supply_drivers[target.product_id]
+        client = await driver.connect(target, timeout=1.0)
+        return cls(client, target.channel)
 
     async def _power(self, op: bool) -> None:
         assert self.driver
