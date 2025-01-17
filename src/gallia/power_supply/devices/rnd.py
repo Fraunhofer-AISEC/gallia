@@ -18,7 +18,10 @@ class RND320(BasePowerSupplyDriver):
             f.write(data)
 
     async def get_ident(self) -> str:
-        raise OperationNotSupportedError
+        # This endpoint is completely broken in the device.
+        # Return a static string to satisfy gallia's driver
+        # interface.
+        return self.PRODUCT_ID
 
     async def get_master(self) -> bool:
         raise OperationNotSupportedError
