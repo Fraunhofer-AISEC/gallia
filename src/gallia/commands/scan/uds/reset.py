@@ -44,10 +44,12 @@ class ResetScanner(UDSScanner):
 
     async def main(self) -> None:
         if self.config.sessions is None:
-            await self.perform_scan()
+            if not await self.perform_scan():
+                sys.exit(1)
         else:
             sessions = self.config.sessions
             logger.info(f"testing sessions {g_repr(sessions)}")
+            clean_returns = True
 
             # TODO: Unified shortened output necessary here
             logger.info(f"skipping identifiers {reprlib.repr(self.config.skip)}")
@@ -60,11 +62,14 @@ class ResetScanner(UDSScanner):
                     continue
 
                 logger.result(f"Scanning in session: {g_repr(session)}")
-                await self.perform_scan(session)
+                clean_returns = clean_returns and await self.perform_scan(session)
 
                 await self.ecu.leave_session(session, sleep=self.config.power_cycle_sleep)
 
-    async def perform_scan(self, session: None | int = None) -> None:
+            if not clean_returns:
+                sys.exit(1)
+
+    async def perform_scan(self, session: None | int = None) -> bool:
         l_ok: list[int] = []
         l_timeout: list[int] = []
         l_error: list[Any] = []
@@ -82,7 +87,7 @@ class ResetScanner(UDSScanner):
                     logger.error(
                         f"Aborting scan on session {g_repr(session)}; current sub-func was {g_repr(sub_func)}"
                     )
-                    break
+                    return False
 
             try:
                 try:
@@ -153,3 +158,5 @@ class ResetScanner(UDSScanner):
         logger.result(f"ok: {l_ok}")
         logger.result(f"timeout: {l_timeout}")
         logger.result(f"with error: {l_error}")
+
+        return True

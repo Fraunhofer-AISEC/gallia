@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import reprlib
+import sys
 from typing import Any
 
 from gallia.command import UDSScanner
@@ -56,9 +57,10 @@ class ServicesScanner(UDSScanner):
     async def main(self) -> None:
         self.ecu.max_retry = 0
         found: dict[int, dict[int, Any]] = {}
+        clean_returns = True
 
         if self.config.sessions is None:
-            found[0] = await self.perform_scan()
+            found[0], clean_returns = await self.perform_scan()
         else:
             sessions = [
                 s
@@ -89,7 +91,8 @@ class ServicesScanner(UDSScanner):
 
                 logger.result(f"scanning in session {g_repr(session)}")
 
-                found[session] = await self.perform_scan(session)
+                found[session], ret = await self.perform_scan(session)
+                clean_returns = clean_returns and ret
 
                 await self.ecu.leave_session(session, sleep=self.config.power_cycle_sleep)
 
@@ -102,7 +105,10 @@ class ServicesScanner(UDSScanner):
                 except Exception:
                     logger.result(f"  [{g_repr(sid)}] vendor specific sid: {data}")
 
-    async def perform_scan(self, session: None | int = None) -> dict[int, Any]:
+        if not clean_returns:
+            sys.exit(1)
+
+    async def perform_scan(self, session: None | int = None) -> tuple[dict[int, Any], bool]:
         result: dict[int, Any] = {}
 
         # Starts at 0x00, see first loop iteration.
@@ -123,7 +129,7 @@ class ServicesScanner(UDSScanner):
                     logger.error(
                         f"Aborting scan on session {g_repr(session)}; current SID was {g_repr(sid)}"
                     )
-                    break
+                    return result, False
 
             for length_payload in [1, 2, 3, 5]:
                 pdu = bytes([sid]) + bytes(length_payload)
@@ -152,4 +158,4 @@ class ServicesScanner(UDSScanner):
                 result[sid] = resp
                 break
 
-        return result
+        return result, True

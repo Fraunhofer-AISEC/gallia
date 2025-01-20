@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import reprlib
+import sys
 from itertools import product
 
 from gallia.command import UDSScanner
@@ -63,7 +64,8 @@ class ScanIdentifiers(UDSScanner):
     async def main(self) -> None:
         if self.config.sessions is None:
             logger.notice("Performing scan in current session")
-            await self.perform_scan()
+            if not await self.perform_scan():
+                sys.exit(1)
         else:
             sessions: list[int] = [
                 s
@@ -71,6 +73,7 @@ class ScanIdentifiers(UDSScanner):
                 if s not in self.config.skip or self.config.skip[s] is not None
             ]
             logger.info(f"testing sessions {g_repr(sessions)}")
+            clean_returns = True
 
             # TODO: Unified shortened output necessary here
             logger.info(f"skipping identifiers {reprlib.repr(self.config.skip)}")
@@ -84,13 +87,16 @@ class ScanIdentifiers(UDSScanner):
 
                 logger.result(f"Starting scan in session: {g_repr(session)}")
 
-                await self.perform_scan(session)
+                clean_returns = clean_returns and await self.perform_scan(session)
 
                 logger.result(f"Scan in session {g_repr(session)} is complete!")
                 logger.info(f"Leaving session {g_repr(session)} via hook")
                 await self.ecu.leave_session(session, sleep=self.config.power_cycle_sleep)
 
-    async def perform_scan(self, session: None | int = None) -> None:
+            if not clean_returns:
+                sys.exit(1)
+
+    async def perform_scan(self, session: None | int = None) -> bool:
         positive_DIDs = 0
         abnormal_DIDs = 0
         timeout_DIDs = 0
@@ -132,7 +138,7 @@ class ScanIdentifiers(UDSScanner):
                     logger.error(
                         f"Aborting scan on session {g_repr(session)}; current DID was {g_repr(DID)}"
                     )
-                    break
+                    return False
 
             if self.config.service == UDSIsoServices.SecurityAccess:
                 if DID & 128:
@@ -191,3 +197,5 @@ class ScanIdentifiers(UDSScanner):
         logger.result(f"Positive replies: {positive_DIDs}")
         logger.result(f"Abnormal replies: {abnormal_DIDs}")
         logger.result(f"Timeouts: {timeout_DIDs}")
+
+        return True
