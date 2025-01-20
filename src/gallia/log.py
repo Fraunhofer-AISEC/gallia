@@ -299,13 +299,15 @@ def add_stderr_log_handler(
 
 def add_zst_log_handler(
     logger_name: str, filepath: Path, file_log_level: Loglevel
-) -> logging.Handler:
+) -> _ZstdFileHandler:
     queue: Queue[Any] = Queue()
     logger = get_logger(logger_name)
-    logger.addHandler(QueueHandler(queue))
+    qh = QueueHandler(queue)
+    logger.addHandler(qh)
 
     zstd_handler = _ZstdFileHandler(
         filepath,
+        queue_handler=qh,
         level=file_log_level,
     )
     zstd_handler.setLevel(file_log_level)
@@ -317,8 +319,16 @@ def add_zst_log_handler(
         respect_handler_level=True,
     )
     queue_listener.start()
-    atexit.register(queue_listener.stop)
+    zstd_handler.queue_listener = queue_listener
     return zstd_handler
+
+
+def remove_zst_log_handler(logger_name: str, handler: _ZstdFileHandler) -> None:
+    """This function removes the handler from the specified logger and closes it"""
+    logger = get_logger(logger_name)
+    # It is important to remove the Handler, otherwise it would still receive log messages
+    logger.removeHandler(handler.queue_handler)
+    handler.close()
 
 
 @dataclasses.dataclass
@@ -730,7 +740,9 @@ class _ConsoleFormatter(logging.Formatter):
 
 
 class _ZstdFileHandler(logging.Handler):
-    def __init__(self, path: Path, level: int | str = logging.NOTSET) -> None:
+    def __init__(
+        self, path: Path, queue_handler: QueueHandler, level: int | str = logging.NOTSET
+    ) -> None:
         super().__init__(level)
         self.file = zstandard.open(
             filename=path,
@@ -741,8 +753,15 @@ class _ZstdFileHandler(logging.Handler):
                 threads=-1,
             ),
         )
+        self.queue_handler = queue_handler
+        self.queue_listener: QueueListener | None = None
 
     def close(self) -> None:
+        """This function closes the queue handler, the queue listener, and the log file."""
+        self.queue_handler.close()
+        # There might be no queue_listener or it might already be closed (_thread is None)
+        if self.queue_listener is not None and self.queue_listener._thread is not None:
+            self.queue_listener.stop()
         self.file.flush()
         self.file.close()
 

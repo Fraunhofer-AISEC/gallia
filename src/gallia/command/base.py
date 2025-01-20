@@ -14,7 +14,6 @@ from abc import ABC, abstractmethod
 from collections.abc import MutableMapping
 from datetime import UTC, datetime
 from enum import Enum, unique
-from logging import Handler
 from pathlib import Path
 from subprocess import CalledProcessError, run
 from tempfile import gettempdir
@@ -26,7 +25,7 @@ from gallia import exitcodes
 from gallia.command.config import Field, GalliaBaseModel, Idempotent
 from gallia.db.handler import DBHandler
 from gallia.dumpcap import Dumpcap
-from gallia.log import add_zst_log_handler, get_logger, tz
+from gallia.log import _ZstdFileHandler, add_zst_log_handler, get_logger, remove_zst_log_handler, tz
 from gallia.power_supply import PowerSupply
 from gallia.power_supply.uri import PowerSupplyURI
 from gallia.services.uds.core.exception import UDSException
@@ -184,7 +183,7 @@ class BaseCommand(FlockMixin, ABC):
     #: a log message with level critical is logged.
     CATCHED_EXCEPTIONS: list[type[Exception]] = []
 
-    log_file_handlers: list[Handler]
+    log_file_handlers: list[_ZstdFileHandler]
 
     def __init__(self, config: BaseCommandConfig) -> None:
         self.id = camel_to_snake(self.__class__.__name__)
@@ -377,6 +376,15 @@ class BaseCommand(FlockMixin, ABC):
                     self.run_meta.json() + "\n"
                 )
                 logger.notice(f"Stored artifacts at {self.artifacts_dir}")
+
+            # Close open log file handlers to ensure logs are properly written
+            # to avoid memory leaks and cross-talking log files
+            logger.info("Syncing log files…")
+            while len(self.log_file_handlers) > 0:
+                remove_zst_log_handler(
+                    logger_name="gallia",
+                    handler=self.log_file_handlers.pop(),
+                )
 
         if self.config.hooks:
             self.run_hook(HookVariant.POST, exit_code)
