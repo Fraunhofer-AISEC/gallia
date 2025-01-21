@@ -97,6 +97,9 @@ class UDSClient:
             except ConnectionError as e:
                 logger.warning(f"{request} failed with: {e!r}")
                 last_exception = MissingResponse(request, str(e))
+                # Explicitly set __cause__ such that higher levels might react, e.g. wait_for_ecu()
+                # Basically equal to "raise last_exception from e"
+                last_exception.__cause__ = e
                 if i < max_retry:
                     logger.info(f"Sleeping for {wait_time}s before attempting to reconnect")
                     await asyncio.sleep(wait_time)

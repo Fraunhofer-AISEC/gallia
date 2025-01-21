@@ -323,11 +323,16 @@ class ECU(UDSClient):
                 await asyncio.sleep(sleep_time)
                 await self.ping(config=config)
                 break
-            except ConnectionError as e:
-                logger.debug(f"ECU not ready: {e!r}, reconnecting…")
-                await self.reconnect()
-            except UDSException as e:
+            # When the ECU is not ready, we expect an UDSException, e.g. MissingResponse.
+            # On ConnectionError, we additionally reconnect the transport to ensure connectivity.
+            # Since Gallia converts a ConnectionError to a MissingResponse in `request_unsafe`, however,
+            # there is a need to reconnect the transport also in case of high-level UDSExceptions
+            # such as MissingResponses that are raised (__cause__) from ConnectionErrors.
+            except (ConnectionError, UDSException) as e:
                 logger.debug(f"ECU not ready: {e!r}")
+                if isinstance(e, ConnectionError) or isinstance(e.__cause__, ConnectionError):
+                    logger.debug("Reconnecting…")
+                    await self.reconnect()
         logger.info("ECU ready")
 
     async def wait_for_ecu(
