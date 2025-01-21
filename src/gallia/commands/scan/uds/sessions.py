@@ -10,7 +10,7 @@ from gallia.command import UDSScanner
 from gallia.command.config import AutoInt, Field, Ranges
 from gallia.command.uds import UDSScannerConfig
 from gallia.log import get_logger
-from gallia.services.uds import NegativeResponse, UDSErrorCodes, UDSRequestConfig, UDSResponse
+from gallia.services.uds import NegativeResponse, UDSErrorCodes, UDSRequestConfig
 from gallia.services.uds.core.constants import EcuResetSubFuncs
 from gallia.services.uds.core.service import DiagnosticSessionControlResponse
 from gallia.services.uds.core.utils import g_repr
@@ -31,7 +31,7 @@ class SessionsScannerConfig(UDSScannerConfig):
     with_hooks: bool = Field(False, description="Use hooks in case of a ConditionsNotCorrect error")
     reset: AutoInt | None = Field(
         None,
-        description="Reset the ECU after each iteration with the optionally given reset level",
+        description="Reset the ECU before each iteration with the optionally given reset level",
         const=0x01,
     )
     fast: bool = Field(
@@ -55,6 +55,8 @@ class SessionsScanner(UDSScanner):
     async def set_session_with_hooks_handling(
         self, session: int, use_hooks: bool
     ) -> NegativeResponse | DiagnosticSessionControlResponse:
+        """This function attempts to set the session without hooks first and if unsuccessful due to NRC CnC
+        it automatically attempts the session change with hooks, as long as `use_hooks` is True"""
         resp = await self.ecu.set_session(
             session, config=UDSRequestConfig(skip_hooks=True), use_db=False
         )
@@ -84,7 +86,7 @@ class SessionsScanner(UDSScanner):
 
         return resp
 
-    async def recover_stack(self, stack: list[int], use_hooks: bool) -> bool:
+    async def _recover_stack(self, stack: list[int], use_hooks: bool) -> bool:
         for session in stack:
             try:
                 resp = await self.set_session_with_hooks_handling(session, use_hooks)
@@ -101,8 +103,27 @@ class SessionsScanner(UDSScanner):
                 return False
         return True
 
+    async def recover_stack_from_default_session(self, stack: list[int], use_hooks: bool) -> bool:
+        logger.debug("Changing session to DefaultSession")
+        try:
+            resp = await self.ecu.set_session(0x01, use_db=False)
+            if isinstance(resp, NegativeResponse):
+                logger.error(f"Could not change to default session: {resp}")
+                sys.exit(1)
+        except Exception as e:
+            logger.error(f"Could not change to default session: {e!r}")
+            sys.exit(1)
+
+        logger.debug(f"Sleeping for {self.config.sleep}s after changing to DefaultSession")
+        await asyncio.sleep(self.config.sleep)
+
+        logger.debug("Recovering the current session stack")
+        return await self._recover_stack(stack, use_hooks)
+
     async def main(self) -> None:
-        found: dict[int, list[list[int]]] = {0: [[0x01]]}
+        found: dict[int, list[list[int]]] = {
+            0: [[0x01]]
+        }  # Content of this dict is just a filler to start the loop
         positive_results: list[dict[str, Any]] = []
         negative_results: list[dict[str, Any]] = []
         activated_sessions: set[int] = set()
@@ -115,7 +136,7 @@ class SessionsScanner(UDSScanner):
             depth += 1
 
             found[depth] = []
-            logger.info(f"Depth: {depth}")
+            logger.notice(f"Enumerating at depth: {depth}")
 
             for stack in found[depth - 1]:
                 if self.config.fast and stack[-1] in search_sessions:
@@ -128,17 +149,17 @@ class SessionsScanner(UDSScanner):
 
                 for session in sessions:
                     if session in self.config.skip:
-                        logger.info(f"Skipping session {g_repr(session)} as requested")
+                        logger.info(f"Skipping testing for session {g_repr(session)} as requested")
                         continue
 
                     if self.config.reset:
                         try:
-                            logger.info("Resetting the ECU")
-                            resp: UDSResponse = await self.ecu.ecu_reset(self.config.reset)
+                            logger.info("Resetting the ECU as requested")
+                            reset_resp = await self.ecu.ecu_reset(self.config.reset)
 
-                            if isinstance(resp, NegativeResponse):
+                            if isinstance(reset_resp, NegativeResponse):
                                 logger.warning(
-                                    f"Could not reset ECU with {(EcuResetSubFuncs(self.config.reset).name if self.config.reset in iter(EcuResetSubFuncs) else self.config.reset)}: {resp}; continuing without reset"  # type: ignore[operator]
+                                    f"Could not reset ECU with {(EcuResetSubFuncs(self.config.reset).name if self.config.reset in iter(EcuResetSubFuncs) else self.config.reset)}: {reset_resp}; continuing without reset"  # type: ignore[operator]
                                 )
                             else:
                                 logger.info("Waiting for the ECU to recover…")
@@ -149,62 +170,59 @@ class SessionsScanner(UDSScanner):
                             )
                             await self.ecu.reconnect()
 
-                    try:
-                        logger.debug("Changing session to DefaultSession")
-                        resp = await self.ecu.set_session(0x01, use_db=False)
-                        if isinstance(resp, NegativeResponse):
-                            logger.error(f"Could not change to default session: {resp}")
+                    # Recover stack in first loop iteration and afterwards only if needed
+                    if session == sessions[0]:
+                        if not await self.recover_stack_from_default_session(
+                            stack, self.config.with_hooks
+                        ):
                             sys.exit(1)
-                    except Exception as e:
-                        logger.error(f"Could not change to default session: {e!r}")
-                        sys.exit(1)
 
-                    logger.debug(
-                        f"Sleeping for {self.config.sleep}s after changing to DefaultSession"
-                    )
-                    await asyncio.sleep(self.config.sleep)
-
-                    logger.debug("Recovering the current session stack")
-                    if not await self.recover_stack(stack, self.config.with_hooks):
-                        sys.exit(1)
-
+                    logger.debug(f"Attempting to change to session {session:#04x}")
                     try:
-                        logger.debug(f"Attempting to change to session {session:#04x}")
                         resp = await self.set_session_with_hooks_handling(
                             session, self.config.with_hooks
                         )
 
-                        # do not ignore NCR subFunctionNotSupportedInActiveSession in this case
+                        # Do only ignore NCR subFunctionNotSupported
                         if (
                             isinstance(resp, NegativeResponse)
                             and resp.response_code == UDSErrorCodes.subFunctionNotSupported
                         ):
                             logger.info(f"Could not change to session {g_repr(session)}: {resp}")
+                            # For this NRC, continue without recovering the stack
                             continue
 
                         logger.notice(
                             f"Found session: {g_repr(session)} via stack: {g_repr(stack)}; {resp}"
                         )
 
-                        if not isinstance(resp, NegativeResponse):
-                            # Reaching each session once is enough
-                            if session not in stack:
-                                found[depth].append(stack + [session])
-
-                            activated_sessions.add(session)
-                            positive_results.append(
-                                {"session": session, "stack": stack, "error": None}
-                            )
-                        else:
+                        if isinstance(resp, NegativeResponse):
                             negative_results.append(
                                 {"session": session, "stack": stack, "error": resp.response_code}
                             )
+                            # Presumably we did not successfully leave the session, so no need to recover the stack
+                            continue
 
+                        # Do not track a session in "found" if it is already present on the stack
+                        # This avoids looping through sessions, e.g. 0x01->0x02->0x01->0x02->...
+                        if session not in stack:
+                            found[depth].append(stack + [session])
+
+                        activated_sessions.add(session)
+                        positive_results.append({"session": session, "stack": stack, "error": None})
                     except TimeoutError:
                         logger.warning(f"Could not change to session {g_repr(session)}: Timeout")
+                        # TODO: Is there a need to recover stack in this case?
                         continue
                     except Exception as e:
                         logger.warning(f"Mamma mia: {repr(e)}")
+
+                    # If the loop is not `continue`d early, recover stack, e.g. on successful session change
+                    logger.info("Recovering the stack starting from default session")
+                    if not await self.recover_stack_from_default_session(
+                        stack, self.config.with_hooks
+                    ):
+                        sys.exit(1)
 
         logger.result("Scan finished; Found the following sessions:")
         previous_session = 0
