@@ -611,6 +611,8 @@ class DoIPConnection:
         return payload.UserData
 
     async def _read_ack(self, prev_data: bytes) -> None:
+        """This function consumes all DoIP Diagnostic Message ACKs and just logs a warning in case of mismatches."""
+
         unexpected_packets: list[tuple[Any, Any]] = []
         while True:
             hdr, payload = await self.read_frame_unsafe()
@@ -626,21 +628,19 @@ class DoIPConnection:
                     f"DoIP-ACK: unexpected addresses (src:dst); expected {self.target_addr:#04x}:{self.src_addr:#04x} "
                     + f"but got: {payload.SourceAddress:#04x}:{payload.TargetAddress:#04x}"
                 )
-                unexpected_packets.append((hdr, payload))
                 continue
             if (
                 len(payload.PreviousDiagnosticMessageData) > 0
                 and payload.PreviousDiagnosticMessageData
                 != prev_data[: len(payload.PreviousDiagnosticMessageData)]
             ):
-                logger.warning("ack: previous data differs from request")
                 logger.warning(
-                    f"DoIP-ACK: got: {payload.PreviousDiagnosticMessageData.hex()} expected {prev_data.hex()}"
+                    f"DoIP-ACK: got: {payload.PreviousDiagnosticMessageData.hex()}; expected: {prev_data.hex()}"
                 )
-                unexpected_packets.append((hdr, payload))
                 continue
 
             # Do not consume unexpected packets, but re-add them to the queue for other consumers
+            # Mismatched DoIP ACKs, however, are not re-added to avoid unnecessary confusion
             for item in unexpected_packets:
                 await self._read_queue.put(item)
 
@@ -677,25 +677,6 @@ class DoIPConnection:
 
             logger.trace("Sent DoIP message: hdr: %s, payload: %s", hdr, payload)
 
-            try:
-                match payload:
-                    case DiagnosticMessage():
-                        # Now an ACK message is expected.
-                        await asyncio.wait_for(
-                            self._read_ack(payload.UserData),
-                            TimingAndCommunicationParameters.DiagnosticMessageMessageAckTimeout
-                            / 1000,
-                        )
-                    case RoutingActivationRequest():
-                        await asyncio.wait_for(
-                            self._read_routing_activation_response(),
-                            TimingAndCommunicationParameters.RoutingActivationResponseTimeout
-                            / 1000,
-                        )
-            except TimeoutError as e:
-                await self.close()
-                raise BrokenPipeError("Timeout while waiting for DoIP ACK message") from e
-
     async def write_diag_request(self, data: bytes) -> None:
         hdr = GenericHeader(
             ProtocolVersion=self.protocol_version,
@@ -708,6 +689,17 @@ class DoIPConnection:
             UserData=data,
         )
         await self.write_request_raw(hdr, payload)
+
+        # DiagnosticMessages will trigger an ACK message of the DoIP node/gateway that needs to be handled
+        try:
+            await asyncio.wait_for(
+                self._read_ack(payload.UserData),
+                TimingAndCommunicationParameters.DiagnosticMessageMessageAckTimeout / 1000,
+            )
+        except TimeoutError:
+            logger.warning(f"Timeout while waiting for DoIP ACK for diagnostic message {payload}")
+            # While not receiving a DoIP ACK is a violation of the standard, we deliberately
+            # do not close the connection or raise a BrokenPipeError here, since it's not yet a problem
 
     async def write_routing_activation_request(
         self,
@@ -724,6 +716,16 @@ class DoIPConnection:
             Reserved=0x00,
         )
         await self.write_request_raw(hdr, payload)
+
+        # Sending a routing activation request triggers an immediate reply
+        try:
+            await asyncio.wait_for(
+                self._read_routing_activation_response(),
+                TimingAndCommunicationParameters.RoutingActivationResponseTimeout / 1000,
+            )
+        except TimeoutError as e:
+            await self.close()
+            raise BrokenPipeError("Timeout while waiting for Routing Activation Response") from e
 
     async def write_alive_check_response(self) -> None:
         hdr = GenericHeader(
