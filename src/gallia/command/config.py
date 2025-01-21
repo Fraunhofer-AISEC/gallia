@@ -19,7 +19,7 @@ from typing import (
     get_args,
 )
 
-from pydantic import BeforeValidator
+from pydantic import BeforeValidator, PlainSerializer
 from pydantic.fields import _FromFieldInfoInputs
 from pydantic_core import PydanticUndefined
 
@@ -65,6 +65,7 @@ Usage: x: HexInt = ....
 HexBytes = Annotated[
     bytes,
     BeforeValidator(lambda x: x if isinstance(x, bytes) else binascii.unhexlify(x)),
+    PlainSerializer(lambda x: binascii.hexlify(x)),
 ]
 """
 Special type for a field, which parses bytes from hex strings.
