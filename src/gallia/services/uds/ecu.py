@@ -158,7 +158,7 @@ class ECU(UDSClient):
         if current_session == expected_session:
             return True
 
-        for i in range(retries):
+        for i in range(retries + 1):
             logger.warning(
                 f"Not in session {g_repr(expected_session)}, ECU replied with {g_repr(current_session)}"
             )
