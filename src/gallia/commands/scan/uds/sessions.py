@@ -19,7 +19,7 @@ logger = get_logger(__name__)
 
 
 class SessionsScannerConfig(UDSScannerConfig):
-    depth: AutoInt | None = Field(None, description="Specify max scanning depth.")
+    depth: AutoInt = Field(4, description="Specify max scanning depth.")
     sleep: AutoInt = Field(
         0,
         description="Sleep this amount of seconds after changing to DefaultSession",
@@ -34,9 +34,9 @@ class SessionsScannerConfig(UDSScannerConfig):
         description="Reset the ECU before each iteration with the optionally given reset level",
         const=0x01,
     )
-    fast: bool = Field(
+    thorough: bool = Field(
         False,
-        description="Only search for new sessions once in a particular session, i.e. ignore different stacks",
+        description="Perform a session scan for each 'stack' of a session instead of only once per session",
     )
 
 
@@ -122,22 +122,21 @@ class SessionsScanner(UDSScanner):
         positive_results: list[dict[str, Any]] = []
         negative_results: list[dict[str, Any]] = []
         activated_sessions: set[int] = set()
-        search_sessions: list[int] = []
+        searched_sessions: list[int] = []
 
         sessions = list(range(1, 0x80))
-        depth = 0
+        current_depth = 0
 
-        while (self.config.depth is None or depth < self.config.depth) and len(found[depth]) > 0:
-            depth += 1
+        while current_depth < self.config.depth and len(found[current_depth]) > 0:
+            current_depth += 1
 
-            found[depth] = []
-            logger.notice(f"Enumerating at depth: {depth}")
+            found[current_depth] = []
+            logger.notice(f"Enumerating at depth: {current_depth}")
 
-            for stack in found[depth - 1]:
-                if self.config.fast and stack[-1] in search_sessions:
+            for stack in found[current_depth - 1]:
+                if (not self.config.thorough) and stack[-1] in searched_sessions:
                     continue
-
-                search_sessions.append(stack[-1])
+                searched_sessions.append(stack[-1])
 
                 if stack:
                     logger.info(f"Starting from session: {g_repr(stack[-1])}")
@@ -201,10 +200,10 @@ class SessionsScanner(UDSScanner):
                             # Presumably we did not successfully leave the session, so no need to recover the stack
                             continue
 
-                        # Do not track a session in "found" if it is already present on the stack
+                        # Do not track a session in "found" if it is already present on the stack unless 'thorough'
                         # This avoids looping through sessions, e.g. 0x01->0x02->0x01->0x02->...
-                        if session not in stack:
-                            found[depth].append(stack + [session])
+                        if self.config.thorough or session not in stack:
+                            found[current_depth].append(stack + [session])
 
                         activated_sessions.add(session)
                         positive_results.append({"session": session, "stack": stack, "error": None})
