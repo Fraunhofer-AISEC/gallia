@@ -4,6 +4,9 @@
 
 import asyncio
 import sys
+from typing import Self
+
+from pydantic import model_validator
 
 from gallia.command import UDSScanner
 from gallia.command.config import AutoInt, Field, HexBytes
@@ -63,6 +66,13 @@ class RTCLPrimitiveConfig(UDSScannerConfig):
         metavar="SECONDS",
     )
 
+    @model_validator(mode="after")
+    def check_action(self) -> Self:
+        if not any((self.start, self.stop, self.results)):
+            raise ValueError("No instructions were given (start/stop/results)")
+
+        return self
+
 
 class RTCLPrimitive(UDSScanner):
     """Start or stop a provided routine or request its results"""
@@ -80,13 +90,6 @@ class RTCLPrimitive(UDSScanner):
         except Exception as e:
             logger.critical(f"Could not change to session: {g_repr(self.config.session)}: {e!r}")
             sys.exit(1)
-
-        if (
-            self.config.start is False
-            and self.config.stop is False
-            and (self.config.results is False)
-        ):
-            logger.warning("No instructions were given (start/stop/results)")
 
         if self.config.start:
             resp: (
