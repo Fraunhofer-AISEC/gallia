@@ -73,7 +73,6 @@ class DoIPDiscoverer(AsyncScript):
         self.config: DoIPDiscovererConfig = config
 
     # This is an ugly hack to circumvent AsyncScript's shortcomings regarding return codes
-
     def run(self) -> int:
         return asyncio.run(self.main2())
 
@@ -90,7 +89,11 @@ class DoIPDiscoverer(AsyncScript):
 
         if self.db_handler is not None:
             try:
+                # We need to manually connect to the DB because we are an AsyncScript that
+                # does not do so automatically
+                await self.db_handler.connect()
                 await self.db_handler.insert_discovery_run("doip")
+                await self.db_handler.disconnect()
             except Exception as e:
                 logger.warning(f"Could not write the discovery run to the database: {e!r}")
 
@@ -420,7 +423,11 @@ class DoIPDiscoverer(AsyncScript):
                     with self.artifacts_dir.joinpath("4_responsive_targets.txt").open("a") as f:
                         f.write(f"{current_target}\n")
                     if self.db_handler is not None:
+                        # We need to manually connect to the DB because we are an AsyncScript that
+                        # does not do so automatically
+                        await self.db_handler.connect()
                         await self.db_handler.insert_discovery_result(current_target)
+                        await self.db_handler.disconnect()
 
                 if (
                     abs(source_address - conn.target_addr) > 10

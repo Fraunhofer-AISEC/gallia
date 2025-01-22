@@ -21,7 +21,6 @@ from gallia.services.uds.core.service import (
     UDSResponse,
 )
 from gallia.services.uds.core.utils import bytes_repr as bytes_repr_
-from gallia.services.uds.core.utils import g_repr
 from gallia.utils import handle_task_error, set_task_handler_ctx_variable
 
 
@@ -143,9 +142,15 @@ class DBHandler:
         self.target: str | None = None
         self.discovery_run: int | None = None
         self.meta: int | None = None
+        self._executor_task: asyncio.Task[None] | None = None
+        self._execute_queue: asyncio.Queue[tuple[str, tuple[Any, ...]]] | None = None
 
     async def connect(self) -> None:
-        assert self.connection is None, "Already connected to the database"
+        """It is important that `connect` and `disconnect` are called in the same event loop!"""
+
+        if self.connection is not None:
+            logger.warning("Already connected to the database")
+            return
 
         self.path.parent.mkdir(exist_ok=True, parents=True)
         self.connection = await aiosqlite.connect(self.path)
@@ -161,20 +166,69 @@ class DBHandler:
         await self.connection.executescript(DB_SCHEMA)
         await self.check_version()
 
-    async def disconnect(self) -> None:
-        assert self.connection is not None, "Not connected to the database"
+        # This queue is meant to be used for usage-heavy executes that are not time-sensitive, e.g. UDS messages
+        self._execute_queue = asyncio.Queue()
+        self._executor_task = asyncio.create_task(self._executor_func())
+        self._executor_task.add_done_callback(
+            handle_task_error,
+            context=set_task_handler_ctx_variable(__name__, "DbHandler"),
+        )
 
-        for task in self.tasks:
-            try:
-                await task
-            except Exception as e:
-                logger.error(f"Inside task: {g_repr(e)}")
+    async def _executor_func(self) -> None:
+        assert self.connection is not None, "Not connected to the database"
+        assert self._execute_queue is not None, "Queue was not started"
+
+        try:
+            while True:
+                (query, query_parameter) = await self._execute_queue.get()
+
+                try:
+                    await self.connection.execute(query, query_parameter)
+                    await self.connection.commit()
+                except aiosqlite.OperationalError:
+                    logger.warning(
+                        f"Could not log message for {query_parameter[5]} to database. Retrying ..."
+                    )
+                    # TODO: This could lead to an infinite loop when there are recurring OperationalErrors!
+                    await self._execute_queue.put((query, query_parameter))
+                finally:
+                    # Inform the the queue that the query was fully processed to track progress
+                    self._execute_queue.task_done()
+
+        except asyncio.CancelledError:
+            logger.debug("Database worker cancelled")
+        except asyncio.IncompleteReadError as e:
+            logger.debug(f"Database worker received EOF: {e}")
+        except Exception as e:
+            logger.critical(f"Database worker died: {e!r}")
+
+    async def disconnect(self) -> None:
+        """It is important that `connect` and `disconnect` are called in the same event loop!"""
+
+        assert self.connection is not None, "Not connected to the database"
+        assert self._execute_queue is not None, "Queue is already detached"
+        assert self._executor_task is not None, "Task is already detached"
+
+        logger.info("Syncing database…")
+        try:
+            # Wait for all queries in the queue to be written to the database and cancel task afterwards.
+            # TODO: this could block infinitely if there are OperationalErrors writing to the database in
+            # the `_executor_func()`
+            await self._execute_queue.join()
+            self._executor_task.cancel()
+            await self._executor_task
+        except Exception as e:
+            logger.error(f"Could not properly clean up the database task: {e!r}")
+        finally:
+            self._execute_queue = None
+            self._executor_task = None
 
         try:
             await self.connection.commit()
         finally:
             await self.connection.close()
             self.connection = None
+        logger.info("Database closed")
 
     async def check_version(self) -> None:
         assert self.connection is not None, "Not connected to the database"
@@ -295,9 +349,9 @@ class DBHandler:
         send_time: datetime,
         receive_time: datetime | None,
         log_mode: LogMode,
-        commit: bool = True,
     ) -> None:
         assert self.connection is not None, "Not connected to the database"
+        assert self._execute_queue is not None, "Queue not yet created"
         assert self.scan_run is not None, "Scan run not yet created"
 
         request_attributes: dict[str, Any] = {
@@ -366,32 +420,7 @@ class DBHandler:
             log_mode.name,
         )
 
-        async def execute() -> None:
-            assert self.connection is not None, "Not connected to the database"
-
-            done = False
-
-            while not done:
-                try:
-                    await self.connection.execute(query, query_parameter)
-                    done = True
-                except aiosqlite.OperationalError:
-                    logger.warning(
-                        f"Could not log message for {query_parameter[5]} to database. Retrying ..."
-                    )
-                except asyncio.CancelledError:
-                    logger.warning("Database query was cancelled.")
-                    done = True
-
-            if commit:
-                await self.connection.commit()
-
-        task = asyncio.create_task(execute())
-        task.add_done_callback(
-            handle_task_error,
-            context=set_task_handler_ctx_variable(__name__, "DbHandler"),
-        )
-        self.tasks.append(task)
+        await self._execute_queue.put((query, query_parameter))
 
     async def insert_session_transition(self, destination: int, steps: list[int]) -> None:
         assert self.connection is not None, "Not connected to the database"
