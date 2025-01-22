@@ -236,6 +236,8 @@ class BaseCommand(FlockMixin, ABC):
             logger.info(p.stderr.strip(), extra={"tags": [hook_id, "stderr"]})
 
     async def _db_insert_run_meta(self) -> None:
+        # TODO: This function has to call `connect` and `disconnect` in order to be safely run in an own event loop
+
         if self.config.db is not None:
             self.db_handler = DBHandler(self.config.db)
             await self.db_handler.connect()
@@ -247,9 +249,15 @@ class BaseCommand(FlockMixin, ABC):
                 path=self.artifacts_dir,
             )
 
+            await self.db_handler.disconnect()
+
     async def _db_finish_run_meta(self) -> None:
-        if self.db_handler is not None and self.db_handler.connection is not None:
+        # TODO: This function has to call `connect` and `disconnect` in order to be safely run in an own event loop
+
+        if self.db_handler is not None:
             if self.db_handler.meta is not None:
+                await self.db_handler.connect()
+
                 try:
                     await self.db_handler.complete_run_meta(
                         datetime.now(UTC).astimezone(), self.run_meta.exit_code, self.artifacts_dir
@@ -519,6 +527,10 @@ class Scanner(AsyncScript, ABC):
     async def setup(self) -> None:
         from gallia.plugins.plugin import load_transport
 
+        if self.db_handler is not None:
+            # Open the DB handler that will be closed in `teardown`
+            await self.db_handler.connect()
+
         if self.config.power_supply is not None:
             self.power_supply = await PowerSupply.connect(self.config.power_supply)
             if self.config.power_cycle is True:
@@ -541,6 +553,10 @@ class Scanner(AsyncScript, ABC):
 
     async def teardown(self) -> None:
         await self.transport.close()
+
+        if self.db_handler is not None:
+            # Close the DB handler that was opened in `setup`
+            await self.db_handler.disconnect()
 
         if self.dumpcap:
             await self.dumpcap.stop()
