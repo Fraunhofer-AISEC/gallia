@@ -134,10 +134,6 @@ class UDSClient:
                         raise BrokenPipeError("connection to target lost")
                     logger.debug(raw_resp.hex(), extra={"tags": ["read", "uds"] + tags})
                 except TimeoutError as e:
-                    # Send a tester present to indicate that
-                    # we are still there.
-                    # TODO: Is this really necessary?
-                    await self._tester_present(suppress_resp=True)
                     n_timeout += 1
                     if n_timeout >= max_n_timeout:
                         last_exception = MissingResponse(request, str(e))
