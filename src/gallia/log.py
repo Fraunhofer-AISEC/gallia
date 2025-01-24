@@ -225,7 +225,6 @@ class PenlogPriority(IntEnum):
 def setup_logging(
     level: Loglevel | None = None,
     color_mode: ColorMode = ColorMode.AUTO,
-    no_volatile_info: bool = False,
     logger_name: str = "gallia",
 ) -> None:
     """Enable and configure gallia's logging system.
@@ -264,13 +263,12 @@ def setup_logging(
         logger.handlers[0].close()
         logger.removeHandler(logger.handlers[0])
     colored = resolve_color_mode(color_mode)
-    add_stderr_log_handler(logger_name, level, no_volatile_info, colored)
+    add_stderr_log_handler(logger_name, level, colored)
 
 
 def add_stderr_log_handler(
     logger_name: str,
     level: Loglevel,
-    no_volatile_info: bool,
     colored: bool,
 ) -> None:
     queue: Queue[Any] = Queue()
@@ -282,9 +280,6 @@ def add_stderr_log_handler(
     console_formatter = _ConsoleFormatter()
 
     console_formatter.colored = colored
-    stderr_handler.terminator = ""  # We manually handle the terminator while formatting
-    if no_volatile_info is False:
-        console_formatter.volatile_info = True
 
     stderr_handler.setFormatter(console_formatter)
 
@@ -340,9 +335,9 @@ class _PenlogRecordV2:
 _PenlogRecord: TypeAlias = _PenlogRecordV2
 
 
-def _colorize_msg(data: str, levelno: int) -> tuple[str, int]:
+def _colorize_msg(data: str, levelno: int) -> str:
     if sys.platform == "win32" or not sys.stderr.isatty():
-        return data, 0
+        return data
 
     out = ""
     match levelno:
@@ -367,7 +362,7 @@ def _colorize_msg(data: str, levelno: int) -> tuple[str, int]:
     out += data
     out += _Color.RESET.value
 
-    return out, len(style)
+    return out
 
 
 def _format_record(  # noqa: PLR0913
@@ -378,12 +373,8 @@ def _format_record(  # noqa: PLR0913
     tags: list[str] | None,
     stacktrace: str | None,
     colored: bool = False,
-    volatile_info: bool = False,
 ) -> str:
     msg = ""
-    if volatile_info:
-        msg += "\33[2K"
-    extra_len = 4
     msg += dt.strftime("%b %d %H:%M:%S.%f")[:-3]
     msg += " "
     msg += name
@@ -392,19 +383,9 @@ def _format_record(  # noqa: PLR0913
     msg += ": "
 
     if colored:
-        tmp_msg, extra_len_tmp = _colorize_msg(data, levelno)
-        msg += tmp_msg
-        extra_len += extra_len_tmp
+        msg += _colorize_msg(data, levelno)
     else:
         msg += data
-
-    if volatile_info and levelno <= Loglevel.INFO:
-        terminal_width, _ = shutil.get_terminal_size()
-        msg = msg[: terminal_width + extra_len - 1]  # Adapt length to invisible ANSI colors
-        msg += _Color.RESET.value
-        msg += "\r"
-    else:
-        msg += "\n"
 
     if stacktrace is not None:
         msg += "\n"
@@ -725,7 +706,6 @@ class _ConsoleFormatter(logging.Formatter):
             tags=record.__dict__["tags"] if "tags" in record.__dict__ else None,
             stacktrace=stacktrace,
             colored=self.colored,
-            volatile_info=self.volatile_info,
         )
 
 
