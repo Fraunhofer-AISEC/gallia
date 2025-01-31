@@ -180,6 +180,7 @@ def parse_and_run(
         setup_logging(
             level=get_log_level(config.verbose),
             no_volatile_info=not config.volatile_info,
+            logger_name="",  # Take over the root logger
         )
 
     sys.exit(get_command(config).entry_point())
