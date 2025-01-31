@@ -21,14 +21,11 @@ from gallia.command import BaseCommand
 from gallia.command.base import BaseCommandConfig
 from gallia.command.config import GalliaBaseModel
 from gallia.config import Config, load_config_file
-from gallia.log import Loglevel, setup_logging
+from gallia.log import setup_logging
 from gallia.plugins.plugin import CommandTree, load_commands, load_plugins
 from gallia.pydantic_argparse import ArgumentParser
 from gallia.pydantic_argparse import BaseCommand as PydanticBaseCommand
 from gallia.utils import get_log_level
-
-setup_logging(Loglevel.DEBUG)
-
 
 defaults = dict[type, dict[str, Any]]
 _CLASS_ATTR = "_dynamic_gallia_command_class_reference"
