@@ -266,8 +266,8 @@ def handle_task_error(fut: asyncio.Future[Any]) -> None:
     except BaseException as e:
         task_name = task_name if task_name is not None else "Task"
 
-        # Info level is enough, since our aim is only to consume the stack trace
-        logger.info(f"{task_name} ended with error: {e!r}")
+        # Debug level is enough, since our aim is only to consume the stack trace
+        logger.debug(f"{task_name} ended with error: {e!r}")
 
 
 P = ParamSpec("P")
