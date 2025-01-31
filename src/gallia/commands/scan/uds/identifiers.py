@@ -106,12 +106,12 @@ class ScanIdentifiers(UDSScanner):
             # Scan all three subfunctions (startRoutine, stopRoutine, requestRoutineResults)
             sub_functions = list(map(int, RoutineControlSubFuncs))
 
-        if self.config.service == UDSIsoServices.SecurityAccess and self.config.end > 0xFF:
+        if self.config.service == UDSIsoServices.SecurityAccess and self.config.end > 0x7F:
             logger.warning(
-                "Service 0x27 SecurityAccess only accepts subFunctions (1-byte identifiers); "
-                + f"limiting END to {g_repr(0xFF)} instead of {g_repr(self.config.end)}"
+                "Service 0x27 SecurityAccess only accepts subFunctions (7-bit identifiers); "
+                + f"limiting END to {g_repr(0x7F)} instead of {g_repr(self.config.end)}"
             )
-            self.config.end = 0xFF
+            self.config.end = 0x7F
 
         for DID, sub_function in product(
             range(self.config.start, self.config.end + 1), sub_functions
@@ -135,11 +135,6 @@ class ScanIdentifiers(UDSScanner):
                     break
 
             if self.config.service == UDSIsoServices.SecurityAccess:
-                if DID & 128:
-                    logger.info(
-                        "Keep in mind that you set the SuppressResponse Bit (8th bit): "
-                        + f"{g_repr(DID)} = 0b{DID:b}"
-                    )
                 pdu = bytes([self.config.service, DID])
 
             elif self.config.service == UDSIsoServices.RoutineControl:
