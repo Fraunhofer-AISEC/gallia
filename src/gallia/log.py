@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import atexit
 import dataclasses
 import datetime
@@ -147,7 +149,7 @@ class PenlogPriority(IntEnum):
     TRACE = 8
 
     @classmethod
-    def from_str(cls, string: str) -> "PenlogPriority":
+    def from_str(cls, string: str) -> PenlogPriority:
         """Converts a string to an instance of PenlogPriority.
         ``string`` can be a numeric value (0 to 8 inclusive)
         or a string with a case insensitive name of the level
@@ -179,7 +181,7 @@ class PenlogPriority(IntEnum):
                 raise ValueError(f"{string} not a valid priority")
 
     @classmethod
-    def from_level(cls, value: int) -> "PenlogPriority":
+    def from_level(cls, value: int) -> PenlogPriority:
         """Converts an int value (e.g. from python's logging module)
         to an instance of this class.
         """
