@@ -114,7 +114,11 @@ if sys.platform == "win32":
 class BaseCommandConfig(GalliaBaseModel, cli_group="generic", config_section="gallia"):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    verbose: int = Field(0, description="increase verbosity on the console", short="v")
+    verbose: int = Field(
+        0,
+        description="Increase verbosity of the console log (0: INFO, 1: DEBUG, 2: TRACE)",
+        short="v",
+    )
     volatile_info: bool = Field(
         True, description="Overwrite log lines with level info or lower in terminal output"
     )

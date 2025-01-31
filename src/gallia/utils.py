@@ -219,13 +219,12 @@ def dump_args(args: Any) -> dict[str, str | int | float]:
     return settings
 
 
-def get_log_level(args: Any) -> Loglevel:
+def get_log_level(cli_level: int) -> Loglevel:
     level = Loglevel.INFO
-    if hasattr(args, "verbose"):
-        if args.verbose == 1:
-            level = Loglevel.DEBUG
-        elif args.verbose >= 2:
-            level = Loglevel.TRACE
+    if cli_level == 1:
+        level = Loglevel.DEBUG
+    elif cli_level == 2:
+        level = Loglevel.TRACE
     return level
 
 
