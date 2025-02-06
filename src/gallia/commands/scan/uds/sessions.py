@@ -146,6 +146,9 @@ class SessionsScanner(UDSScanner):
                 if stack:
                     logger.info(f"Starting from session: {g_repr(stack[-1])}")
 
+                # Recover stack in first loop iteration and afterwards only if needed
+                recover_stack = True
+
                 for session in sessions:
                     if session in self.config.skip:
                         logger.info(f"Skipping testing for session {g_repr(session)} as requested")
@@ -168,13 +171,15 @@ class SessionsScanner(UDSScanner):
                                 "Lost connection to the ECU after performing a reset. Attempting to reconnect…"
                             )
                             await self.ecu.reconnect()
+                        recover_stack = True
 
-                    # Recover stack in first loop iteration and afterwards only if needed
-                    if session == sessions[0]:
+                    if recover_stack is True:
+                        logger.info("Recovering the stack starting from default session")
                         if not await self.recover_stack_from_default_session(
                             stack, self.config.with_hooks
                         ):
                             sys.exit(1)
+                        recover_stack = False
 
                     logger.debug(f"Attempting to change to session {session:#04x}")
                     try:
@@ -217,11 +222,7 @@ class SessionsScanner(UDSScanner):
                         logger.warning(f"Mamma mia: {repr(e)}")
 
                     # If the loop is not `continue`d early, recover stack, e.g. on successful session change
-                    logger.info("Recovering the stack starting from default session")
-                    if not await self.recover_stack_from_default_session(
-                        stack, self.config.with_hooks
-                    ):
-                        sys.exit(1)
+                    recover_stack = True
 
         logger.result("Scan finished; Found the following sessions:")
         previous_session = 0
