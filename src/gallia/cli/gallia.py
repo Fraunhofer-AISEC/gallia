@@ -139,7 +139,6 @@ def parse_and_run(
                               called with the corresponding argument and terminates after it returns.
     :param show_help_on_zero_args: Show the help message instead of an error in case no arguments are submitted at all.
     """
-
     parser = create_parser(commands)
 
     if top_level_options is not None:
@@ -165,12 +164,12 @@ def parse_and_run(
                 help=help_,
             )
 
+    if auto_complete:
+        argcomplete.autocomplete(parser)
+
     if show_help_on_zero_args and len(sys.argv) == 1:
         parser.print_help(sys.stderr)
         sys.exit(exitcodes.USAGE)
-
-    if auto_complete:
-        argcomplete.autocomplete(parser)
 
     _, config = parser.parse_typed_args()
 
