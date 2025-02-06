@@ -44,7 +44,7 @@ class CANMessage:
     arbitration_id: int = 0
 
     # TODO: Add a frametype attribute?
-    is_extended_id: bool = True
+    is_extended_id: bool = False
     is_remote_frame: bool = False
     is_error_frame: bool = False
 
@@ -55,6 +55,7 @@ class CANMessage:
     bitrate_switch: bool = False
     error_state_indicator: bool = False
 
+    # TODO: Is this semantically correct? Check this.
     def __len__(self) -> int:
         if self.dlc is None:
             return len(self.data)
@@ -79,7 +80,7 @@ class CANMessage:
             flags |= CANFD_ESI
         max_len = 64 if self.is_fd else 8
         data = bytes(self.data).ljust(max_len, b"\x00")
-        return CAN_HEADER_FMT.pack(can_id, self.dlc, flags) + data
+        return CAN_HEADER_FMT.pack(can_id, len(self), flags) + data
 
     @staticmethod
     def _dissect_can_frame(frame: bytes) -> tuple[int, int, int, bytes]:
