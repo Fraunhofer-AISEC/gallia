@@ -156,18 +156,16 @@ class SASeedsDumper(UDSScanner):
 
             try:
                 seed = await self.request_seed(self.config.level, self.config.data_record)
+                if seed is None:
+                    continue  # Errors are already logged in .request_seed()
             except TimeoutError:
                 logger.error("Timeout while requesting seed")
                 continue
             except Exception as e:
                 logger.critical(f"Error while requesting seed: {g_repr(e)}")
                 sys.exit(1)
-
-            requests_since_last_reset += 1
-
-            if seed is None:
-                # Errors are already logged in .request_seed()
-                continue
+            finally:
+                requests_since_last_reset += 1
 
             logger.info(f"Received seed of length {len(seed)}")
 
