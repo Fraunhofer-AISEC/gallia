@@ -12,6 +12,8 @@ from gallia.command.config import AutoInt, Field, HexBytes
 from gallia.command.uds import UDSScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse, UDSRequestConfig
+from gallia.services.uds.core.constants import UDSErrorCodes
+from gallia.services.uds.core.service import SecurityAccessResponse
 from gallia.services.uds.core.utils import g_repr
 
 logger = get_logger(__name__)
@@ -25,11 +27,16 @@ class SASeedsDumperConfig(UDSScannerConfig):
     level: AutoInt = Field(
         0x11, description="Set security access level to request seed from", metavar="INT"
     )
-    send_zero_key: int = Field(
-        0,
-        description="Attempt to fool brute force protection by pretending to send a key after requesting a seed (all zero bytes, length can be specified)",
+    send_zero_key: int | None = Field(
+        None,
+        description="Attempt to fool brute force protection by sending an all-zero key after each seed request. The length of the key can be specified or will otherwise be automatically determined.",
         metavar="BYTE_LENGTH",
-        const=96,
+        const=0,
+    )
+    determine_key_size_max_length: int = Field(
+        1000,
+        description="When trying to automatically determine the key size expected by the ECU, test key lengths from 1 up to N bytes.",
+        metavar="INT",
     )
     reset: int | None = Field(
         None,
@@ -60,6 +67,7 @@ class SASeedsDumper(UDSScanner):
         super().__init__(config)
         self.config: SASeedsDumperConfig = config
         self.implicit_logging = False
+        self.key_length: int | None = None
 
     async def request_seed(self, level: int, data: bytes) -> bytes | None:
         resp = await self.ecu.security_access_request_seed(
@@ -70,7 +78,16 @@ class SASeedsDumper(UDSScanner):
             return None
         return resp.security_seed
 
-    async def send_key(self, level: int, key: bytes) -> bool:
+    async def send_key(self, level: int, fixed_key_size: int) -> bool:
+        if self.key_length is None and fixed_key_size > 0:
+            self.key_length = fixed_key_size
+        elif self.key_length is None:
+            self.key_length = await self.determine_key_length()
+
+        if self.key_length <= 0:
+            return True
+
+        key = bytes(self.key_length)
         resp = await self.ecu.security_access_send_key(
             level + 1, key, config=UDSRequestConfig(tags=["ANALYZE"])
         )
@@ -92,6 +109,42 @@ class SASeedsDumper(UDSScanner):
             size = size / 1024
             size_unit = "MiB"
         logger.notice(f"Dumping seeds with {rate:.2f}{rate_unit}/h: {size:.2f}{size_unit}")
+
+    async def determine_key_length(self) -> int:
+        key = bytes(1)
+
+        logger.info("No key length given, trying to determine key length expected by the ECU…")
+        while len(key) <= self.config.determine_key_size_max_length:
+            logger.debug(f"Testing key length {len(key)}…")
+
+            if self.config.check_session:
+                if not await self.ecu.check_and_set_session(self.config.session):
+                    logger.error(f"ECU persistently lost session {g_repr(self.config.session)}.")
+                    return -1
+
+            resp = await self.ecu.security_access_send_key(self.config.level + 1, key)
+            if isinstance(resp, SecurityAccessResponse):
+                logger.result(
+                    f"That's unexpected: Unlocked SA level {g_repr(self.config.level)} with all-zero key of length {len(key)}."
+                )
+                return -1
+            elif (
+                isinstance(resp, NegativeResponse)
+                and resp.response_code != UDSErrorCodes.incorrectMessageLengthOrInvalidFormat
+            ):
+                logger.info(f"The ECU seems to be expecting keys of length {len(key)}.")
+                return len(key)
+
+            key += bytes(1)
+
+            if self.config.sleep is not None:
+                logger.info(f"Sleeping for {self.config.sleep} seconds between sending keys…")
+                await asyncio.sleep(self.config.sleep)
+
+        logger.error(
+            f"Unable to identify valid key length for SecurityAccess between 1 and {self.config.determine_key_size_max_length} bytes."
+        )
+        return -1
 
     async def main(self) -> None:
         session = self.config.session
@@ -152,9 +205,9 @@ class SASeedsDumper(UDSScanner):
 
             last_seed = seed
 
-            if self.config.send_zero_key > 0:
+            if self.config.send_zero_key is not None:
                 try:
-                    if await self.send_key(self.config.level, bytes(self.config.send_zero_key)):
+                    if await self.send_key(self.config.level, self.config.send_zero_key):
                         break
                 except TimeoutError:
                     logger.warning("Timeout while sending key")
