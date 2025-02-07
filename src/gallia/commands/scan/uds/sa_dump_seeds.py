@@ -33,8 +33,9 @@ class SASeedsDumperConfig(UDSScannerConfig):
     )
     reset: int | None = Field(
         None,
-        description="Attempt to fool brute force protection by resetting the ECU after every nth requested seed.",
-        const=1,
+        metavar="N",
+        description="Attempt to fool brute force protection by resetting the ECU when needed or after every N-th requested seed.",
+        const=0,
     )
     duration: float = Field(
         0,
@@ -56,6 +57,8 @@ class SASeedsDumper(UDSScanner):
     CONFIG_TYPE = SASeedsDumperConfig
     SHORT_HELP = "dump security access seeds"
 
+    attempt_reset: bool = False
+
     def __init__(self, config: SASeedsDumperConfig):
         super().__init__(config)
         self.config: SASeedsDumperConfig = config
@@ -67,6 +70,7 @@ class SASeedsDumper(UDSScanner):
         )
         if isinstance(resp, NegativeResponse):
             logger.warning(f"ECU replied with an error: {resp}")
+            self.attempt_reset = True
             return None
         return resp.security_seed
 
@@ -108,8 +112,7 @@ class SASeedsDumper(UDSScanner):
         duration = self.config.duration * 60
         start_time = time.time()
         last_seed = b""
-        reset = False
-        runs_since_last_reset = 0
+        requests_since_last_reset = 0
         print_speed = False
 
         while duration <= 0 or time.time() - start_time < duration:
@@ -124,25 +127,42 @@ class SASeedsDumper(UDSScanner):
                 self.log_size(seeds_file, time.time() - start_time)
                 print_speed = False
 
-            if self.config.check_session or reset:
+            if self.config.reset is not None:
+                if (self.config.reset == 0 and self.attempt_reset) or (
+                    self.config.reset > 0 and requests_since_last_reset == self.config.reset
+                ):
+                    logger.info(
+                        f"Resetting the ECU after {requests_since_last_reset} seed requests"
+                    )
+                    await self.ecu.ecu_reset(0x01)
+
+                    if await self.ecu.wait_for_ecu() is False:
+                        logger.error("ECU did not respond after reset; exiting…")
+                        sys.exit(1)
+
+                    # Re-enter session. Checking/logging will be done a few lines later if required
+                    await self.ecu.set_session(session)
+
+                    requests_since_last_reset = 0
+                    self.attempt_reset = False
+
+            if self.config.check_session:
                 if not await self.ecu.check_and_set_session(self.config.session):
                     logger.error(f"ECU persistently lost session {g_repr(self.config.session)}")
                     sys.exit(1)
 
-            reset = False
-
             try:
                 seed = await self.request_seed(self.config.level, self.config.data_record)
+                if seed is None:
+                    continue  # Errors are already logged in .request_seed()
             except TimeoutError:
                 logger.error("Timeout while requesting seed")
                 continue
             except Exception as e:
                 logger.critical(f"Error while requesting seed: {g_repr(e)}")
                 sys.exit(1)
-
-            if seed is None:
-                # Errors are already logged in .request_seed()
-                continue
+            finally:
+                requests_since_last_reset += 1
 
             logger.info(f"Received seed of length {len(seed)}")
 
@@ -162,29 +182,6 @@ class SASeedsDumper(UDSScanner):
                 except Exception as e:
                     logger.critical(f"Error while sending key: {g_repr(e)}")
                     sys.exit(1)
-
-            runs_since_last_reset += 1
-
-            if runs_since_last_reset == self.config.reset:
-                reset = True
-                runs_since_last_reset = 0
-
-                try:
-                    logger.info("Resetting the ECU")
-                    await self.ecu.ecu_reset(0x01)
-                    logger.info("Waiting for the ECU to recover…")
-                    await self.ecu.wait_for_ecu()
-                except TimeoutError:
-                    logger.error("ECU did not respond after reset; exiting…")
-                    sys.exit(1)
-                except ConnectionError:
-                    logger.warning(
-                        "Lost connection to the ECU after performing a reset. Attempting to reconnect…"
-                    )
-                    await self.ecu.reconnect()
-
-                # Re-enter session. Checking/logging will be done at the beginning of next iteration
-                await self.ecu.set_session(session)
 
             if self.config.sleep is not None:
                 logger.info(f"Sleeping for {self.config.sleep} seconds between seed requests…")
