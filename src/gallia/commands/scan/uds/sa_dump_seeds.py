@@ -12,6 +12,8 @@ from gallia.command.config import AutoInt, Field, HexBytes
 from gallia.command.uds import UDSScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse, UDSRequestConfig
+from gallia.services.uds.core.constants import UDSErrorCodes
+from gallia.services.uds.core.service import SecurityAccessResponse
 from gallia.services.uds.core.utils import g_repr
 
 logger = get_logger(__name__)
@@ -25,11 +27,16 @@ class SASeedsDumperConfig(UDSScannerConfig):
     level: AutoInt = Field(
         0x11, description="Set security access level to request seed from", metavar="INT"
     )
-    send_zero_key: int = Field(
-        0,
-        description="Attempt to fool brute force protection by pretending to send a key after requesting a seed (all zero bytes, length can be specified)",
+    send_zero_key: int | None = Field(
+        None,
+        description="Attempt to fool brute force protection by sending an all-zero key after each seed request. The length of the key can be specified or will otherwise be automatically determined.",
         metavar="BYTE_LENGTH",
-        const=96,
+        const=0,
+    )
+    determine_key_size_max_length: int = Field(
+        1024,
+        description="When trying to automatically determine the key size expected by the ECU, test key lengths from 1 up to N bytes.",
+        metavar="INT",
     )
     reset: int | None = Field(
         None,
@@ -63,6 +70,8 @@ class SASeedsDumper(UDSScanner):
         super().__init__(config)
         self.config: SASeedsDumperConfig = config
         self.implicit_logging = False
+        self.is_key_length_determined = False
+        self.key_length: int = 1
 
     async def request_seed(self, level: int, data: bytes) -> bytes | None:
         resp = await self.ecu.security_access_request_seed(
@@ -74,15 +83,44 @@ class SASeedsDumper(UDSScanner):
             return None
         return resp.security_seed
 
-    async def send_key(self, level: int, key: bytes) -> bool:
+    # TODO: Optimize by checking well-known lenghts first: 0x60, 125, 250, 512, 1024.
+    async def send_key(self, level: int, fixed_key_size: int) -> bool:
+        """Returns `True` when main loop should exit, e.g. on successful unlock or exhaustion of key length search space."""
+        if self.key_length > self.config.determine_key_size_max_length:
+            logger.error(
+                f"Unable to identify valid key length for SecurityAccess between 1 and {self.config.determine_key_size_max_length} bytes."
+            )
+            return True
+
+        if not self.is_key_length_determined and fixed_key_size > 0:
+            self.key_length = fixed_key_size
+            self.is_key_length_determined = True
+
+        if not self.is_key_length_determined:
+            logger.info(f"No key length given, testing key length {self.key_length}…")
+
         resp = await self.ecu.security_access_send_key(
-            level + 1, key, config=UDSRequestConfig(tags=["ANALYZE"])
+            level + 1, bytes(self.key_length), config=UDSRequestConfig(tags=["ANALYZE"])
         )
-        if isinstance(resp, NegativeResponse):
-            logger.debug(f"Key was rejected: {resp}")
-            return False
-        logger.result(f'Unlocked SA level {g_repr(level)} with key "{key.hex()}"! resp: {resp}')
-        return True
+        if isinstance(resp, SecurityAccessResponse):
+            logger.result(
+                f"That's unexpected: Unlocked SA level {g_repr(level)} with all-zero key of length {self.key_length}."
+            )
+            return True
+
+        # isinstance(resp, NegativeResponse)
+        if (
+            not self.is_key_length_determined
+            and resp.response_code == UDSErrorCodes.incorrectMessageLengthOrInvalidFormat
+        ):
+            logger.debug(f"{self.key_length} does not seem to be the correct key length.")
+            self.key_length += 1
+        elif not self.is_key_length_determined:
+            logger.result(f"The ECU seems to be expecting keys of length {self.key_length}.")
+            self.is_key_length_determined = True
+
+        logger.debug(f"Key was rejected: {resp}")
+        return False
 
     def log_size(self, path: Path, time_delta: float) -> None:
         size = path.stat().st_size / 1024
@@ -165,15 +203,21 @@ class SASeedsDumper(UDSScanner):
 
             logger.info(f"Received seed of length {len(seed)}")
 
-            file.write(seed)
-            if last_seed == seed:
-                logger.warning("Received the same seed as before")
+            # During detection of key length the same seed might be returned multiple times.
+            # This is, however, not considered critical and should not affect statistical evaluations of the seeds.
+            if self.is_key_length_determined:
+                file.write(seed)
+
+                if last_seed == seed:
+                    logger.warning("Received the same seed as before")
+            elif last_seed == seed:
+                logger.debug("Received the same seed as before")
 
             last_seed = seed
 
-            if self.config.send_zero_key > 0:
+            if self.config.send_zero_key is not None:
                 try:
-                    if await self.send_key(self.config.level, bytes(self.config.send_zero_key)):
+                    if await self.send_key(self.config.level, self.config.send_zero_key):
                         break
                 except TimeoutError:
                     logger.warning("Timeout while sending key")
