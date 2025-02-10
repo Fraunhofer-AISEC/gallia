@@ -11,7 +11,7 @@ from gallia.command import UDSScanner
 from gallia.command.config import AutoInt, Field, HexBytes
 from gallia.command.uds import UDSScannerConfig
 from gallia.log import get_logger
-from gallia.services.uds import NegativeResponse, UDSErrorCodes, UDSRequestConfig
+from gallia.services.uds import NegativeResponse, UDSRequestConfig
 from gallia.services.uds.core.utils import g_repr
 
 logger = get_logger(__name__)
@@ -79,11 +79,7 @@ class SASeedsDumper(UDSScanner):
             level + 1, key, config=UDSRequestConfig(tags=["ANALYZE"])
         )
         if isinstance(resp, NegativeResponse):
-            if resp.response_code == UDSErrorCodes.invalidKey:
-                logger.debug("Key was rejected as invalid")
-            else:
-                logger.warning(f"Key was rejected with unexpected error code: {resp}")
-                self.attempt_reset = True
+            logger.debug(f"Key was rejected: {resp}")
             return False
         logger.result(f'Unlocked SA level {g_repr(level)} with key "{key.hex()}"! resp: {resp}')
         return True
