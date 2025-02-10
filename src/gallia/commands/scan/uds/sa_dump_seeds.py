@@ -65,13 +65,13 @@ class SASeedsDumper(UDSScanner):
     SHORT_HELP = "dump security access seeds"
 
     attempt_reset: bool = False
+    is_key_length_determined: bool = False
+    key_length: int = 0
 
     def __init__(self, config: SASeedsDumperConfig):
         super().__init__(config)
         self.config: SASeedsDumperConfig = config
         self.implicit_logging = False
-        self.is_key_length_determined = False
-        self.key_length: int = 1
 
     async def request_seed(self, level: int, data: bytes) -> bytes | None:
         resp = await self.ecu.security_access_request_seed(
@@ -84,17 +84,16 @@ class SASeedsDumper(UDSScanner):
         return resp.security_seed
 
     # TODO: Optimize by checking well-known lenghts first: 0x60, 125, 250, 512, 1024.
-    async def send_key(self, level: int, fixed_key_size: int) -> bool:
+    async def send_key(self, level: int) -> bool:
         """Returns `True` when main loop should exit, e.g. on successful unlock or exhaustion of key length search space."""
-        if self.key_length > self.config.determine_key_size_max_length:
+        if (
+            self.is_key_length_determined is False
+            and self.key_length > self.config.determine_key_size_max_length
+        ):
             logger.error(
                 f"Unable to identify valid key length for SecurityAccess between 1 and {self.config.determine_key_size_max_length} bytes."
             )
             return True
-
-        if not self.is_key_length_determined and fixed_key_size > 0:
-            self.key_length = fixed_key_size
-            self.is_key_length_determined = True
 
         if not self.is_key_length_determined:
             logger.info(f"No key length given, testing key length {self.key_length}…")
@@ -102,18 +101,20 @@ class SASeedsDumper(UDSScanner):
         resp = await self.ecu.security_access_send_key(
             level + 1, bytes(self.key_length), config=UDSRequestConfig(tags=["ANALYZE"])
         )
+        # isinstance(resp, NegativeResponse)
         if isinstance(resp, SecurityAccessResponse):
             logger.result(
                 f"That's unexpected: Unlocked SA level {g_repr(level)} with all-zero key of length {self.key_length}."
             )
             return True
 
-        # isinstance(resp, NegativeResponse)
         if (
             not self.is_key_length_determined
             and resp.response_code == UDSErrorCodes.incorrectMessageLengthOrInvalidFormat
         ):
-            logger.debug(f"{self.key_length} does not seem to be the correct key length.")
+            logger.debug(
+                f"{self.key_length} does not seem to be the correct key length, incrementing."
+            )
             self.key_length += 1
         elif not self.is_key_length_determined:
             logger.result(f"The ECU seems to be expecting keys of length {self.key_length}.")
@@ -151,6 +152,15 @@ class SASeedsDumper(UDSScanner):
         last_seed = b""
         requests_since_last_reset = 0
         print_speed = False
+        if self.config.send_zero_key is None:
+            # Set this to True not to suppress log messages later on
+            self.is_key_length_determined = True
+        elif self.config.send_zero_key > 0:
+            self.is_key_length_determined = True
+            self.key_length = self.config.send_zero_key
+        else:
+            # Start with length 1 in automatic search
+            self.key_length = 1
 
         while duration <= 0 or time.time() - start_time < duration:
             # Print information about current dump speed every `interval` seconds.
@@ -201,23 +211,23 @@ class SASeedsDumper(UDSScanner):
             finally:
                 requests_since_last_reset += 1
 
-            logger.info(f"Received seed of length {len(seed)}")
-
             # During detection of key length the same seed might be returned multiple times.
             # This is, however, not considered critical and should not affect statistical evaluations of the seeds.
-            if self.is_key_length_determined:
+            if self.is_key_length_determined is False:
+                logger.debug("Still trying to find key size, not evaluating/saving seed responses")
+            else:
                 file.write(seed)
 
                 if last_seed == seed:
                     logger.warning("Received the same seed as before")
-            elif last_seed == seed:
-                logger.debug("Received the same seed as before")
+                else:
+                    logger.info(f"Received seed of length {len(seed)}")
 
             last_seed = seed
 
-            if self.config.send_zero_key is not None:
+            if self.key_length > 0:
                 try:
-                    if await self.send_key(self.config.level, self.config.send_zero_key):
+                    if await self.send_key(self.config.level):
                         break
                 except TimeoutError:
                     logger.warning("Timeout while sending key")
