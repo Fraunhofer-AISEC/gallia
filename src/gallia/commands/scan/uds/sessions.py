@@ -212,44 +212,50 @@ class SessionsScanner(UDSScanner):
                         # TODO: Is there a need to recover stack in this case?
                         continue
                     except Exception as e:
-                        logger.warning(f"Mamma mia: {repr(e)}")
+                        logger.warning(
+                            f"Mamma mia: {repr(e)} for session {session:#04x} from stack {stack}"
+                        )
 
                     # If the loop is not `continue`d early, recover stack, e.g. on successful session change
                     recover_stack = True
 
-        logger.result("Scan finished; Found the following sessions:")
-        previous_session = 0
+        if len(positive_results) > 0:
+            logger.result("Scan finished; Found the following sessions:")
+            previous_session = 0
 
-        for res in sorted(positive_results, key=lambda x: x["session"]):
-            session = res["session"]
+            for res in sorted(positive_results, key=lambda x: x["session"]):
+                session = res["session"]
 
-            if session != previous_session:
-                previous_session = session
-                self.result.append(int(session))
-                logger.result(f"* Session {g_repr(session)} ")
-
-                if self.db_handler is not None:
-                    await self.db_handler.insert_session_transition(session, res["stack"])
-
-            logger.result(f"\tvia stack: {'->'.join([f'{g_repr(i)}' for i in res['stack']])}")
-
-        logger.result("The following sessions were identified but could not be activated:")
-        previous_session = 0
-
-        for res in sorted(negative_results, key=lambda x: x["session"]):
-            session = res["session"]
-
-            if (
-                session not in activated_sessions
-                and res["error"] != UDSErrorCodes.subFunctionNotSupportedInActiveSession
-            ):
                 if session != previous_session:
                     previous_session = session
+                    self.result.append(int(session))
                     logger.result(f"* Session {g_repr(session)} ")
 
                     if self.db_handler is not None:
                         await self.db_handler.insert_session_transition(session, res["stack"])
 
-                logger.result(
-                    f"\tvia stack: {'->'.join([f'{g_repr(i)}' for i in res['stack']])} (NRC: {res['error']})"
-                )
+                logger.result(f"\tvia stack: {'->'.join([f'{g_repr(i)}' for i in res['stack']])}")
+        else:
+            logger.result("Could not successfully change to any session!")
+
+        if len(negative_results) > 0:
+            logger.result("The following sessions were identified but could not be activated:")
+            previous_session = 0
+
+            for res in sorted(negative_results, key=lambda x: x["session"]):
+                session = res["session"]
+
+                if (
+                    session not in activated_sessions
+                    and res["error"] != UDSErrorCodes.subFunctionNotSupportedInActiveSession
+                ):
+                    if session != previous_session:
+                        previous_session = session
+                        logger.result(f"* Session {g_repr(session)} ")
+
+                        if self.db_handler is not None:
+                            await self.db_handler.insert_session_transition(session, res["stack"])
+
+                    logger.result(
+                        f"\tvia stack: {'->'.join([f'{g_repr(i)}' for i in res['stack']])} (NRC: {res['error']})"
+                    )
