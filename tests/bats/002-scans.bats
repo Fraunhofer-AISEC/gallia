@@ -23,11 +23,11 @@ teardown() {
 }
 
 @test "scan sessions" {
-	gallia scan uds sessions --depth 2
+	gallia scan uds sessions
 }
 
-@test "scan sessions fast" {
-	gallia scan uds sessions --fast
+@test "scan sessions thorough" {
+	gallia scan uds sessions --thorough
 }
 
 @test "scan identifiers sid 0x22" {
