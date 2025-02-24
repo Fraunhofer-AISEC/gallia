@@ -334,6 +334,7 @@ class BaseCommand(FlockMixin, ABC):
                 logger_name="gallia",
                 stderr_level=stderr_level,
                 close_on_exit=False,
+                volatile_info=self.config.volatile_info,
             )
             if self.HAS_ARTIFACTS_DIR:
                 logging_handler.add_zst_file_handler(
