@@ -242,6 +242,7 @@ class PenlogPriority(IntEnum):
 class LoggingSetupHandler:
     def __init__(self) -> None:
         self.listeners: list[QueueListener] = []
+        self.handlers: list[logging.Handler] = []
 
     def __enter__(self) -> Self:
         return self
@@ -311,10 +312,14 @@ class LoggingSetupHandler:
         )
         queue_listener.start()
         self.listeners.append(queue_listener)
+        self.handlers.append(handler)
 
     def stop_logging(self) -> None:
         for listener in self.listeners:
             listener.stop()
+
+        for handler in self.handlers:
+            handler.close()
 
 
 def get_log_level(verbose: int) -> Loglevel:
