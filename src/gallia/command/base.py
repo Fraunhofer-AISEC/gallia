@@ -201,7 +201,7 @@ class BaseCommand(FlockMixin, ABC):
         self.log_file_handlers = []
 
     @abstractmethod
-    def run(self) -> int: ...
+    async def run(self) -> int: ...
 
     def run_hook(self, variant: HookVariant, exit_code: int | None = None) -> None:
         script = self.config.pre_hook if variant == HookVariant.PRE else self.config.post_hook
@@ -343,7 +343,7 @@ class BaseCommand(FlockMixin, ABC):
 
         exit_code = 0
         try:
-            exit_code = self.run()
+            exit_code = await self.run()
         except KeyboardInterrupt:
             exit_code = 128 + signal.SIGINT
         # Ensure that META.json gets written in the case a
@@ -395,39 +395,6 @@ class BaseCommand(FlockMixin, ABC):
         return exit_code
 
 
-class ScriptConfig(
-    BaseCommandConfig,
-    ABC,
-    cli_group=BaseCommandConfig._cli_group,
-    config_section=BaseCommandConfig._config_section,
-):
-    pass
-
-
-class Script(BaseCommand, ABC):
-    """Script is a base class for a synchronous gallia command.
-    To implement a script, create a subclass and implement the
-    .main() method."""
-
-    GROUP = "script"
-
-    def setup(self) -> None: ...
-
-    @abstractmethod
-    def main(self) -> None: ...
-
-    def teardown(self) -> None: ...
-
-    def run(self) -> int:
-        self.setup()
-        try:
-            self.main()
-        finally:
-            self.teardown()
-
-        return exitcodes.OK
-
-
 class AsyncScriptConfig(
     BaseCommandConfig,
     ABC,
@@ -451,15 +418,12 @@ class AsyncScript(BaseCommand, ABC):
 
     async def teardown(self) -> None: ...
 
-    async def _run(self) -> None:
+    async def run(self) -> int:
         await self.setup()
         try:
             await self.main()
         finally:
             await self.teardown()
-
-    def run(self) -> int:
-        asyncio.run(self._run())
         return exitcodes.OK
 
 

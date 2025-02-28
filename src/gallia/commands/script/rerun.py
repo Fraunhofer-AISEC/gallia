@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import asyncio
 import importlib
 import json
 import sys
@@ -14,14 +13,14 @@ import aiosqlite
 from pydantic import model_validator
 
 from gallia.command import BaseCommand
-from gallia.command.base import Script, ScriptConfig
+from gallia.command.base import AsyncScript, AsyncScriptConfig
 from gallia.command.config import Field
 from gallia.log import get_logger
 
 logger = get_logger(__name__)
 
 
-class RerunnerConfig(ScriptConfig):
+class RerunnerConfig(AsyncScriptConfig):
     id: int | None = Field(None, description="The id of the run_meta entry in the db")
     file: Path | None = Field(None, description="The path of the META.json in the logs")
 
@@ -40,7 +39,7 @@ class RerunnerConfig(ScriptConfig):
         return self
 
 
-class Rerunner(Script):
+class Rerunner(AsyncScript):
     CONFIG_TYPE = RerunnerConfig
     SHORT_HELP = "Rerun a previous gallia command based on its run_meta in the database"
 
@@ -48,12 +47,13 @@ class Rerunner(Script):
         super().__init__(config)
         self.config: RerunnerConfig = config
 
-    def main(self) -> None:
+    async def main(self) -> None:
         if self.config.id is not None:
-            script, config = self.db()
+            script, config = await self.db()
         else:
             script, config = self.file()
 
+        # TODO: Make a interface for this to avoid error-prone parsing.
         script_parts = script.split(".")
         module = ".".join(script_parts[:-1])
         class_name = script_parts[-1]
@@ -63,9 +63,9 @@ class Rerunner(Script):
         gallia_class: type[BaseCommand] = getattr(importlib.import_module(module), class_name)
         command = gallia_class(gallia_class.CONFIG_TYPE(**config))
 
-        sys.exit(command.entry_point())
+        sys.exit(await command.entry_point())
 
-    def db(self) -> tuple[str, Mapping[str, Any]]:
+    async def db(self) -> tuple[str, Mapping[str, Any]]:
         assert self.config.id is not None
 
         query = "SELECT script, config FROM run_meta WHERE id = ?"
@@ -77,8 +77,8 @@ class Rerunner(Script):
 
         assert connection is not None
 
-        cursor: aiosqlite.Cursor = asyncio.run(connection.execute(query, parameters))
-        row = asyncio.run(cursor.fetchone())
+        cursor: aiosqlite.Cursor = await connection.execute(query, parameters)
+        row = await cursor.fetchone()
 
         if row is None:
             logger.error(f"There id no run_meta entry with the id {self.config.id}")
