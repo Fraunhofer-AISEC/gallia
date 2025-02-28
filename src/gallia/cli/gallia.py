@@ -1,7 +1,9 @@
 # SPDX-FileCopyrightText: AISEC Pentesting Team
 #
 # SPDX-License-Identifier: Apache-2.0
+
 import argparse
+import asyncio
 import json
 import os
 import sys
@@ -182,7 +184,7 @@ def parse_and_run(
             logger_name="",  # Take over the root logger
         )
 
-    sys.exit(get_command(config).entry_point())
+    sys.exit(asyncio.run(get_command(config).entry_point()))
 
 
 def version() -> None:
