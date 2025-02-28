@@ -39,6 +39,17 @@ $ sudo apt install pipx
 $ pipx install gallia
 ```
 
+### Debian Package
+
+The goal is to bring gallia into the Debian package repository.
+The package scripts are available on [salsa.debian.org](https://salsa.debian.org/rumpelsepp/gallia).
+The [Github Releases](https://github.com/Fraunhofer-AISEC/gallia/releases) starting with version v2.0.0a4 contain a Debian package.
+
+``` shell-session
+$ wcurl URL_FROM_RELEASE_PAGE
+$ sudo apt install ./gallia_VERSION_all.deb
+```
+
 ### NixOS
 
 ``` shell-session
@@ -109,6 +120,9 @@ $ uv run gallia
 If you want to develop gallia and plugins at the same time, then you need to add `gallia` as a dependency to your plugin package.
 
 ### Shell Completion
+
+If you are using a distribution package, setting up shell completions is already addressed.
+
 #### bash
 
 ```shell-session
