@@ -78,7 +78,7 @@ if sys.platform.startswith("linux") or sys.platform == "darwin":
             logger.notice("opening lockfile…")
             return os.open(path, os.O_RDONLY)
 
-        def _aquire_flock(self: Flockable) -> None:
+        async def _aquire_flock(self: Flockable) -> None:
             assert self._lock_file_fd is not None
 
             try:
@@ -87,7 +87,7 @@ if sys.platform.startswith("linux") or sys.platform == "darwin":
                 fcntl.flock(self._lock_file_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except BlockingIOError:
                 logger.notice("waiting for flock…")
-                fcntl.flock(self._lock_file_fd, fcntl.LOCK_EX)
+                await asyncio.to_thread(fcntl.flock, self._lock_file_fd, fcntl.LOCK_EX)
             logger.info("Acquired lock. Continuing…")
 
         def _release_flock(self: Flockable) -> None:
@@ -103,7 +103,7 @@ if sys.platform == "win32":
             logger.warn("lockfile in windows is not supported")
             return None
 
-        def _aquire_flock(self) -> None:
+        async def _aquire_flock(self) -> None:
             pass
 
         def _release_flock(self) -> None:
@@ -323,11 +323,11 @@ class BaseCommand(FlockMixin, ABC):
 
         raise ValueError("base_dir or force_path must be different from None")
 
-    def entry_point(self) -> int:
+    async def entry_point(self) -> int:
         if (p := self.config.lock_file) is not None:
             try:
                 self._lock_file_fd = self._open_lockfile(p)
-                self._aquire_flock()
+                await self._aquire_flock()
             except OSError as e:
                 logger.critical(f"Unable to lock {p}: {e}")
                 return exitcodes.OSFILE
@@ -347,7 +347,7 @@ class BaseCommand(FlockMixin, ABC):
         if self.config.hooks:
             self.run_hook(HookVariant.PRE)
 
-        asyncio.run(self._db_insert_run_meta())
+        await self._db_insert_run_meta()
 
         exit_code = 0
         try:
@@ -377,7 +377,7 @@ class BaseCommand(FlockMixin, ABC):
             self.run_meta.exit_code = exit_code
             self.run_meta.end_time = datetime.now(tz).isoformat()
 
-            asyncio.run(self._db_finish_run_meta())
+            await self._db_finish_run_meta()
 
             if self.HAS_ARTIFACTS_DIR:
                 self.artifacts_dir.joinpath(FileNames.META.value).write_text(
