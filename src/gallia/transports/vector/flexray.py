@@ -17,7 +17,8 @@ else:
 from pydantic import BaseModel, ConfigDict, field_validator
 
 from gallia.log import get_logger
-from gallia.transports import BaseTransport, TargetURI, _ctypes_vector_xl, _ctypes_vector_xl_wrapper
+from gallia.transports import BaseTransport, TargetURI
+from gallia.transports.vector import _ctypes_vector_xl, _ctypes_vector_xl_wrapper
 from gallia.utils import auto_int
 
 assert sys.platform == "win32", "unsupported platform"
