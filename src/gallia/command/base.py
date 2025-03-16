@@ -78,7 +78,7 @@ if sys.platform.startswith("linux") or sys.platform == "darwin":
             logger.notice("opening lockfile…")
             return os.open(path, os.O_RDONLY)
 
-        def _aquire_flock(self: Flockable) -> None:
+        async def _aquire_flock(self: Flockable) -> None:
             assert self._lock_file_fd is not None
 
             try:
@@ -87,7 +87,7 @@ if sys.platform.startswith("linux") or sys.platform == "darwin":
                 fcntl.flock(self._lock_file_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except BlockingIOError:
                 logger.notice("waiting for flock…")
-                fcntl.flock(self._lock_file_fd, fcntl.LOCK_EX)
+                await asyncio.to_thread(fcntl.flock, self._lock_file_fd, fcntl.LOCK_EX)
             logger.info("Acquired lock. Continuing…")
 
         def _release_flock(self: Flockable) -> None:
@@ -103,7 +103,7 @@ if sys.platform == "win32":
             logger.warn("lockfile in windows is not supported")
             return None
 
-        def _aquire_flock(self) -> None:
+        async def _aquire_flock(self) -> None:
             pass
 
         def _release_flock(self) -> None:
@@ -201,7 +201,7 @@ class BaseCommand(FlockMixin, ABC):
         self.log_file_handlers = []
 
     @abstractmethod
-    def run(self) -> int: ...
+    async def run(self) -> int: ...
 
     def run_hook(self, variant: HookVariant, exit_code: int | None = None) -> None:
         script = self.config.pre_hook if variant == HookVariant.PRE else self.config.post_hook
@@ -239,8 +239,6 @@ class BaseCommand(FlockMixin, ABC):
             logger.info(p.stderr.strip(), extra={"tags": [hook_id, "stderr"]})
 
     async def _db_insert_run_meta(self) -> None:
-        # TODO: This function has to call `connect` and `disconnect` in order to be safely run in an own event loop
-
         if self.config.db is not None:
             self.db_handler = DBHandler(self.config.db)
             await self.db_handler.connect()
@@ -252,15 +250,9 @@ class BaseCommand(FlockMixin, ABC):
                 path=self.artifacts_dir,
             )
 
-            await self.db_handler.disconnect()
-
     async def _db_finish_run_meta(self) -> None:
-        # TODO: This function has to call `connect` and `disconnect` in order to be safely run in an own event loop
-
-        if self.db_handler is not None:
+        if self.db_handler is not None and self.db_handler.connection is not None:
             if self.db_handler.meta is not None:
-                await self.db_handler.connect()
-
                 try:
                     await self.db_handler.complete_run_meta(
                         datetime.now(UTC).astimezone(), self.run_meta.exit_code, self.artifacts_dir
@@ -323,11 +315,11 @@ class BaseCommand(FlockMixin, ABC):
 
         raise ValueError("base_dir or force_path must be different from None")
 
-    def entry_point(self) -> int:
+    async def entry_point(self) -> int:
         if (p := self.config.lock_file) is not None:
             try:
                 self._lock_file_fd = self._open_lockfile(p)
-                self._aquire_flock()
+                await self._aquire_flock()
             except OSError as e:
                 logger.critical(f"Unable to lock {p}: {e}")
                 return exitcodes.OSFILE
@@ -347,11 +339,11 @@ class BaseCommand(FlockMixin, ABC):
         if self.config.hooks:
             self.run_hook(HookVariant.PRE)
 
-        asyncio.run(self._db_insert_run_meta())
+        await self._db_insert_run_meta()
 
         exit_code = 0
         try:
-            exit_code = self.run()
+            exit_code = await self.run()
         except KeyboardInterrupt:
             exit_code = 128 + signal.SIGINT
         # Ensure that META.json gets written in the case a
@@ -377,7 +369,7 @@ class BaseCommand(FlockMixin, ABC):
             self.run_meta.exit_code = exit_code
             self.run_meta.end_time = datetime.now(tz).isoformat()
 
-            asyncio.run(self._db_finish_run_meta())
+            await self._db_finish_run_meta()
 
             if self.HAS_ARTIFACTS_DIR:
                 self.artifacts_dir.joinpath(FileNames.META.value).write_text(
@@ -403,39 +395,6 @@ class BaseCommand(FlockMixin, ABC):
         return exit_code
 
 
-class ScriptConfig(
-    BaseCommandConfig,
-    ABC,
-    cli_group=BaseCommandConfig._cli_group,
-    config_section=BaseCommandConfig._config_section,
-):
-    pass
-
-
-class Script(BaseCommand, ABC):
-    """Script is a base class for a synchronous gallia command.
-    To implement a script, create a subclass and implement the
-    .main() method."""
-
-    GROUP = "script"
-
-    def setup(self) -> None: ...
-
-    @abstractmethod
-    def main(self) -> None: ...
-
-    def teardown(self) -> None: ...
-
-    def run(self) -> int:
-        self.setup()
-        try:
-            self.main()
-        finally:
-            self.teardown()
-
-        return exitcodes.OK
-
-
 class AsyncScriptConfig(
     BaseCommandConfig,
     ABC,
@@ -459,15 +418,12 @@ class AsyncScript(BaseCommand, ABC):
 
     async def teardown(self) -> None: ...
 
-    async def _run(self) -> None:
+    async def run(self) -> int:
         await self.setup()
         try:
             await self.main()
         finally:
             await self.teardown()
-
-    def run(self) -> int:
-        asyncio.run(self._run())
         return exitcodes.OK
 
 
@@ -538,10 +494,6 @@ class Scanner(AsyncScript, ABC):
 
     async def setup(self) -> None:
         from gallia.plugins.plugin import load_transport
-
-        if self.db_handler is not None:
-            # Open the DB handler that will be closed in `teardown`
-            await self.db_handler.connect()
 
         if self.config.power_supply is not None:
             self.power_supply = await PowerSupply.connect(self.config.power_supply)

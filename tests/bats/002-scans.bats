@@ -22,6 +22,16 @@ teardown() {
 	gallia scan uds services --sessions 1 2 --check-session
 }
 
+@test "scan services with database" {
+    local db_file="${BATS_TEST_NAME}.sqlite"
+
+	gallia scan uds services --db "$db_file" --sessions 1 2 --check-session
+
+
+    # TODO: This is not finished; check here that the database contains expected fields
+    sqlite3 "$db_file" "SELECT * FROM run_meta;" >&3
+}
+
 @test "scan sessions" {
 	gallia scan uds sessions
 }
