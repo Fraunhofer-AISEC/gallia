@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import json
 from abc import ABC
 
 from pydantic import field_validator
@@ -137,7 +136,7 @@ class UDSScanner(Scanner, ABC):
 
         if self.config.properties is True:
             path = self.artifacts_dir.joinpath(FileNames.PROPERTIES_PRE.value)
-            path.write_text(json.dumps(await self.ecu.properties(True), indent=4) + "\n")
+            path.write_text((await self.ecu.properties(True)).to_json(indent=4) + "\n")
 
         if self.db_handler is not None:
             self._apply_implicit_logging_setting()
@@ -152,13 +151,15 @@ class UDSScanner(Scanner, ABC):
 
     async def teardown(self) -> None:
         if self.config.properties is True and (not self.ecu.transport.is_closed):
+            prop_curr = await self.ecu.properties(True)
+
             path = self.artifacts_dir.joinpath(FileNames.PROPERTIES_POST.value)
-            path.write_text(json.dumps(await self.ecu.properties(True), indent=4) + "\n")
+            path.write_text(prop_curr.to_json(indent=4) + "\n")
 
             path_pre = self.artifacts_dir.joinpath(FileNames.PROPERTIES_PRE.value)
-            prop_pre = json.loads(path_pre.read_text())
+            prop_pre = type(prop_curr).from_json(path_pre.read_text())
 
-            if self.config.compare_properties and await self.ecu.properties(False) != prop_pre:
+            if self.config.compare_properties and prop_curr != prop_pre:
                 logger.warning("ecu properties differ, please investigate!")
 
         if self.db_handler is not None and self.config.properties is True:
