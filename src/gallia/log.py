@@ -92,7 +92,7 @@ def _add_logging_level(level_name: str, level_num: int) -> None:
             )
 
     def to_root(message, *args, **kwargs):  # type: ignore
-        logging.log(level_num, message, *args, **kwargs)
+        logging.log(level_num, message, *args, **kwargs)  # noqa: LOG015
 
     logging.addLevelName(level_num, level_name)
     setattr(logging, level_name, level_num)
