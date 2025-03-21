@@ -5,7 +5,6 @@
 import asyncio
 import contextvars
 import importlib.util
-import logging
 import re
 import sys
 from collections.abc import Awaitable, Callable
@@ -169,7 +168,7 @@ async def catch_and_log_exception(
     try:
         return await func(*args, **kwargs)
     except Exception as e:
-        logging.error(f"func {func.__name__} failed: {repr(e)}")
+        logger.error(f"func {func.__name__} failed: {repr(e)}")
         return None
 
 
