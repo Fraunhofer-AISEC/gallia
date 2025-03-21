@@ -1,0 +1,168 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Logging &mdash; gallia  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Plugins" href="plugins.html" />
+    <link rel="prev" title="Environment Variables" href="env.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="transports.html">Transports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env.html">Environment Variables</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Logging</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#concept">Concept</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#api">API</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="plugins.html">Plugins</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Public API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Logging</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/logging.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <!--
+SPDX-FileCopyrightText: AISEC Pentesting Team
+
+SPDX-License-Identifier: CC0-1.0
+-->
+<section id="logging">
+<h1>Logging<a class="headerlink" href="#logging" title="Link to this heading"></a></h1>
+<section id="concept">
+<h2>Concept<a class="headerlink" href="#concept" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">gallia</span></code> uses structured structured logging implemented as line separated JSON records.
+Each scanner creates a <code class="docutils literal notranslate"><span class="pre">artifacts_dir</span></code> under <code class="docutils literal notranslate"><span class="pre">artifacts_base</span></code>, which contains a zstd compressed logfile <code class="docutils literal notranslate"><span class="pre">log.json.zst</span></code>.
+The logfile is created with loglevel <code class="docutils literal notranslate"><span class="pre">DEBUG</span></code>; for debugging purposes loglevel <code class="docutils literal notranslate"><span class="pre">TRACE</span></code> can be enabled with the setting <code class="docutils literal notranslate"><span class="pre">trace_log</span></code>.
+Logfiles can be displayed with the <code class="docutils literal notranslate"><span class="pre">hr</span></code> tool which is included in <code class="docutils literal notranslate"><span class="pre">gallia</span></code>.</p>
+<p>The generic interface which represents a logrecord is <a class="reference internal" href="api.html#gallia.log.PenlogRecord" title="gallia.log.PenlogRecord"><code class="xref py py-class docutils literal notranslate"><span class="pre">gallia.log.PenlogRecord</span></code></a>.
+The generic interface which is used to read a logfile <code class="xref py py-class docutils literal notranslate"><span class="pre">gallia.log.PenlogReader</span></code>.</p>
+</section>
+<section id="api">
+<h2>API<a class="headerlink" href="#api" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">gallia</span></code> uses the <a class="reference external" href="https://docs.python.org/3/library/logging.html"><code class="docutils literal notranslate"><span class="pre">logging</span></code></a> module.
+The loglevels <code class="docutils literal notranslate"><span class="pre">TRACE</span></code> and <code class="docutils literal notranslate"><span class="pre">NOTICE</span></code> have been added to the module.</p>
+<p>In own scripts <a class="reference internal" href="api.html#gallia.log.setup_logging" title="gallia.log.setup_logging"><code class="xref py py-meth docutils literal notranslate"><span class="pre">gallia.log.setup_logging()</span></code></a> needs to be called as early as possible.
+For creating a <a class="reference internal" href="api.html#gallia.log.Logger" title="gallia.log.Logger"><code class="xref py py-class docutils literal notranslate"><span class="pre">gallia.log.Logger</span></code></a>, there is <code class="xref py py-meth docutils literal notranslate"><span class="pre">gallia.log.get_logger()</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gallia.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">setup_logging</span><span class="p">,</span> <span class="n">Loglevel</span>
+
+<span class="c1"># The logfile&#39;s loglevel is Loglevel.DEBUG.</span>
+<span class="c1"># It can be set with the keyword argument file_level.</span>
+<span class="n">setup_logging</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">Loglevel</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;hello world&quot;</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;hello debug&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If processing of a logfile is needed, here is a minimal example; for custom functionality see <code class="xref py py-class docutils literal notranslate"><span class="pre">gallia.log.PenlogReader</span></code> and <code class="xref py py-meth docutils literal notranslate"><span class="pre">gallia.log.PenlogReader.records()</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gallia.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">PenlogReader</span>
+
+<span class="n">reader</span> <span class="o">=</span> <span class="n">PenlogReader</span><span class="p">(</span><span class="s2">&quot;/path/to/logfile&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">reader</span><span class="o">.</span><span class="n">records</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="env.html" class="btn btn-neutral float-left" title="Environment Variables" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="plugins.html" class="btn btn-neutral float-right" title="Plugins" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
