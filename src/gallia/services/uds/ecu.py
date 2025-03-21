@@ -2,10 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import asyncio
+import dataclasses
+import json
 from asyncio import Task
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from gallia.db.log import LogMode
 from gallia.log import get_logger
@@ -47,6 +51,16 @@ class ECUState:
 logger = get_logger(__name__)
 
 
+@dataclasses.dataclass
+class ECUProperties:
+    def to_json(self, indent: int | str | None = None) -> str:
+        return json.dumps(dataclasses.asdict(self), indent=indent)
+
+    @classmethod
+    def from_json(cls, js: str) -> ECUProperties:
+        return cls(**json.loads(js))
+
+
 class ECU(UDSClient):
     """ECU is a high level interface wrapping a UDSClient class. It provides
     semantically correct higher level interfaces such as read_session()
@@ -73,8 +87,8 @@ class ECU(UDSClient):
 
     async def properties(
         self, fresh: bool = False, config: UDSRequestConfig | None = None
-    ) -> dict[str, Any]:
-        return {}
+    ) -> ECUProperties:
+        return ECUProperties()
 
     async def ping(
         self, config: UDSRequestConfig | None = None

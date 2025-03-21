@@ -21,6 +21,7 @@ from gallia.services.uds.core.service import (
     UDSResponse,
 )
 from gallia.services.uds.core.utils import bytes_repr as bytes_repr_
+from gallia.services.uds.ecu import ECUProperties
 from gallia.utils import handle_task_error, set_task_handler_ctx_variable
 
 
@@ -304,20 +305,20 @@ class DBHandler:
         self.target = target
         await self.connection.commit()
 
-    async def insert_scan_run_properties_pre(self, properties_pre: dict[str, Any]) -> None:
+    async def insert_scan_run_properties_pre(self, properties_pre: ECUProperties) -> None:
         assert self.connection is not None, "Not connected to the database"
         assert self.scan_run is not None, "Scan run not yet created"
 
         query = "UPDATE scan_run SET properties_pre = ? WHERE id = ?"
-        await self.connection.execute(query, (json.dumps(properties_pre), self.scan_run))
+        await self.connection.execute(query, (properties_pre.to_json(), self.scan_run))
         await self.connection.commit()
 
-    async def complete_scan_run(self, properties_post: dict[str, Any]) -> None:
+    async def complete_scan_run(self, properties_post: ECUProperties) -> None:
         assert self.connection is not None, "Not connected to the database"
         assert self.scan_run is not None, "Scan run not yet created"
 
         query = "UPDATE scan_run SET properties_post = ? WHERE id = ?"
-        await self.connection.execute(query, (json.dumps(properties_post), self.scan_run))
+        await self.connection.execute(query, (properties_post.to_json(), self.scan_run))
         await self.connection.commit()
 
     async def insert_discovery_run(self, protocol: str) -> None:
