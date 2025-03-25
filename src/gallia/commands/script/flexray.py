@@ -12,8 +12,8 @@ from gallia.command.config import AutoInt, Field, Ranges
 assert sys.platform == "win32"
 
 from gallia.command import AsyncScript, Script
-from gallia.transports._ctypes_vector_xl_wrapper import FlexRayCtypesBackend
-from gallia.transports.flexray_vector import FlexRayFrame, RawFlexRayTransport, parse_frame_type
+from gallia.transports.vector._ctypes_vector_xl_wrapper import FlexRayCtypesBackend
+from gallia.transports.vector.flexray import FlexRayFrame, RawFlexRayTransport, parse_frame_type
 
 
 class FRDumpConfig(AsyncScriptConfig):
