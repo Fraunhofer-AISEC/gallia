@@ -54,11 +54,8 @@ logger = get_logger(__name__)
 @dataclasses.dataclass
 class ECUProperties:
     def to_json(self, indent: int | str | None = None) -> str:
-        return json.dumps(dataclasses.asdict(self), indent=indent)
-
-    @classmethod
-    def from_json(cls, js: str) -> ECUProperties:
-        return cls(**json.loads(js))
+        # Make sure to keep 'sort_keys=True' when overriding this method!
+        return json.dumps(dataclasses.asdict(self), indent=indent, sort_keys=True)
 
 
 class ECU(UDSClient):

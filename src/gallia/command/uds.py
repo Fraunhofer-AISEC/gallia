@@ -151,13 +151,13 @@ class UDSScanner(Scanner, ABC):
 
     async def teardown(self) -> None:
         if self.config.properties is True and (not self.ecu.transport.is_closed):
-            prop_curr = await self.ecu.properties(True)
+            prop_curr = (await self.ecu.properties(True)).to_json(indent=4) + "\n"
 
             path = self.artifacts_dir.joinpath(FileNames.PROPERTIES_POST.value)
-            path.write_text(prop_curr.to_json(indent=4) + "\n")
+            path.write_text(prop_curr)
 
             path_pre = self.artifacts_dir.joinpath(FileNames.PROPERTIES_PRE.value)
-            prop_pre = type(prop_curr).from_json(path_pre.read_text())
+            prop_pre = path_pre.read_text()
 
             if self.config.compare_properties and prop_curr != prop_pre:
                 logger.warning("ecu properties differ, please investigate!")
