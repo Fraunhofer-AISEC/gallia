@@ -4,6 +4,7 @@
 
 import asyncio
 import socket
+import sys
 from collections.abc import Iterable
 from itertools import product
 from urllib.parse import parse_qs, urlparse
@@ -72,20 +73,13 @@ class DoIPDiscoverer(AsyncScript):
         super().__init__(config)
         self.config: DoIPDiscovererConfig = config
 
-    # This is an ugly hack to circumvent AsyncScript's shortcomings regarding return codes
-    def run(self) -> int:
-        return asyncio.run(self.main2())
-
     async def main(self) -> None:
-        pass
-
-    async def main2(self) -> int:
         logger.notice("[👋] Welcome to @realDoIP-Discovery powered by MoarMemes…")
 
         target = urlparse(self.config.target) if self.config.target is not None else None
         if target is not None and target.scheme != "doip":
             logger.error("[🫣] --target must be doip://…")
-            return 2
+            sys.exit(2)
 
         if self.db_handler is not None:
             try:
@@ -114,7 +108,7 @@ class DoIPDiscoverer(AsyncScript):
 
             if len(hosts) != 1:
                 logger.error("[🍃] Can only continue with a single DoIP host! Give me a --target!")
-                return 11
+                sys.exit(11)
 
             tgt_hostname, tgt_port = hosts[0]
 
@@ -168,14 +162,14 @@ class DoIPDiscoverer(AsyncScript):
             logger.error(
                 f"[💣] I found {len(targets)} valid RoutingActivationType/SourceAddress tuples, but can only continue with exactly one; choose your weapon with --target!"
             )
-            return 20
+            sys.exit(20)
 
         # Enumerate valid TargetAddresses
         if target is not None and "target_addr" in parse_qs(target.query):
             logger.error(
                 "[😵] Why do you give me a target_addr in --target? Am I useless to you??? GOODBYE!"
             )
-            return 3
+            sys.exit(3)
 
         logger.notice(
             f"[🔍] Enumerating all TargetAddresses from {self.config.start:#x} to {self.config.stop:#x}"
@@ -197,7 +191,6 @@ class DoIPDiscoverer(AsyncScript):
         )
 
         logger.notice("[🛩️] All done, thanks for flying with us!")
-        return 0
 
     async def gather_doip_details(self, tgt_hostname: str, tgt_port: int) -> None:
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
