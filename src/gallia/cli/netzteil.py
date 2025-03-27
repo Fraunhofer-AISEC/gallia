@@ -62,7 +62,7 @@ class CLI(AsyncScript, ABC):
         return await driver.connect(self.config.power_supply, timeout=1.0)
 
 
-class GetCLI(CLI, ABC):
+class GetCLI(CLI):
     CONFIG_TYPE = GetCLIConfig
     SHORT_HELP = "Get properties of the power supply"
 
@@ -85,7 +85,7 @@ class GetCLI(CLI, ABC):
                     print(await client.get_output(self.config.channel))
 
 
-class SetCLI(CLI, ABC):
+class SetCLI(CLI):
     CONFIG_TYPE = SetCLIConfig
     SHORT_HELP = "Set properties of the power supply"
 
