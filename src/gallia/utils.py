@@ -85,6 +85,9 @@ def unravel(listing: str) -> list[int]:
     range_delimiter = "-"
     result = set()
 
+    if len(listing) == 0 or listing.isspace():
+        return []
+
     for range_element in listing.split(listing_delimiter):
         if range_delimiter in range_element:
             first_tmp, last_tmp = range_element.split(range_delimiter)
