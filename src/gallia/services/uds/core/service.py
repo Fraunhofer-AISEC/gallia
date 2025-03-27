@@ -2714,6 +2714,122 @@ class ReportDTCWithPermanentStatusRequest(
         super().__init__(suppress_response)
 
 
+class ReportDTCExtDataRecordByDTCNumberResponse(
+    _ReadDTCResponse,
+    minimal_length=6,
+    maximal_length=None,
+    service_id=UDSIsoServices.ReadDTCInformation,
+    sub_function_id=ReadDTCInformationSubFuncs.reportDTCExtDataRecordByDTCNumber,
+):
+    def __init__(
+        self, dtc_and_status_record: bytes | tuple[int, int], dtc_ext_data_records: dict[int, bytes]
+    ) -> None:
+        super().__init__()
+
+        if isinstance(dtc_and_status_record, bytes):
+            if len(dtc_and_status_record) != 4:
+                raise ValueError("Not a valid dtc_and_status_record")
+
+            self.dtc_and_status_record = (
+                from_bytes(dtc_and_status_record[0:3]),
+                dtc_and_status_record[3],
+            )
+        else:
+            dtc, status = dtc_and_status_record
+            check_range(dtc, "DTC", 0, 0xFFFFFF)
+            check_range(status, "DTC Status", 0, 0xFF)
+
+            self.dtc_and_status_record = dtc_and_status_record
+
+        for dtc_ext_data_record_number, dtc_ext_data_record in dtc_ext_data_records.items():
+            check_range(dtc_ext_data_record_number, "dtc_ext_data_record_number", 0, 0xFD)
+
+        self.dtc_ext_data_records = dtc_ext_data_records
+
+    def dtc_and_status_record_bytes(self) -> bytes:
+        return to_bytes(self.dtc_and_status_record[0], 1) + to_bytes(
+            self.dtc_and_status_record[1], 3
+        )
+
+    @property
+    def pdu(self) -> bytes:
+        result = (
+            pack("!BB", self.RESPONSE_SERVICE_ID, self.sub_function)
+            + self.dtc_and_status_record_bytes()
+        )
+
+        for dtc_ext_data_record_number, dtc_ext_data_record in self.dtc_ext_data_records.items():
+            result += to_bytes(dtc_ext_data_record_number, 1) + dtc_ext_data_record
+
+        return result
+
+    @classmethod
+    def _from_pdu(cls, pdu: bytes) -> Self:
+        dtc_and_status_record = pdu[2:6]
+        dtc_ext_data_record_number = pdu[6]
+        dtc_ext_data_record = pdu[7:]
+        return cls(dtc_and_status_record, {dtc_ext_data_record_number: dtc_ext_data_record})
+
+
+class ReportDTCExtDataRecordByDTCNumberRequest(
+    _ReadDTCRequest,
+    service_id=UDSIsoServices.ReadDTCInformation,
+    sub_function_id=ReadDTCInformationSubFuncs.reportDTCExtDataRecordByDTCNumber,
+    response_type=ReportDTCExtDataRecordByDTCNumberResponse,
+    minimal_length=6,
+    maximal_length=6,
+):
+    def __init__(
+        self,
+        dtc_mask_record: bytes | int,
+        dtc_ext_data_record_number: int,
+        suppress_response: bool = False,
+    ) -> None:
+        """Read additional data for a DTC from the UDS server
+        This is an implementation of the UDS request for the
+        reportDTCExtDataRecordByDTCNumber sub-function of the service ReadDTCInformation (0x19).
+
+        If multiple records are returned by the server (if dtc_ext_data_record_number is set to 0xfe pr 0xff),
+        this cannot be parsed without further information and therefore they are interpreted as a single record.
+
+        :param dtc_mask_record: The DTC.
+        :param dtc_ext_data_record_number: The record number to be returned, 0xfe or 0xff return all records.
+        :param suppress_response: If set to True, the server is advised to not send back a positive
+                                  response.
+        """
+        super().__init__(suppress_response)
+
+        if isinstance(dtc_mask_record, bytes):
+            if len(dtc_mask_record) != 3:
+                raise ValueError("Not a valid dtc_mask_record")
+
+            self.dtc_mask_record = from_bytes(dtc_mask_record)
+        else:
+            check_range(dtc_mask_record, "dtc_mask_record", 0, 0xFFFFFF)
+            self.dtc_mask_record = dtc_mask_record
+
+        check_range(dtc_ext_data_record_number, "dtc_ext_data_record_number", 0, 0xFF)
+        self.dtc_ext_data_record_number = dtc_ext_data_record_number
+
+    @property
+    def pdu(self) -> bytes:
+        return (
+            pack(
+                "!BB",
+                self.SERVICE_ID,
+                self.sub_function_with_suppress_response_bit,
+            )
+            + to_bytes(self.dtc_mask_record, 3)
+            + to_bytes(self.dtc_ext_data_record_number, 1)
+        )
+
+    @classmethod
+    def _from_pdu(cls, pdu: bytes) -> Self:
+        dtc_mask_record = pdu[2:5]
+        dtc_ext_data_record_number = pdu[5]
+        return cls(dtc_mask_record, dtc_ext_data_record_number, cls.suppress_response_set(pdu))
+
+
 class ReadDTCInformation(
     SpecializedSubFunctionService, service_id=UDSIsoServices.ReadDTCInformation
 ):
@@ -2796,6 +2912,12 @@ class ReadDTCInformation(
     ):
         Response = ReportDTCWithPermanentStatusResponse
         Request = ReportDTCWithPermanentStatusRequest
+
+    class ReportDTCExtDataRecordByDTCNumber(
+        SubFunction, sub_function_id=ReadDTCInformationSubFuncs.reportDTCExtDataRecordByDTCNumber
+    ):
+        Response = ReportDTCExtDataRecordByDTCNumberResponse
+        Request = ReportDTCExtDataRecordByDTCNumberRequest
 
 
 # **************************************

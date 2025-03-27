@@ -579,6 +579,34 @@ class UDSClient:
             config,
         )
 
+    async def report_dtc_extended_data_record_by_dtc_number(
+        self,
+        dtc_mask_record: bytes | int,
+        dtc_ext_data_record_number: int,
+        suppress_response: bool = False,
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.ReportDTCExtDataRecordByDTCNumberResponse:
+        """Read additional data for a DTC from the UDS server
+        This is an implementation of the UDS request for the
+        reportDTCExtDataRecordByDTCNumber sub-function of the service ReadDTCInformation (0x19).
+
+        If multiple records are returned by the server (if dtc_ext_data_record_number is set to 0xfe pr 0xff),
+        this cannot be parsed without further information and therefore they are interpreted as a single record.
+
+        :param dtc_mask_record: The DTC.
+        :param dtc_ext_data_record_number: The record number to be returned, 0xfe or 0xff return all records.
+        :param suppress_response: If set to True, the server is advised to not send back a positive
+                                  response.
+        :param config: Passed on to request_pdu().
+        :return: The response of the server.
+        """
+        return await self.request(
+            service.ReportDTCExtDataRecordByDTCNumberRequest(
+                dtc_mask_record, dtc_ext_data_record_number, suppress_response
+            ),
+            config,
+        )
+
     async def input_output_control_by_identifier(
         self,
         data_identifier: int,
@@ -1104,6 +1132,13 @@ class UDSClient:
         request: service.ReportEmissionsRelatedOBDDTCByStatusMaskRequest,
         config: UDSRequestConfig | None = None,
     ) -> service.NegativeResponse | service.ReportEmissionsRelatedOBDDTCByStatusMaskResponse: ...
+
+    @overload
+    async def request(
+        self,
+        request: service.ReportDTCExtDataRecordByDTCNumberRequest,
+        config: UDSRequestConfig | None = None,
+    ) -> service.NegativeResponse | service.ReportDTCExtDataRecordByDTCNumberResponse: ...
 
     @overload
     async def request(
