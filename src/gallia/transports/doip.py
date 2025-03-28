@@ -739,7 +739,7 @@ class DoIPConnection:
     async def close(self) -> None:
         logger.debug("Closing DoIP connection...")
         if self._is_closed:
-            logger.debug("Already closed!")
+            logger.debug("DoIP connection already closed!")
             return
         self._is_closed = True
         logger.debug("Cancelling read worker")
@@ -835,7 +835,9 @@ class DoIPTransport(BaseTransport, scheme="doip"):
         return await super().reconnect(10 if timeout is None else timeout)
 
     async def close(self) -> None:
+        logger.debug("Closing DoIP transport...")
         if self._is_closed:
+            logger.debug("DoIP transport already closed")
             return
         self._is_closed = True
         await self._conn.close()

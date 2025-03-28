@@ -165,7 +165,7 @@ class BaseTransport(ABC):
 
     @abstractmethod
     async def close(self) -> None:
-        """Terminates the connection and clean up all allocated ressources."""
+        """Terminates the connection and clean up all allocated resources."""
 
     async def reconnect(self, timeout: float | None = None) -> Self:
         """Closes the connection to the target and attempts to reconnect every
@@ -186,6 +186,7 @@ class BaseTransport(ABC):
                 )
                 while True:
                     try:
+                        logger.debug("Attempting to connect...")
                         return await self.connect(self.target)
                     except ConnectionError as e:
                         logger.info(f"Connection attempt failed while reconnecting: {e!r}")
