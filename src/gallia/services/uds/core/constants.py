@@ -160,6 +160,13 @@ class CDTCSSubFuncs(IntEnum):
 class ReadDTCInformationSubFuncs(IntEnum):
     reportNumberOfDTCByStatusMask = 0x01
     reportDTCByStatusMask = 0x02
+    reportDTCSnapshotIdentification = 0x03
+    reportDTCSnapshotRecordByDTCNumber = 0x04
+    reportDTCStoredDataByRecordNumber = 0x05
+    reportDTCExtDataRecordByDTCNumber = 0x06
+    reportNumberOfDTCBySeverityMaskRecord = 0x07
+    reportDTCBySeverityMaskRecord = 0x08
+    reportSeverityInformationOfDTC = 0x09
     reportSupportedDTC = 0x0A
     reportFirstTestFailedDTC = 0x0B
     reportFirstConfirmedDTC = 0x0C
@@ -171,6 +178,14 @@ class ReadDTCInformationSubFuncs(IntEnum):
     reportEmissionsRelatedOBDDTCByStatusMask = 0x13
     reportDTCFaultDetectionCounter = 0x14
     reportDTCWithPermanentStatus = 0x15
+    reportDTCExtDataRecordByRecordNumber = 0x16
+    reportUserDefMemoryDTCByStatusMask = 0x17
+    reportUserDefMemoryDTCSnapshotRecordByDTCNumber = 0x18
+    reportUserDefMemoryDTCExtDataRecordByDTCNumber = 0x19
+    reportDTCExtendedDataRecordIdentification = 0x1A
+    reportWWHOBDDTCByMaskRecord = 0x42
+    reportWWHOBDDTCWithPermanentStatus = 0x55
+    reportDTCInformationByDTCReadinessGroupIdentifier = 0x56
 
 
 @unique
