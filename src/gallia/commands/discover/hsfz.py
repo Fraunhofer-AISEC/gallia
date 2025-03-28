@@ -16,7 +16,6 @@ from gallia.services.uds.core.service import (
 from gallia.services.uds.helpers import raise_for_mismatch
 from gallia.transports.base import TargetURI
 from gallia.transports.hsfz import HSFZConnection
-from gallia.utils import write_target_list
 
 logger = get_logger(__name__)
 
@@ -123,6 +122,15 @@ class HSFZDiscoverer(UDSDiscoveryScanner):
                 found.append(target)
 
         logger.result(f"Found {len(found)} targets")
-        ecus_file = self.artifacts_dir.joinpath("ECUs.txt")
-        logger.result(f"Writing urls to file: {ecus_file}")
-        await write_target_list(ecus_file, found, self.db_handler)
+
+        if self.artifacts_dir is not None:
+            ecus_file = self.artifacts_dir.joinpath("ECUs.txt")
+            logger.result(f"Writing urls to file: {ecus_file}")
+            with ecus_file.open("w") as f:
+                for target in found:
+                    f.write(f"{target}\n")
+
+        if self.db_handler is not None:
+            logger.result("Writing urls to database")
+            for target in found:
+                await self.db_handler.insert_discovery_result(str(target))

@@ -9,16 +9,10 @@ import re
 import sys
 from collections.abc import Awaitable, Callable
 from functools import wraps
-from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar
+from typing import Any, ParamSpec, TypeVar
 
 from gallia.log import Loglevel, get_logger
-
-if TYPE_CHECKING:
-    from gallia.db.handler import DBHandler
-    from gallia.transports import TargetURI
-
 
 logger = get_logger(__name__)
 
@@ -170,26 +164,6 @@ async def catch_and_log_exception(
     except Exception as e:
         logger.error(f"func {func.__name__} failed: {repr(e)}")
         return None
-
-
-async def write_target_list(
-    path: Path,
-    targets: list["TargetURI"],
-    db_handler: "DBHandler | None" = None,
-) -> None:
-    """Write a list of ECU connection strings (urls) into file
-
-    :param path: output file
-    :param targets: list of ECUs with ECU specific url and params as dict
-    :params db_handler: if given, urls are also written to the database as discovery results
-    :return: None
-    """
-    with path.open("w") as f:
-        for target in targets:
-            f.write(f"{target}\n")
-
-            if db_handler is not None:
-                await db_handler.insert_discovery_result(str(target))
 
 
 def lazy_import(name: str) -> ModuleType:

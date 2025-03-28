@@ -143,7 +143,11 @@ class SASeedsDumper(UDSScanner):
             logger.critical(f"could not change to session: {resp}")
             return
 
-        seeds_file = self.artifacts_dir.joinpath("seeds.bin")
+        if self.artifacts_dir is None:
+            logger.warning("No artifacts base folder given, saving seeds to current working dir!")
+            seeds_file = Path.cwd().joinpath("seeds.bin")
+        else:
+            seeds_file = self.artifacts_dir.joinpath("seeds.bin")
         file = seeds_file.open("wb", buffering=0)
         duration = self.config.duration * 60
         start_time = time.time()

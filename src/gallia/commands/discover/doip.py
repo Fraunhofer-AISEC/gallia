@@ -65,7 +65,6 @@ class DoIPDiscoverer(AsyncScript):
 
     CONFIG_TYPE = DoIPDiscovererConfig
     SHORT_HELP = "zero-knowledge DoIP enumeration scanner"
-    HAS_ARTIFACTS_DIR = True
 
     protocol_version = ProtocolVersions.ISO_13400_2_2019.value
 
@@ -289,10 +288,11 @@ class DoIPDiscoverer(AsyncScript):
             )
             logger.notice(f"[🤯] Holy moly, it actually worked: {targets[-1]}")
 
-            with self.artifacts_dir.joinpath("1_valid_routing_activation_requests.txt").open(
-                "a"
-            ) as f:
-                f.write(f"{targets[-1]}\n")
+            if self.artifacts_dir is not None:
+                with self.artifacts_dir.joinpath("1_valid_routing_activation_requests.txt").open(
+                    "a"
+                ) as f:
+                    f.write(f"{targets[-1]}\n")
 
         if len(targets) > 0:
             logger.notice("[⚔️] It's dangerous to test alone, take one of these:")
@@ -335,8 +335,9 @@ class DoIPDiscoverer(AsyncScript):
                 # If we reach this, the request was not denied due to unknown TargetAddress or other DoIP errors
                 known_targets.append(current_target)
                 logger.notice(f"[🥈] HEUREKA: target address {target_addr:#x} is valid! ")
-                with self.artifacts_dir.joinpath("3_valid_targets.txt").open("a") as f:
-                    f.write(f"{current_target}\n")
+                if self.artifacts_dir is not None:
+                    with self.artifacts_dir.joinpath("3_valid_targets.txt").open("a") as f:
+                        f.write(f"{current_target}\n")
 
                 # Here is where "reader_task" comes into play, which monitors incoming DiagnosticMessage replies
 
@@ -347,22 +348,29 @@ class DoIPDiscoverer(AsyncScript):
                 elif e.nack_code == DiagnosticMessageNegativeAckCodes.TargetUnreachable:
                     logger.info(f"[💤] {target_addr:#x} is (currently?) unreachable")
                     unreachable_targets.append(current_target)
-                    with self.artifacts_dir.joinpath("5_unreachable_targets.txt").open("a") as f:
-                        f.write(f"{current_target}\n")
+                    if self.artifacts_dir is not None:
+                        with self.artifacts_dir.joinpath("5_unreachable_targets.txt").open(
+                            "a"
+                        ) as f:
+                            f.write(f"{current_target}\n")
                     continue
                 else:
                     logger.warning(
                         f"[🤷] {target_addr:#x} is behaving strangely: {e.nack_code.name}"
                     )
-                    with self.artifacts_dir.joinpath("7_targets_with_errors.txt").open("a") as f:
-                        f.write(f"{target_addr:#x}: {e.nack_code.name}\n")
+                    if self.artifacts_dir is not None:
+                        with self.artifacts_dir.joinpath("7_targets_with_errors.txt").open(
+                            "a"
+                        ) as f:
+                            f.write(f"{target_addr:#x}: {e.nack_code.name}\n")
                     continue
 
             except ConnectionError as e:
                 # Whenever this triggers, but sometimes connections are closed not by us
                 logger.warning(f"[🫦] Sexy, but unexpected: {target_addr:#x} triggered {e!r}")
-                with self.artifacts_dir.joinpath("7_targets_with_errors.txt").open("a") as f:
-                    f.write(f"{target_addr:#x}: {e}\n")
+                if self.artifacts_dir is not None:
+                    with self.artifacts_dir.joinpath("7_targets_with_errors.txt").open("a") as f:
+                        f.write(f"{target_addr:#x}: {e}\n")
                 # Re-establish DoIP connection
                 await conn.close()
                 await asyncio.sleep(tcp_connect_delay)
@@ -413,8 +421,9 @@ class DoIPDiscoverer(AsyncScript):
 
                 if current_target not in responsive_targets:
                     responsive_targets.append(current_target)
-                    with self.artifacts_dir.joinpath("4_responsive_targets.txt").open("a") as f:
-                        f.write(f"{current_target}\n")
+                    if self.artifacts_dir is not None:
+                        with self.artifacts_dir.joinpath("4_responsive_targets.txt").open("a") as f:
+                            f.write(f"{current_target}\n")
                     if self.db_handler is not None:
                         # We need to manually connect to the DB because we are an AsyncScript that
                         # does not do so automatically
@@ -510,8 +519,9 @@ class DoIPDiscoverer(AsyncScript):
             for item in found:
                 url = f"doip://{item[0]}:{item[1]}"
                 logger.notice(url)
-                with self.artifacts_dir.joinpath("0_valid_hosts.txt").open("a") as f:
-                    f.write(f"{url}\n")
+                if self.artifacts_dir is not None:
+                    with self.artifacts_dir.joinpath("0_valid_hosts.txt").open("a") as f:
+                        f.write(f"{url}\n")
         else:
             logger.notice(
                 "[👸] Your princess is in another castle: no DoIP endpoints here it seems..."

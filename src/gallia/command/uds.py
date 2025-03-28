@@ -135,38 +135,40 @@ class UDSScanner(Scanner, ABC):
             await self.ecu.start_cyclic_tester_present(self.config.tester_present_interval)
 
         if self.config.properties is True:
-            path = self.artifacts_dir.joinpath(FileNames.PROPERTIES_PRE.value)
-            path.write_text((await self.ecu.properties(True)).to_json(indent=4) + "\n")
+            properties = await self.ecu.properties(True)
 
-        if self.db_handler is not None:
-            self._apply_implicit_logging_setting()
+            if self.artifacts_dir is not None:
+                path = self.artifacts_dir.joinpath(FileNames.PROPERTIES_PRE.value)
+                path.write_text(properties.to_json(indent=4) + "\n")
 
-            if self.config.properties is True:
+            if self.db_handler is not None:
+                self._apply_implicit_logging_setting()
+
                 try:
-                    await self.db_handler.insert_scan_run_properties_pre(
-                        await self.ecu.properties()
-                    )
+                    await self.db_handler.insert_scan_run_properties_pre(properties)
                 except Exception as e:
                     logger.warning(f"Could not write the properties_pre to the database: {e!r}")
 
     async def teardown(self) -> None:
         if self.config.properties is True and (not self.ecu.transport.is_closed):
-            prop_curr = (await self.ecu.properties(True)).to_json(indent=4) + "\n"
+            properties = await self.ecu.properties(True)
 
-            path = self.artifacts_dir.joinpath(FileNames.PROPERTIES_POST.value)
-            path.write_text(prop_curr)
+            if self.artifacts_dir is not None:
+                prop_curr = properties.to_json(indent=4) + "\n"
+                path = self.artifacts_dir.joinpath(FileNames.PROPERTIES_POST.value)
+                path.write_text(prop_curr)
 
-            path_pre = self.artifacts_dir.joinpath(FileNames.PROPERTIES_PRE.value)
-            prop_pre = path_pre.read_text()
+                path_pre = self.artifacts_dir.joinpath(FileNames.PROPERTIES_PRE.value)
+                prop_pre = path_pre.read_text()
 
-            if self.config.compare_properties and prop_curr != prop_pre:
-                logger.warning("ecu properties differ, please investigate!")
+                if self.config.compare_properties and prop_curr != prop_pre:
+                    logger.warning("ecu properties differ, please investigate!")
 
-        if self.db_handler is not None and self.config.properties is True:
-            try:
-                await self.db_handler.complete_scan_run(await self.ecu.properties(False))
-            except Exception as e:
-                logger.warning(f"Could not write the scan run to the database: {e!r}")
+            if self.db_handler is not None:
+                try:
+                    await self.db_handler.complete_scan_run(properties)
+                except Exception as e:
+                    logger.warning(f"Could not write the scan run to the database: {e!r}")
 
         if self.config.tester_present:
             await self.ecu.stop_cyclic_tester_present()

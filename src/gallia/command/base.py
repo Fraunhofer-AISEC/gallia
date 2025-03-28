@@ -16,7 +16,6 @@ from datetime import UTC, datetime
 from enum import Enum, unique
 from pathlib import Path
 from subprocess import CalledProcessError, run
-from tempfile import gettempdir
 from typing import Any, Protocol, Self, cast
 
 from pydantic import ConfigDict, field_serializer, model_validator
@@ -141,14 +140,11 @@ class BaseCommandConfig(GalliaBaseModel, cli_group="generic", config_section="ga
         None, description="path to file used for a posix lock", metavar="PATH"
     )
     db: Path | None = Field(None, description="Path to sqlite3 database")
-    artifacts_dir: Path | None = Field(
-        None, description="Folder for artifacts", metavar="DIR", config_section="gallia.scanner"
-    )
-    artifacts_base: Path = Field(
-        Path(gettempdir()).joinpath("gallia"),
-        description="Base directory for artifacts",
+    artifacts_base: Path | None = Field(
+        None,
+        description="Base directory for artifacts. Required to save artifacts such as logs.",
         metavar="DIR",
-        config_section="gallia.scanner",
+        config_section="gallia",
     )
 
 
@@ -175,9 +171,6 @@ class BaseCommand(FlockMixin, ABC):
     #: The string which is shown at the bottom of --help.
     EPILOG: str | None = None
 
-    #: Enable a artifacts_dir. Setting this property to
-    #: True enables the creation of a logfile.
-    HAS_ARTIFACTS_DIR: bool = False
     #: A list of exception types for which tracebacks are
     #: suppressed at the top level. For these exceptions
     #: a log message with level critical is logged.
@@ -188,7 +181,7 @@ class BaseCommand(FlockMixin, ABC):
     def __init__(self, config: BaseCommandConfig) -> None:
         self.id = camel_to_snake(self.__class__.__name__)
         self.config = config
-        self.artifacts_dir = Path()
+        self.artifacts_dir: Path | None = None
         self.run_meta = RunMeta(
             command=f"{type(self).__module__}.{type(self).__name__}",
             start_time=datetime.now(tz).isoformat(),
@@ -289,20 +282,12 @@ class BaseCommand(FlockMixin, ABC):
         except (OSError, NotImplementedError) as e:
             logger.warn(f"symlink error: {e}")
 
-    def prepare_artifactsdir(
-        self, base_dir: Path | None = None, force_path: Path | None = None
-    ) -> Path:
-        if force_path is not None:
-            if force_path.is_dir():
-                return force_path
+    def prepare_artifacts_dir(self) -> Path | None:
+        if self.config.artifacts_base is None:
+            return None
 
-            force_path.mkdir(parents=True)
-            return force_path
-
-        if base_dir is not None:
-            _command_dir = self.id
-
-            command_dir = base_dir.joinpath(_command_dir)
+        else:
+            command_dir = self.config.artifacts_base.joinpath(self.id)
 
             _run_dir = f"run-{datetime.now().strftime('%Y%m%d-%H%M%S.%f')}"
             artifacts_dir = command_dir.joinpath(_run_dir).absolute()
@@ -313,8 +298,6 @@ class BaseCommand(FlockMixin, ABC):
 
             return artifacts_dir.absolute()
 
-        raise ValueError("base_dir or force_path must be different from None")
-
     async def entry_point(self) -> int:
         if (p := self.config.lock_file) is not None:
             try:
@@ -324,10 +307,8 @@ class BaseCommand(FlockMixin, ABC):
                 logger.critical(f"Unable to lock {p}: {e}")
                 return exitcodes.OSFILE
 
-        if self.HAS_ARTIFACTS_DIR:
-            self.artifacts_dir = self.prepare_artifactsdir(
-                self.config.artifacts_base, self.config.artifacts_dir
-            )
+        self.artifacts_dir = self.prepare_artifacts_dir()
+        if self.artifacts_dir is not None:
             self.log_file_handlers.append(
                 add_zst_log_handler(
                     logger_name="gallia",
@@ -371,7 +352,7 @@ class BaseCommand(FlockMixin, ABC):
 
             await self._db_finish_run_meta()
 
-            if self.HAS_ARTIFACTS_DIR:
+            if self.artifacts_dir is not None:
                 self.artifacts_dir.joinpath(FileNames.META.value).write_text(
                     self.run_meta.json() + "\n"
                 )
@@ -379,12 +360,13 @@ class BaseCommand(FlockMixin, ABC):
 
             # Close open log file handlers to ensure logs are properly written
             # to avoid memory leaks and cross-talking log files
-            logger.info("Syncing log files…")
-            while len(self.log_file_handlers) > 0:
-                remove_zst_log_handler(
-                    logger_name="gallia",
-                    handler=self.log_file_handlers.pop(),
-                )
+            if len(self.log_file_handlers) > 0:
+                logger.info("Syncing log files…")
+                while len(self.log_file_handlers) > 0:
+                    remove_zst_log_handler(
+                        logger_name="gallia",
+                        handler=self.log_file_handlers.pop(),
+                    )
 
         if self.config.hooks:
             self.run_hook(HookVariant.POST, exit_code)
@@ -479,7 +461,6 @@ class Scanner(AsyncScript, ABC):
     - `main()` is the relevant entry_point for the scanner and must be implemented.
     """
 
-    HAS_ARTIFACTS_DIR = True
     CATCHED_EXCEPTIONS: list[type[Exception]] = [ConnectionError, UDSException]
 
     def __init__(self, config: ScannerConfig):
@@ -504,7 +485,7 @@ class Scanner(AsyncScript, ABC):
 
         # Start dumpcap as the first subprocess; otherwise network
         # traffic might be missing.
-        if self.config.dumpcap:
+        if self.artifacts_dir and self.config.dumpcap:
             if shutil.which("dumpcap") is None:
                 raise RuntimeError("--dumpcap specified but `dumpcap` is not available")
             self.dumpcap = await Dumpcap.start(self.config.target, self.artifacts_dir)
