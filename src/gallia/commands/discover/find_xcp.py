@@ -48,8 +48,6 @@ class UdpFindXCPConfig(FindXCPConfig):
 class FindXCP(AsyncScript, ABC):
     """Find XCP Slave"""
 
-    HAS_ARTIFACTS_DIR = True
-
     def __init__(self, config: FindXCPConfig):
         super().__init__(config)
         self.config: FindXCPConfig = config

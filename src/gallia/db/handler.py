@@ -255,7 +255,7 @@ class DBHandler:
         script: str,
         config: GalliaBaseModel,
         start_time: datetime,
-        path: Path,
+        path: Path | None,
     ) -> None:
         assert self.connection is not None, "Not connected to the database"
 
@@ -279,7 +279,9 @@ class DBHandler:
 
         await self.connection.commit()
 
-    async def complete_run_meta(self, end_time: datetime, exit_code: int, path: Path) -> None:
+    async def complete_run_meta(
+        self, end_time: datetime, exit_code: int, path: Path | None
+    ) -> None:
         assert self.connection is not None, "Not connected to the database"
         assert self.meta is not None, "Run meta not yet created"
 

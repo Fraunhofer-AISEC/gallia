@@ -17,7 +17,7 @@ from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse, UDSClient, UDSRequest
 from gallia.services.uds.core.utils import g_repr
 from gallia.transports import ISOTPTransport, RawCANTransport, TargetURI
-from gallia.utils import can_id_repr, write_target_list
+from gallia.utils import can_id_repr
 
 logger = get_logger(__name__)
 
@@ -189,9 +189,18 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
                     break
 
         logger.result(f"finished; found {len(found)} UDS endpoints")
-        ecus_file = self.artifacts_dir.joinpath("ECUs.txt")
-        logger.result(f"Writing urls to file: {ecus_file}")
-        await write_target_list(ecus_file, found, self.db_handler)
+
+        if self.artifacts_dir is not None:
+            ecus_file = self.artifacts_dir.joinpath("ECUs.txt")
+            logger.result(f"Writing urls to file: {ecus_file}")
+            with ecus_file.open("w") as f:
+                for target in found:
+                    f.write(f"{target}\n")
+
+        if self.db_handler is not None:
+            logger.result("Writing urls to database")
+            for target in found:
+                await self.db_handler.insert_discovery_result(str(target))
 
         if self.config.query:
             await self.query_description(found, self.config.info_did)
