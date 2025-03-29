@@ -1,0 +1,284 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scan Modes &mdash; gallia  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Virtual ECUs" href="virtual_ecu.html" />
+    <link rel="prev" title="Database" href="database.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../transports.html">Transports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../env.html">Environment Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../logging.html">Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../plugins.html">Plugins</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="database.html">Database</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Scan Modes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#discovery-scan">Discovery Scan</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#doip">DoIP</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#iso-tp">ISO-TP</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#session-scan">Session Scan</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#service-scan">Service Scan</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#identifier-scan">Identifier Scan</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#memory-scan">Memory Scan</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../api.html">Public API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Scan Modes</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/uds/scan_modes.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <!--
+SPDX-FileCopyrightText: AISEC Pentesting Team
+
+SPDX-License-Identifier: CC0-1.0
+-->
+<section id="scan-modes">
+<h1>Scan Modes<a class="headerlink" href="#scan-modes" title="Link to this heading"></a></h1>
+<p>A UDS scan usually covers multiple phases:</p>
+<ol class="arabic simple">
+<li><p>Searching for ECUs on the relevant transport: <strong>Discovery Scan</strong></p></li>
+<li><p>Searching for UDS sessions on the found ECUs: <strong>Session Scan</strong></p></li>
+<li><p>Searching for UDS services on the found ECUs: <strong>Service Scan</strong></p></li>
+<li><p>Searching for UDS identifiers in discovered UDS services: <strong>Identifier Scan</strong></p></li>
+<li><p>Additional service specific scans, such as <strong>Memory Scan</strong>, <strong>Fuzzing</strong>, …</p></li>
+</ol>
+<section id="discovery-scan">
+<h2>Discovery Scan<a class="headerlink" href="#discovery-scan" title="Link to this heading"></a></h2>
+<p>Discovery scans are specific for the underlying transport, such as DoIP or ISO-TP.
+The idea is crafting a valid UDS payload which is valid and at least some answer is expected.
+A well working payload is <code class="docutils literal notranslate"><span class="pre">1001</span></code> which is a request to the DiagnosticSessionControl service.
+This request instructs an ECU to change to the so called DefaultSession.
+The DiagnosticSessionControl service and the DefaultSession should be always available, thus this payload is a good candidate for a discovery scan.
+Payloads different from <code class="docutils literal notranslate"><span class="pre">1001</span></code> can be used as well; for instance <code class="docutils literal notranslate"><span class="pre">1003</span></code> to enable the ExtendedDiagnosticSession (session id <code class="docutils literal notranslate"><span class="pre">0x03</span></code>).
+Another well working example is <code class="docutils literal notranslate"><span class="pre">3E00</span></code>, the TesterPresent service.</p>
+<p>The <strong>addressing</strong> of the ECU is provided by the underlying transport protocol.
+Most of the time there are two addresses: the tester address and the ECU address.
+The basic idea of a discovery scan is sending a valid UDS payload to all valid ECU addresses with a fixed tester address.
+When a valid answer is received an ECU has been found.</p>
+<section id="doip">
+<h3>DoIP<a class="headerlink" href="#doip" title="Link to this heading"></a></h3>
+<p>The <a class="reference external" href="https://www.iso.org/standard/74785.html">Diagnostics Over Internet Protocol (DoIP)</a> is a application level protocol on top of TCP enabling tunneling UDS messages.
+As an advantage all features of modern operating systems can be used.
+Furthermore, no custom hardware, such as expensive CAN bus adapters are required.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The user needs to provide a DHCP server enabling the communication stack on the DoIP gateway’s side.</p>
+</div>
+<p>DoIP has three parameters which are required to establish a communication channel to an ECU:</p>
+<ol class="arabic simple">
+<li><p><strong>SourceAddress</strong>: In the automotive chargon also called <em>tester address</em>. It is often static and set to <code class="docutils literal notranslate"><span class="pre">0x0e00</span></code>.</p></li>
+<li><p><strong>TargetAddress</strong>: This is the address of a present ECU. This parameter needs to be discovered.</p></li>
+<li><p><strong>RoutingActivationType</strong>: DoIP provides further optional layers of authentication which can e.g. be vendor specific. Since <code class="docutils literal notranslate"><span class="pre">gallia</span></code> needs UDS endpoints this is most likely <code class="docutils literal notranslate"><span class="pre">WWH_OB</span></code>, which is a symbolic identifier for the constant <code class="docutils literal notranslate"><span class="pre">0x01</span></code>. Optionally, the RoutingActivationType can be scanned in order to find vendor specific routing methods.</p></li>
+</ol>
+<p>Assuming DHCP and the networking setup is running properly, the DoIP connection establishment looks like the following:</p>
+<ol class="arabic simple">
+<li><p>TCP connect to the DoIP gateway. The IP address of the gateway is set by the mentioned user controlled DHCP server.</p></li>
+<li><p>Sending a RoutingActivationRequest; the gateway must acknowledge this.</p></li>
+<li><p>UDS requests can be tunneled to arbitrary ECUs using appropriate DoIP <code class="docutils literal notranslate"><span class="pre">DiagnosticMessage</span></code> packets.</p></li>
+</ol>
+<p>The mentioned <code class="docutils literal notranslate"><span class="pre">DiagnosticMessage</span></code> packets contain a <code class="docutils literal notranslate"><span class="pre">SourceAddress</span></code>, a <code class="docutils literal notranslate"><span class="pre">TargetAddress</span></code>, and a <code class="docutils literal notranslate"><span class="pre">UserData</span></code> field.
+For the discovery scan on DoIP first step 1. and 2. from the described connection establishment process are performed.
+Subsequently, a valid UDS message (c.f. previous section) is the put in the <code class="docutils literal notranslate"><span class="pre">UserData</span></code> field and the  <code class="docutils literal notranslate"><span class="pre">TargetAddress</span></code> field is iterated.
+When a valid answer is received an ECU has been found; when the gateway sends a NACK or just timeouts, no ECU is available on the tried <code class="docutils literal notranslate"><span class="pre">TargetAddress</span></code>.</p>
+</section>
+<section id="iso-tp">
+<h3>ISO-TP<a class="headerlink" href="#iso-tp" title="Link to this heading"></a></h3>
+<p><a class="reference external" href="https://www.iso.org/standard/66574.html">ISO-TP</a> is a standard for a transport protocol on top of the <a class="reference external" href="https://www.iso.org/standard/63648.html">CAN bus</a> system.
+The CAN bus is a field bus which acts as a broadcast medium; any connected participant can read all messages.
+On the CAN bus there is no concept of a connection.
+Typically, there are cyclic messages on the CAN bus which are important for selected participants.
+However, in order to implement a connection channel for the UDS protocol (which is required by law to be present in vecicles) the ISO-TP standard comes into play.
+In contrast to DoIP special CAN hardware is required.
+The ISO-TP protocol and the interaction with CAN interfaces is handled by the <a class="reference external" href="https://www.kernel.org/doc/html/latest/networking/can.html">networking stack</a> of the Linux kernel.</p>
+<p>For a discovery scan it is important to distinguish whether the tester is connected to a filtered interface (e.g. the OBD connector) or to an unfiltered interface (e.g. an internal CAN bus).
+In order to not confuse the discovery scanner, the so called <em>idle traffic</em> needs to be observed.
+The idle traffic consists of the mentioned cyclic messages of the can bus.
+Since there is no concept of a connection on the CAN bus itself and the parameters for the ISO-TP connection are unknown at the very first stage, an educated guess for a deny list is required.
+Typically, <code class="docutils literal notranslate"><span class="pre">gallia</span></code> waits for a few seconds and observes the CAN bus traffic.
+Subsequently, a deny filter is configured which filters out all CAN IDs seen in the idle traffic.</p>
+<p>ISO-TP provides multiple different addressing methods:</p>
+<ul class="simple">
+<li><p>normal addressing with normal CAN IDs,</p></li>
+<li><p>normal addressing with extended CAN IDs,</p></li>
+<li><p>extended addressing with normal CAN IDs,</p></li>
+<li><p>extended addressing with extended CAN IDs,</p></li>
+<li><p>the mentioned schemes but with CAN-FD below,</p></li>
+<li><p>…</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For the detailed explanation of all these addressing modes we refer to the relevant ISO standard documents or further documents or presentations which are available online.</p>
+</div>
+<p>The tester needs to make assuptions about what addressing scheme is used; otherwise the scan does not yield any results.
+ISO-TP provides the following parameters:</p>
+<ul class="simple">
+<li><p><strong>source can_id</strong>:</p>
+<ul>
+<li><p>Without extended addressing: Often set to an address with a static offset to the destination can_id.</p></li>
+<li><p>Extended addressing: Often set to a static value, e.g. <code class="docutils literal notranslate"><span class="pre">0x6f1</span></code>; a.k.a. <em>tester address</em>.</p></li>
+</ul>
+</li>
+<li><p><strong>destination can_id</strong>:</p>
+<ul>
+<li><p>Without extended addressing: Address of the ECU</p></li>
+<li><p>Extended addressing: Somehow part of the ECU address, e.g. <code class="docutils literal notranslate"><span class="pre">0x600</span> <span class="pre">|</span> <span class="pre">ext_address</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>extended source address</strong>: When extended addressing is in use, often set to a static value, e.g. <code class="docutils literal notranslate"><span class="pre">0xf1</span></code>.</p></li>
+<li><p><strong>extended destination address</strong>: When extended addressing is in use, it is the address of the ECU.</p></li>
+</ul>
+<p>The discovery procedure is dependend on the used addressing scheme.
+From a high level perspective, the destination id is iterated and a valid payload is sent.
+If a valid answer is received, an ECU has been found.</p>
+</section>
+</section>
+<section id="session-scan">
+<h2>Session Scan<a class="headerlink" href="#session-scan" title="Link to this heading"></a></h2>
+<p>UDS has the concept of sessions.
+Different sessions can for example offer different services.
+A session is identified by a 1 byte session ID.
+The UDS standard defines a set of well known session IDs, but vendors are free to add their own sessions.
+Some sessions might only be available from a specific ECU state (e.g. current session, enabled/configured ECU features, coding, …).
+Most of those preconditions cannot be detected automatically and might require vendor specific knowledge.</p>
+<p>The session scan tries to find all available session transitions.
+Starting from the default session (0x01), all session IDs are iterated and enabling the relevant session is tried.
+If the ECU replies with a positive response, the session is available.
+In case of a negative response, the session is considered not available from the current state.
+To detect sessions, which are only reachable from a session different to the default session, a recursive approach is used.
+The scan for new sessions starts at each previously identified session.
+The maximum depth is limited to avoid endless scans in case of transition cycles, such as <code class="docutils literal notranslate"><span class="pre">0x01</span> <span class="pre">-&gt;</span> <span class="pre">0x03</span> <span class="pre">-&gt;</span> <span class="pre">0x05</span> <span class="pre">-&gt;</span> <span class="pre">0x03</span></code>.
+The scan is finished, if no new session transition is found.</p>
+</section>
+<section id="service-scan">
+<h2>Service Scan<a class="headerlink" href="#service-scan" title="Link to this heading"></a></h2>
+<p>The service scan operates at the UDS protocol level.
+UDS provides several endpoints called <em>services</em>.
+Each service has an identifier and a specific list of arguments or sub-functions.</p>
+<p>In order to identify available services, a reverse matching is applied.
+According to the UDS standard, ECUs reply with the error codes <code class="docutils literal notranslate"><span class="pre">serviceNotSupported</span></code> or <code class="docutils literal notranslate"><span class="pre">serviceNotSupportedInActiveSession</span></code> when an unimplemented service is requested.
+Therefore, each service which responds with a different error code is considered available.
+To address the different services and their varying length of arguments and sub-functions the scanner automatically appends <code class="docutils literal notranslate"><span class="pre">\x00</span></code> bytes if the received response was <code class="docutils literal notranslate"><span class="pre">incorrectMessageLengthOrInvalidFormat</span></code>.</p>
+</section>
+<section id="identifier-scan">
+<h2>Identifier Scan<a class="headerlink" href="#identifier-scan" title="Link to this heading"></a></h2>
+<p>The identifier scan operates at the UDS protocol level; to be more specific it operates at the level of a specific UDS service.
+Most UDS services need identifiers is input arguments.
+For instance, the ReadDataByIdentifier service requires a data identifier input for the requested ressource.
+In order to find out the available identifiers for a specific service the Identifier Scan is employed.</p>
+<p>In order to identify available data identifiers, a reverse matching is applied.
+According to the UDS standard, ECUs reply with the error codes <code class="docutils literal notranslate"><span class="pre">serviceNotSupported</span></code> or <code class="docutils literal notranslate"><span class="pre">serviceNotSupportedInActiveSession</span></code> when an unimplemented service is requested.
+If the ECU responds with any of <code class="docutils literal notranslate"><span class="pre">serviceNotSupported</span></code>, <code class="docutils literal notranslate"><span class="pre">serviceNotSupportedInActiveSession</span></code>,<code class="docutils literal notranslate"><span class="pre">subFunctionNotSupported</span></code>, <code class="docutils literal notranslate"><span class="pre">subFunctionNotSupportedInActiveSession</span></code>, or <code class="docutils literal notranslate"><span class="pre">requestOutOfRange</span></code> the identifier is considered not available.</p>
+<p>A few services such as RoutineControl offer a <code class="docutils literal notranslate"><span class="pre">subFunction</span></code> as well.
+SubFunction arguments can be discovered with the same technique but the error codes for the reverse matching are different.
+For discovering available subFunctions the following error codes indicate the subFunction is not available: <code class="docutils literal notranslate"><span class="pre">serviceNotSupported</span></code>, <code class="docutils literal notranslate"><span class="pre">serviceNotSupportedInActiveSession</span></code>, <code class="docutils literal notranslate"><span class="pre">subFunctionNotSupported</span></code>, or <code class="docutils literal notranslate"><span class="pre">subFunctionNotSupportedInActiveSession</span></code>.</p>
+<p>Each identifier or subFunction which responds with a different error code is considered available.</p>
+</section>
+<section id="memory-scan">
+<h2>Memory Scan<a class="headerlink" href="#memory-scan" title="Link to this heading"></a></h2>
+<p>TODO</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="database.html" class="btn btn-neutral float-left" title="Database" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="virtual_ecu.html" class="btn btn-neutral float-right" title="Virtual ECUs" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
