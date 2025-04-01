@@ -385,7 +385,7 @@ requires-dist = [
     { name = "argcomplete", specifier = ">=2,<4" },
     { name = "boltons", specifier = "==25.0.0" },
     { name = "commitizen", marker = "extra == 'dev'", specifier = ">=4.1.0" },
-    { name = "construct", specifier = "==2.10.68" },
+    { name = "construct", specifier = ">=2.10,<3.0" },
     { name = "construct-typing", marker = "extra == 'dev'", specifier = ">=0.5.2,<0.7.0" },
     { name = "more-itertools", specifier = "==10.6.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.0,<2.0" },
