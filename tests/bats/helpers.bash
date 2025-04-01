@@ -15,6 +15,7 @@ setup_gallia_toml() {
 		echo "[gallia]"
 		echo "no-volatile-info = true"
 		echo "verbosity = 1"
+		echo "artifacts_base = \"$BATS_TMPDIR/gallia\""
 
 		echo "[gallia.scanner]"
 		echo 'target = "unix-lines:///tmp/vecu.sock"'
