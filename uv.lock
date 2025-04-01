@@ -382,7 +382,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "aiosqlite", specifier = "==0.21.0" },
-    { name = "argcomplete", specifier = "==3.5.3" },
+    { name = "argcomplete", specifier = ">=2,<4" },
     { name = "boltons", specifier = "==25.0.0" },
     { name = "commitizen", marker = "extra == 'dev'", specifier = ">=4.1.0" },
     { name = "construct", specifier = "==2.10.68" },
