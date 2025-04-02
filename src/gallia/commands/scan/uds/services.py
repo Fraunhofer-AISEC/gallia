@@ -7,7 +7,7 @@ import sys
 from typing import Any
 
 from gallia.command import UDSScanner
-from gallia.command.config import Field, Ranges, Ranges2D
+from gallia.command.config import AutoInt, Field, Ranges, Ranges2D
 from gallia.command.uds import UDSScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds import (
@@ -29,15 +29,18 @@ logger = get_logger(__name__)
 
 class ServicesScannerConfig(UDSScannerConfig):
     sessions: Ranges | None = Field(
-        None, description="Set list of sessions to be tested; all if None"
+        None,
+        description="Set list of sessions to scan in; if None, services are scanned without session changes",
     )
     check_session: bool = Field(
-        False, description="check current session; only takes affect if --sessions is given"
+        False, description="check current session; only takes effect if --sessions is given"
     )
     scan_response_ids: bool = Field(False, description="Include IDs in scan with reply flag set")
-    auto_reset: bool = Field(
-        False, description="Reset ECU with UDS ECU Reset before every request"
-    )  # FIXME: Currently not in use
+    reset: AutoInt | None = Field(
+        None,
+        description="Reset the ECU after every session with the optionally given reset level; only takes effect if --sessions is given",
+        const=0x01,
+    )
     skip: Ranges2D = Field(
         {},
         metavar="SESSION_ID:ID",
@@ -100,7 +103,23 @@ class ServicesScanner(UDSScanner):
                 found[session], ret = await self.perform_scan(session)
                 clean_returns = clean_returns and ret
 
-                await self.ecu.leave_session(session, sleep=self.config.power_cycle_sleep)
+                if self.config.reset is not None:
+                    try:
+                        logger.info("Resetting the ECU as requested")
+                        reset_resp = await self.ecu.ecu_reset(self.config.reset)
+
+                        if isinstance(reset_resp, NegativeResponse):
+                            logger.warning(
+                                f"Could not reset ECU: {reset_resp}; continuing without reset"
+                            )
+                        else:
+                            logger.info("Waiting for the ECU to recover…")
+                            await self.ecu.wait_for_ecu()
+                    except (TimeoutError, ConnectionError):
+                        logger.warning(
+                            "Lost connection to the ECU after performing a reset. Attempting to reconnect…"
+                        )
+                        await self.ecu.reconnect()
 
         for key, value in found.items():
             logger.result(f"findings in session 0x{key:02X}:")
