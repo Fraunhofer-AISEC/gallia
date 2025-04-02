@@ -101,12 +101,25 @@ def parse_pdu(pdu: bytes, request: service.UDSRequest) -> service.UDSResponse:
     except Exception as e:
         if pdu[0] == UDSIsoServices.NegativeResponse:
             response = service.RawNegativeResponse(pdu)
+            # RequestResponseMismatch takes priority over MalformedResponse
+            if len(pdu) >= 3 and pdu[2] != request.service_id:
+                raise RequestResponseMismatch(request, response)
         else:
             response = service.RawPositiveResponse(pdu)
+            # RequestResponseMismatch takes priority over MalformedResponse
+            if response.service_id != request.service_id:
+                raise RequestResponseMismatch(request, response)
 
         raise MalformedResponse(request, response, str(e)) from e
 
-    if not response.matches(parsed_request):
+    # A RawRequest will never pass the .matches method on any well-defined, positive response apart from RawResponse
+    # Thus, fall back to simply comparing the service identifier
+    if isinstance(parsed_request, service.RawRequest) and not isinstance(
+        response, service.NegativeResponse
+    ):
+        if response.service_id != request.service_id:
+            raise RequestResponseMismatch(request, response)
+    elif not response.matches(parsed_request):
         raise RequestResponseMismatch(request, response)
 
     response.trigger_request = request
