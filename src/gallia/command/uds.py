@@ -173,6 +173,11 @@ class UDSScanner(Scanner, ABC):
         if self.config.tester_present:
             await self.ecu.stop_cyclic_tester_present()
 
+        # self.ecu.transport will be different from self.transport if self.ecu.reconnect() was called at any time
+        # It is important to close this new transport as well!
+        logger.debug("Closing transport object of ECU/UDSClient")
+        await self.ecu.transport.close()
+
         # This must be the last one.
         await super().teardown()
 
