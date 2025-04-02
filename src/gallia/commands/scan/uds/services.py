@@ -17,7 +17,11 @@ from gallia.services.uds import (
     UDSRequestConfig,
     UDSResponse,
 )
-from gallia.services.uds.core.exception import MalformedResponse, UDSException
+from gallia.services.uds.core.exception import (
+    MalformedResponse,
+    RequestResponseMismatch,
+    UDSException,
+)
 from gallia.services.uds.core.utils import g_repr
 
 logger = get_logger(__name__)
@@ -110,6 +114,7 @@ class ServicesScanner(UDSScanner):
 
     async def perform_scan(self, session: None | int = None) -> tuple[dict[int, Any], bool]:
         result: dict[int, Any] = {}
+        clean_returns = True
 
         # Starts at 0x00, see first loop iteration.
         sid = -1
@@ -138,8 +143,9 @@ class ServicesScanner(UDSScanner):
                 except TimeoutError:
                     logger.info(f"{g_repr(sid)}: timeout")
                     continue
-                except MalformedResponse as e:
+                except (MalformedResponse, RequestResponseMismatch) as e:
                     logger.warning(f"{g_repr(sid)}: {e!r} occurred, this needs to be investigated!")
+                    clean_returns = False
                     continue
 
                 if isinstance(resp, NegativeResponse) and resp.response_code in [
@@ -158,4 +164,4 @@ class ServicesScanner(UDSScanner):
                 result[sid] = resp
                 break
 
-        return result, True
+        return result, clean_returns
