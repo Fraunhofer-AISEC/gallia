@@ -86,11 +86,13 @@ class ServicesScanner(UDSScanner):
                     logger.warning(
                         f"Could not complete session change to {g_repr(session)}: {g_repr(e)}; skipping session"
                     )
+                    clean_returns = False
                     continue
                 if isinstance(resp, NegativeResponse):
                     logger.warning(
                         f"Could not complete session change to {g_repr(session)}: {resp}; skipping session"
                     )
+                    clean_returns = False
                     continue
 
                 logger.result(f"scanning in session {g_repr(session)}")
