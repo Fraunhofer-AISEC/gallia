@@ -1,0 +1,1353 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gallia.services.uds.core.client &mdash; gallia  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../index.html" class="icon icon-home">
+            gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../transports.html">Transports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../env.html">Environment Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../logging.html">Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../plugins.html">Plugins</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api.html">Public API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">gallia.services.uds.core.client</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gallia.services.uds.core.client</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-FileCopyrightText: AISEC Pentesting Team</span>
+<span class="c1">#</span>
+<span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">struct</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">overload</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">gallia.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gallia.services.uds.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">service</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gallia.services.uds.core.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">UDSErrorCodes</span><span class="p">,</span> <span class="n">UDSIsoServices</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gallia.services.uds.core.exception</span><span class="w"> </span><span class="kn">import</span> <span class="n">MissingResponse</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gallia.services.uds.helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_pdu</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gallia.transports</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseTransport</span>
+
+
+<div class="viewcode-block" id="UDSRequestConfig">
+<a class="viewcode-back" href="../../../../../api.html#gallia.services.uds.UDSRequestConfig">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">UDSRequestConfig</span><span class="p">:</span>
+    <span class="c1"># timeout for this request in sec</span>
+    <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="c1"># maximum number of attempts in case of network errors</span>
+    <span class="n">max_retry</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="c1"># Skip the hooks which apply to session changes.</span>
+    <span class="n">skip_hooks</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="c1"># tags to be applied to the logged output</span>
+    <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">UDSClient</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">transport</span><span class="p">:</span> <span class="n">BaseTransport</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">max_retry</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transport</span> <span class="o">=</span> <span class="n">transport</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timeout</span> <span class="o">=</span> <span class="n">timeout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_retry</span> <span class="o">=</span> <span class="n">max_retry</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">retry_wait</span> <span class="o">=</span> <span class="mf">0.2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pending_timeout</span> <span class="o">=</span> <span class="mi">5</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mutex</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">reconnect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calls the underlying transport to trigger a reconnect&quot;&quot;&quot;</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">mutex</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">reconnect_unsafe</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">reconnect_unsafe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calls the underlying transport to trigger a reconnect without locking&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transport</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">reconnect</span><span class="p">(</span><span class="n">timeout</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Reconnected transport successfully&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">timeout</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeout</span><span class="p">:</span>
+            <span class="n">timeout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeout</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">timeout</span><span class="p">,</span> <span class="n">tags</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request_unsafe</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSRequest</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;This method is the same as request() with the difference</span>
+<span class="sd">        that it does not hold the mutex in the underlying transport.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">config</span> <span class="k">if</span> <span class="n">config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">UDSRequestConfig</span><span class="p">()</span>
+        <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span> <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">tags</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">config</span><span class="o">.</span><span class="n">tags</span>
+
+        <span class="n">last_exception</span><span class="p">:</span> <span class="ne">Exception</span> <span class="o">=</span> <span class="n">MissingResponse</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+        <span class="n">max_retry</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">max_retry</span> <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">max_retry</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_retry</span>
+        <span class="n">timeout</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">timeout</span> <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">timeout</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeout</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_retry</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="c1"># Exponential backoff</span>
+            <span class="n">wait_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">retry_wait</span> <span class="o">*</span> <span class="mi">2</span><span class="o">**</span><span class="n">i</span>
+
+            <span class="c1"># Avoid pasting this very line in every error branch.</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Requesting UDS PDU failed; retrying: </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2"> / </span><span class="si">{</span><span class="n">max_retry</span><span class="si">}</span><span class="s2">…&quot;</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">pdu</span><span class="o">.</span><span class="n">hex</span><span class="p">(),</span> <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;write&quot;</span><span class="p">,</span> <span class="s2">&quot;uds&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">tags</span><span class="p">})</span>
+                <span class="n">raw_resp</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">request_unsafe</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">pdu</span><span class="p">,</span> <span class="n">timeout</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">tags</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">raw_resp</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">BrokenPipeError</span><span class="p">(</span><span class="s2">&quot;connection to target lost&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">TimeoutError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">request</span><span class="si">}</span><span class="s2"> failed with: </span><span class="si">{</span><span class="nb">repr</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">last_exception</span> <span class="o">=</span> <span class="n">MissingResponse</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">max_retry</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sleeping for </span><span class="si">{</span><span class="n">wait_time</span><span class="si">}</span><span class="s2">s&quot;</span><span class="p">)</span>
+                    <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">wait_time</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="k">except</span> <span class="ne">ConnectionError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">request</span><span class="si">}</span><span class="s2"> failed with: </span><span class="si">{</span><span class="n">e</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">last_exception</span> <span class="o">=</span> <span class="n">MissingResponse</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+                <span class="c1"># Explicitly set __cause__ such that higher levels might react, e.g. wait_for_ecu()</span>
+                <span class="c1"># Basically equal to &quot;raise last_exception from e&quot;</span>
+                <span class="n">last_exception</span><span class="o">.</span><span class="n">__cause__</span> <span class="o">=</span> <span class="n">e</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">max_retry</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sleeping for </span><span class="si">{</span><span class="n">wait_time</span><span class="si">}</span><span class="s2">s before attempting to reconnect&quot;</span><span class="p">)</span>
+                    <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">wait_time</span><span class="p">)</span>
+                    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">reconnect_unsafe</span><span class="p">()</span>
+                <span class="k">continue</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">raw_resp</span><span class="o">.</span><span class="n">hex</span><span class="p">(),</span> <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;read&quot;</span><span class="p">,</span> <span class="s2">&quot;uds&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">tags</span><span class="p">})</span>
+            <span class="n">resp</span> <span class="o">=</span> <span class="n">parse_pdu</span><span class="p">(</span><span class="n">raw_resp</span><span class="p">,</span> <span class="n">request</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">resp</span><span class="p">,</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">resp</span><span class="o">.</span><span class="n">response_code</span> <span class="o">==</span> <span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">busyRepeatRequest</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="n">max_retry</span><span class="p">:</span>
+                        <span class="k">return</span> <span class="n">resp</span>
+                    <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">wait_time</span><span class="p">)</span>
+                    <span class="k">continue</span>
+            <span class="c1"># We already had ECUs which thought an infinite</span>
+            <span class="c1"># response_pending loop is a good idea…</span>
+            <span class="c1"># Let&#39;s limit this.</span>
+            <span class="n">n_pending</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">MAX_N_PENDING</span> <span class="o">=</span> <span class="mi">120</span>
+            <span class="n">n_timeout</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">waiting_time</span> <span class="o">=</span> <span class="mf">0.5</span>
+            <span class="n">max_n_timeout</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">timeout</span> <span class="k">if</span> <span class="n">timeout</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span> <span class="o">/</span> <span class="n">waiting_time</span>
+            <span class="k">while</span> <span class="p">(</span>
+                <span class="nb">isinstance</span><span class="p">(</span><span class="n">resp</span><span class="p">,</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span><span class="p">)</span>
+                <span class="ow">and</span> <span class="n">resp</span><span class="o">.</span><span class="n">response_code</span> <span class="o">==</span> <span class="n">UDSErrorCodes</span><span class="o">.</span><span class="n">requestCorrectlyReceivedResponsePending</span>
+            <span class="p">):</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Received ResponsePending: </span><span class="si">{</span><span class="n">n_pending</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">MAX_N_PENDING</span><span class="si">}</span><span class="s2">; &quot;</span>
+                    <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;waiting for next message: </span><span class="si">{</span><span class="n">n_timeout</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">max_n_timeout</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">raw_resp</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="n">waiting_time</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">tags</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">raw_resp</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">BrokenPipeError</span><span class="p">(</span><span class="s2">&quot;connection to target lost&quot;</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">raw_resp</span><span class="o">.</span><span class="n">hex</span><span class="p">(),</span> <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;read&quot;</span><span class="p">,</span> <span class="s2">&quot;uds&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">tags</span><span class="p">})</span>
+                <span class="k">except</span> <span class="ne">TimeoutError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">n_timeout</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">if</span> <span class="n">n_timeout</span> <span class="o">&gt;=</span> <span class="n">max_n_timeout</span><span class="p">:</span>
+                        <span class="n">last_exception</span> <span class="o">=</span> <span class="n">MissingResponse</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+                        <span class="k">break</span>
+                    <span class="k">continue</span>
+                <span class="n">resp</span> <span class="o">=</span> <span class="n">parse_pdu</span><span class="p">(</span><span class="n">raw_resp</span><span class="p">,</span> <span class="n">request</span><span class="p">)</span>
+                <span class="n">n_timeout</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># Only raise errors for consecutive timeouts</span>
+                <span class="n">n_pending</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">n_pending</span> <span class="o">&gt;=</span> <span class="n">MAX_N_PENDING</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;ECU appears to be stuck in ResponsePending loop&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># We reach this code here once all response pending</span>
+                <span class="c1"># and similar busy stuff is resolved.</span>
+                <span class="k">return</span> <span class="n">resp</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">request</span><span class="si">}</span><span class="s2"> failed after retry loop&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">last_exception</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_tester_present</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">suppress_resp</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSResponse</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">config</span> <span class="k">if</span> <span class="n">config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">UDSRequestConfig</span><span class="p">()</span>
+        <span class="n">timeout</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">timeout</span> <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">timeout</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeout</span>
+        <span class="k">if</span> <span class="n">suppress_resp</span><span class="p">:</span>
+            <span class="n">pdu</span> <span class="o">=</span> <span class="n">service</span><span class="o">.</span><span class="n">TesterPresentRequest</span><span class="p">(</span><span class="n">suppress_response</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">pdu</span>
+            <span class="n">tags</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">tags</span> <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">tags</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[]</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">pdu</span><span class="o">.</span><span class="n">hex</span><span class="p">(),</span> <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;write&quot;</span><span class="p">,</span> <span class="s2">&quot;uds&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">tags</span><span class="p">})</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">pdu</span><span class="p">,</span> <span class="n">timeout</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">tags</span><span class="p">)</span>
+            <span class="c1"># TODO: This is not fail safe: What if there is an answer???</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">tester_present</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">send_raw</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">pdu</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">PositiveResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Raw request, which does not need to be compliant with the standard.</span>
+<span class="sd">        It can be used to send arbitrary data packets.</span>
+
+<span class="sd">        :param pdu: The data.</span>
+<span class="sd">        :param config: Passed on to request_pdu().</span>
+<span class="sd">        :return: The response of the server.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="n">service</span><span class="o">.</span><span class="n">RawRequest</span><span class="p">(</span><span class="n">pdu</span><span class="p">),</span> <span class="n">config</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">diagnostic_session_control</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">diagnostic_session_type</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">suppress_response</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">DiagnosticSessionControlResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sets the diagnostic session which is specified by a specific diagnosticSessionType</span>
+<span class="sd">        sub-function.</span>
+<span class="sd">        This is an implementation of the UDS request for service DiagnosticSessionControl (0x10).</span>
+
+<span class="sd">        :param diagnostic_session_type: The session sub-function.</span>
+<span class="sd">        :param suppress_response: If set to True, the server is advised to not send back a positive</span>
+<span class="sd">                                  response.</span>
+<span class="sd">        :param config: Passed on to request_pdu().</span>
+<span class="sd">        :return: The response of the server.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span>
+            <span class="n">service</span><span class="o">.</span><span class="n">DiagnosticSessionControlRequest</span><span class="p">(</span><span class="n">diagnostic_session_type</span><span class="p">,</span> <span class="n">suppress_response</span><span class="p">),</span>
+            <span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">ecu_reset</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">reset_type</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">suppress_response</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">ECUResetResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Resets the ECU using the specified reset type sub-function.</span>
+<span class="sd">        This is an implementation of the UDS request for service ECUReset (0x11).</span>
+
+<span class="sd">        :param reset_type: The reset type sub-function.</span>
+<span class="sd">        :param suppress_response: If set to True, the server is advised to not send back a positive</span>
+<span class="sd">                                  response.</span>
+<span class="sd">        :param config: Passed on to request_pdu().</span>
+<span class="sd">        :return: The response of the server.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="n">service</span><span class="o">.</span><span class="n">ECUResetRequest</span><span class="p">(</span><span class="n">reset_type</span><span class="p">,</span> <span class="n">suppress_response</span><span class="p">),</span> <span class="n">config</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">security_access_request_seed</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">security_access_type</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">security_access_data_record</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">suppress_response</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">SecurityAccessResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Requests a seed for a security access level.</span>
+<span class="sd">        This is an implementation of the UDS request for the requestSeed sub-function group</span>
+<span class="sd">        of the service SecurityAccess (0x27).</span>
+
+<span class="sd">        :param security_access_type: The securityAccess type sub-function.</span>
+<span class="sd">        :param security_access_data_record: Optional data.</span>
+<span class="sd">        :param suppress_response: If set to True, the server is advised to not send back a positive</span>
+<span class="sd">                                  response.</span>
+<span class="sd">        :param config: Passed on to request_pdu().</span>
+<span class="sd">        :return: The response of the server.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span>
+            <span class="n">service</span><span class="o">.</span><span class="n">RequestSeedRequest</span><span class="p">(</span>
+                <span class="n">security_access_type</span><span class="p">,</span> <span class="n">security_access_data_record</span><span class="p">,</span> <span class="n">suppress_response</span>
+            <span class="p">),</span>
+            <span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">security_access_send_key</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">security_access_type</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">security_key</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span>
+        <span class="n">suppress_response</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">SecurityAccessResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sends the key for a security access level.</span>
+<span class="sd">        This is an implementation of the UDS request for the sendKey sub-function group</span>
+<span class="sd">        of the service SecurityAccess (0x27).</span>
+
+<span class="sd">        :param security_access_type: The securityAccess type sub-function.</span>
+<span class="sd">        :param security_key: The response to the seed challenge.</span>
+<span class="sd">        :param suppress_response: If set to True, the server is advised to not send back a positive</span>
+<span class="sd">                                  response.</span>
+<span class="sd">        :param config: Passed on to request_pdu().</span>
+<span class="sd">        :return: The response of the server.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span>
+            <span class="n">service</span><span class="o">.</span><span class="n">SendKeyRequest</span><span class="p">(</span><span class="n">security_access_type</span><span class="p">,</span> <span class="n">security_key</span><span class="p">,</span> <span class="n">suppress_response</span><span class="p">),</span>
+            <span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">communication_control</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">control_type</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">communication_type</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">suppress_response</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">CommunicationControlResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Controls communication of the ECU.</span>
+<span class="sd">        This is an implementation of the UDS request for service CommunicationControl (0x28).</span>
+
+<span class="sd">        :param control_type: The control type sub-function.</span>
+<span class="sd">        :param communication_type: The communication type.</span>
+<span class="sd">        :param suppress_response: If set to True, the server is advised to not send back a positive</span>
+<span class="sd">                                  response.</span>
+<span class="sd">        :param config: Passed on to request_pdu().</span>
+<span class="sd">        :return: The response of the server.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span>
+            <span class="n">service</span><span class="o">.</span><span class="n">CommunicationControlRequest</span><span class="p">(</span>
+                <span class="n">control_type</span><span class="p">,</span> <span class="n">communication_type</span><span class="p">,</span> <span class="n">suppress_response</span>
+            <span class="p">),</span>
+            <span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">tester_present</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">suppress_response</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">TesterPresentResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Signals to the ECU, that the tester is still present.</span>
+<span class="sd">        This is an implementation of the UDS request for service TesterPresent (0x3E).</span>
+
+<span class="sd">        :param suppress_response: If set to True, the server is advised to not send back a positive</span>
+<span class="sd">                                  response.</span>
+<span class="sd">        :param config: Passed on to request_pdu().</span>
+<span class="sd">        :return: The response of the server.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="n">service</span><span class="o">.</span><span class="n">TesterPresentRequest</span><span class="p">(</span><span class="n">suppress_response</span><span class="p">),</span> <span class="n">config</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">control_dtc_setting</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dtc_setting_type</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">dtc_setting_control_option_record</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">suppress_response</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">ControlDTCSettingResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Control the setting of DTCs.</span>
+<span class="sd">        This is an implementation of the UDS request for service ControlDTCSetting (0x85).</span>
+
+
+<span class="sd">        :param dtc_setting_type: The setting type.</span>
+<span class="sd">        :param dtc_setting_control_option_record: Optional data.</span>
+<span class="sd">        :param suppress_response: If set to True, the server is advised to not send back a positive</span>
+<span class="sd">                                  response.</span>
+<span class="sd">        :param config: Passed on to request_pdu().</span>
+<span class="sd">        :return: The response of the server.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span>
+            <span class="n">service</span><span class="o">.</span><span class="n">ControlDTCSettingRequest</span><span class="p">(</span>
+                <span class="n">dtc_setting_type</span><span class="p">,</span> <span class="n">dtc_setting_control_option_record</span><span class="p">,</span> <span class="n">suppress_response</span>
+            <span class="p">),</span>
+            <span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">read_data_by_identifier</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data_identifiers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">ReadDataByIdentifierResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reads data which is identified by a specific dataIdentifier.</span>
+<span class="sd">        This is an implementation of the UDS request for service ReadDataByIdentifier (0x22).</span>
+<span class="sd">        While this implementation supports requesting multiple dataIdentifiers at once, as is</span>
+<span class="sd">        permitted in the standard, it is recommended to request them separately,</span>
+<span class="sd">        because the support is optional on the server side.</span>
+<span class="sd">        Additionally, it is not possible to reliably determine each single dataRecord from a</span>
+<span class="sd">        corresponding response.</span>
+
+<span class="sd">        :param data_identifiers: One or multiple dataIdentifiers. A dataIdentifier is a max two</span>
+<span class="sd">                                 bytes integer.</span>
+<span class="sd">        :param config: Passed on to request_pdu().</span>
+<span class="sd">        :return: The response of the server.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="n">service</span><span class="o">.</span><span class="n">ReadDataByIdentifierRequest</span><span class="p">(</span><span class="n">data_identifiers</span><span class="p">),</span> <span class="n">config</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">read_memory_by_address</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">memory_address</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">memory_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">address_and_length_format_identifier</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">ReadMemoryByAddressResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reads data from a specific memory address on the UDS server.</span>
+<span class="sd">        This is an implementation of the UDS request for service ReadMemoryByAddress (0x3d).</span>
+<span class="sd">        While it exposes each parameter of the corresponding specification,</span>
+<span class="sd">        some parameters can be computed from the remaining ones and can therefore be omitted.</span>
+
+<span class="sd">        :param memory_address: The start address.</span>
+<span class="sd">        :param memory_size: The number of bytes to read.</span>
+<span class="sd">        :param address_and_length_format_identifier: The byte lengths of the memory address and</span>
+<span class="sd">                                                     size. If omitted, this parameter is computed</span>
+<span class="sd">                                                     based on the memory_address and memory_size</span>
+<span class="sd">                                                     parameters.</span>
+<span class="sd">        :param config: Passed on to request_pdu().</span>
+<span class="sd">        :return: The response of the server.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span>
+            <span class="n">service</span><span class="o">.</span><span class="n">ReadMemoryByAddressRequest</span><span class="p">(</span>
+                <span class="n">memory_address</span><span class="p">,</span> <span class="n">memory_size</span><span class="p">,</span> <span class="n">address_and_length_format_identifier</span>
+            <span class="p">),</span>
+            <span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">write_data_by_identifier</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data_identifier</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">data_record</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">WriteDataByIdentifierResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Writes data which is identified by a specific dataIdentifier.</span>
+<span class="sd">        This is an implementation of the UDS request for service WriteDataByIdentifier (0x2E).</span>
+
+<span class="sd">        :param data_identifier: The identifier. A dataIdentifier is a max two bytes integer.</span>
+<span class="sd">        :param data_record: The data to be written.</span>
+<span class="sd">        :param config: Passed on to request_pdu().</span>
+<span class="sd">        :return: The response of the server.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span>
+            <span class="n">service</span><span class="o">.</span><span class="n">WriteDataByIdentifierRequest</span><span class="p">(</span><span class="n">data_identifier</span><span class="p">,</span> <span class="n">data_record</span><span class="p">),</span> <span class="n">config</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">write_memory_by_address</span><span class="p">(</span>  <span class="c1"># noqa: PLR0913</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">memory_address</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">data_record</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span>
+        <span class="n">memory_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">address_and_length_format_identifier</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">WriteMemoryByAddressResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Writes data to a specific memory on the UDS server.</span>
+<span class="sd">        This is an implementation of the UDS request for service writeMemoryByAddress (0x3d).</span>
+<span class="sd">        While it exposes each parameter of the corresponding specification,</span>
+<span class="sd">        some parameters can be computed from the remaining ones and can therefore be omitted.</span>
+
+<span class="sd">        :param memory_address: The start address.</span>
+<span class="sd">        :param data_record: The data to be written.</span>
+<span class="sd">        :param memory_size: The number of bytes to write.</span>
+<span class="sd">                            If omitted, the byte length of the data is used.</span>
+<span class="sd">        :param address_and_length_format_identifier: The byte lengths of the memory address and</span>
+<span class="sd">                                                     size. If omitted, this parameter is computed</span>
+<span class="sd">                                                     based on the memory_address and memory_size</span>
+<span class="sd">                                                     or data_record parameters.</span>
+<span class="sd">        :param config: Passed on to request_pdu().</span>
+<span class="sd">        :return: The response of the server.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span>
+            <span class="n">service</span><span class="o">.</span><span class="n">WriteMemoryByAddressRequest</span><span class="p">(</span>
+                <span class="n">memory_address</span><span class="p">,</span>
+                <span class="n">data_record</span><span class="p">,</span>
+                <span class="n">memory_size</span><span class="p">,</span>
+                <span class="n">address_and_length_format_identifier</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">clear_diagnostic_information</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">group_of_dtc</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">ClearDiagnosticInformationResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Clears diagnostic trouble codes according to a given mask.</span>
+<span class="sd">        This is an implementation of the UDS request for service clearDiagnosticInformation (0x14).</span>
+
+<span class="sd">        :param group_of_dtc: The three byte mask, which determines the DTCs to be cleared.</span>
+<span class="sd">        :param config: Passed on to request_pdu().</span>
+<span class="sd">        :return: The response of the server.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="n">service</span><span class="o">.</span><span class="n">ClearDiagnosticInformationRequest</span><span class="p">(</span><span class="n">group_of_dtc</span><span class="p">),</span> <span class="n">config</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">read_dtc_information_report_number_of_dtc_by_status_mask</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dtc_status_mask</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">suppress_response</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">ReportNumberOfDTCByStatusMaskResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Read the number of DTCs with the specified state from the UDS server.</span>
+<span class="sd">        This is an implementation of the UDS request for the reportNumberOfDTCByStatusMask</span>
+<span class="sd">        sub-function of the service ReadDTCInformation (0x19).</span>
+
+<span class="sd">        :param dtc_status_mask: Used to select a portion of the DTCs based on their state.</span>
+<span class="sd">        :param suppress_response: If set to True, the server is advised to not send back a positive</span>
+<span class="sd">                                  response.</span>
+<span class="sd">        :param config: Passed on to request_pdu().</span>
+<span class="sd">        :return: The response of the server.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span>
+            <span class="n">service</span><span class="o">.</span><span class="n">ReportNumberOfDTCByStatusMaskRequest</span><span class="p">(</span><span class="n">dtc_status_mask</span><span class="p">,</span> <span class="n">suppress_response</span><span class="p">),</span>
+            <span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">read_dtc_information_report_dtc_by_status_mask</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dtc_status_mask</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">suppress_response</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">ReportDTCByStatusMaskResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Read DTCs and their state from the UDS server.</span>
+<span class="sd">        This is an implementation of the UDS request for the reportDTCByStatusMask sub-function of</span>
+<span class="sd">        the service ReadDTCInformation (0x19).</span>
+
+<span class="sd">        :param dtc_status_mask: Used to select a portion of the DTCs based on their state.</span>
+<span class="sd">        :param suppress_response: If set to True, the server is advised to not send back a positive</span>
+<span class="sd">         response.</span>
+<span class="sd">        :param config: Passed on to request_pdu().</span>
+<span class="sd">        :return: The response of the server.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span>
+            <span class="n">service</span><span class="o">.</span><span class="n">ReportDTCByStatusMaskRequest</span><span class="p">(</span><span class="n">dtc_status_mask</span><span class="p">,</span> <span class="n">suppress_response</span><span class="p">),</span>
+            <span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">read_dtc_information_report_mirror_memory_dtc_by_status_mask</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dtc_status_mask</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">suppress_response</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">ReportMirrorMemoryDTCByStatusMaskResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Read DTCs and their state from the UDS server&#39;s mirror memory.</span>
+<span class="sd">        This is an implementation of the UDS request for the reportMirrorMemoryDTCByStatusMask</span>
+<span class="sd">        sub-function of the</span>
+<span class="sd">        service ReadDTCInformation (0x19).</span>
+
+<span class="sd">        :param dtc_status_mask: Used to select a portion of the DTCs based on their state.</span>
+<span class="sd">        :param suppress_response: If set to True, the server is advised to not send back a positive</span>
+<span class="sd">                                  response.</span>
+<span class="sd">        :param config: Passed on to request_pdu().</span>
+<span class="sd">        :return: The response of the server.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span>
+            <span class="n">service</span><span class="o">.</span><span class="n">ReportMirrorMemoryDTCByStatusMaskRequest</span><span class="p">(</span><span class="n">dtc_status_mask</span><span class="p">,</span> <span class="n">suppress_response</span><span class="p">),</span>
+            <span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">read_dtc_information_report_number_of_mirror_memory_dtc_by_status_mask</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dtc_status_mask</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">suppress_response</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">ReportNumberOfMirrorMemoryDTCByStatusMaskResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Read the number of DTCs with the specified state from the UDS server&#39;s mirror memory.</span>
+<span class="sd">        This is an implementation of the UDS request for the</span>
+<span class="sd">        reportNumberOfMirrorMemoryDTCByStatusMask sub-function of</span>
+<span class="sd">        the service ReadDTCInformation (0x19).</span>
+
+<span class="sd">        :param dtc_status_mask: Used to select a portion of the DTCs based on their state.</span>
+<span class="sd">        :param suppress_response: If set to True, the server is advised to not send back a positive</span>
+<span class="sd">                                  response.</span>
+<span class="sd">        :param config: Passed on to request_pdu().</span>
+<span class="sd">        :return: The response of the server.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span>
+            <span class="n">service</span><span class="o">.</span><span class="n">ReportNumberOfMirrorMemoryDTCByStatusMaskRequest</span><span class="p">(</span>
+                <span class="n">dtc_status_mask</span><span class="p">,</span> <span class="n">suppress_response</span>
+            <span class="p">),</span>
+            <span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">read_dtc_information_report_number_of_emissions_related_obd_dtc_by_status_mask</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dtc_status_mask</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">suppress_response</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span>
+        <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">ReportNumberOfEmissionsRelatedOBDDTCByStatusMaskResponse</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Read the number of emission related DTCs with the specified state from the UDS server.</span>
+<span class="sd">        This is an implementation of the UDS request for the</span>
+<span class="sd">        reportNumberOfEmissionsRelatedOBDDTCByStatusMask sub-function of the service</span>
+<span class="sd">        ReadDTCInformation (0x19).</span>
+
+<span class="sd">        :param dtc_status_mask: Used to select a portion of the DTCs based on their state.</span>
+<span class="sd">        :param suppress_response: If set to True, the server is advised to not send back a positive</span>
+<span class="sd">                                  response.</span>
+<span class="sd">        :param config: Passed on to request_pdu().</span>
+<span class="sd">        :return: The response of the server.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span>
+            <span class="n">service</span><span class="o">.</span><span class="n">ReportNumberOfEmissionsRelatedOBDDTCByStatusMaskRequest</span><span class="p">(</span>
+                <span class="n">dtc_status_mask</span><span class="p">,</span> <span class="n">suppress_response</span>
+            <span class="p">),</span>
+            <span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">read_dtc_information_report_emissions_related_obd_dtc_by_status_mask</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dtc_status_mask</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">suppress_response</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">ReportEmissionsRelatedOBDDTCByStatusMaskResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Read the number of emission related DTCs with the specified state from the UDS server.</span>
+<span class="sd">        This is an implementation of the UDS request for the</span>
+<span class="sd">        reportNumberOfEmissionsRelatedOBDDTCByStatusMask</span>
+<span class="sd">        sub-function of the service ReadDTCInformation (0x19).</span>
+
+<span class="sd">        :param dtc_status_mask: Used to select a portion of the DTCs based on their state.</span>
+<span class="sd">        :param suppress_response: If set to True, the server is advised to not send back a positive</span>
+<span class="sd">         response.</span>
+<span class="sd">        :param config: Passed on to request_pdu().</span>
+<span class="sd">        :return: The response of the server.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span>
+            <span class="n">service</span><span class="o">.</span><span class="n">ReportEmissionsRelatedOBDDTCByStatusMaskRequest</span><span class="p">(</span>
+                <span class="n">dtc_status_mask</span><span class="p">,</span> <span class="n">suppress_response</span>
+            <span class="p">),</span>
+            <span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">report_dtc_extended_data_record_by_dtc_number</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dtc_mask_record</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">|</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">dtc_ext_data_record_number</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">suppress_response</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">ReportDTCExtDataRecordByDTCNumberResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Read additional data for a DTC from the UDS server</span>
+<span class="sd">        This is an implementation of the UDS request for the</span>
+<span class="sd">        reportDTCExtDataRecordByDTCNumber sub-function of the service ReadDTCInformation (0x19).</span>
+
+<span class="sd">        If multiple records are returned by the server (if dtc_ext_data_record_number is set to 0xfe pr 0xff),</span>
+<span class="sd">        this cannot be parsed without further information and therefore they are interpreted as a single record.</span>
+
+<span class="sd">        :param dtc_mask_record: The DTC.</span>
+<span class="sd">        :param dtc_ext_data_record_number: The record number to be returned, 0xfe or 0xff return all records.</span>
+<span class="sd">        :param suppress_response: If set to True, the server is advised to not send back a positive</span>
+<span class="sd">                                  response.</span>
+<span class="sd">        :param config: Passed on to request_pdu().</span>
+<span class="sd">        :return: The response of the server.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span>
+            <span class="n">service</span><span class="o">.</span><span class="n">ReportDTCExtDataRecordByDTCNumberRequest</span><span class="p">(</span>
+                <span class="n">dtc_mask_record</span><span class="p">,</span> <span class="n">dtc_ext_data_record_number</span><span class="p">,</span> <span class="n">suppress_response</span>
+            <span class="p">),</span>
+            <span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">input_output_control_by_identifier</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data_identifier</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">control_option_record</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span>
+        <span class="n">control_enable_mask_record</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">InputOutputControlByIdentifierResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Controls input or output values on the server.</span>
+<span class="sd">        This is an implementation of the UDS request for the service InputOutputControlByIdentifier</span>
+<span class="sd">        (0x2F).</span>
+<span class="sd">        This function exposes the parameters as in the corresponding specification,</span>
+<span class="sd">        hence is suitable for all variants of this service.</span>
+<span class="sd">        For the variants which use an inputOutputControlParameter as the first byte of the</span>
+<span class="sd">        controlOptionRecord, using the corresponding wrappers is recommended.</span>
+
+<span class="sd">        :param data_identifier: The data identifier of the value(s) to be controlled.</span>
+<span class="sd">        :param control_option_record: The controlStates, which specify the intended values of the</span>
+<span class="sd">                                      input / output parameters, optionally prefixed with an</span>
+<span class="sd">                                      inputOutputControlParameter or only an</span>
+<span class="sd">                                      inputOutputControlParameter.</span>
+<span class="sd">        :param control_enable_mask_record: In cases where the dataIdentifier corresponds to multiple</span>
+<span class="sd">                                           input / output parameters, this mask specifies which ones</span>
+<span class="sd">                                           should be affected by this request.</span>
+<span class="sd">        :param config: Passed on to request_pdu().</span>
+<span class="sd">        :return: The response of the server.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">pdu</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">&quot;!BH&quot;</span><span class="p">,</span> <span class="n">UDSIsoServices</span><span class="o">.</span><span class="n">InputOutputControlByIdentifier</span><span class="p">,</span> <span class="n">data_identifier</span><span class="p">)</span>
+        <span class="n">pdu</span> <span class="o">+=</span> <span class="n">control_option_record</span> <span class="o">+</span> <span class="n">control_enable_mask_record</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span>
+            <span class="n">service</span><span class="o">.</span><span class="n">InputOutputControlByIdentifierRequest</span><span class="p">(</span>
+                <span class="n">data_identifier</span><span class="p">,</span> <span class="n">control_option_record</span><span class="p">,</span> <span class="n">control_enable_mask_record</span>
+            <span class="p">),</span>
+            <span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">input_output_control_by_identifier_return_control_to_ecu</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data_identifier</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">control_enable_mask_record</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">InputOutputControlByIdentifierResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gives the control over input / output parameters back to the ECU.</span>
+<span class="sd">        This is a convenience wrapper for the generic input_output_control_by_id() for the case</span>
+<span class="sd">        where an inputOutputControlParameter is used and is set to returnControlToECU.</span>
+<span class="sd">        In that case no further controlState parameters can be submitted.</span>
+
+<span class="sd">        :param data_identifier: The data identifier of the value(s) for which control should be</span>
+<span class="sd">                                returned to the ECU.</span>
+<span class="sd">        :param control_enable_mask_record: In cases where the dataIdentifier corresponds to multiple</span>
+<span class="sd">                                           input / output parameters, this mask specifies which ones</span>
+<span class="sd">                                           should be affected by this request.</span>
+<span class="sd">        :param config: Passed on to request_pdu().</span>
+<span class="sd">        :return: The response of the server.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span>
+            <span class="n">service</span><span class="o">.</span><span class="n">ReturnControlToECURequest</span><span class="p">(</span><span class="n">data_identifier</span><span class="p">,</span> <span class="n">control_enable_mask_record</span><span class="p">),</span>
+            <span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">input_output_control_by_identifier_reset_to_default</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data_identifier</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">control_enable_mask_record</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">InputOutputControlByIdentifierResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sets the input / output parameters to the default value(s).</span>
+<span class="sd">        This is a convenience wrapper of the generic request for the case where an</span>
+<span class="sd">        inputOutputControlParameter is used and is set to resetToDefault.</span>
+<span class="sd">        In that case no further controlState parameters can be submitted.</span>
+
+<span class="sd">        :param data_identifier: The data identifier of the value(s) for which the values should be</span>
+<span class="sd">                                reset.</span>
+<span class="sd">        :param control_enable_mask_record: In cases where the dataIdentifier corresponds to multiple</span>
+<span class="sd">                                           input / output parameters, this mask specifies which ones</span>
+<span class="sd">                                           should be affected by this request.</span>
+<span class="sd">        :param config: Passed on to request_pdu().</span>
+<span class="sd">        :return: The response of the server.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span>
+            <span class="n">service</span><span class="o">.</span><span class="n">ResetToDefaultRequest</span><span class="p">(</span><span class="n">data_identifier</span><span class="p">,</span> <span class="n">control_enable_mask_record</span><span class="p">),</span>
+            <span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">input_output_control_by_identifier_freeze_current_state</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data_identifier</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">control_enable_mask_record</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">InputOutputControlByIdentifierResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Freezes the input / output parameters at their current state.</span>
+<span class="sd">        This is a convenience wrapper of the generic request for the case where an</span>
+<span class="sd">        inputOutputControlParameter is used and is set to  freezeCurrentState.</span>
+<span class="sd">        In that case no further controlState parameters can be submitted.</span>
+
+<span class="sd">        :param data_identifier: The data identifier of the value(s) to be frozen.</span>
+<span class="sd">        :param control_enable_mask_record: In cases where the dataIdentifier corresponds to multiple</span>
+<span class="sd">                                           input / output parameters, this mask specifies which ones</span>
+<span class="sd">                                           should be affected by this request.</span>
+<span class="sd">        :param config: Passed on to request_pdu().</span>
+<span class="sd">        :return: The response of the server.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span>
+            <span class="n">service</span><span class="o">.</span><span class="n">FreezeCurrentStateRequest</span><span class="p">(</span><span class="n">data_identifier</span><span class="p">,</span> <span class="n">control_enable_mask_record</span><span class="p">),</span>
+            <span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">input_output_control_by_identifier_short_term_adjustment</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data_identifier</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">control_states</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span>
+        <span class="n">control_enable_mask_record</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">InputOutputControlByIdentifierResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sets the input / output parameters as specified in the controlOptionRecord.</span>
+<span class="sd">        This is a convenience wrapper of the generic request for the case</span>
+<span class="sd">        where an inputOutputControlParameter is used and is set to freezeCurrentState.</span>
+<span class="sd">        In that case controlState parameters are required.</span>
+
+<span class="sd">        :param data_identifier: The data identifier of the value(s) to be adjusted.</span>
+<span class="sd">        :param control_states: The controlStates, which specify the intended values of the input /</span>
+<span class="sd">                               output parameters.</span>
+<span class="sd">        :param control_enable_mask_record: In cases where the dataIdentifier corresponds to multiple</span>
+<span class="sd">                                           input / output parameters, this mask specifies which ones</span>
+<span class="sd">                                           should be affected by this request.</span>
+<span class="sd">        :param config: Passed on to request_pdu().</span>
+<span class="sd">        :return: The response of the server.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span>
+            <span class="n">service</span><span class="o">.</span><span class="n">ShortTermAdjustmentRequest</span><span class="p">(</span><span class="n">data_identifier</span><span class="p">,</span> <span class="n">control_enable_mask_record</span><span class="p">),</span>
+            <span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">routine_control_start_routine</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">routine_identifier</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">routine_control_option_record</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">suppress_response</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">StartRoutineResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Starts a specific routine on the server.</span>
+<span class="sd">        This is an implementation of the UDS request for the startRoutine sub-function of the</span>
+<span class="sd">        service routineControl (0x31).</span>
+
+<span class="sd">        :param routine_identifier: The identifier of the routine.</span>
+<span class="sd">        :param routine_control_option_record: Optional data.</span>
+<span class="sd">        :param suppress_response: If set to True, the server is advised to not send back a positive</span>
+<span class="sd">                                  response.</span>
+<span class="sd">        :param config: Passed on to request_pdu().</span>
+<span class="sd">        :return: The response of the server.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span>
+            <span class="n">service</span><span class="o">.</span><span class="n">StartRoutineRequest</span><span class="p">(</span>
+                <span class="n">routine_identifier</span><span class="p">,</span> <span class="n">routine_control_option_record</span><span class="p">,</span> <span class="n">suppress_response</span>
+            <span class="p">),</span>
+            <span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">routine_control_stop_routine</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">routine_identifier</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">routine_control_option_record</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">suppress_response</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">StopRoutineResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Stops a specific routine on the server.</span>
+<span class="sd">        This is an implementation of the UDS request for the stopRoutine sub-function of the service</span>
+<span class="sd">        routineControl (0x31).</span>
+
+<span class="sd">        :param routine_identifier: The identifier of the routine.</span>
+<span class="sd">        :param routine_control_option_record: Optional data.</span>
+<span class="sd">        :param suppress_response: If set to True, the server is advised to not send back a positive</span>
+<span class="sd">                                  response.</span>
+<span class="sd">        :param config: Passed on to request_pdu().</span>
+<span class="sd">        :return: The response of the server.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span>
+            <span class="n">service</span><span class="o">.</span><span class="n">StopRoutineRequest</span><span class="p">(</span>
+                <span class="n">routine_identifier</span><span class="p">,</span> <span class="n">routine_control_option_record</span><span class="p">,</span> <span class="n">suppress_response</span>
+            <span class="p">),</span>
+            <span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">routine_control_request_routine_results</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">routine_identifier</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">routine_control_option_record</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">suppress_response</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">RequestRoutineResultsResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Requests the results of a specific routine on the server.</span>
+<span class="sd">        This is an implementation of the UDS request for the requestRoutineResults sub-function of</span>
+<span class="sd">        the service routineControl (0x31).</span>
+
+<span class="sd">        :param routine_identifier: The identifier of the routine.</span>
+<span class="sd">        :param routine_control_option_record: Optional data.</span>
+<span class="sd">        :param suppress_response: If set to True, the server is advised to not send back a positive</span>
+<span class="sd">                                  response.</span>
+<span class="sd">        :param config: Passed on to request_pdu().</span>
+<span class="sd">        :return: The response of the server.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span>
+            <span class="n">service</span><span class="o">.</span><span class="n">RequestRoutineResultsRequest</span><span class="p">(</span>
+                <span class="n">routine_identifier</span><span class="p">,</span> <span class="n">routine_control_option_record</span><span class="p">,</span> <span class="n">suppress_response</span>
+            <span class="p">),</span>
+            <span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request_download</span><span class="p">(</span>  <span class="c1"># noqa: PLR0913</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">memory_address</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">memory_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">compression_method</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mh">0x0</span><span class="p">,</span>
+        <span class="n">encryption_method</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mh">0x0</span><span class="p">,</span>
+        <span class="n">address_and_length_format_identifier</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">RequestDownloadResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Requests the download of data, i.e. the possibility to send data from the client to the</span>
+<span class="sd">        server.</span>
+<span class="sd">        This is an implementation of the UDS request for requestDownload (0x34).</span>
+
+<span class="sd">        :param memory_address: The address at which data should be downloaded.</span>
+<span class="sd">        :param memory_size: The number of bytes to be downloaded.</span>
+<span class="sd">        :param compression_method: Encodes the utilized compressionFormat (0x0 for none)</span>
+<span class="sd">        :param encryption_method: Encodes the utilized encryptionFormat (0x0 for none)</span>
+<span class="sd">        :param address_and_length_format_identifier: The byte lengths of the memory address and</span>
+<span class="sd">                                                     size. If omitted, this parameter is computed</span>
+<span class="sd">                                                     based on the memory_address and memory_size</span>
+<span class="sd">                                                     parameters.</span>
+<span class="sd">        :param config: Passed on to request_pdu().</span>
+<span class="sd">        :return: The response of the server.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span>
+            <span class="n">service</span><span class="o">.</span><span class="n">RequestDownloadRequest</span><span class="p">(</span>
+                <span class="n">memory_address</span><span class="p">,</span>
+                <span class="n">memory_size</span><span class="p">,</span>
+                <span class="n">compression_method</span><span class="p">,</span>
+                <span class="n">encryption_method</span><span class="p">,</span>
+                <span class="n">address_and_length_format_identifier</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request_upload</span><span class="p">(</span>  <span class="c1"># noqa: PLR0913</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">memory_address</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">memory_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">compression_method</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mh">0x0</span><span class="p">,</span>
+        <span class="n">encryption_method</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mh">0x0</span><span class="p">,</span>
+        <span class="n">address_and_length_format_identifier</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">RequestUploadResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Requests the upload of data, i.e. the possibility to receive data from the server.</span>
+<span class="sd">        This is an implementation of the UDS request for requestUpload (0x35).</span>
+
+<span class="sd">        :param memory_address: The address at which data should be uploaded.</span>
+<span class="sd">        :param memory_size: The number of bytes to be uploaded.</span>
+<span class="sd">        :param compression_method: Encodes the utilized compressionFormat (0x0 for none)</span>
+<span class="sd">        :param encryption_method: Encodes the utilized encryptionFormat (0x0 for none)</span>
+<span class="sd">        :param address_and_length_format_identifier: The byte lengths of the memory address and</span>
+<span class="sd">                                                     size. If omitted, this parameter is computed</span>
+<span class="sd">                                                     based on the memory_address and memory_size</span>
+<span class="sd">                                                     parameters.</span>
+<span class="sd">        :param config: Passed on to request_pdu().</span>
+<span class="sd">        :return: The response of the server.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span>
+            <span class="n">service</span><span class="o">.</span><span class="n">RequestUploadRequest</span><span class="p">(</span>
+                <span class="n">memory_address</span><span class="p">,</span>
+                <span class="n">memory_size</span><span class="p">,</span>
+                <span class="n">compression_method</span><span class="p">,</span>
+                <span class="n">encryption_method</span><span class="p">,</span>
+                <span class="n">address_and_length_format_identifier</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">transfer_data</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">block_sequence_counter</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">transfer_request_parameter_record</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">TransferDataResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Transfers data to the server or requests the next data from the server.</span>
+<span class="sd">        This is an implementation of the UDS request for transferData (0x36).</span>
+
+<span class="sd">        :param block_sequence_counter: The current block sequence counter.</span>
+<span class="sd">                                       Initialized with one and incremented for each new data.</span>
+<span class="sd">                                       After 0xff, the counter is resumed at 0</span>
+<span class="sd">        :param transfer_request_parameter_record: Contains the data to be transferred if downloading</span>
+<span class="sd">                                                  to the server.</span>
+<span class="sd">        :param config: Passed on to request_pdu().</span>
+<span class="sd">        :return: The response of the server.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span>
+            <span class="n">service</span><span class="o">.</span><span class="n">TransferDataRequest</span><span class="p">(</span><span class="n">block_sequence_counter</span><span class="p">,</span> <span class="n">transfer_request_parameter_record</span><span class="p">),</span>
+            <span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request_transfer_exit</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">transfer_request_parameter_record</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">RequestTransferExitResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Ends the transfer of data.</span>
+<span class="sd">        This is an implementation of the UDS request for requestTransferExit (0x77).</span>
+
+<span class="sd">        :param transfer_request_parameter_record: Optional data.</span>
+<span class="sd">        :param config: Passed on to request_pdu().</span>
+<span class="sd">        :return: The response of the server.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span>
+            <span class="n">service</span><span class="o">.</span><span class="n">RequestTransferExitRequest</span><span class="p">(</span><span class="n">transfer_request_parameter_record</span><span class="p">),</span>
+            <span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">define_by_identifier</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dynamically_defined_data_identifier</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">source_data_identifiers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="n">positions_in_source_data_record</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="n">memory_sizes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="n">suppress_response</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">DefineByIdentifierResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Defines a data identifier which combines data from multiple existing data identifiers on the UDS server.</span>
+<span class="sd">        This is an implementation of the UDS request for the defineByIdentifier sub-function of the</span>
+<span class="sd">        service DynamicallyDefineDataIdentifier (0x2C).</span>
+
+<span class="sd">        :param dynamically_defined_data_identifier: The new data identifier.</span>
+<span class="sd">        :param source_data_identifiers: The source data identifiers which refer to the data to be included in the new data identifier.</span>
+<span class="sd">        :param positions_in_source_data_record: The start positions for each source data identifier. Note, that the position is 1-indexed.</span>
+<span class="sd">        :param memory_sizes: The number of bytes for each source data identifier, starting from the starting position.</span>
+<span class="sd">        :param suppress_response: If set to True, the server is advised to not send back a positive</span>
+<span class="sd">                                  response.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span>
+            <span class="n">service</span><span class="o">.</span><span class="n">DefineByIdentifierRequest</span><span class="p">(</span>
+                <span class="n">dynamically_defined_data_identifier</span><span class="p">,</span>
+                <span class="n">source_data_identifiers</span><span class="p">,</span>
+                <span class="n">positions_in_source_data_record</span><span class="p">,</span>
+                <span class="n">memory_sizes</span><span class="p">,</span>
+                <span class="n">suppress_response</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">define_by_memory_address</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dynamically_defined_data_identifier</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">memory_addresses</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="n">memory_sizes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="n">address_and_length_format_identifier</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">suppress_response</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">DefineByMemoryAddressResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Defines a data identifier which combines data from multiple existing memory regions on the UDS server.</span>
+<span class="sd">        This is an implementation of the UDS request for the defineByMemoryAddress sub-function of the</span>
+<span class="sd">        service DynamicallyDefineDataIdentifier (0x2C).</span>
+<span class="sd">        While it exposes each parameter of the corresponding specification,</span>
+<span class="sd">        some parameters can be computed from the remaining ones and can therefore be omitted.</span>
+
+<span class="sd">        :param dynamically_defined_data_identifier: The new data identifier.</span>
+<span class="sd">        :param memory_addresses: The memory addresses for each source data.</span>
+<span class="sd">        :param memory_sizes: The number of bytes for each source data, starting from the memory address.</span>
+<span class="sd">        :param address_and_length_format_identifier: The byte lengths of the memory address and</span>
+<span class="sd">                                                     size. If omitted, this parameter is computed</span>
+<span class="sd">                                                     based on the memory_address and memory_size</span>
+<span class="sd">                                                     or data_record parameters.</span>
+<span class="sd">        :param suppress_response: If set to True, the server is advised to not send back a positive</span>
+<span class="sd">                                  response.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span>
+            <span class="n">service</span><span class="o">.</span><span class="n">DefineByMemoryAddressRequest</span><span class="p">(</span>
+                <span class="n">dynamically_defined_data_identifier</span><span class="p">,</span>
+                <span class="n">memory_addresses</span><span class="p">,</span>
+                <span class="n">memory_sizes</span><span class="p">,</span>
+                <span class="n">address_and_length_format_identifier</span><span class="p">,</span>
+                <span class="n">suppress_response</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">clear_dynamically_defined_data_identifier</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">dynamically_defined_data_identifier</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">suppress_response</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">ClearDynamicallyDefinedDataIdentifierResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Clears either a specific dynamically defined data identifier or all if no data identifier is given.</span>
+<span class="sd">        This is an implementation of the UDS request for the clearDynamicallyDefinedDataIdentifier sub-function of the</span>
+<span class="sd">        service DynamicallyDefineDataIdentifier (0x2C).</span>
+
+<span class="sd">        :param dynamically_defined_data_identifier: The dynamically defined data identifier to be cleared, or None if all are to be cleared.</span>
+<span class="sd">        :param suppress_response: If set to True, the server is advised to not send back a positive</span>
+<span class="sd">                                  response.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="p">(</span>
+            <span class="n">service</span><span class="o">.</span><span class="n">ClearDynamicallyDefinedDataIdentifierRequest</span><span class="p">(</span>
+                <span class="n">dynamically_defined_data_identifier</span><span class="p">,</span> <span class="n">suppress_response</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">RawRequest</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">PositiveResponse</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">DiagnosticSessionControlRequest</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">DiagnosticSessionControlResponse</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">ECUResetRequest</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">ECUResetResponse</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">RequestSeedRequest</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">SecurityAccessResponse</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">SendKeyRequest</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">SecurityAccessResponse</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">CommunicationControlRequest</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">CommunicationControlResponse</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">TesterPresentRequest</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">TesterPresentResponse</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">ControlDTCSettingRequest</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">ControlDTCSettingResponse</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">ReadDataByIdentifierRequest</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">ReadDataByIdentifierResponse</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">ReadMemoryByAddressRequest</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">ReadMemoryByAddressResponse</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">WriteDataByIdentifierRequest</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">WriteDataByIdentifierResponse</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">WriteMemoryByAddressRequest</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">WriteMemoryByAddressResponse</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">ClearDiagnosticInformationRequest</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">ClearDiagnosticInformationResponse</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">ReportNumberOfDTCByStatusMaskRequest</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">ReportNumberOfDTCByStatusMaskResponse</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">ReportDTCByStatusMaskRequest</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">ReportDTCByStatusMaskResponse</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">ReportMirrorMemoryDTCByStatusMaskRequest</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">ReportMirrorMemoryDTCByStatusMaskResponse</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">ReportNumberOfMirrorMemoryDTCByStatusMaskRequest</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">ReportNumberOfMirrorMemoryDTCByStatusMaskResponse</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">ReportNumberOfEmissionsRelatedOBDDTCByStatusMaskRequest</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span>
+        <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">ReportNumberOfEmissionsRelatedOBDDTCByStatusMaskResponse</span>
+    <span class="p">):</span> <span class="o">...</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">ReportEmissionsRelatedOBDDTCByStatusMaskRequest</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">ReportEmissionsRelatedOBDDTCByStatusMaskResponse</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">ReportDTCExtDataRecordByDTCNumberRequest</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">ReportDTCExtDataRecordByDTCNumberResponse</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">InputOutputControlByIdentifierRequest</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">InputOutputControlByIdentifierResponse</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">StartRoutineRequest</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">StartRoutineResponse</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">StopRoutineRequest</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">StopRoutineResponse</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">RequestRoutineResultsRequest</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">RequestRoutineResultsResponse</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">RequestDownloadRequest</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">RequestDownloadResponse</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">RequestUploadRequest</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">RequestUploadResponse</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">TransferDataRequest</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">TransferDataResponse</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">RequestTransferExitRequest</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">NegativeResponse</span> <span class="o">|</span> <span class="n">service</span><span class="o">.</span><span class="n">RequestTransferExitResponse</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">DefineByIdentifierRequest</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">DefineByIdentifierResponse</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">DefineByMemoryAddressRequest</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">DefineByMemoryAddressResponse</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="nd">@overload</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">ClearDynamicallyDefinedDataIdentifierRequest</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">ClearDynamicallyDefinedDataIdentifierResponse</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSRequest</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sends a raw UDS request and returns the response.</span>
+<span class="sd">        Network errors are handled via exponential backoff.</span>
+<span class="sd">        Pending errors, triggered by the ECU are resolved as well.</span>
+
+<span class="sd">        :param request: request to send</span>
+<span class="sd">        :param config: The request config parameters</span>
+<span class="sd">        :return: The response.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSRequest</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">UDSRequestConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">service</span><span class="o">.</span><span class="n">UDSResponse</span><span class="p">:</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">mutex</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">request_unsafe</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
