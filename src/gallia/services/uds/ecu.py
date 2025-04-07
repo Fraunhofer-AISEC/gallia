@@ -5,10 +5,11 @@
 from __future__ import annotations
 
 import asyncio
-import dataclasses
-import json
 from asyncio import Task
+from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
+from enum import Enum
+from json import JSONEncoder, dumps
 from typing import TYPE_CHECKING
 
 from gallia.db.log import LogMode
@@ -51,11 +52,25 @@ class ECUState:
 logger = get_logger(__name__)
 
 
-@dataclasses.dataclass
+@dataclass
 class ECUProperties:
     def to_json(self, indent: int | str | None = None) -> str:
         # Make sure to keep 'sort_keys=True' when overriding this method!
-        return json.dumps(dataclasses.asdict(self), indent=indent, sort_keys=True)
+        return dumps(asdict(self), indent=indent, sort_keys=True, cls=self.json_encoder)
+
+    @property
+    def json_encoder(self) -> type[JSONEncoder]:
+        return ECUPropertiesEncoder
+
+
+class ECUPropertiesEncoder(JSONEncoder):
+    def default(self, obj):  # type: ignore
+        if isinstance(obj, bytes):
+            return obj.hex()
+        elif isinstance(obj, Enum):
+            return obj.value
+
+        return super().default(obj)
 
 
 class ECU(UDSClient):
