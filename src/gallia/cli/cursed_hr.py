@@ -1323,7 +1323,7 @@ class CursedHR:
         add_entries("Action keys:")
 
         for key, val in options.items():
-            add_entries(f"{key}", f"    {val}: ")
+            add_entries(f"{val}", f"    {key}: ")
 
         add_entries("")
         add_entries("Log level keys (ordered from highest to lowest):")
