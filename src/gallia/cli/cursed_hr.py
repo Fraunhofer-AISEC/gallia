@@ -1428,7 +1428,7 @@ def main() -> None:
     parser = ArgumentParser()
     parser.add_argument("file", type=Path)
     parser.add_argument(
-        "--priority", "-p", type=PenlogPriority.from_str, default=PenlogPriority.DEBUG
+        "--priority", "-p", type=PenlogPriority.from_str, default=PenlogPriority.NOTICE
     )
     parser.add_argument("--filter", "-f", type=parse_filter, default=None)
     parser.add_argument("--prefix", action=BooleanOptionalAction, default=True)
