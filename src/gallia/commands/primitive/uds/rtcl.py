@@ -26,7 +26,7 @@ class RTCLPrimitiveConfig(UDSScannerConfig):
         cli_group=UDSScannerConfig._cli_group,
         config_section=UDSScannerConfig._config_section,
     )
-    session: AutoInt = Field(0x01, description="The session in which the requests are made")
+    session: AutoInt | None = Field(None, description="The session in which the requests are made")
     routine_identifier: AutoInt = Field(description="The routine identifier", positional=True)
     start: bool = Field(
         False,
@@ -85,11 +85,14 @@ class RTCLPrimitive(UDSScanner):
         self.config: RTCLPrimitiveConfig = config
 
     async def main(self) -> None:
-        try:
-            await self.ecu.check_and_set_session(self.config.session)
-        except Exception as e:
-            logger.critical(f"Could not change to session: {g_repr(self.config.session)}: {e!r}")
-            sys.exit(1)
+        if self.config.session is not None:
+            try:
+                await self.ecu.check_and_set_session(self.config.session)
+            except Exception as e:
+                logger.critical(
+                    f"Could not change to session: {g_repr(self.config.session)}: {e!r}"
+                )
+                sys.exit(1)
 
         if self.config.start:
             resp: (
