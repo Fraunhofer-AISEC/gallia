@@ -27,8 +27,10 @@ class ResetScannerConfig(UDSScannerConfig):
         metavar="SESSION_ID:ID",
         description="The sub functions to be skipped per session.\nA session specific skip is given by <session_id>:<sub_functions>\nwhere <sub_functions> is a comma separated list of single ids or id ranges using a dash.\nExamples:\n - 0x01:0xf3\n - 0x10-0x2f\n - 0x01:0xf3,0x10-0x2f\nMultiple session specific skips are separated by space.\nOnly takes affect if --sessions is given.\n",
     )
-    skip_check_session: bool = Field(
-        False, description="skip check current session; only takes affect if --sessions is given"
+    check_session: int | None = Field(
+        None,
+        description="Check current session via read DID [for every nth subFunction] and try to recover session; only takes affect if --sessions is given",
+        const=1,
     )
 
 
@@ -81,7 +83,11 @@ class ResetScanner(UDSScanner):
                 logger.notice(f"skipping subFunc: {g_repr(sub_func)} because of --skip")
                 continue
 
-            if session is not None and (not self.config.skip_check_session):
+            if (
+                session is not None
+                and self.config.check_session is not None
+                and (sub_func % self.config.check_session == 0)
+            ):
                 # Check session and try to recover from wrong session (max 3 times), else skip session
                 if not await self.ecu.check_and_set_session(session):
                     logger.error(
@@ -141,7 +147,8 @@ class ResetScanner(UDSScanner):
                 continue
 
             # We reach this code only for positive responses
-            if session is not None and (not self.config.skip_check_session):
+            # If check_session is set to any value, check here regardless of modulo
+            if session is not None and self.config.check_session is not None:
                 try:
                     current_session = await self.ecu.read_session()
                     logger.info(
