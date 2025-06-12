@@ -284,6 +284,7 @@ class BaseCommand(FlockMixin, ABC):
 
     def prepare_artifacts_dir(self) -> Path | None:
         if self.config.artifacts_base is None:
+            logger.notice("Artifacts base folder not defined, no artifacts will be saved!")
             return None
 
         else:
