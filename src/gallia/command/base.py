@@ -14,6 +14,7 @@ from abc import ABC, abstractmethod
 from collections.abc import MutableMapping
 from datetime import UTC, datetime
 from enum import Enum, unique
+from logging import WARNING
 from pathlib import Path
 from subprocess import CalledProcessError, run
 from typing import Any, Protocol, Self, cast
@@ -320,6 +321,9 @@ class BaseCommand(FlockMixin, ABC):
             self.run_hook(HookVariant.PRE)
 
         if self.config.db is not None:
+            # Explicitly set log level of aiosqlite to WARNING to avoid log spam
+            db_logger = get_logger("aiosqlite")
+            db_logger.setLevel(WARNING)
             await self._db_connect_and_insert_run_meta(self.config.db)
 
         exit_code = 0
