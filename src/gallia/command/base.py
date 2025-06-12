@@ -231,19 +231,18 @@ class BaseCommand(FlockMixin, ABC):
         if stderr:
             logger.info(p.stderr.strip(), extra={"tags": [hook_id, "stderr"]})
 
-    async def _db_insert_run_meta(self) -> None:
-        if self.config.db is not None:
-            self.db_handler = DBHandler(self.config.db)
-            await self.db_handler.connect()
+    async def _db_connect_and_insert_run_meta(self, db_path: Path) -> None:
+        self.db_handler = DBHandler(db_path)
+        await self.db_handler.connect()
 
-            await self.db_handler.insert_run_meta(
-                script=self.run_meta.command,
-                config=self.config,
-                start_time=datetime.now(UTC).astimezone(),
-                path=self.artifacts_dir,
-            )
+        await self.db_handler.insert_run_meta(
+            script=self.run_meta.command,
+            config=self.config,
+            start_time=datetime.now(UTC).astimezone(),
+            path=self.artifacts_dir,
+        )
 
-    async def _db_finish_run_meta(self) -> None:
+    async def _db_finish_run_meta_and_disconnect(self) -> None:
         if self.db_handler is not None and self.db_handler.connection is not None:
             if self.db_handler.meta is not None:
                 try:
@@ -320,7 +319,8 @@ class BaseCommand(FlockMixin, ABC):
         if self.config.hooks:
             self.run_hook(HookVariant.PRE)
 
-        await self._db_insert_run_meta()
+        if self.config.db is not None:
+            await self._db_connect_and_insert_run_meta(self.config.db)
 
         exit_code = 0
         try:
@@ -350,7 +350,8 @@ class BaseCommand(FlockMixin, ABC):
             self.run_meta.exit_code = exit_code
             self.run_meta.end_time = datetime.now(tz).isoformat()
 
-            await self._db_finish_run_meta()
+            if self.db_handler is not None:
+                await self._db_finish_run_meta_and_disconnect()
 
             if self.artifacts_dir is not None:
                 self.artifacts_dir.joinpath(FileNames.META.value).write_text(
@@ -498,10 +499,6 @@ class Scanner(AsyncScript, ABC):
 
     async def teardown(self) -> None:
         await self.transport.close()
-
-        if self.db_handler is not None:
-            # Close the DB handler that was opened in `setup`
-            await self.db_handler.disconnect()
 
         if self.dumpcap:
             await self.dumpcap.stop()
