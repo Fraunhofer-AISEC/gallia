@@ -1,0 +1,503 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gallia.transports.hsfz &mdash; gallia  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../transports.html">Transports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../env.html">Environment Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../logging.html">Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../plugins.html">Plugins</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Public API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">gallia.transports.hsfz</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gallia.transports.hsfz</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-FileCopyrightText: AISEC Pentesting Team</span>
+<span class="c1">#</span>
+<span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">errno</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">struct</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">IntEnum</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Self</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">field_validator</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">gallia.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gallia.transports.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseTransport</span><span class="p">,</span> <span class="n">TargetURI</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gallia.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">auto_int</span><span class="p">,</span> <span class="n">handle_task_error</span><span class="p">,</span> <span class="n">set_task_handler_ctx_variable</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">HSFZStatus</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">UNDEFINED</span> <span class="o">=</span> <span class="o">-</span><span class="mh">0x01</span>
+    <span class="n">Data</span> <span class="o">=</span> <span class="mh">0x01</span>
+    <span class="n">Ack</span> <span class="o">=</span> <span class="mh">0x02</span>
+    <span class="n">Klemme15</span> <span class="o">=</span> <span class="mh">0x10</span>
+    <span class="n">Vin</span> <span class="o">=</span> <span class="mh">0x11</span>
+    <span class="n">AliveCheck</span> <span class="o">=</span> <span class="mh">0x12</span>
+    <span class="n">StatusDataInquiry</span> <span class="o">=</span> <span class="mh">0x13</span>
+    <span class="n">IncorrectTesterAddressError</span> <span class="o">=</span> <span class="mh">0x40</span>
+    <span class="n">IncorrectControlWordError</span> <span class="o">=</span> <span class="mh">0x41</span>
+    <span class="n">IncorrectFormatError</span> <span class="o">=</span> <span class="mh">0x42</span>
+    <span class="n">IncorrectDestinationAddressError</span> <span class="o">=</span> <span class="mh">0x43</span>
+    <span class="n">MessageTooLarge</span> <span class="o">=</span> <span class="mh">0x44</span>
+    <span class="n">ApplicationNotReady</span> <span class="o">=</span> <span class="mh">0x45</span>
+    <span class="n">OutOfMemory</span> <span class="o">=</span> <span class="mh">0xFF</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_missing_</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;HSFZStatus&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">UNDEFINED</span>
+
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">HSFZHeader</span><span class="p">:</span>
+    <span class="n">Len</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">CWord</span><span class="p">:</span> <span class="nb">int</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">pack</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">&quot;!IH&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Len</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">CWord</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">unpack</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+        <span class="n">len_</span><span class="p">,</span> <span class="n">cword</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s2">&quot;!IH&quot;</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">len_</span><span class="p">,</span> <span class="n">cword</span><span class="p">)</span>
+
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">HSFZDiagReqHeader</span><span class="p">:</span>
+    <span class="n">src_addr</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">dst_addr</span><span class="p">:</span> <span class="nb">int</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">pack</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">&quot;!BB&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_addr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dst_addr</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">unpack</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+        <span class="n">src_addr</span><span class="p">,</span> <span class="n">dst_addr</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s2">&quot;!BB&quot;</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">src_addr</span><span class="p">,</span> <span class="n">dst_addr</span><span class="p">)</span>
+
+
+<span class="n">HSFZFrame</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">HSFZHeader</span><span class="p">,</span> <span class="n">HSFZDiagReqHeader</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">bytes</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span>
+<span class="n">HSFZDiagFrame</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">HSFZHeader</span><span class="p">,</span> <span class="n">HSFZDiagReqHeader</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">]</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">HSFZConnection</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">reader</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamReader</span><span class="p">,</span>
+        <span class="n">writer</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamWriter</span><span class="p">,</span>
+        <span class="n">src_addr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">dst_addr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">ack_timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reader</span> <span class="o">=</span> <span class="n">reader</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">writer</span> <span class="o">=</span> <span class="n">writer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_addr</span> <span class="o">=</span> <span class="n">src_addr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dst_addr</span> <span class="o">=</span> <span class="n">dst_addr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ack_timeout</span> <span class="o">=</span> <span class="n">ack_timeout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_read_queue</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Queue</span><span class="p">[</span><span class="n">HSFZDiagFrame</span> <span class="o">|</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Queue</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_read_task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_read_worker</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_read_task</span><span class="o">.</span><span class="n">add_done_callback</span><span class="p">(</span>
+            <span class="n">handle_task_error</span><span class="p">,</span>
+            <span class="n">context</span><span class="o">=</span><span class="n">set_task_handler_ctx_variable</span><span class="p">(</span><span class="vm">__name__</span><span class="p">,</span> <span class="s2">&quot;HsfzReader&quot;</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_closed</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mutex</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">host</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">port</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">src_addr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">dst_addr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">ack_timeout</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+        <span class="n">reader</span><span class="p">,</span> <span class="n">writer</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">open_connection</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">reader</span><span class="p">,</span>
+            <span class="n">writer</span><span class="p">,</span>
+            <span class="n">src_addr</span><span class="p">,</span>
+            <span class="n">dst_addr</span><span class="p">,</span>
+            <span class="n">ack_timeout</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_read_frame</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HSFZFrame</span><span class="p">:</span>
+        <span class="c1"># Header is fixed size 6 byte.</span>
+        <span class="n">hdr_buf</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">readexactly</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span>
+        <span class="n">hdr</span> <span class="o">=</span> <span class="n">HSFZHeader</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="n">hdr_buf</span><span class="p">)</span>
+
+        <span class="c1"># If a message without a RequestHeader is received,</span>
+        <span class="c1"># the whole message must be read before erroring out.</span>
+        <span class="c1"># Otherwise the partial read packet stays in the receive</span>
+        <span class="c1"># buffer and causes further breakage…</span>
+        <span class="k">if</span> <span class="n">hdr</span><span class="o">.</span><span class="n">Len</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">hdr</span><span class="o">.</span><span class="n">Len</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">readexactly</span><span class="p">(</span><span class="n">hdr</span><span class="o">.</span><span class="n">Len</span><span class="p">)</span>
+            <span class="n">data_str</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">hex</span><span class="p">()</span> <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">data</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;hdr: </span><span class="si">{</span><span class="n">hdr</span><span class="si">}</span><span class="s2">, req_hdr: None, data: </span><span class="si">{</span><span class="n">data_str</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;read&quot;</span><span class="p">]})</span>
+            <span class="k">return</span> <span class="n">hdr</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">data</span>
+
+        <span class="c1"># DiagReqHeader is fixed size 2 byte.</span>
+        <span class="n">req_buf</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">readexactly</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">req_hdr</span> <span class="o">=</span> <span class="n">HSFZDiagReqHeader</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="n">req_buf</span><span class="p">)</span>
+
+        <span class="n">data_len</span> <span class="o">=</span> <span class="n">hdr</span><span class="o">.</span><span class="n">Len</span> <span class="o">-</span> <span class="mi">2</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">readexactly</span><span class="p">(</span><span class="n">data_len</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;hdr: </span><span class="si">{</span><span class="n">hdr</span><span class="si">}</span><span class="s2">, req_hdr: </span><span class="si">{</span><span class="n">req_hdr</span><span class="si">}</span><span class="s2">, data: </span><span class="si">{</span><span class="n">data</span><span class="o">.</span><span class="n">hex</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;read&quot;</span><span class="p">]},</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">hdr</span><span class="p">,</span> <span class="n">req_hdr</span><span class="p">,</span> <span class="n">data</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">write_frame</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frame</span><span class="p">:</span> <span class="n">HSFZFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">hdr</span><span class="p">,</span> <span class="n">req_hdr</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">frame</span>
+        <span class="n">buf</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
+        <span class="n">buf</span> <span class="o">+=</span> <span class="n">hdr</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
+        <span class="n">log_msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;hdr: </span><span class="si">{</span><span class="n">hdr</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="n">req_hdr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">buf</span> <span class="o">+=</span> <span class="n">req_hdr</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
+            <span class="n">log_msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;, req_hdr: </span><span class="si">{</span><span class="n">req_hdr</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">buf</span> <span class="o">+=</span> <span class="n">data</span>
+                <span class="n">log_msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;, data: </span><span class="si">{</span><span class="n">data</span><span class="o">.</span><span class="n">hex</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">buf</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">drain</span><span class="p">()</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="n">log_msg</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;write&quot;</span><span class="p">]})</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_read_worker</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="n">hdr</span><span class="p">,</span> <span class="n">req_hdr</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_frame</span><span class="p">()</span>
+
+                <span class="k">match</span> <span class="n">hdr</span><span class="o">.</span><span class="n">CWord</span><span class="p">:</span>
+                    <span class="k">case</span> <span class="n">HSFZStatus</span><span class="o">.</span><span class="n">AliveCheck</span><span class="p">:</span>
+                        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">send_alive_msg</span><span class="p">()</span>
+                        <span class="k">continue</span>
+                    <span class="k">case</span> <span class="n">HSFZStatus</span><span class="o">.</span><span class="n">Ack</span> <span class="o">|</span> <span class="n">HSFZStatus</span><span class="o">.</span><span class="n">Data</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">req_hdr</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;unexpected frame: no hsfz request header&quot;</span><span class="p">)</span>
+                            <span class="k">continue</span>
+                        <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;unexpected frame: no payload&quot;</span><span class="p">)</span>
+                            <span class="k">continue</span>
+                        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_queue</span><span class="o">.</span><span class="n">put</span><span class="p">((</span><span class="n">hdr</span><span class="p">,</span> <span class="n">req_hdr</span><span class="p">,</span> <span class="n">data</span><span class="p">))</span>
+                    <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span>
+                        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">hdr</span><span class="o">.</span><span class="n">CWord</span><span class="p">)</span>
+                        <span class="k">continue</span>
+
+        <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;read worker cancelled&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">IncompleteReadError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;read worker received EOF: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;read worker died: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_unpack_frame</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frame</span><span class="p">:</span> <span class="n">HSFZDiagFrame</span> <span class="o">|</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HSFZDiagFrame</span><span class="p">:</span>
+        <span class="c1"># I little hack, but it is either a tuple or an int….</span>
+        <span class="k">match</span> <span class="n">frame</span><span class="p">:</span>
+            <span class="k">case</span> <span class="nb">tuple</span><span class="p">():</span>
+                <span class="k">return</span> <span class="n">frame</span>
+            <span class="k">case</span> <span class="nb">int</span><span class="p">():</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="k">raise</span> <span class="ne">BrokenPipeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;I can&#39;t even: </span><span class="si">{</span><span class="n">HSFZStatus</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;unexpected frame: </span><span class="si">{</span><span class="n">frame</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">read_frame</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HSFZDiagFrame</span> <span class="o">|</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_closed</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">!=</span> <span class="s2">&quot;win32&quot;</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">OSError</span><span class="p">(</span><span class="n">errno</span><span class="o">.</span><span class="n">EBADFD</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;connection already closed&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_queue</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">read_diag_request</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="n">unexpected_packets</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">hdr</span><span class="p">,</span> <span class="n">req_hdr</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_unpack_frame</span><span class="p">(</span><span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_frame</span><span class="p">())</span>
+            <span class="k">if</span> <span class="n">hdr</span><span class="o">.</span><span class="n">CWord</span> <span class="o">!=</span> <span class="n">HSFZStatus</span><span class="o">.</span><span class="n">Data</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;expected HSFZ data, instead got: </span><span class="si">{</span><span class="n">HSFZStatus</span><span class="p">(</span><span class="n">hdr</span><span class="o">.</span><span class="n">CWord</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> with payload </span><span class="si">{</span><span class="n">data</span><span class="o">.</span><span class="n">hex</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+                <span class="n">unexpected_packets</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">hdr</span><span class="p">,</span> <span class="n">req_hdr</span><span class="p">,</span> <span class="n">data</span><span class="p">))</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">req_hdr</span><span class="o">.</span><span class="n">src_addr</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dst_addr</span> <span class="ow">or</span> <span class="n">req_hdr</span><span class="o">.</span><span class="n">dst_addr</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_addr</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;HSFZ Data has unexpected addresses (src:dst); should be </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dst_addr</span><span class="si">:</span><span class="s2">#04x</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">src_addr</span><span class="si">:</span><span class="s2">#04x</span><span class="si">}</span><span class="s2">, but is </span><span class="si">{</span><span class="n">req_hdr</span><span class="o">.</span><span class="n">src_addr</span><span class="si">:</span><span class="s2">#04x</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">req_hdr</span><span class="o">.</span><span class="n">dst_addr</span><span class="si">:</span><span class="s2">#04x</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+                <span class="n">unexpected_packets</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">hdr</span><span class="p">,</span> <span class="n">req_hdr</span><span class="p">,</span> <span class="n">data</span><span class="p">))</span>
+                <span class="k">continue</span>
+
+            <span class="c1"># We do not want to consume packets that we were not expecting; add them to queue again</span>
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">unexpected_packets</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">data</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_read_ack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prev_data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">unexpected_packets</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">hdr</span><span class="p">,</span> <span class="n">req_hdr</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_unpack_frame</span><span class="p">(</span><span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_frame</span><span class="p">())</span>
+            <span class="k">if</span> <span class="n">hdr</span><span class="o">.</span><span class="n">CWord</span> <span class="o">!=</span> <span class="n">HSFZStatus</span><span class="o">.</span><span class="n">Ack</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;expected HSFZ Ack for </span><span class="si">{</span><span class="n">prev_data</span><span class="o">.</span><span class="n">hex</span><span class="p">()</span><span class="si">}</span><span class="s2">, instead got: </span><span class="si">{</span><span class="n">HSFZStatus</span><span class="p">(</span><span class="n">hdr</span><span class="o">.</span><span class="n">CWord</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> with payload </span><span class="si">{</span><span class="n">data</span><span class="o">.</span><span class="n">hex</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+                <span class="n">unexpected_packets</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">hdr</span><span class="p">,</span> <span class="n">req_hdr</span><span class="p">,</span> <span class="n">data</span><span class="p">))</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">req_hdr</span><span class="o">.</span><span class="n">src_addr</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_addr</span> <span class="ow">or</span> <span class="n">req_hdr</span><span class="o">.</span><span class="n">dst_addr</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dst_addr</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;HSFZ Ack has unexpected addresses (src:dst); should be </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">src_addr</span><span class="si">:</span><span class="s2">#04x</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dst_addr</span><span class="si">:</span><span class="s2">#04x</span><span class="si">}</span><span class="s2">, but is </span><span class="si">{</span><span class="n">req_hdr</span><span class="o">.</span><span class="n">src_addr</span><span class="si">:</span><span class="s2">#04x</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">req_hdr</span><span class="o">.</span><span class="n">dst_addr</span><span class="si">:</span><span class="s2">#04x</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+                <span class="n">unexpected_packets</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">hdr</span><span class="p">,</span> <span class="n">req_hdr</span><span class="p">,</span> <span class="n">data</span><span class="p">))</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">prev_data</span><span class="p">[:</span><span class="mi">5</span><span class="p">]</span> <span class="o">!=</span> <span class="n">data</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;HSFZ Ack has unexpected data of </span><span class="si">{</span><span class="n">data</span><span class="o">.</span><span class="n">hex</span><span class="p">()</span><span class="si">}</span><span class="s2">, should be </span><span class="si">{</span><span class="n">prev_data</span><span class="p">[:</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">hex</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+                <span class="n">unexpected_packets</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">hdr</span><span class="p">,</span> <span class="n">req_hdr</span><span class="p">,</span> <span class="n">data</span><span class="p">))</span>
+                <span class="k">continue</span>
+
+            <span class="c1"># We do not want to consume packets that we were not expecting; add them to queue again</span>
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">unexpected_packets</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+
+            <span class="k">return</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">write_diag_request_raw</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">hdr</span><span class="p">:</span> <span class="n">HSFZHeader</span><span class="p">,</span>
+        <span class="n">req_hdr</span><span class="p">:</span> <span class="n">HSFZDiagReqHeader</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mutex</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_frame</span><span class="p">((</span><span class="n">hdr</span><span class="p">,</span> <span class="n">req_hdr</span><span class="p">,</span> <span class="n">data</span><span class="p">))</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># Now an ACK message is expected.</span>
+                <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait_for</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_read_ack</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">ack_timeout</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">TimeoutError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="k">raise</span> <span class="ne">BrokenPipeError</span><span class="p">(</span><span class="s2">&quot;no ack by gateway&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">write_diag_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">hdr</span> <span class="o">=</span> <span class="n">HSFZHeader</span><span class="p">(</span><span class="n">Len</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span><span class="p">,</span> <span class="n">CWord</span><span class="o">=</span><span class="n">HSFZStatus</span><span class="o">.</span><span class="n">Data</span><span class="p">)</span>
+        <span class="n">req_hdr</span> <span class="o">=</span> <span class="n">HSFZDiagReqHeader</span><span class="p">(</span><span class="n">src_addr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">src_addr</span><span class="p">,</span> <span class="n">dst_addr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dst_addr</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_diag_request_raw</span><span class="p">(</span><span class="n">hdr</span><span class="p">,</span> <span class="n">req_hdr</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">send_alive_msg</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">hdr</span> <span class="o">=</span> <span class="n">HSFZHeader</span><span class="p">(</span><span class="n">Len</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">CWord</span><span class="o">=</span><span class="n">HSFZStatus</span><span class="o">.</span><span class="n">AliveCheck</span><span class="p">)</span>
+        <span class="n">buf</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
+        <span class="n">buf</span> <span class="o">+=</span> <span class="n">hdr</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
+        <span class="c1"># For reasons, the tester address is two bytes large in this path.</span>
+        <span class="n">buf</span> <span class="o">+=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">&quot;!H&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_addr</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">buf</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">drain</span><span class="p">()</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_closed</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_closed</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_read_task</span><span class="o">.</span><span class="n">cancel</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">wait_closed</span><span class="p">()</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">HSFZConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">src_addr</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">dst_addr</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">ack_timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span>
+
+    <span class="nd">@field_validator</span><span class="p">(</span>
+        <span class="s2">&quot;src_addr&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;dst_addr&quot;</span><span class="p">,</span>
+        <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;before&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">auto_int</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">auto_int</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="HSFZTransport">
+<a class="viewcode-back" href="../../../api.html#gallia.transports.HSFZTransport">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">HSFZTransport</span><span class="p">(</span><span class="n">BaseTransport</span><span class="p">,</span> <span class="n">scheme</span><span class="o">=</span><span class="s2">&quot;hsfz&quot;</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">target</span><span class="p">:</span> <span class="n">TargetURI</span><span class="p">,</span>
+        <span class="n">port</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">HSFZConfig</span><span class="p">,</span>
+        <span class="n">conn</span><span class="p">:</span> <span class="n">HSFZConnection</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_conn</span> <span class="o">=</span> <span class="n">conn</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">port</span> <span class="o">=</span> <span class="n">port</span>
+
+<div class="viewcode-block" id="HSFZTransport.connect">
+<a class="viewcode-back" href="../../../api.html#gallia.transports.HSFZTransport.connect">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">target</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">TargetURI</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">TargetURI</span><span class="p">(</span><span class="n">target</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
+        <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">hostname</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;no hostname specified&quot;</span><span class="p">)</span>
+
+        <span class="n">port</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">port</span> <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">port</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">6801</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">HSFZConfig</span><span class="p">(</span><span class="o">**</span><span class="n">t</span><span class="o">.</span><span class="n">qs_flat</span><span class="p">)</span>
+        <span class="n">conn</span> <span class="o">=</span> <span class="k">await</span> <span class="n">HSFZConnection</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+            <span class="n">t</span><span class="o">.</span><span class="n">hostname</span><span class="p">,</span>
+            <span class="n">port</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">src_addr</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">dst_addr</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">ack_timeout</span> <span class="o">/</span> <span class="mi">1000</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">t</span><span class="p">,</span>
+            <span class="n">port</span><span class="p">,</span>
+            <span class="n">config</span><span class="p">,</span>
+            <span class="n">conn</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="HSFZTransport.close">
+<a class="viewcode-back" href="../../../api.html#gallia.transports.HSFZTransport.close">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conn</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="HSFZTransport.read">
+<a class="viewcode-back" href="../../../api.html#gallia.transports.HSFZTransport.read">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait_for</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_conn</span><span class="o">.</span><span class="n">read_diag_request</span><span class="p">(),</span> <span class="n">timeout</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="HSFZTransport.write">
+<a class="viewcode-back" href="../../../api.html#gallia.transports.HSFZTransport.write">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait_for</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_conn</span><span class="o">.</span><span class="n">write_diag_request</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">timeout</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
