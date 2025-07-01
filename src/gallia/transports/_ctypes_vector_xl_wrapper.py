@@ -285,9 +285,9 @@ class FlexRayCtypesBackend:
         event.tagData.frTxFrame.offset = 0
         event.tagData.frTxFrame.repetition = 1
 
-        data = bytearray(data.ljust(_ctypes_vector_xl.XL_FR_MAX_DATA_LENGTH, b"\x00"))
+        to_send = bytearray(data.ljust(_ctypes_vector_xl.XL_FR_MAX_DATA_LENGTH, b"\x00"))
         # TODO: why is the 0x80 needed???????????
-        data[73] = 0x80
+        to_send[73] = 0x80
 
         # TODO: is this somthing that needs to be configured??
         event.tagData.frTxFrame.payloadLength = 48
@@ -296,12 +296,12 @@ class FlexRayCtypesBackend:
         event.tagData.frTxFrame.incrementOffset = 0
         event.tagData.frTxFrame.incrementSize = 0
 
-        if len(data) > _ctypes_vector_xl.XL_FR_MAX_DATA_LENGTH:
+        if len(to_send) > _ctypes_vector_xl.XL_FR_MAX_DATA_LENGTH:
             raise ValueError("frame exceeds max data length")
 
         event.tagData.frTxFrame.data = (
             ctypes.c_ubyte * _ctypes_vector_xl.XL_FR_MAX_DATA_LENGTH
-        ).from_buffer_copy(data)
+        ).from_buffer_copy(to_send)
 
         await asyncio.to_thread(
             _ctypes_vector_xl.xlFrTransmit,
