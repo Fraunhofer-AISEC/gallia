@@ -126,6 +126,7 @@ ignore = [
     "TD003",    # Missing issue link on the line following this TODO
     "UP040",    # Type alias uses `TypeAlias` annotation instead of the `type` keyword
     "A005",     # Module `types` shadows a Python standard-library module
+    "PLC0415",  # `import` should be at the top-level of a file
 ]
 
 [tool.pytest.ini_options]
