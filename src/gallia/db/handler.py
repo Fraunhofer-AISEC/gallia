@@ -25,7 +25,7 @@ from gallia.services.uds.ecu import ECUProperties
 from gallia.utils import handle_task_error, set_task_handler_ctx_variable
 
 
-def bytes_repr(data: bytes) -> str:
+def bytes_repr(data: bytes | bytearray) -> str:
     return bytes_repr_(data, False, None)
 
 

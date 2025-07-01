@@ -99,7 +99,7 @@ def g_repr(x: Any) -> str:
     return repr(x)
 
 
-def bytes_repr(b: bytes, prefix: bool = False, max_length: int | None = 20) -> str:
+def bytes_repr(b: bytes | bytearray, prefix: bool = False, max_length: int | None = 20) -> str:
     if len(b) == 0:
         return "''"
 
