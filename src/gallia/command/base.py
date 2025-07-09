@@ -474,8 +474,20 @@ class Scanner(AsyncScript, ABC):
         super().__init__(config)
         self.config: ScannerConfig = config
         self.power_supply: PowerSupply | None = None
-        self.transport: BaseTransport
+        self._transport: BaseTransport | None = None
         self.dumpcap: Dumpcap | None = None
+
+    @property
+    def transport(self) -> BaseTransport:
+        if self._transport is None:
+            raise RuntimeError("Transport accessed before first initialization!")
+        return self._transport
+
+    @transport.setter
+    def transport(self, transport: BaseTransport) -> None:
+        if not isinstance(transport, BaseTransport):
+            logger.critical(f"Attempting to assign wrong type to transport: {type(transport)}")
+        self._transport = transport
 
     @abstractmethod
     async def main(self) -> None: ...
