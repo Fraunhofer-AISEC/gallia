@@ -17,10 +17,10 @@ logger = get_logger(__name__)
 
 
 class MemoryFunctionsScannerConfig(UDSScannerConfig):
-    session: AutoInt = Field(0x03, description="set session to perform test")
+    session: AutoInt | None = Field(None, description="Session to perform test in")
     check_session: int | None = Field(
         None,
-        description="Check current session via read DID [for every nth MemoryAddress] and try to recover session",
+        description="Check current session via read DID [for every nth MemoryAddress] and try to recover session; only takes affect if --session is given",
         const=1,
     )
     service: AutoLiteral[
@@ -54,17 +54,20 @@ class MemoryFunctionsScanner(UDSScanner):
         self.config: MemoryFunctionsScannerConfig = config
 
     async def main(self) -> None:
-        resp = await self.ecu.set_session(self.config.session)
-        if isinstance(resp, NegativeResponse):
-            logger.critical(f"could not change to session: {resp}")
-            sys.exit(1)
+        if self.config.session is not None:
+            logger.info(f"Scanning in session {self.config.session:#x}")
+            resp = await self.ecu.set_session(self.config.session)
+            if isinstance(resp, NegativeResponse):
+                logger.critical(f"could not change to session: {resp}")
+                sys.exit(1)
 
         for i in range(5):
             await self.scan_memory_address(i)
+        logger.info("Memory scan complete!")
 
-        logger.info(f"Scan in session {g_repr(self.config.session)} is complete!")
-        logger.info(f"Leaving session {g_repr(self.config.session)} via hook")
-        await self.ecu.leave_session(self.config.session, sleep=self.config.power_cycle_sleep)
+        if self.config.session is not None:
+            logger.info(f"Leaving session {g_repr(self.config.session)} via hook")
+            await self.ecu.leave_session(self.config.session, sleep=self.config.power_cycle_sleep)
 
     async def scan_memory_address(self, addr_offset: int = 0) -> None:
         sid = self.config.service.value
@@ -87,7 +90,11 @@ class MemoryFunctionsScanner(UDSScanner):
             pdu += addr_bytes + mem_size_bytes
             pdu += data if data else b""
 
-            if self.config.check_session and i % self.config.check_session == 0:
+            if (
+                self.config.session is not None
+                and self.config.check_session  # No check for None, because we also want to check for 0!
+                and i % self.config.check_session == 0
+            ):
                 # Check session and try to recover from wrong session (max 3 times), else skip session
                 if not await self.ecu.check_and_set_session(self.config.session):
                     logger.error(
