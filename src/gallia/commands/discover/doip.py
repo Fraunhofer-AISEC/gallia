@@ -247,14 +247,12 @@ class DoIPDiscoverer(AsyncScript):
         for routing_activation_type, source_address in product(
             routing_activation_types, source_addresses
         ):
-            try:  # Dummy target address, never actually used
-                # Ensure that connections do not remain in TIME_WAIT
+            try:
                 conn = await DoIPConnection.connect(
                     tgt_hostname,
                     tgt_port,
                     source_address,
-                    0xAFFE,
-                    so_linger=True,
+                    so_linger=True,  # Ensure that connections do not remain in TIME_WAIT
                     protocol_version=self.protocol_version,
                 )
             except OSError as e:
@@ -314,19 +312,19 @@ class DoIPDiscoverer(AsyncScript):
 
         target_template = f"doip://{tgt_hostname}:{tgt_port}?protocol_version={self.protocol_version}&activation_type={correct_rat:#x}&src_addr={correct_src:#x}&target_addr={{:#x}}"
         conn = await self.create_DoIP_conn(
-            tgt_hostname, tgt_port, correct_rat, correct_src, 0xAFFE, fast_queue=True
+            tgt_hostname, tgt_port, correct_rat, correct_src, fast_queue=True
         )
         reader_task = asyncio.create_task(self.task_read_diagnostic_messages(conn, target_template))
 
         for target_addr in search_space:
             logger.debug(f"[🚧] Attempting connection to {target_addr:#x}")
 
-            conn.target_addr = target_addr
+            self.target_address = target_addr
             current_target = target_template.format(target_addr)
 
             try:
                 req = TesterPresentRequest(suppress_response=False)
-                await conn.write_diag_request(req.pdu)
+                await conn.write_diag_request(target_addr, req.pdu)
 
                 # If we reach this, the request was not denied due to unknown TargetAddress or other DoIP errors
                 known_targets.append(current_target)
@@ -372,7 +370,10 @@ class DoIPDiscoverer(AsyncScript):
                 await asyncio.sleep(tcp_connect_delay)
 
                 conn = await self.create_DoIP_conn(
-                    tgt_hostname, tgt_port, correct_rat, correct_src, 0xAFFE
+                    tgt_hostname,
+                    tgt_port,
+                    correct_rat,
+                    correct_src,
                 )
                 continue
 
@@ -408,7 +409,9 @@ class DoIPDiscoverer(AsyncScript):
         potential_broadcasts = []
         try:
             while True:
-                _, payload = await conn.read_diag_request_raw()
+                _, payload = await conn.read_diag_request_raw(
+                    0
+                )  # Since we have a separate diagnostic queue, target address 0 reads any diagnostic messages
                 (source_address, data) = (payload.SourceAddress, payload.UserData)
                 current_target = target_template.format(source_address)
 
@@ -424,10 +427,10 @@ class DoIPDiscoverer(AsyncScript):
                         await self.db_handler.insert_discovery_result(current_target)
 
                 if (
-                    abs(source_address - conn.target_addr) > 10
-                    and conn.target_addr not in potential_broadcasts
+                    abs(source_address - self.target_address) > 10
+                    and self.target_address not in potential_broadcasts
                 ):
-                    potential_broadcasts.append(conn.target_addr)
+                    potential_broadcasts.append(self.target_address)
 
         except asyncio.CancelledError:
             logger.debug("Diagnostic Message reader got cancelled")
@@ -455,7 +458,6 @@ class DoIPDiscoverer(AsyncScript):
         port: int,
         routing_activation_type: int,
         src_addr: int,
-        target_addr: int,
         fast_queue: bool = False,
     ) -> DoIPConnection:  # noqa: PLR0913
         while True:
@@ -464,7 +466,6 @@ class DoIPDiscoverer(AsyncScript):
                     hostname,
                     port,
                     src_addr,
-                    target_addr,
                     so_linger=True,
                     protocol_version=self.protocol_version,
                     separate_diagnostic_message_queue=fast_queue,
