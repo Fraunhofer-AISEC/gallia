@@ -130,6 +130,7 @@ class BaseTransport(ABC):
     BUFSIZE: int = io.DEFAULT_BUFFER_SIZE
 
     def __init__(self, target: TargetURI) -> None:
+        self.check_scheme(target)
         self.mutex = asyncio.Lock()
         self.target = target
         self.is_closed = False
@@ -151,13 +152,11 @@ class BaseTransport(ABC):
         if target.scheme != cls.SCHEME:
             raise ValueError(f"invalid scheme: {target.scheme}; expected: {cls.SCHEME}")
 
-    @classmethod
     @abstractmethod
     async def connect(
-        cls,
-        target: str | TargetURI,
+        self,
         timeout: float | None = None,
-    ) -> Self:
+    ) -> None:
         """Classmethod to connect the transport to a relevant target.
         The target argument is a URI, such as `doip://192.0.2.2:13400?src_addr=0xf4&dst_addr=0x1d"`
         An instance of the relevant transport class is returned.
@@ -167,11 +166,10 @@ class BaseTransport(ABC):
     async def close(self) -> None:
         """Terminates the connection and clean up all allocated resources."""
 
-    async def reconnect(self, timeout: float | None = None) -> Self:
+    async def reconnect(self, timeout: float | None = None) -> None:
         """Closes the connection to the target and attempts to reconnect every
         100 ms until at max timeout. If timeout is None, only attempt to connect
         once.
-        A new instance of this class is returned rendering the old one obsolete.
         This method is safe for concurrent use.
         """
         async with self.mutex:
@@ -187,7 +185,8 @@ class BaseTransport(ABC):
                 while True:
                     try:
                         logger.debug("Attempting to connect...")
-                        return await self.connect(self.target)
+                        await self.connect()
+                        return
                     except ConnectionError as e:
                         logger.info(f"Connection attempt failed while reconnecting: {e!r}")
                         if timeout is None:

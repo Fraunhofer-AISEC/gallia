@@ -513,7 +513,12 @@ class Scanner(AsyncScript, ABC):
             else:
                 await self.dumpcap.sync()
 
-        self.transport = await load_transport(self.config.target).connect(self.config.target)
+        try:
+            # If there is no transport yet, accessing self.transport will raise a RuntimeError
+            await self.transport.connect()
+        except RuntimeError:
+            self.transport = load_transport(self.config.target)
+            await self.transport.connect()
 
     async def teardown(self) -> None:
         await self.transport.close()

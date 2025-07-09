@@ -54,7 +54,7 @@ class UDSClient:
 
     async def reconnect_unsafe(self, timeout: int | None = None) -> None:
         """Calls the underlying transport to trigger a reconnect without locking"""
-        self.transport = await self.transport.reconnect(timeout)
+        await self.transport.reconnect(timeout)
         logger.debug("Reconnected transport successfully")
         await self.connect()
 

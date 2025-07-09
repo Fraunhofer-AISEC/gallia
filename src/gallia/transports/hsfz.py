@@ -324,48 +324,47 @@ class HSFZTransport(BaseTransport, scheme="hsfz"):
     def __init__(
         self,
         target: TargetURI,
-        port: int,
-        config: HSFZConfig,
-        conn: HSFZConnection,
     ):
         super().__init__(target)
-        self._conn = conn
-        self.port = port
 
-    @classmethod
+        self.config = HSFZConfig.model_validate(self.target.qs_flat)
+        self._conn: HSFZConnection | None = None
+
     async def connect(
-        cls,
-        target: str | TargetURI,
+        self,
         timeout: float | None = None,
-    ) -> Self:
-        t = TargetURI(target) if isinstance(target, str) else target
-        if t.hostname is None:
+    ) -> None:
+        if self._conn is not None:
+            logger.warning("HSFZ connection is already connected, not connecting a second time!")
+            return
+
+        if self.target.hostname is None:
             raise ValueError("no hostname specified")
 
-        port = t.port if t.port is not None else 6801
-        config = HSFZConfig.model_validate(t.qs_flat)
         conn = await HSFZConnection.connect(
-            t.hostname,
-            port,
-            config.src_addr,
-            config.dst_addr,
-            config.ack_timeout / 1000,
+            self.target.hostname,
+            self.target.port if self.target.port is not None else 6801,
+            self.config.src_addr,
+            self.config.dst_addr,
+            self.config.ack_timeout / 1000,
         )
-        return cls(
-            t,
-            port,
-            config,
-            conn,
-        )
+        self._conn = conn
 
     async def close(self) -> None:
+        if self._conn is None:
+            logger.debug("HSFZ transport already closed")
+            return
         await self._conn.close()
+        self._conn = None
 
     async def read(
         self,
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> bytes:
+        if self._conn is None:
+            raise RuntimeError("Not connected, cannot read!")
+
         return await asyncio.wait_for(self._conn.read_diag_request(), timeout)
 
     async def write(
@@ -374,5 +373,8 @@ class HSFZTransport(BaseTransport, scheme="hsfz"):
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> int:
+        if self._conn is None:
+            raise RuntimeError("Not connected, cannot write!")
+
         await asyncio.wait_for(self._conn.write_diag_request(data), timeout)
         return len(data)

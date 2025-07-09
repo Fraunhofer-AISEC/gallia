@@ -28,7 +28,10 @@ class TCPServer:
         reader: asyncio.StreamReader,
         writer: asyncio.StreamWriter,
     ) -> None:
-        await self.queue.put(TCPTransport(TargetURI("tcp://"), reader, writer))
+        _transport = TCPTransport(TargetURI("tcp://"))
+        _transport.reader = reader
+        _transport.writer = writer
+        await self.queue.put(_transport)
 
     async def listen(self, target: TargetURI) -> None:
         self.server = await asyncio.start_server(
@@ -57,7 +60,8 @@ async def dummy_server() -> AsyncIterator[TCPServer]:
 # (aka. reconnects from the transport), the relevant test case might hang.
 @pytest.fixture()
 async def transports(dummy_server: TCPServer) -> AsyncIterator[tuple[BaseTransport, BaseTransport]]:
-    hsfz_transport = await HSFZTransport.connect(target)
+    hsfz_transport = HSFZTransport(target)
+    await hsfz_transport.connect()
     dummy_transport = await dummy_server.accept()
 
     yield hsfz_transport, dummy_transport
@@ -68,7 +72,8 @@ async def transports(dummy_server: TCPServer) -> AsyncIterator[tuple[BaseTranspo
 
 @pytest.mark.asyncio
 async def test_reconnect_after_powercycle(dummy_server: TCPServer) -> None:
-    hsfz_transport = await HSFZTransport.connect(target)
+    hsfz_transport = HSFZTransport(target)
+    await hsfz_transport.connect()
     dummy_transport = await dummy_server.accept()
 
     # Simulate powercycle.

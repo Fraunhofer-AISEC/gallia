@@ -805,15 +805,11 @@ class DoIPTransport(BaseTransport, scheme="doip"):
     def __init__(
         self,
         target: TargetURI,
-        port: int,
-        config: DoIPConfig,
-        conn: DoIPConnection,
     ):
         super().__init__(target)
-        self.port = port
-        self.config = config
-        self._conn = conn
-        self._is_closed = False
+
+        self.config = DoIPConfig.model_validate(self.target.qs_flat)
+        self._conn: DoIPConnection | None = None
 
     @staticmethod
     async def _connect(  # noqa: PLR0913
@@ -834,51 +830,51 @@ class DoIPTransport(BaseTransport, scheme="doip"):
         await conn.write_routing_activation_request(RoutingActivationRequestTypes(activation_type))
         return conn
 
-    @classmethod
     async def connect(
-        cls,
-        target: str | TargetURI,
+        self,
         timeout: float | None = None,
-    ) -> Self:
-        t = target if isinstance(target, TargetURI) else TargetURI(target)
-        cls.check_scheme(t)
+    ) -> None:
+        if self._conn is not None:
+            logger.warning("DoIP connection is already connected, not connecting a second time!")
+            return
 
-        if t.hostname is None:
+        if self.target.hostname is None:
             raise ValueError("no hostname specified")
 
-        port = t.port if t.port is not None else 13400
-        config = DoIPConfig.model_validate(t.qs_flat)
         conn = await asyncio.wait_for(
-            cls._connect(
-                t.hostname,
-                port,
-                config.src_addr,
-                config.target_addr,
-                config.activation_type,
-                config.protocol_version,
+            self._connect(
+                self.target.hostname,
+                self.target.port if self.target.port is not None else 13400,
+                self.config.src_addr,
+                self.config.target_addr,
+                self.config.activation_type,
+                self.config.protocol_version,
             ),
             timeout,
         )
-        return cls(t, port, config, conn)
+        self._conn = conn
 
-    async def reconnect(self, timeout: float | None = None) -> Self:
+    async def reconnect(self, timeout: float | None = None) -> None:
         # It might be that the DoIP endpoint is not immediately ready for another
         # connection, so set the timeout to 10s by default.
-        return await super().reconnect(10 if timeout is None else timeout)
+        await super().reconnect(10 if timeout is None else timeout)
 
     async def close(self) -> None:
         logger.debug("Closing DoIP transport...")
-        if self._is_closed:
+        if self._conn is None:
             logger.debug("DoIP transport already closed")
             return
-        self._is_closed = True
         await self._conn.close()
+        self._conn = None
 
     async def read(
         self,
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> bytes:
+        if self._conn is None:
+            raise RuntimeError("Not connected, cannot read!")
+
         data = await asyncio.wait_for(self._conn.read_diag_request(), timeout)
 
         t = tags + ["read"] if tags is not None else ["read"]
@@ -891,6 +887,9 @@ class DoIPTransport(BaseTransport, scheme="doip"):
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> int:
+        if self._conn is None:
+            raise RuntimeError("Not connected, cannot write!")
+
         t = tags + ["write"] if tags is not None else ["write"]
         logger.trace(data.hex(), extra={"tags": t})
 
