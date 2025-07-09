@@ -1,0 +1,262 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Transports &mdash; gallia  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Environment Variables" href="env.html" />
+    <link rel="prev" title="Configuration" href="config.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Transports</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#uris">URIs</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#isotp">isotp</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#can-raw">can-raw</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#doip">doip</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#hsfz">hsfz</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#tcp-lines">tcp-lines</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#api">API</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="env.html">Environment Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="logging.html">Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plugins.html">Plugins</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Public API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Transports</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/transports.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <!--
+SPDX-FileCopyrightText: AISEC Pentesting Team
+
+SPDX-License-Identifier: CC0-1.0
+-->
+<section id="transports">
+<h1>Transports<a class="headerlink" href="#transports" title="Link to this heading"></a></h1>
+<p>All scanner share the same basic connection args.
+Transports are subclasses of <a class="reference internal" href="api.html#gallia.transports.BaseTransport" title="gallia.transports.BaseTransport"><code class="xref py py-class docutils literal notranslate"><span class="pre">gallia.transports.BaseTransport</span></code></a>.</p>
+<section id="uris">
+<h2>URIs<a class="headerlink" href="#uris" title="Link to this heading"></a></h2>
+<p>The argument <code class="docutils literal notranslate"><span class="pre">--target</span></code> specifies <strong>all</strong> parameters which are required to establish a connection to the device under test.
+The argument to <code class="docutils literal notranslate"><span class="pre">--target</span></code> is specified as a URI.
+An URI consists of these components:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>scheme://host:port?param1=foo&amp;param2=bar
+        |location |
+</pre></div>
+</div>
+<p>The parameters support: string, int (use 0x prefix for hex values) and bool (true/false) values.
+The relevant transport protocol is specified in the scheme.</p>
+<section id="isotp">
+<h3>isotp<a class="headerlink" href="#isotp" title="Link to this heading"></a></h3>
+<p>ISO-TP (ISO 15765-2) as provided by the Linux <a class="reference external" href="https://www.kernel.org/doc/html/latest/networking/can.html">socket API</a>.</p>
+<p>The can interface is specified as a host, e.g. <code class="docutils literal notranslate"><span class="pre">can0</span></code>.
+The following parameters are available (these are ISOTP transport settings):</p>
+<dl class="simple myst">
+<dt><code class="docutils literal notranslate"><span class="pre">src_addr</span></code> (required)</dt><dd><p>The ISOTP source address as int.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">dst_addr</span></code> (required)</dt><dd><p>The ISOTP destination address as int.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">is_extended</span></code> (optional)</dt><dd><p>Use extended CAN identifiers.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">is_fd</span></code> (optional)</dt><dd><p>Use CAN-FD frames.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">frame_txtime</span></code> (optional)</dt><dd><p>The time in milliseconds the kernel waits before sending a ISOTP consecutive frame.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">ext_address</span></code> (optional)</dt><dd><p>The extended ISOTP address as int.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">rx_ext_address</span></code> (optional)</dt><dd><p>The extended ISOTP rx address.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">tx_padding</span></code> (optional)</dt><dd><p>Use padding in sent frames.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">rx_padding</span></code> (optional)</dt><dd><p>Expect padding in received frames.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">tx_dl</span></code> (optional)</dt><dd><p>CAN-FD max payload size.</p>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>isotp://can0?src_addr=0x6f4&amp;dst_addr=0x654&amp;rx_ext_address=0xf4&amp;ext_address=0x54&amp;is_fd=false
+</pre></div>
+</div>
+</section>
+<section id="can-raw">
+<h3>can-raw<a class="headerlink" href="#can-raw" title="Link to this heading"></a></h3>
+<dl class="simple myst">
+<dt><code class="docutils literal notranslate"><span class="pre">src_addr</span></code> (required)</dt><dd><p>The ISOTP source address as int.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">dst_addr</span></code> (required)</dt><dd><p>The ISOTP destination address as int.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">is_extended</span></code> (optional)</dt><dd><p>Use extended CAN identifiers.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">is_fd</span></code> (optional)</dt><dd><p>Use CAN-FD frames.</p>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>can-raw://can1?is_fd=true
+</pre></div>
+</div>
+</section>
+<section id="doip">
+<h3>doip<a class="headerlink" href="#doip" title="Link to this heading"></a></h3>
+<p>The DoIP gateway address is specified in the location.</p>
+<dl class="simple myst">
+<dt><code class="docutils literal notranslate"><span class="pre">src_addr</span></code> (required)</dt><dd><p>The source address as int.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">target_addr</span></code> (required)</dt><dd><p>The target address as int.</p>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>doip://169.254.100.100:13400?src_addr=0x0e00&amp;target_addr=0x1d
+</pre></div>
+</div>
+</section>
+<section id="hsfz">
+<h3>hsfz<a class="headerlink" href="#hsfz" title="Link to this heading"></a></h3>
+<p>The gateway address is specified in the location.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">src_addr</span></code> (required): The source address as int.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dst_addr</span></code> (required): The destination address as int.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ack_timeout</span></code>: Specify the HSFZ acknowledge timeout in ms.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">nocheck_src_addr</span></code>: Do not check the source address in received HSFZ frames.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">nocheck_dst_addr</span></code>: Do not check the destination address in received HSFZ frames.</p></li>
+</ul>
+<p>Example:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>hsfz://169.254.100.100:6801?src_addr=0xf4&amp;dst_addr=0x1d
+</pre></div>
+</div>
+</section>
+<section id="tcp-lines">
+<h3>tcp-lines<a class="headerlink" href="#tcp-lines" title="Link to this heading"></a></h3>
+<p>A simple tcp based transport.
+UDS messages are sent linebased in ascii hex encoding.
+Mainly useful for testing.</p>
+<p>Example:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>tcp-lines://127.0.0.1:1234
+</pre></div>
+</div>
+</section>
+</section>
+<section id="api">
+<h2>API<a class="headerlink" href="#api" title="Link to this heading"></a></h2>
+<p>Transports can also be used in own standalone scripts; transports are created with the <code class="docutils literal notranslate"><span class="pre">.connect()</span></code> method which takes a URI.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">gallia.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gallia.transports</span><span class="w"> </span><span class="kn">import</span> <span class="n">DOiPTransport</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="n">transport</span> <span class="o">=</span> <span class="k">await</span> <span class="n">DOiPTransport</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;doip://192.0.2.5:13400?src_addr=0xf4&amp;dst_addr=0x1d&quot;</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">transport</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">bytes</span><span class="p">([</span><span class="mh">0x10</span><span class="p">,</span> <span class="mh">0x01</span><span class="p">]))</span>
+
+
+<span class="n">setup_logging</span><span class="p">()</span>
+<span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="config.html" class="btn btn-neutral float-left" title="Configuration" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="env.html" class="btn btn-neutral float-right" title="Environment Variables" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
