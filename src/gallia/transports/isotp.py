@@ -7,7 +7,6 @@ import errno
 import socket as s
 import struct
 import sys
-from typing import Self
 
 assert sys.platform == "linux", "unsupported platform"
 
@@ -56,46 +55,45 @@ class ISOTPConfig(BaseModel):
 
 
 class ISOTPTransport(BaseTransport, scheme="isotp"):
-    def __init__(self, target: TargetURI, config: ISOTPConfig, sock: s.socket) -> None:
+    def __init__(self, target: TargetURI) -> None:
         super().__init__(target)
-        self._sock = sock
-        self.config = config
 
-    @classmethod
+        self.config = ISOTPConfig.model_validate(self.target.qs_flat)
+        self._sock: s.socket | None = None
+
     async def connect(
-        cls,
-        target: str | TargetURI,
+        self,
         timeout: float | None = None,
-    ) -> Self:
-        t = target if isinstance(target, TargetURI) else TargetURI(target)
-        cls.check_scheme(t)
+    ) -> None:
+        if self._sock is not None:
+            logger.warning("Socket is already connected, not connecting a second time!")
+            return
 
-        if t.hostname is None:
+        if self.target.hostname is None:
             raise ValueError("empty interface")
 
-        config = ISOTPConfig.model_validate(t.qs_flat)
         sock = s.socket(s.PF_CAN, s.SOCK_DGRAM, s.CAN_ISOTP)
         sock.setblocking(False)
 
-        src_addr = cls._calc_flags(config.src_addr, config.is_extended)
-        dst_addr = cls._calc_flags(config.dst_addr, config.is_extended)
+        src_addr = self._calc_flags(self.config.src_addr, self.config.is_extended)
+        dst_addr = self._calc_flags(self.config.dst_addr, self.config.is_extended)
 
-        cls._setsockopts(
+        self._setsockopts(
             sock,
-            frame_txtime=config.frame_txtime,
-            ext_address=config.ext_address,
-            rx_ext_address=config.rx_ext_address,
-            tx_padding=config.tx_padding,
-            rx_padding=config.rx_padding,
+            frame_txtime=self.config.frame_txtime,
+            ext_address=self.config.ext_address,
+            rx_ext_address=self.config.rx_ext_address,
+            tx_padding=self.config.tx_padding,
+            rx_padding=self.config.rx_padding,
         )
         # If CAN-FD is used, jumbo frames are possible.
         # This fails for non-fd configurations.
-        if config.is_fd:
-            cls._setsockllopts(sock, canfd=config.is_fd, tx_dl=config.tx_dl)
+        if self.config.is_fd:
+            self._setsockllopts(sock, canfd=self.config.is_fd, tx_dl=self.config.tx_dl)
 
-        sock.bind((t.hostname, dst_addr, src_addr))
+        sock.bind((self.target.hostname, dst_addr, src_addr))
 
-        return cls(t, config, sock)
+        self._sock = sock
 
     @staticmethod
     def _calc_flags(can_id: int, extended: bool = False) -> int:
@@ -167,6 +165,9 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> int:
+        if self._sock is None:
+            raise RuntimeError("Not connected, cannot write!")
+
         t = tags + ["write"] if tags is not None else ["write"]
         logger.trace(data.hex(), extra={"tags": t})
 
@@ -175,6 +176,9 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
         return len(data)
 
     async def read(self, timeout: float | None = None, tags: list[str] | None = None) -> bytes:
+        if self._sock is None:
+            raise RuntimeError("Not connected, cannot read!")
+
         loop = asyncio.get_running_loop()
         try:
             data = await asyncio.wait_for(loop.sock_recv(self._sock, self.BUFSIZE), timeout)
@@ -188,4 +192,8 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
         return data
 
     async def close(self) -> None:
+        if self._sock is None:
+            logger.debug("Socket already closed")
+            return
         self._sock.close()
+        self._sock = None
