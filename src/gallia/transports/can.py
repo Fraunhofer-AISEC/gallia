@@ -138,36 +138,37 @@ class RawCANConfig(BaseModel):
 
 
 class RawCANTransport(BaseTransport, scheme="can-raw"):
-    def __init__(self, target: TargetURI, config: RawCANConfig, sock: s.socket) -> None:
+    def __init__(self, target: TargetURI) -> None:
         super().__init__(target)
 
-        self._sock = sock
-        self.config = config
+        self.config = RawCANConfig.model_validate(self.target.qs_flat)
+        self._sock: s.socket | None = None
 
-    @classmethod
     async def connect(
-        cls,
-        target: str | TargetURI,
+        self,
         timeout: float | None = None,
-    ) -> Self:
-        t = target if isinstance(target, TargetURI) else TargetURI(target)
-        cls.check_scheme(t)
+    ) -> None:
+        if self._sock is not None:
+            logger.warning("Socket is already connected, not connecting a second time!")
+            return
 
-        if t.hostname is None:
+        if self.target.hostname is None:
             raise ValueError("empty interface")
 
         sock = s.socket(s.PF_CAN, s.SOCK_RAW, CAN_RAW)
-        sock.bind((t.hostname,))
-        config = RawCANConfig.model_validate(t.qs_flat)
+        sock.bind((self.target.hostname,))
 
-        if config.is_fd is True:
+        if self.config.is_fd is True:
             sock.setsockopt(SOL_CAN_RAW, CAN_RAW_FD_FRAMES, 1)
 
         sock.setblocking(False)
 
-        return cls(t, config, sock)
+        self._sock = sock
 
     def set_filter(self, can_ids: list[int], inv_filter: bool = False) -> None:
+        if self._sock is None:
+            raise RuntimeError("Not connected, cannot set filter!")
+
         if not can_ids:
             return
         filter_mask = CAN_EFF_MASK if self.config.is_extended else CAN_SFF_MASK
@@ -204,6 +205,9 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> int:
+        if self._sock is None:
+            raise RuntimeError("Not connected, cannot write!")
+
         msg = CANMessage(
             arbitration_id=dst,
             data=data,
@@ -225,6 +229,9 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> tuple[int, bytes]:
+        if self._sock is None:
+            raise RuntimeError("Not connected, cannot read!")
+
         loop = asyncio.get_running_loop()
         can_frame = await asyncio.wait_for(loop.sock_recv(self._sock, self.BUFSIZE), timeout)
         msg = CANMessage.unpack(can_frame)
@@ -237,7 +244,11 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
         return msg.arbitration_id, msg.data
 
     async def close(self) -> None:
-        pass
+        if self._sock is None:
+            logger.debug("Socket already closed")
+            return
+        self._sock.close()
+        self._sock = None
 
     async def get_idle_traffic(self, sniff_time: float) -> list[int]:
         """Listen to traffic on the bus and return list of IDs

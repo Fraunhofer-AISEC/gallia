@@ -27,7 +27,10 @@ class TCPServer:
         reader: asyncio.StreamReader,
         writer: asyncio.StreamWriter,
     ) -> None:
-        await self.queue.put(TCPTransport(TargetURI("tcp://"), reader, writer))
+        _transport = TCPTransport(TargetURI("tcp://"))
+        _transport.reader = reader
+        _transport.writer = writer
+        await self.queue.put(_transport)
 
     async def listen(self, target: TargetURI) -> None:
         self.server = await asyncio.start_server(
@@ -71,21 +74,23 @@ async def tcp_server() -> AsyncIterator[TCPServer]:
 @pytest.mark.asyncio
 async def test_tcp_wrong_scheme(tcp_server: TCPServer) -> None:
     with pytest.raises(ValueError):
-        await TCPTransport.connect(TargetURI("foo://123"))
+        await TCPTransport(TargetURI("foo://123")).connect()
 
 
 @pytest.mark.asyncio
 async def test_tcp_reconnect(tcp_server: TCPServer) -> None:
-    client = await TCPTransport.connect(listen_target)
+    client = TCPTransport(listen_target)
+    await client.connect()
     await tcp_server.accept()
 
-    client = await client.reconnect()
+    await client.reconnect()
     await tcp_server.accept()
 
 
 @pytest.mark.asyncio
 async def test_tcp_echo(tcp_server: TCPServer) -> None:
-    client = await TCPTransport.connect(listen_target)
+    client = TCPTransport(listen_target)
+    await client.connect()
     server = await tcp_server.accept()
 
     for line in test_data:
@@ -94,7 +99,8 @@ async def test_tcp_echo(tcp_server: TCPServer) -> None:
 
 @pytest.mark.asyncio
 async def test_tcp_linesep_echo(tcp_server: TCPServer) -> None:
-    client = await TCPLinesTransport.connect(TargetURI("tcp-lines://127.0.0.1:1234"))
+    client = TCPLinesTransport(TargetURI("tcp-lines://127.0.0.1:1234"))
+    await client.connect()
     server = await tcp_server.accept()
 
     def converter(data: bytes) -> bytes:
@@ -106,7 +112,8 @@ async def test_tcp_linesep_echo(tcp_server: TCPServer) -> None:
 
 @pytest.mark.asyncio
 async def test_tcp_close(tcp_server: TCPServer) -> None:
-    client = await TCPTransport.connect(listen_target)
+    client = TCPTransport(listen_target)
+    await client.connect()
     server = await tcp_server.accept()
     await client.close()
     await server.close()
@@ -114,7 +121,8 @@ async def test_tcp_close(tcp_server: TCPServer) -> None:
 
 @pytest.mark.asyncio
 async def test_tcp_linesep_request(tcp_server: TCPServer) -> None:
-    client = await TCPLinesTransport.connect(TargetURI("tcp-lines://127.0.0.1:1234"))
+    client = TCPLinesTransport(TargetURI("tcp-lines://127.0.0.1:1234"))
+    await client.connect()
     server = await tcp_server.accept()
 
     await server.write(binascii.hexlify(b"world") + b"\n")
@@ -125,7 +133,8 @@ async def test_tcp_linesep_request(tcp_server: TCPServer) -> None:
 
 @pytest.mark.asyncio
 async def test_tcp_timeout(tcp_server: TCPServer) -> None:
-    client = await TCPLinesTransport.connect(TargetURI("tcp-lines://127.0.0.1:1234"))
+    client = TCPLinesTransport(TargetURI("tcp-lines://127.0.0.1:1234"))
+    await client.connect()
     server = await tcp_server.accept()
 
     async with asyncio.TaskGroup() as tg:

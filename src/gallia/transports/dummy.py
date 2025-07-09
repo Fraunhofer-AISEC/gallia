@@ -2,17 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Self
-
-from gallia.transports import TargetURI
 from gallia.transports.base import BaseTransport
 
 
 class DummyTransport(BaseTransport, scheme="dummy"):
-    @classmethod
-    async def connect(cls, target: str | TargetURI, timeout: float | None = None) -> Self:
-        t = target if isinstance(target, TargetURI) else TargetURI(target)
-        return cls(t)
+    async def connect(self, timeout: float | None = None) -> None:
+        pass
 
     async def close(self) -> None:
         pass

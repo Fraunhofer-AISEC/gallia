@@ -47,8 +47,8 @@ class SimpleTestXCP(Scanner):
         self.service: XCPService
 
     async def setup(self) -> None:
-        transport_type = load_transport(self.config.target)
-        transport = await transport_type.connect(self.config.target)
+        transport = load_transport(self.config.target)
+        await transport.connect()
 
         if isinstance(transport, RawCANTransport):
             assert self.config.can_master is not None and self.config.can_slave is not None
