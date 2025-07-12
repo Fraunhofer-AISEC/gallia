@@ -1230,4 +1230,6 @@ class UDSClient:
         self, request: service.UDSRequest, config: UDSRequestConfig | None = None
     ) -> service.UDSResponse:
         async with self.mutex:
-            return await self.request_unsafe(request, config)
+            # asyncio.shield() protects all UDS-requests from being cancelled mid-request
+            # by defering CancelledErrors until the shielded code returns
+            return await asyncio.shield(self.request_unsafe(request, config))
