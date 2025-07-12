@@ -493,6 +493,17 @@ DoIPDiagFrame = tuple[GenericHeader, DiagnosticMessage]
 
 
 class DoIPConnection:
+    """
+    `DoIPConnection` opens a TCP connection to a given host and port and spawns
+    a background task that reads all incoming data, parses it, and puts the
+    DoIP-frames into a queue.
+    It can be specified that diagnostic messages are put into a separated queue,
+    e.g. to speed up discovery processes.
+
+    An asyncio.Lock protects write calls that trigger an immediate reply from
+    the foreign DoIP node.
+    """
+
     def __init__(  # noqa: PLR0913
         self,
         reader: asyncio.StreamReader,
@@ -514,7 +525,7 @@ class DoIPConnection:
             context=set_task_handler_ctx_variable(__name__, "DoipReader"),
         )
         self._is_closed = False
-        self._mutex = asyncio.Lock()
+        self._write_mutex = asyncio.Lock()
 
     @classmethod
     async def connect(  # noqa: PLR0913
@@ -599,16 +610,18 @@ class DoIPConnection:
             self.reader.feed_eof()
             await self.close()
 
-    async def read_frame_unsafe(self) -> DoIPFrame:
+    async def get_next_frame(self) -> DoIPFrame:
+        """
+        `get_next_frame` gets the next available DoIP frame from the queue.
+        When the separate diagnostic message queue is active, this only returns
+        Frames which are not DiagnosticMessages
+        """
+
         # Avoid waiting on the queue forever when
         # the connection has been terminated.
         if self._is_closed:
             raise ConnectionError
         return await self._read_queue.get()
-
-    async def read_frame(self) -> DoIPFrame:
-        async with self._mutex:
-            return await self.read_frame_unsafe()
 
     async def read_diag_request_raw(self, target_address: int) -> DoIPDiagFrame:
         unexpected_packets: list[tuple[Any, Any]] = []
@@ -619,7 +632,8 @@ class DoIPConnection:
                     return (hdr, diag_message)
                 else:
                     await self._diagnostic_message_queue.put((hdr, diag_message))
-            hdr, payload = await self.read_frame()
+
+            hdr, payload = await self.get_next_frame()
             if not isinstance(payload, DiagnosticMessage):
                 logger.warning(f"expected DoIP DiagnosticMessage, instead got: {hdr} {payload}")
                 unexpected_packets.append((hdr, payload))
@@ -642,12 +656,14 @@ class DoIPConnection:
         _, payload = await self.read_diag_request_raw(target_address)
         return payload.UserData
 
-    async def _read_ack(self, request: DiagnosticMessage) -> None:
-        """This function consumes all DoIP Diagnostic Message ACKs and just logs a warning in case of mismatches."""
+    async def _read_diagnostic_message_ack(self, request: DiagnosticMessage) -> None:
+        """
+        This function consumes all DoIP Diagnostic Message ACKs and just logs a warning in case of mismatches.
+        """
 
         unexpected_packets: list[tuple[Any, Any]] = []
         while True:
-            hdr, response = await self.read_frame_unsafe()
+            hdr, response = await self.get_next_frame()
             if not isinstance(
                 response, DiagnosticMessagePositiveAcknowledgement
             ) and not isinstance(response, DiagnosticMessageNegativeAcknowledgement):
@@ -688,7 +704,7 @@ class DoIPConnection:
     async def _read_routing_activation_response(self) -> None:
         unexpected_packets: list[tuple[Any, Any]] = []
         while True:
-            hdr, payload = await self.read_frame_unsafe()
+            hdr, payload = await self.get_next_frame()
             if not isinstance(payload, RoutingActivationResponse):
                 logger.warning(
                     f"expected DoIP RoutingActivationResponse, instead got: {hdr} {payload}"
@@ -705,14 +721,13 @@ class DoIPConnection:
             return
 
     async def write_request_raw(self, hdr: GenericHeader, payload: DoIPOutData) -> None:
-        async with self._mutex:
-            buf = b""
-            buf += hdr.pack()
-            buf += payload.pack()
-            self.writer.write(buf)
-            await self.writer.drain()
+        buf = b""
+        buf += hdr.pack()
+        buf += payload.pack()
+        self.writer.write(buf)
+        await self.writer.drain()
 
-            logger.trace("Sent DoIP message: hdr: %s, payload: %s", hdr, payload)
+        logger.trace("Sent DoIP message: hdr: %s, payload: %s", hdr, payload)
 
     async def write_diag_request(self, target_address: int, data: bytes) -> None:
         hdr = GenericHeader(
@@ -725,18 +740,21 @@ class DoIPConnection:
             TargetAddress=target_address,
             UserData=data,
         )
-        await self.write_request_raw(hdr, payload)
 
-        # DiagnosticMessages will trigger an ACK message of the DoIP node/gateway that needs to be handled
-        try:
-            await asyncio.wait_for(
-                self._read_ack(payload),
-                TimingAndCommunicationParameters.DiagnosticMessageMessageAckTimeout / 1000,
-            )
-        except TimeoutError:
-            logger.warning(f"Timeout while waiting for DoIP ACK for diagnostic message {payload}")
-            # While not receiving a DoIP ACK is a violation of the standard, we deliberately
-            # do not close the connection or raise a BrokenPipeError here, since it's not yet a problem
+        # Bind diagnostic messages and diagnostic message acknowledgements
+        async with self._write_mutex:
+            await self.write_request_raw(hdr, payload)
+
+            # DiagnosticMessages triggers an ACK message of the DoIP node/gateway that needs to be handled
+            try:
+                await asyncio.wait_for(
+                    self._read_diagnostic_message_ack(payload),
+                    TimingAndCommunicationParameters.DiagnosticMessageMessageAckTimeout / 1000,
+                )
+            except TimeoutError:
+                logger.warning(f"Timeout while waiting for DoIP ACK for diagnostic message {payload}")
+                # While not receiving a DoIP ACK is a violation of the standard, we deliberately
+                # do not close the connection or raise a BrokenPipeError here, since it's not yet a problem
 
     async def write_routing_activation_request(
         self,
@@ -752,17 +770,20 @@ class DoIPConnection:
             ActivationType=activation_type,
             Reserved=0x00,
         )
-        await self.write_request_raw(hdr, payload)
 
-        # Sending a routing activation request triggers an immediate reply
-        try:
-            await asyncio.wait_for(
-                self._read_routing_activation_response(),
-                TimingAndCommunicationParameters.RoutingActivationResponseTimeout / 1000,
-            )
-        except TimeoutError as e:
-            await self.close()
-            raise BrokenPipeError("Timeout while waiting for Routing Activation Response") from e
+        # Bind routing activation requests and routing activation responses
+        async with self._write_mutex:
+            await self.write_request_raw(hdr, payload)
+
+            # Sending a routing activation request triggers an immediate reply
+            try:
+                await asyncio.wait_for(
+                    self._read_routing_activation_response(),
+                    TimingAndCommunicationParameters.RoutingActivationResponseTimeout / 1000,
+                )
+            except TimeoutError as e:
+                await self.close()
+                raise BrokenPipeError("Timeout while waiting for Routing Activation Response") from e
 
     async def write_alive_check_response(self) -> None:
         hdr = GenericHeader(
