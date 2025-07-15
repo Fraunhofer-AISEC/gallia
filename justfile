@@ -106,23 +106,40 @@ print_debian_hint:
     @echo ""
     @echo "with the following command:"
     @echo ""
-    @echo "  $ gbp buildpackage --git-upstream-tag=$(cz version -p)"
+    @echo "  $ gbp buildpackage --git-upstream-tag=$(uv version --short)"
     @echo ""
     @echo "Note that this will change once gallia is accepted in Debian."
     @echo ""
     @echo "Upload the package to the release with:"
     @echo ""
-    @echo "  $ gh release upload v$(cz version -p) DEB_FILE"
+    @echo "  $ gh release upload v$(uv version --short) DEB_FILE"
 
 release increment: && print_debian_hint
-    cz bump --increment {{ increment }}
-    git push --follow-tags
-    gh release create "v$(cz version -p)"
+    uv version --bump --increment {{ increment }}
 
-pre-release increment premode: && print_debian_hint
-    cz bump --increment {{ increment }} --prerelease {{ premode }}
+    git commit -a -m "$(uv version)"
+    git tag -a -m "$(uv version)"
     git push --follow-tags
-    gh release create --prerelease "v$(cz version -p)"
+
+    gh release create "v$(uv version --short)"
+
+pre-release premode increment="": && print_debian_hint
+    #!/usr/bin/env bash
+
+    increment="{{ increment }}"
+    premode="{{ premode }}"
+
+    if [[ "$increment" == "" ]]; then
+        uv version --bump "$premode"
+    else
+        uv version --bump "$premode" --bump "$increment"
+    fi
+
+    git commit -a -m "$(uv version)"
+    git tag -a -m "$(uv version)"
+    git push --follow-tags
+
+    gh release create --prerelease "v$(uv version --short)"
 
 make-docs:
     make -C docs html
