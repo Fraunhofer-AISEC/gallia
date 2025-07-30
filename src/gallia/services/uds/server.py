@@ -48,6 +48,7 @@ class UDSServer(ABC):
 
     def __init__(self, behavior: Behavior | None = None) -> None:
         self.state = ECUState()
+        self.state.session = 1
         if behavior is None:
             self.behavior = self.Behavior()
         else:
@@ -172,7 +173,8 @@ class UDSServer(ABC):
         if isinstance(request, service.ReadDataByIdentifierRequest):
             if request.data_identifier == DataIdentifier.ActiveDiagnosticSessionDataIdentifier:
                 return service.ReadDataByIdentifierResponse(
-                    request.data_identifier, to_bytes(self.state.session, 1)
+                    request.data_identifier,
+                    to_bytes(self.state.session if self.state.session is not None else 1, 1),
                 )
 
         return None
@@ -215,6 +217,7 @@ class UDSServer(ABC):
 
         if isinstance(response, service.ECUResetResponse):
             self.state.reset()
+            self.state.session = 1
 
     async def setup(self) -> None:
         pass
@@ -335,10 +338,12 @@ class RNGEcuState(ECUState):
     def __init__(self) -> None:
         super().__init__()
 
+        self.session = 1
         self.last_sa_response: service.SecurityAccessResponse | None = None
 
     def reset(self) -> None:
         super().reset()
+        self.session = 1
         self.last_sa_response = None
 
 
@@ -779,6 +784,7 @@ class DBUDSServer(UDSServer):
 
             logger.info("Reset ECU due to missing response")
             self.state.reset()
+            self.state.session = 1
 
         return None
 

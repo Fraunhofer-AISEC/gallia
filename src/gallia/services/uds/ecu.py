@@ -38,11 +38,11 @@ if TYPE_CHECKING:
 
 class ECUState:
     def __init__(self) -> None:
-        self.session = 1
+        self.session: int | None = None
         self.security_access_level: int | None = None
 
     def reset(self) -> None:
-        self.session = 1
+        self.session = None
         self.security_access_level = None
 
     def __repr__(self) -> str:
