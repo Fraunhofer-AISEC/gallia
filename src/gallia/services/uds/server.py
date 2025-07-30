@@ -848,9 +848,10 @@ class TCPUDSServerTransport(UDSServerTransport):
                 break
 
         logger.info("Connection closed")
-        logger.info(
-            f"Average response time: {sum(response_times) / len(response_times) * 1000:.2f}ms"
-        )
+        if len(response_times) > 0:
+            logger.info(
+                f"Average response time: {sum(response_times) / len(response_times) * 1000:.2f}ms"
+            )
 
     async def run(self) -> None:
         server = await asyncio.start_server(
