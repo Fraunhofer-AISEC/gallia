@@ -311,9 +311,7 @@ class DoIPDiscoverer(AsyncScript):
         search_space = range(start, stop + 1)
 
         target_template = f"doip://{tgt_hostname}:{tgt_port}?protocol_version={self.protocol_version}&activation_type={correct_rat:#x}&src_addr={correct_src:#x}&target_addr={{:#x}}"
-        conn = await self.create_DoIP_conn(
-            tgt_hostname, tgt_port, correct_rat, correct_src, fast_queue=True
-        )
+        conn = await self.create_DoIP_conn(tgt_hostname, tgt_port, correct_rat, correct_src)
         reader_task = asyncio.create_task(self.task_read_diagnostic_messages(conn, target_template))
 
         for target_addr in search_space:
@@ -411,7 +409,7 @@ class DoIPDiscoverer(AsyncScript):
             while True:
                 _, payload = await conn.read_diag_request_raw(
                     0
-                )  # Since we have a separate diagnostic queue, target address 0 reads any diagnostic messages
+                )  # Target address 0 reads any diagnostic message from the queue without logging warnings
                 (source_address, data) = (payload.SourceAddress, payload.UserData)
                 current_target = target_template.format(source_address)
 
@@ -458,7 +456,6 @@ class DoIPDiscoverer(AsyncScript):
         port: int,
         routing_activation_type: int,
         src_addr: int,
-        fast_queue: bool = False,
     ) -> DoIPConnection:  # noqa: PLR0913
         while True:
             try:  # Ensure that connections do not remain in TIME_WAIT
@@ -468,7 +465,6 @@ class DoIPDiscoverer(AsyncScript):
                     src_addr,
                     so_linger=True,
                     protocol_version=self.protocol_version,
-                    separate_diagnostic_message_queue=fast_queue,
                 )
                 logger.info("[📫] Sending RoutingActivationRequest")
                 await conn.write_routing_activation_request(
