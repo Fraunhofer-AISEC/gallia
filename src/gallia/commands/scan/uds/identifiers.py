@@ -63,7 +63,18 @@ class ScanIdentifiers(UDSScanner):
 
     async def main(self) -> None:
         if self.config.sessions is None:
-            logger.notice("Performing scan in current session")
+            # Attempt to read session once for state update
+            try:
+                current_session = await self.ecu.read_session(
+                    UDSRequestConfig(
+                        timeout=2,
+                        max_retry=0,
+                    )
+                )
+                logger.notice(f"Performing scan in current session, which is {current_session:#x}")
+            except Exception as e:
+                logger.notice(f"Performing scan in current (unknown) session: {e!r}")
+
             if not await self.perform_scan():
                 sys.exit(1)
         else:
