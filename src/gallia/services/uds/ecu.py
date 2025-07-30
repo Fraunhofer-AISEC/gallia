@@ -10,7 +10,7 @@ from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from enum import Enum
 from json import JSONEncoder, dumps
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from gallia.db.log import LogMode
 from gallia.log import get_logger
@@ -44,6 +44,9 @@ class ECUState:
     def reset(self) -> None:
         self.session = None
         self.security_access_level = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return self.__dict__
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}({', '.join(f'{key}={g_repr(value)}' for key, value in self.__dict__.items())})"
@@ -503,7 +506,7 @@ class ECU(UDSClient):
                         mode = LogMode.emphasized
 
                     await self.db_handler.insert_scan_result(
-                        self.state.__dict__,
+                        self.state.to_dict(),
                         service.UDSRequest.parse_dynamic(request.pdu),
                         response,
                         exception,
