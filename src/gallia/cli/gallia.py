@@ -6,7 +6,6 @@ import argparse
 import asyncio
 import json
 import os
-import signal
 import sys
 from collections.abc import Callable, Mapping, MutableMapping, Sequence
 from importlib.metadata import version as meta_version
@@ -311,20 +310,17 @@ def template() -> None:
 
 
 def main() -> None:
-    try:
-        gallia_commands = load_commands()
-        parse_and_run(
-            gallia_commands,
-            top_level_options={
-                "--version": (version, "show version and exit"),
-                "--show-plugins": (show_plugins, "show registered plugins"),
-                "--show-config": (show_config, "show loaded config"),
-                "--template": (template, "generate a annotated config template"),
-            },
-            show_help_on_zero_args=True,
-        )
-    except KeyboardInterrupt:
-        sys.exit(128 + signal.SIGINT)
+    gallia_commands = load_commands()
+    parse_and_run(
+        gallia_commands,
+        top_level_options={
+            "--version": (version, "show version and exit"),
+            "--show-plugins": (show_plugins, "show registered plugins"),
+            "--show-config": (show_config, "show loaded config"),
+            "--template": (template, "generate a annotated config template"),
+        },
+        show_help_on_zero_args=True,
+    )
 
 
 if __name__ == "__main__":
