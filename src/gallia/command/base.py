@@ -330,7 +330,8 @@ class BaseCommand(FlockMixin, ABC):
         exit_code = 0
         try:
             exit_code = await self.run()
-        except KeyboardInterrupt:
+        except (KeyboardInterrupt, asyncio.CancelledError) as e:
+            logger.debug(f"{self.__class__} got interrupted: {e!r}")
             exit_code = 128 + signal.SIGINT
         # Ensure that META.json gets written in the case a
         # command calls sys.exit().
