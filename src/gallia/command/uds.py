@@ -13,6 +13,7 @@ from gallia.plugins.plugin import load_ecu, load_ecus
 from gallia.services.uds.core.service import NegativeResponse, UDSResponse
 from gallia.services.uds.ecu import ECU
 from gallia.services.uds.helpers import raise_for_error
+from gallia.transports.base import BaseTransport
 
 logger = get_logger(__name__)
 
@@ -76,8 +77,39 @@ class UDSScanner(Scanner, ABC):
     def __init__(self, config: UDSScannerConfig):
         super().__init__(config)
         self.config: UDSScannerConfig = config
-        self.ecu: ECU
+        self._ecu: ECU | None = None
         self._implicit_logging = True
+
+    @property
+    def transport(self) -> BaseTransport:
+        if self._ecu is None:
+            logger.debug(
+                "Transport is accessed without initialized ECU, returning Scanner transport!"
+            )
+            return super().transport
+        return self.ecu.transport
+
+    @transport.setter
+    def transport(self, transport: BaseTransport) -> None:
+        if self._ecu is None:
+            logger.debug(
+                "Transport is accessed without initialized ECU, setting Scanner transport!"
+            )
+            self._transport = transport
+        else:
+            self.ecu.transport = transport
+
+    @property
+    def ecu(self) -> ECU:
+        if self._ecu is None:
+            raise RuntimeError("ECU accessed before first initialization!")
+        return self._ecu
+
+    @ecu.setter
+    def ecu(self, ecu: ECU) -> None:
+        self._ecu = ecu
+        # An initialized ECU has its own transport, no need to maintain a copy!
+        self._transport = None
 
     @property
     def implicit_logging(self) -> bool:
