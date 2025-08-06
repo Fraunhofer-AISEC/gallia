@@ -393,7 +393,8 @@ class ECU(UDSClient):
             try:
                 await asyncio.sleep(interval)
                 # TODO: Only ping if there was no other UDS traffic for `interval` amount of time
-                await self.ping(UDSRequestConfig(max_retry=0))
+                # The ping is shielded from CancelledErrors to ensure that responses are consumed!
+                await asyncio.shield(self.ping(UDSRequestConfig(max_retry=0, tags=["tp"])))
             except asyncio.CancelledError:
                 logger.debug("tester present worker terminated")
                 raise
