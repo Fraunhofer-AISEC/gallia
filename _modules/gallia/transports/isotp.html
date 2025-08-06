@@ -1,0 +1,338 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gallia.transports.isotp &mdash; gallia  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../transports.html">Transports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../env.html">Environment Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../logging.html">Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../plugins.html">Plugins</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Public API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">gallia.transports.isotp</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gallia.transports.isotp</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-FileCopyrightText: AISEC Pentesting Team</span>
+<span class="c1">#</span>
+<span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">errno</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">socket</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">s</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">struct</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Self</span>
+
+<span class="k">assert</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s2">&quot;linux&quot;</span><span class="p">,</span> <span class="s2">&quot;unsupported platform&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">field_validator</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">gallia.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gallia.transports.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseTransport</span><span class="p">,</span> <span class="n">TargetURI</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gallia.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">auto_int</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="c1"># Socket Constants not available in the socket module,</span>
+<span class="c1"># see linux/can/isotp.h</span>
+<span class="c1"># TODO: Can be removed in the future…</span>
+<span class="c1"># https://github.com/python/cpython/pull/23794</span>
+<span class="n">SOL_CAN_ISOTP</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">SOL_CAN_BASE</span> <span class="o">+</span> <span class="n">s</span><span class="o">.</span><span class="n">CAN_ISOTP</span>
+
+<span class="c1"># Valuetypes for SOL_CAN_ISOTP</span>
+<span class="n">CAN_ISOTP_OPTS</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">CAN_ISOTP_RECV_FC</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">CAN_ISOTP_TX_STMIN</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">CAN_ISOTP_RX_STMIN</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">CAN_ISOTP_LL_OPTS</span> <span class="o">=</span> <span class="mi">5</span>
+
+<span class="c1"># Flags for setsockopt CAN_ISOTP_OPTS</span>
+<span class="n">CAN_ISOTP_LISTEN_MODE</span> <span class="o">=</span> <span class="mh">0x001</span>
+<span class="n">CAN_ISOTP_EXTEND_ADDR</span> <span class="o">=</span> <span class="mh">0x002</span>
+<span class="n">CAN_ISOTP_TX_PADDING</span> <span class="o">=</span> <span class="mh">0x004</span>
+<span class="n">CAN_ISOTP_RX_PADDING</span> <span class="o">=</span> <span class="mh">0x008</span>
+<span class="n">CAN_ISOTP_CHK_PAD_LEN</span> <span class="o">=</span> <span class="mh">0x010</span>
+<span class="n">CAN_ISOTP_CHK_PAD_DATA</span> <span class="o">=</span> <span class="mh">0x020</span>
+<span class="n">CAN_ISOTP_HALF_DUPLEX</span> <span class="o">=</span> <span class="mh">0x040</span>
+<span class="n">CAN_ISOTP_FORCE_TXSTMIN</span> <span class="o">=</span> <span class="mh">0x080</span>
+<span class="n">CAN_ISOTP_FORCE_RXSTMIN</span> <span class="o">=</span> <span class="mh">0x100</span>
+<span class="n">CAN_ISOTP_RX_EXT_ADDR</span> <span class="o">=</span> <span class="mh">0x200</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">ISOTPConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">src_addr</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">dst_addr</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">is_extended</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">is_fd</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">frame_txtime</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="n">ext_address</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">rx_ext_address</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">tx_padding</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">rx_padding</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">tx_dl</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">64</span>
+
+    <span class="nd">@field_validator</span><span class="p">(</span>
+        <span class="s2">&quot;src_addr&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;dst_addr&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ext_address&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;rx_ext_address&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;tx_padding&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;rx_padding&quot;</span><span class="p">,</span>
+        <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;before&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">auto_int</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">auto_int</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="ISOTPTransport">
+<a class="viewcode-back" href="../../../api.html#gallia.transports.ISOTPTransport">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ISOTPTransport</span><span class="p">(</span><span class="n">BaseTransport</span><span class="p">,</span> <span class="n">scheme</span><span class="o">=</span><span class="s2">&quot;isotp&quot;</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">TargetURI</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ISOTPConfig</span><span class="p">,</span> <span class="n">sock</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">socket</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sock</span> <span class="o">=</span> <span class="n">sock</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span>
+
+<div class="viewcode-block" id="ISOTPTransport.connect">
+<a class="viewcode-back" href="../../../api.html#gallia.transports.ISOTPTransport.connect">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">target</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">TargetURI</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">target</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">TargetURI</span><span class="p">)</span> <span class="k">else</span> <span class="n">TargetURI</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">check_scheme</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">hostname</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;empty interface&quot;</span><span class="p">)</span>
+
+        <span class="n">config</span> <span class="o">=</span> <span class="n">ISOTPConfig</span><span class="p">(</span><span class="o">**</span><span class="n">t</span><span class="o">.</span><span class="n">qs_flat</span><span class="p">)</span>
+        <span class="n">sock</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">PF_CAN</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">SOCK_DGRAM</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">CAN_ISOTP</span><span class="p">)</span>
+        <span class="n">sock</span><span class="o">.</span><span class="n">setblocking</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="n">src_addr</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_calc_flags</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">src_addr</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">is_extended</span><span class="p">)</span>
+        <span class="n">dst_addr</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_calc_flags</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">dst_addr</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">is_extended</span><span class="p">)</span>
+
+        <span class="bp">cls</span><span class="o">.</span><span class="n">_setsockopts</span><span class="p">(</span>
+            <span class="n">sock</span><span class="p">,</span>
+            <span class="n">frame_txtime</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">frame_txtime</span><span class="p">,</span>
+            <span class="n">ext_address</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">ext_address</span><span class="p">,</span>
+            <span class="n">rx_ext_address</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">rx_ext_address</span><span class="p">,</span>
+            <span class="n">tx_padding</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">tx_padding</span><span class="p">,</span>
+            <span class="n">rx_padding</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">rx_padding</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="c1"># If CAN-FD is used, jumbo frames are possible.</span>
+        <span class="c1"># This fails for non-fd configurations.</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">is_fd</span><span class="p">:</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_setsockllopts</span><span class="p">(</span><span class="n">sock</span><span class="p">,</span> <span class="n">canfd</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">is_fd</span><span class="p">,</span> <span class="n">tx_dl</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">tx_dl</span><span class="p">)</span>
+
+        <span class="n">sock</span><span class="o">.</span><span class="n">bind</span><span class="p">((</span><span class="n">t</span><span class="o">.</span><span class="n">hostname</span><span class="p">,</span> <span class="n">dst_addr</span><span class="p">,</span> <span class="n">src_addr</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">sock</span><span class="p">)</span></div>
+
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_calc_flags</span><span class="p">(</span><span class="n">can_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">extended</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">extended</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">can_id</span> <span class="o">&amp;</span> <span class="n">s</span><span class="o">.</span><span class="n">CAN_EFF_MASK</span><span class="p">)</span> <span class="o">|</span> <span class="n">s</span><span class="o">.</span><span class="n">CAN_EFF_FLAG</span>
+        <span class="k">return</span> <span class="n">can_id</span> <span class="o">&amp;</span> <span class="n">s</span><span class="o">.</span><span class="n">CAN_SFF_MASK</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_setsockopts</span><span class="p">(</span>  <span class="c1"># noqa: PLR0913</span>
+        <span class="n">sock</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">socket</span><span class="p">,</span>
+        <span class="n">frame_txtime</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">tx_padding</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">rx_padding</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">ext_address</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">rx_ext_address</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">flags</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">ext_address</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">flags</span> <span class="o">|=</span> <span class="n">CAN_ISOTP_EXTEND_ADDR</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ext_address</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">if</span> <span class="n">rx_ext_address</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">flags</span> <span class="o">|=</span> <span class="n">CAN_ISOTP_RX_EXT_ADDR</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">rx_ext_address</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">if</span> <span class="n">tx_padding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">flags</span> <span class="o">|=</span> <span class="n">CAN_ISOTP_TX_PADDING</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tx_padding</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">if</span> <span class="n">rx_padding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">flags</span> <span class="o">|=</span> <span class="n">CAN_ISOTP_RX_PADDING</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">rx_padding</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span>
+            <span class="s2">&quot;@IIBBBB&quot;</span><span class="p">,</span>
+            <span class="n">flags</span><span class="p">,</span>
+            <span class="n">frame_txtime</span><span class="p">,</span>
+            <span class="n">ext_address</span><span class="p">,</span>
+            <span class="n">tx_padding</span><span class="p">,</span>
+            <span class="n">rx_padding</span><span class="p">,</span>
+            <span class="n">rx_ext_address</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">sock</span><span class="o">.</span><span class="n">setsockopt</span><span class="p">(</span><span class="n">SOL_CAN_ISOTP</span><span class="p">,</span> <span class="n">CAN_ISOTP_OPTS</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_setsockfcopts</span><span class="p">(</span>
+        <span class="n">sock</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">socket</span><span class="p">,</span>
+        <span class="n">bs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">stmin</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">wftmax</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">&quot;@BBB&quot;</span><span class="p">,</span> <span class="n">bs</span><span class="p">,</span> <span class="n">stmin</span><span class="p">,</span> <span class="n">wftmax</span><span class="p">)</span>
+        <span class="n">sock</span><span class="o">.</span><span class="n">setsockopt</span><span class="p">(</span><span class="n">SOL_CAN_ISOTP</span><span class="p">,</span> <span class="n">CAN_ISOTP_RECV_FC</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_setsockllopts</span><span class="p">(</span><span class="n">sock</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">socket</span><span class="p">,</span> <span class="n">canfd</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">tx_dl</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">canmtu</span> <span class="o">=</span> <span class="mi">72</span> <span class="k">if</span> <span class="n">canfd</span> <span class="k">else</span> <span class="mi">16</span>
+        <span class="c1"># The flags are set to 0, since the author marks this as obsolete.</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">&quot;@BBB&quot;</span><span class="p">,</span> <span class="n">canmtu</span><span class="p">,</span> <span class="n">tx_dl</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">sock</span><span class="o">.</span><span class="n">setsockopt</span><span class="p">(</span><span class="n">SOL_CAN_ISOTP</span><span class="p">,</span> <span class="n">CAN_ISOTP_LL_OPTS</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ISOTPTransport.write">
+<a class="viewcode-back" href="../../../api.html#gallia.transports.ISOTPTransport.write">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">tags</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;write&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">tags</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[</span><span class="s2">&quot;write&quot;</span><span class="p">]</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">hex</span><span class="p">(),</span> <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="n">t</span><span class="p">})</span>
+
+        <span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_running_loop</span><span class="p">()</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait_for</span><span class="p">(</span><span class="n">loop</span><span class="o">.</span><span class="n">sock_sendall</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_sock</span><span class="p">,</span> <span class="n">data</span><span class="p">),</span> <span class="n">timeout</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ISOTPTransport.read">
+<a class="viewcode-back" href="../../../api.html#gallia.transports.ISOTPTransport.read">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_running_loop</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait_for</span><span class="p">(</span><span class="n">loop</span><span class="o">.</span><span class="n">sock_recv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_sock</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">BUFSIZE</span><span class="p">),</span> <span class="n">timeout</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">errno</span> <span class="o">==</span> <span class="n">errno</span><span class="o">.</span><span class="n">ECOMM</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">BrokenPipeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;isotp flow control frame missing: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+            <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">errno</span> <span class="o">==</span> <span class="n">errno</span><span class="o">.</span><span class="n">EILSEQ</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">BrokenPipeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;invalid consecutive frame numbers: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+            <span class="k">raise</span> <span class="n">e</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">hex</span><span class="p">(),</span> <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="n">tags</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">data</span></div>
+
+
+<div class="viewcode-block" id="ISOTPTransport.close">
+<a class="viewcode-back" href="../../../api.html#gallia.transports.ISOTPTransport.close">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sock</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,996 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gallia.log &mdash; gallia  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../transports.html">Transports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../env.html">Environment Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../logging.html">Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../plugins.html">Plugins</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">Public API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">gallia.log</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gallia.log</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-FileCopyrightText: AISEC Pentesting Team</span>
+<span class="c1">#</span>
+<span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">atexit</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">dataclasses</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">gzip</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">io</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">mmap</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">socket</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">traceback</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span><span class="p">,</span> <span class="n">IntEnum</span><span class="p">,</span> <span class="n">unique</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">logging.handlers</span><span class="w"> </span><span class="kn">import</span> <span class="n">QueueHandler</span><span class="p">,</span> <span class="n">QueueListener</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">queue</span><span class="w"> </span><span class="kn">import</span> <span class="n">Queue</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">types</span><span class="w"> </span><span class="kn">import</span> <span class="n">TracebackType</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">BinaryIO</span><span class="p">,</span> <span class="n">Self</span><span class="p">,</span> <span class="n">TextIO</span><span class="p">,</span> <span class="n">TypeAlias</span><span class="p">,</span> <span class="n">cast</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">zstandard</span>
+
+<span class="n">gmt_offset</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">localtime</span><span class="p">()</span><span class="o">.</span><span class="n">tm_gmtoff</span>
+<span class="n">tz</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timezone</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">gmt_offset</span><span class="p">))</span>
+
+
+<div class="viewcode-block" id="ColorMode">
+<a class="viewcode-back" href="../../api.html#gallia.log.ColorMode">[docs]</a>
+<span class="nd">@unique</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ColorMode</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;ColorMode is used as an argument to :func:`set_color_mode`.&quot;&quot;&quot;</span>
+
+    <span class="c1">#: Colors are always turned on.</span>
+    <span class="n">ALWAYS</span> <span class="o">=</span> <span class="s2">&quot;always&quot;</span>
+    <span class="c1">#: Colors are turned off if the target</span>
+    <span class="c1">#: stream (e.g. stderr) is not a tty.</span>
+    <span class="n">AUTO</span> <span class="o">=</span> <span class="s2">&quot;auto&quot;</span>
+    <span class="c1">#: No colors are used. In other words,</span>
+    <span class="c1">#: no ANSI escape codes are included.</span>
+    <span class="n">NEVER</span> <span class="o">=</span> <span class="s2">&quot;never&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="resolve_color_mode">
+<a class="viewcode-back" href="../../api.html#gallia.log.resolve_color_mode">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">resolve_color_mode</span><span class="p">(</span><span class="n">mode</span><span class="p">:</span> <span class="n">ColorMode</span><span class="p">,</span> <span class="n">stream</span><span class="p">:</span> <span class="n">TextIO</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Sets the color mode of the console log handler.</span>
+
+<span class="sd">    :param mode: The available options are described in :class:`ColorMode`.</span>
+<span class="sd">    :param stream: Used as a reference for :attr:`ColorMode.AUTO`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s2">&quot;win32&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">match</span> <span class="n">mode</span><span class="p">:</span>
+        <span class="k">case</span> <span class="n">ColorMode</span><span class="o">.</span><span class="n">ALWAYS</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">case</span> <span class="n">ColorMode</span><span class="o">.</span><span class="n">AUTO</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;NO_COLOR&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">stream</span><span class="o">.</span><span class="n">isatty</span><span class="p">()</span>
+        <span class="k">case</span> <span class="n">ColorMode</span><span class="o">.</span><span class="n">NEVER</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span></div>
+
+
+
+<span class="c1"># https://stackoverflow.com/a/35804945</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_add_logging_level</span><span class="p">(</span><span class="n">level_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">level_num</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">method_name</span> <span class="o">=</span> <span class="n">level_name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">logging</span><span class="p">,</span> <span class="n">level_name</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">level_name</span><span class="si">}</span><span class="s2"> already defined in logging module&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">logging</span><span class="p">,</span> <span class="n">method_name</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">method_name</span><span class="si">}</span><span class="s2"> already defined in logging module&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">getLoggerClass</span><span class="p">(),</span> <span class="n">method_name</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">method_name</span><span class="si">}</span><span class="s2"> already defined in logger class&quot;</span><span class="p">)</span>
+
+    <span class="c1"># This method was inspired by the answers to Stack Overflow post</span>
+    <span class="c1"># http://stackoverflow.com/q/2183233/2988730, especially</span>
+    <span class="c1"># http://stackoverflow.com/a/13638084/2988730</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">for_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>  <span class="c1"># type: ignore</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">isEnabledFor</span><span class="p">(</span><span class="n">level_num</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="p">(</span>
+                <span class="n">level_num</span><span class="p">,</span>
+                <span class="n">message</span><span class="p">,</span>
+                <span class="n">args</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_root</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>  <span class="c1"># type: ignore</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">level_num</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>  <span class="c1"># noqa: LOG015</span>
+
+    <span class="n">logging</span><span class="o">.</span><span class="n">addLevelName</span><span class="p">(</span><span class="n">level_num</span><span class="p">,</span> <span class="n">level_name</span><span class="p">)</span>
+    <span class="nb">setattr</span><span class="p">(</span><span class="n">logging</span><span class="p">,</span> <span class="n">level_name</span><span class="p">,</span> <span class="n">level_num</span><span class="p">)</span>
+    <span class="nb">setattr</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">getLoggerClass</span><span class="p">(),</span> <span class="n">method_name</span><span class="p">,</span> <span class="n">for_level</span><span class="p">)</span>
+    <span class="nb">setattr</span><span class="p">(</span><span class="n">logging</span><span class="p">,</span> <span class="n">method_name</span><span class="p">,</span> <span class="n">to_root</span><span class="p">)</span>
+
+
+<span class="n">_add_logging_level</span><span class="p">(</span><span class="s2">&quot;TRACE&quot;</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+<span class="n">_add_logging_level</span><span class="p">(</span><span class="s2">&quot;NOTICE&quot;</span><span class="p">,</span> <span class="mi">25</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Loglevel">
+<a class="viewcode-back" href="../../api.html#gallia.log.Loglevel">[docs]</a>
+<span class="nd">@unique</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Loglevel</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A wrapper around the constants exposed by python&#39;s</span>
+<span class="sd">    ``logging`` module. Since gallia adds two additional</span>
+<span class="sd">    loglevel&#39;s (``NOTICE`` and ``TRACE``), this class</span>
+<span class="sd">    provides a type safe way to access the loglevels.</span>
+<span class="sd">    The level ``NOTICE`` was added to conform better to</span>
+<span class="sd">    RFC3164. Subsequently, ``TRACE`` was added to have</span>
+<span class="sd">    a facility for optional debug messages.</span>
+<span class="sd">    Loglevel describes python specific values for loglevels</span>
+<span class="sd">    which are required to integrate with the python ecosystem.</span>
+<span class="sd">    For generic priority values, see :class:`PenlogPriority`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">CRITICAL</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span>
+    <span class="n">ERROR</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span>
+    <span class="n">WARNING</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span>
+    <span class="n">NOTICE</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">NOTICE</span>  <span class="c1"># type: ignore</span>
+    <span class="n">INFO</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span>
+    <span class="n">DEBUG</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span>
+    <span class="n">TRACE</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">TRACE</span>  <span class="c1"># type: ignore</span></div>
+
+
+
+<div class="viewcode-block" id="PenlogPriority">
+<a class="viewcode-back" href="../../api.html#gallia.log.PenlogPriority">[docs]</a>
+<span class="nd">@unique</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">PenlogPriority</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;PenlogPriority holds the values which are written</span>
+<span class="sd">    to json log records. These values conform to RFC3164</span>
+<span class="sd">    with the addition of ``TRACE``. Since Python uses different</span>
+<span class="sd">    int values for the loglevels, there are two enums in</span>
+<span class="sd">    gallia describing loglevels. PenlogPriority describes</span>
+<span class="sd">    generic priority values which are included in json</span>
+<span class="sd">    log records.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">EMERGENCY</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">ALERT</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">CRITICAL</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">ERROR</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">WARNING</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">NOTICE</span> <span class="o">=</span> <span class="mi">5</span>
+    <span class="n">INFO</span> <span class="o">=</span> <span class="mi">6</span>
+    <span class="n">DEBUG</span> <span class="o">=</span> <span class="mi">7</span>
+    <span class="n">TRACE</span> <span class="o">=</span> <span class="mi">8</span>
+
+<div class="viewcode-block" id="PenlogPriority.from_str">
+<a class="viewcode-back" href="../../api.html#gallia.log.PenlogPriority.from_str">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_str</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">string</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PenlogPriority</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts a string to an instance of PenlogPriority.</span>
+<span class="sd">        ``string`` can be a numeric value (0 to 8 inclusive)</span>
+<span class="sd">        or a string with a case insensitive name of the level</span>
+<span class="sd">        (e.g. ``debug``).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">string</span><span class="o">.</span><span class="n">isnumeric</span><span class="p">():</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">string</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+
+        <span class="k">match</span> <span class="n">string</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+            <span class="k">case</span> <span class="s2">&quot;emergency&quot;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">EMERGENCY</span>
+            <span class="k">case</span> <span class="s2">&quot;alert&quot;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">ALERT</span>
+            <span class="k">case</span> <span class="s2">&quot;critical&quot;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">CRITICAL</span>
+            <span class="k">case</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">ERROR</span>
+            <span class="k">case</span> <span class="s2">&quot;warning&quot;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">WARNING</span>
+            <span class="k">case</span> <span class="s2">&quot;notice&quot;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">NOTICE</span>
+            <span class="k">case</span> <span class="s2">&quot;info&quot;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">INFO</span>
+            <span class="k">case</span> <span class="s2">&quot;debug&quot;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">DEBUG</span>
+            <span class="k">case</span> <span class="s2">&quot;trace&quot;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">TRACE</span>
+            <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">string</span><span class="si">}</span><span class="s2"> not a valid priority&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="PenlogPriority.from_level">
+<a class="viewcode-back" href="../../api.html#gallia.log.PenlogPriority.from_level">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_level</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PenlogPriority</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts an int value (e.g. from python&#39;s logging module)</span>
+<span class="sd">        to an instance of this class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">match</span> <span class="n">value</span><span class="p">:</span>
+            <span class="k">case</span> <span class="n">Loglevel</span><span class="o">.</span><span class="n">TRACE</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">TRACE</span>
+            <span class="k">case</span> <span class="n">Loglevel</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">DEBUG</span>
+            <span class="k">case</span> <span class="n">Loglevel</span><span class="o">.</span><span class="n">INFO</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">INFO</span>
+            <span class="k">case</span> <span class="n">Loglevel</span><span class="o">.</span><span class="n">NOTICE</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">NOTICE</span>
+            <span class="k">case</span> <span class="n">Loglevel</span><span class="o">.</span><span class="n">WARNING</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">WARNING</span>
+            <span class="k">case</span> <span class="n">Loglevel</span><span class="o">.</span><span class="n">ERROR</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">ERROR</span>
+            <span class="k">case</span> <span class="n">Loglevel</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">CRITICAL</span>
+            <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;invalid value&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="PenlogPriority.to_level">
+<a class="viewcode-back" href="../../api.html#gallia.log.PenlogPriority.to_level">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_level</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Loglevel</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts an instance of PenlogPriority to :class:`Loglevel`.&quot;&quot;&quot;</span>
+        <span class="k">match</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">case</span> <span class="bp">self</span><span class="o">.</span><span class="n">TRACE</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Loglevel</span><span class="o">.</span><span class="n">TRACE</span>
+            <span class="k">case</span> <span class="bp">self</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Loglevel</span><span class="o">.</span><span class="n">DEBUG</span>
+            <span class="k">case</span> <span class="bp">self</span><span class="o">.</span><span class="n">INFO</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Loglevel</span><span class="o">.</span><span class="n">INFO</span>
+            <span class="k">case</span> <span class="bp">self</span><span class="o">.</span><span class="n">NOTICE</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Loglevel</span><span class="o">.</span><span class="n">NOTICE</span>
+            <span class="k">case</span> <span class="bp">self</span><span class="o">.</span><span class="n">WARNING</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Loglevel</span><span class="o">.</span><span class="n">WARNING</span>
+            <span class="k">case</span> <span class="bp">self</span><span class="o">.</span><span class="n">ERROR</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Loglevel</span><span class="o">.</span><span class="n">ERROR</span>
+            <span class="k">case</span> <span class="bp">self</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Loglevel</span><span class="o">.</span><span class="n">CRITICAL</span>
+            <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;invalid value&quot;</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="setup_logging">
+<a class="viewcode-back" href="../../api.html#gallia.log.setup_logging">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">setup_logging</span><span class="p">(</span>
+    <span class="n">level</span><span class="p">:</span> <span class="n">Loglevel</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">color_mode</span><span class="p">:</span> <span class="n">ColorMode</span> <span class="o">=</span> <span class="n">ColorMode</span><span class="o">.</span><span class="n">AUTO</span><span class="p">,</span>
+    <span class="n">no_volatile_info</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">logger_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;gallia&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Enable and configure gallia&#39;s logging system.</span>
+<span class="sd">    If this fuction is not called as early as possible,</span>
+<span class="sd">    the logging system is in an undefined state und might</span>
+<span class="sd">    not behave as expected. Always use this function to</span>
+<span class="sd">    initialize gallia&#39;s logging. For instance, ``setup_logging()``</span>
+<span class="sd">    initializes a QueueHandler to avoid blocking calls during</span>
+<span class="sd">    logging.</span>
+
+<span class="sd">    :param level: The loglevel to enable for the console handler.</span>
+<span class="sd">                  If this argument is None, the env variable</span>
+<span class="sd">                  ``GALLIA_LOGLEVEL`` (see :doc:`../env`) is read.</span>
+<span class="sd">    :param file_level: The loglevel to enable for the file handler.</span>
+<span class="sd">    :param path: The path to the logfile containing json records.</span>
+<span class="sd">    :param color_mode: The color mode to use for the console.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">level</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># FIXME: why is this here and not in config?</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">raw</span> <span class="o">:=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;GALLIA_LOGLEVEL&quot;</span><span class="p">))</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">level</span> <span class="o">=</span> <span class="n">PenlogPriority</span><span class="o">.</span><span class="n">from_str</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span><span class="o">.</span><span class="n">to_level</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">level</span> <span class="o">=</span> <span class="n">Loglevel</span><span class="o">.</span><span class="n">DEBUG</span>
+
+    <span class="c1"># These are slow and not used by gallia.</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">logMultiprocessing</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">logThreads</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">logProcesses</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">logger_name</span><span class="p">)</span>
+    <span class="c1"># LogLevel cannot be 0 (NOTSET), because only the root logger sends it to its handlers then</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># Clean up potentially existing handlers and create a new async QueueHandler for stderr output</span>
+    <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">logger</span><span class="o">.</span><span class="n">handlers</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">handlers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">removeHandler</span><span class="p">(</span><span class="n">logger</span><span class="o">.</span><span class="n">handlers</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">colored</span> <span class="o">=</span> <span class="n">resolve_color_mode</span><span class="p">(</span><span class="n">color_mode</span><span class="p">)</span>
+    <span class="n">add_stderr_log_handler</span><span class="p">(</span><span class="n">logger_name</span><span class="p">,</span> <span class="n">level</span><span class="p">,</span> <span class="n">no_volatile_info</span><span class="p">,</span> <span class="n">colored</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">add_stderr_log_handler</span><span class="p">(</span>
+    <span class="n">logger_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">level</span><span class="p">:</span> <span class="n">Loglevel</span><span class="p">,</span>
+    <span class="n">no_volatile_info</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">colored</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">queue</span><span class="p">:</span> <span class="n">Queue</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">Queue</span><span class="p">()</span>
+    <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">logger_name</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">QueueHandler</span><span class="p">(</span><span class="n">queue</span><span class="p">))</span>
+
+    <span class="n">stderr_handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+    <span class="n">stderr_handler</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
+    <span class="n">console_formatter</span> <span class="o">=</span> <span class="n">_ConsoleFormatter</span><span class="p">()</span>
+
+    <span class="n">console_formatter</span><span class="o">.</span><span class="n">colored</span> <span class="o">=</span> <span class="n">colored</span>
+    <span class="n">stderr_handler</span><span class="o">.</span><span class="n">terminator</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>  <span class="c1"># We manually handle the terminator while formatting</span>
+    <span class="k">if</span> <span class="n">no_volatile_info</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+        <span class="n">console_formatter</span><span class="o">.</span><span class="n">volatile_info</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="n">stderr_handler</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">console_formatter</span><span class="p">)</span>
+
+    <span class="n">queue_listener</span> <span class="o">=</span> <span class="n">QueueListener</span><span class="p">(</span>
+        <span class="n">queue</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">[</span><span class="n">stderr_handler</span><span class="p">],</span>
+        <span class="n">respect_handler_level</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">queue_listener</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+    <span class="n">atexit</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">queue_listener</span><span class="o">.</span><span class="n">stop</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">add_zst_log_handler</span><span class="p">(</span>
+    <span class="n">logger_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">filepath</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">file_log_level</span><span class="p">:</span> <span class="n">Loglevel</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_ZstdFileHandler</span><span class="p">:</span>
+    <span class="n">queue</span><span class="p">:</span> <span class="n">Queue</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">Queue</span><span class="p">()</span>
+    <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="n">logger_name</span><span class="p">)</span>
+    <span class="n">qh</span> <span class="o">=</span> <span class="n">QueueHandler</span><span class="p">(</span><span class="n">queue</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">qh</span><span class="p">)</span>
+
+    <span class="n">zstd_handler</span> <span class="o">=</span> <span class="n">_ZstdFileHandler</span><span class="p">(</span>
+        <span class="n">filepath</span><span class="p">,</span>
+        <span class="n">queue_handler</span><span class="o">=</span><span class="n">qh</span><span class="p">,</span>
+        <span class="n">level</span><span class="o">=</span><span class="n">file_log_level</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">zstd_handler</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">file_log_level</span><span class="p">)</span>
+    <span class="n">zstd_handler</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">_JSONFormatter</span><span class="p">())</span>
+
+    <span class="n">queue_listener</span> <span class="o">=</span> <span class="n">QueueListener</span><span class="p">(</span>
+        <span class="n">queue</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">[</span><span class="n">zstd_handler</span><span class="p">],</span>
+        <span class="n">respect_handler_level</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">queue_listener</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+    <span class="n">zstd_handler</span><span class="o">.</span><span class="n">queue_listener</span> <span class="o">=</span> <span class="n">queue_listener</span>
+    <span class="k">return</span> <span class="n">zstd_handler</span>
+
+
+<div class="viewcode-block" id="remove_zst_log_handler">
+<a class="viewcode-back" href="../../api.html#gallia.log.remove_zst_log_handler">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">remove_zst_log_handler</span><span class="p">(</span><span class="n">logger_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">handler</span><span class="p">:</span> <span class="n">_ZstdFileHandler</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;This function removes the handler from the specified logger and closes it&quot;&quot;&quot;</span>
+    <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="n">logger_name</span><span class="p">)</span>
+    <span class="c1"># It is important to remove the Handler, otherwise it would still receive log messages</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">removeHandler</span><span class="p">(</span><span class="n">handler</span><span class="o">.</span><span class="n">queue_handler</span><span class="p">)</span>
+    <span class="n">handler</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+
+<span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_PenlogRecordV2</span><span class="p">:</span>
+    <span class="n">module</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">host</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">data</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">datetime</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">priority</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">version</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">line</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">stacktrace</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">_python_level_no</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">_python_level_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">_python_func_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<span class="n">_PenlogRecord</span><span class="p">:</span> <span class="n">TypeAlias</span> <span class="o">=</span> <span class="n">_PenlogRecordV2</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_colorize_msg</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">levelno</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s2">&quot;win32&quot;</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">isatty</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">data</span><span class="p">,</span> <span class="mi">0</span>
+
+    <span class="n">out</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">match</span> <span class="n">levelno</span><span class="p">:</span>
+        <span class="k">case</span> <span class="n">Loglevel</span><span class="o">.</span><span class="n">TRACE</span><span class="p">:</span>
+            <span class="n">style</span> <span class="o">=</span> <span class="n">_Color</span><span class="o">.</span><span class="n">GRAY</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">case</span> <span class="n">Loglevel</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">:</span>
+            <span class="n">style</span> <span class="o">=</span> <span class="n">_Color</span><span class="o">.</span><span class="n">GRAY</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">case</span> <span class="n">Loglevel</span><span class="o">.</span><span class="n">INFO</span><span class="p">:</span>
+            <span class="n">style</span> <span class="o">=</span> <span class="n">_Color</span><span class="o">.</span><span class="n">NOP</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">case</span> <span class="n">Loglevel</span><span class="o">.</span><span class="n">NOTICE</span><span class="p">:</span>
+            <span class="n">style</span> <span class="o">=</span> <span class="n">_Color</span><span class="o">.</span><span class="n">BOLD</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">case</span> <span class="n">Loglevel</span><span class="o">.</span><span class="n">WARNING</span><span class="p">:</span>
+            <span class="n">style</span> <span class="o">=</span> <span class="n">_Color</span><span class="o">.</span><span class="n">YELLOW</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">case</span> <span class="n">Loglevel</span><span class="o">.</span><span class="n">ERROR</span><span class="p">:</span>
+            <span class="n">style</span> <span class="o">=</span> <span class="n">_Color</span><span class="o">.</span><span class="n">RED</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">case</span> <span class="n">Loglevel</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">:</span>
+            <span class="n">style</span> <span class="o">=</span> <span class="n">_Color</span><span class="o">.</span><span class="n">RED</span><span class="o">.</span><span class="n">value</span> <span class="o">+</span> <span class="n">_Color</span><span class="o">.</span><span class="n">BOLD</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span>
+            <span class="n">style</span> <span class="o">=</span> <span class="n">_Color</span><span class="o">.</span><span class="n">NOP</span><span class="o">.</span><span class="n">value</span>
+
+    <span class="n">out</span> <span class="o">+=</span> <span class="n">style</span>
+    <span class="n">out</span> <span class="o">+=</span> <span class="n">data</span>
+    <span class="n">out</span> <span class="o">+=</span> <span class="n">_Color</span><span class="o">.</span><span class="n">RESET</span><span class="o">.</span><span class="n">value</span>
+
+    <span class="k">return</span> <span class="n">out</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">style</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_format_record</span><span class="p">(</span>  <span class="c1"># noqa: PLR0913</span>
+    <span class="n">dt</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">data</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">levelno</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">stacktrace</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">colored</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">volatile_info</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">volatile_info</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\33</span><span class="s2">[2K&quot;</span>
+    <span class="n">extra_len</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">msg</span> <span class="o">+=</span> <span class="n">dt</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%b </span><span class="si">%d</span><span class="s2"> %H:%M:%S.</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">)[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span>
+    <span class="n">msg</span> <span class="o">+=</span> <span class="s2">&quot; &quot;</span>
+    <span class="n">msg</span> <span class="o">+=</span> <span class="n">name</span>
+    <span class="k">if</span> <span class="n">tags</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">tags</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; [</span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tags</span><span class="p">)</span><span class="si">}</span><span class="s2">]&quot;</span>
+    <span class="n">msg</span> <span class="o">+=</span> <span class="s2">&quot;: &quot;</span>
+
+    <span class="k">if</span> <span class="n">colored</span><span class="p">:</span>
+        <span class="n">tmp_msg</span><span class="p">,</span> <span class="n">extra_len_tmp</span> <span class="o">=</span> <span class="n">_colorize_msg</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">levelno</span><span class="p">)</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="n">tmp_msg</span>
+        <span class="n">extra_len</span> <span class="o">+=</span> <span class="n">extra_len_tmp</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="n">data</span>
+
+    <span class="k">if</span> <span class="n">volatile_info</span> <span class="ow">and</span> <span class="n">levelno</span> <span class="o">&lt;=</span> <span class="n">Loglevel</span><span class="o">.</span><span class="n">INFO</span><span class="p">:</span>
+        <span class="n">terminal_width</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">shutil</span><span class="o">.</span><span class="n">get_terminal_size</span><span class="p">()</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="p">[:</span> <span class="n">terminal_width</span> <span class="o">+</span> <span class="n">extra_len</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>  <span class="c1"># Adapt length to invisible ANSI colors</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="n">_Color</span><span class="o">.</span><span class="n">RESET</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\r</span><span class="s2">&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+
+    <span class="k">if</span> <span class="n">stacktrace</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="n">stacktrace</span>
+
+    <span class="k">return</span> <span class="n">msg</span>
+
+
+<div class="viewcode-block" id="PenlogRecord">
+<a class="viewcode-back" href="../../api.html#gallia.log.PenlogRecord">[docs]</a>
+<span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">PenlogRecord</span><span class="p">:</span>
+    <span class="n">module</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">host</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">data</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">datetime</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span>
+    <span class="c1"># FIXME: Enums are slow.</span>
+    <span class="n">priority</span><span class="p">:</span> <span class="n">PenlogPriority</span>
+    <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">colored</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">line</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">stacktrace</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">_python_level_no</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">_python_level_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">_python_func_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_format_record</span><span class="p">(</span>
+            <span class="n">dt</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">datetime</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">levelno</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_python_level_no</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_python_level_no</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">priority</span><span class="o">.</span><span class="n">to_level</span><span class="p">(),</span>
+            <span class="n">tags</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tags</span><span class="p">,</span>
+            <span class="n">stacktrace</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stacktrace</span><span class="p">,</span>
+            <span class="n">colored</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">colored</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parse_priority</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;&lt;&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">prio_str</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">1</span> <span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;&gt;&quot;</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">prio_str</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parse_json</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;&lt;&quot;</span><span class="p">):</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">data</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;&gt;&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:]</span>
+
+        <span class="n">record</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">decode</span><span class="p">())</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">v</span> <span class="o">:=</span> <span class="n">record</span><span class="p">[</span><span class="s2">&quot;version&quot;</span><span class="p">])</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;invalid log record version </span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">decode</span><span class="p">(),</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">module</span><span class="o">=</span><span class="n">record</span><span class="p">[</span><span class="s2">&quot;module&quot;</span><span class="p">],</span>
+            <span class="n">host</span><span class="o">=</span><span class="n">record</span><span class="p">[</span><span class="s2">&quot;host&quot;</span><span class="p">],</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">record</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">],</span>
+            <span class="n">datetime</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="s2">&quot;datetime&quot;</span><span class="p">]),</span>
+            <span class="n">priority</span><span class="o">=</span><span class="n">PenlogPriority</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="s2">&quot;priority&quot;</span><span class="p">]),</span>
+            <span class="n">tags</span><span class="o">=</span><span class="n">record</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;tags&quot;</span> <span class="ow">in</span> <span class="n">record</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">line</span><span class="o">=</span><span class="n">record</span><span class="p">[</span><span class="s2">&quot;line&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;line&quot;</span> <span class="ow">in</span> <span class="n">record</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">stacktrace</span><span class="o">=</span><span class="n">record</span><span class="p">[</span><span class="s2">&quot;stacktrace&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;stacktrace&quot;</span> <span class="ow">in</span> <span class="n">record</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">_python_level_no</span><span class="o">=</span><span class="n">record</span><span class="p">[</span><span class="s2">&quot;_python_level_no&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;_python_level_no&quot;</span> <span class="ow">in</span> <span class="n">record</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">_python_level_name</span><span class="o">=</span><span class="n">record</span><span class="p">[</span><span class="s2">&quot;_python_level_name&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s2">&quot;_python_level_name&quot;</span> <span class="ow">in</span> <span class="n">record</span>
+            <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">_python_func_name</span><span class="o">=</span><span class="n">record</span><span class="p">[</span><span class="s2">&quot;_python_func_name&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s2">&quot;_python_func_name&quot;</span> <span class="ow">in</span> <span class="n">record</span>
+            <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_log_record</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">logging</span><span class="o">.</span><span class="n">LogRecord</span><span class="p">:</span>
+        <span class="n">level</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">priority</span><span class="o">.</span><span class="n">to_level</span><span class="p">()</span>
+        <span class="n">timestamp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">timestamp</span><span class="p">()</span>
+        <span class="n">msecs</span> <span class="o">=</span> <span class="p">(</span><span class="n">timestamp</span> <span class="o">-</span> <span class="nb">int</span><span class="p">(</span><span class="n">timestamp</span><span class="p">))</span> <span class="o">*</span> <span class="mi">1000</span>
+
+        <span class="n">lineno</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">pathname</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">line</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">line</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">pathname</span><span class="p">,</span> <span class="n">lineno_str</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">lineno</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">lineno_str</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">logging</span><span class="o">.</span><span class="n">makeLogRecord</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="p">,</span>
+                <span class="s2">&quot;priority&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">priority</span><span class="p">,</span>
+                <span class="s2">&quot;levelno&quot;</span><span class="p">:</span> <span class="n">level</span><span class="p">,</span>
+                <span class="s2">&quot;levelname&quot;</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLevelName</span><span class="p">(</span><span class="n">level</span><span class="p">),</span>
+                <span class="s2">&quot;msg&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+                <span class="s2">&quot;pathname&quot;</span><span class="p">:</span> <span class="n">pathname</span><span class="p">,</span>
+                <span class="s2">&quot;lineno&quot;</span><span class="p">:</span> <span class="n">lineno</span><span class="p">,</span>
+                <span class="s2">&quot;created&quot;</span><span class="p">:</span> <span class="n">timestamp</span><span class="p">,</span>
+                <span class="s2">&quot;msecs&quot;</span><span class="p">:</span> <span class="n">msecs</span><span class="p">,</span>
+                <span class="s2">&quot;host&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span>
+                <span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">tags</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="p">)</span></div>
+
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">PenlogReader</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">path</span> <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;-&quot;</span> <span class="k">else</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;/dev/stdin&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">raw_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_for_mmap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file_mmap</span> <span class="o">=</span> <span class="n">mmap</span><span class="o">.</span><span class="n">mmap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">raw_file</span><span class="o">.</span><span class="n">fileno</span><span class="p">(),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">access</span><span class="o">=</span><span class="n">mmap</span><span class="o">.</span><span class="n">ACCESS_READ</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_current_line</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_current_record</span><span class="p">:</span> <span class="n">PenlogRecord</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_current_record_index</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parsed</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_record_offsets</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_test_mmap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">mmap</span><span class="o">.</span><span class="n">mmap</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">fileno</span><span class="p">(),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">access</span><span class="o">=</span><span class="n">mmap</span><span class="o">.</span><span class="n">ACCESS_READ</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">True</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_prepare_for_mmap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BinaryIO</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">is_file</span><span class="p">()</span> <span class="ow">and</span> <span class="n">path</span><span class="o">.</span><span class="n">suffix</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;.zst&quot;</span><span class="p">,</span> <span class="s2">&quot;.gz&quot;</span><span class="p">]:</span>
+            <span class="n">tmpfile</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">TemporaryFile</span><span class="p">()</span>
+            <span class="k">match</span> <span class="n">path</span><span class="o">.</span><span class="n">suffix</span><span class="p">:</span>
+                <span class="k">case</span> <span class="s2">&quot;.zst&quot;</span><span class="p">:</span>
+                    <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                        <span class="n">decomp</span> <span class="o">=</span> <span class="n">zstandard</span><span class="o">.</span><span class="n">ZstdDecompressor</span><span class="p">()</span>
+                        <span class="n">decomp</span><span class="o">.</span><span class="n">copy_stream</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">tmpfile</span><span class="p">)</span>
+                <span class="k">case</span> <span class="s2">&quot;.gz&quot;</span><span class="p">:</span>
+                    <span class="k">with</span> <span class="n">gzip</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                        <span class="n">shutil</span><span class="o">.</span><span class="n">copyfileobj</span><span class="p">(</span><span class="n">cast</span><span class="p">(</span><span class="n">BinaryIO</span><span class="p">,</span> <span class="n">f</span><span class="p">),</span> <span class="n">tmpfile</span><span class="p">)</span>
+
+            <span class="n">tmpfile</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">BinaryIO</span><span class="p">,</span> <span class="n">tmpfile</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">is_fifo</span><span class="p">()</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_test_mmap</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="n">tmpfile</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">TemporaryFile</span><span class="p">()</span>
+            <span class="k">with</span> <span class="n">path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">shutil</span><span class="o">.</span><span class="n">copyfileobj</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">tmpfile</span><span class="p">)</span>
+            <span class="n">tmpfile</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">BinaryIO</span><span class="p">,</span> <span class="n">tmpfile</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_parse_file_structure</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">old_offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_mmap</span><span class="o">.</span><span class="n">tell</span><span class="p">()</span>
+
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_record_offsets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_mmap</span><span class="o">.</span><span class="n">tell</span><span class="p">())</span>
+
+            <span class="n">line</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_mmap</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">line</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">:</span>
+                <span class="c1"># The last newline char is not relevant, since</span>
+                <span class="c1"># no data is following.</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_record_offsets</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="k">break</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">file_mmap</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">old_offset</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parsed</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_lookup_offset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">index</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parsed</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_parse_file_structure</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_record_offsets</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">file_size</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="n">old_offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_mmap</span><span class="o">.</span><span class="n">tell</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file_mmap</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">io</span><span class="o">.</span><span class="n">SEEK_END</span><span class="p">)</span>
+        <span class="n">size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_mmap</span><span class="o">.</span><span class="n">tell</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file_mmap</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">old_offset</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">size</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">current_record</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PenlogRecord</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_record</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_record</span>
+        <span class="k">return</span> <span class="n">PenlogRecord</span><span class="o">.</span><span class="n">parse_json</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_line</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">current_priority</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="n">prio</span> <span class="o">=</span> <span class="n">PenlogRecord</span><span class="o">.</span><span class="n">parse_priority</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_line</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">prio</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_current_record</span> <span class="o">=</span> <span class="n">PenlogRecord</span><span class="o">.</span><span class="n">parse_json</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_line</span><span class="p">)</span>
+            <span class="n">prio</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_record</span><span class="o">.</span><span class="n">priority</span>
+        <span class="k">return</span> <span class="n">prio</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">seek_to_record</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file_mmap</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_lookup_offset</span><span class="p">(</span><span class="n">n</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_current_record_index</span> <span class="o">=</span> <span class="n">n</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">seek_to_current_record</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file_mmap</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_lookup_offset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_record_index</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">seek_to_previous_record</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_current_record_index</span> <span class="o">-=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seek_to_record</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_record_index</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">seek_to_next_record</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_current_record_index</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seek_to_record</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_record_index</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">records</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">priority</span><span class="p">:</span> <span class="n">PenlogPriority</span> <span class="o">=</span> <span class="n">PenlogPriority</span><span class="o">.</span><span class="n">TRACE</span><span class="p">,</span>
+        <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">reverse</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">PenlogRecord</span><span class="p">]:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seek_to_record</span><span class="p">(</span><span class="n">offset</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">reverse</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">:</span>
+                    <span class="k">break</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_priority</span> <span class="o">&lt;=</span> <span class="n">priority</span><span class="p">:</span>
+                    <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_record</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_priority</span> <span class="o">&lt;=</span> <span class="n">priority</span><span class="p">:</span>
+                    <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_record</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">seek_to_previous_record</span><span class="p">()</span>
+                <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                    <span class="k">break</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">readline</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_current_record</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_current_line</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_mmap</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_line</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file_mmap</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">raw_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parsed</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_parse_file_structure</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_record_offsets</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__exit__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">exc_type</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="ne">BaseException</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">exc_value</span><span class="p">:</span> <span class="ne">BaseException</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">tb</span><span class="p">:</span> <span class="n">TracebackType</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+
+<span class="nd">@unique</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_Color</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">NOP</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">RESET</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[0m&quot;</span>
+    <span class="n">BOLD</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[1m&quot;</span>
+    <span class="n">RED</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[31m&quot;</span>
+    <span class="n">GREEN</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[32m&quot;</span>
+    <span class="n">YELLOW</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[33m&quot;</span>
+    <span class="n">BLUE</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[34m&quot;</span>
+    <span class="n">PURPLE</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[35m&quot;</span>
+    <span class="n">CYAN</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[36m&quot;</span>
+    <span class="n">WHITE</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[37m&quot;</span>
+    <span class="n">GRAY</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[0;38;5;245m&quot;</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_JSONFormatter</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hostname</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">gethostname</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">LogRecord</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">tags</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;tags&quot;</span> <span class="ow">in</span> <span class="n">record</span><span class="o">.</span><span class="vm">__dict__</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">stacktrace</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">formatException</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">exc_info</span><span class="p">)</span> <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">exc_info</span> <span class="k">else</span> <span class="kc">None</span>
+
+        <span class="n">penlog_record</span> <span class="o">=</span> <span class="n">_PenlogRecordV2</span><span class="p">(</span>
+            <span class="n">module</span><span class="o">=</span><span class="n">record</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hostname</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">record</span><span class="o">.</span><span class="n">getMessage</span><span class="p">(),</span>
+            <span class="n">priority</span><span class="o">=</span><span class="n">PenlogPriority</span><span class="o">.</span><span class="n">from_level</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">levelno</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="n">datetime</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">created</span><span class="p">,</span> <span class="n">tz</span><span class="o">=</span><span class="n">tz</span><span class="p">)</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+            <span class="n">line</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">record</span><span class="o">.</span><span class="n">pathname</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">record</span><span class="o">.</span><span class="n">lineno</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">stacktrace</span><span class="o">=</span><span class="n">stacktrace</span><span class="p">,</span>
+            <span class="n">tags</span><span class="o">=</span><span class="n">tags</span><span class="p">,</span>
+            <span class="n">_python_level_no</span><span class="o">=</span><span class="n">record</span><span class="o">.</span><span class="n">levelno</span><span class="p">,</span>
+            <span class="n">_python_level_name</span><span class="o">=</span><span class="n">record</span><span class="o">.</span><span class="n">levelname</span><span class="p">,</span>
+            <span class="n">_python_func_name</span><span class="o">=</span><span class="n">record</span><span class="o">.</span><span class="n">funcName</span><span class="p">,</span>
+            <span class="n">version</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">dataclasses</span><span class="o">.</span><span class="n">asdict</span><span class="p">(</span><span class="n">penlog_record</span><span class="p">))</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_ConsoleFormatter</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">):</span>
+    <span class="n">colored</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">volatile_info</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">format</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">record</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">LogRecord</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">stacktrace</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">exc_info</span><span class="p">:</span>
+            <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">exc_traceback</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">exc_info</span>
+            <span class="k">assert</span> <span class="n">exc_type</span>
+            <span class="k">assert</span> <span class="n">exc_value</span>
+            <span class="k">assert</span> <span class="n">exc_traceback</span>
+
+            <span class="n">stacktrace</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="n">stacktrace</span> <span class="o">+=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exception</span><span class="p">(</span><span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">exc_traceback</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">_format_record</span><span class="p">(</span>
+            <span class="n">dt</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">created</span><span class="p">),</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">record</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">record</span><span class="o">.</span><span class="n">getMessage</span><span class="p">(),</span>
+            <span class="n">levelno</span><span class="o">=</span><span class="n">record</span><span class="o">.</span><span class="n">levelno</span><span class="p">,</span>
+            <span class="n">tags</span><span class="o">=</span><span class="n">record</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;tags&quot;</span> <span class="ow">in</span> <span class="n">record</span><span class="o">.</span><span class="vm">__dict__</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">stacktrace</span><span class="o">=</span><span class="n">stacktrace</span><span class="p">,</span>
+            <span class="n">colored</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">colored</span><span class="p">,</span>
+            <span class="n">volatile_info</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">volatile_info</span><span class="p">,</span>
+        <span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_ZstdFileHandler</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Handler</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">queue_handler</span><span class="p">:</span> <span class="n">QueueHandler</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">NOTSET</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file</span> <span class="o">=</span> <span class="n">zstandard</span><span class="o">.</span><span class="n">open</span><span class="p">(</span>
+            <span class="n">filename</span><span class="o">=</span><span class="n">path</span><span class="p">,</span>
+            <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;wb&quot;</span><span class="p">,</span>
+            <span class="n">cctx</span><span class="o">=</span><span class="n">zstandard</span><span class="o">.</span><span class="n">ZstdCompressor</span><span class="p">(</span>
+                <span class="n">write_checksum</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">write_content_size</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">threads</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">queue_handler</span> <span class="o">=</span> <span class="n">queue_handler</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">queue_listener</span><span class="p">:</span> <span class="n">QueueListener</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;This function closes the queue handler, the queue listener, and the log file.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">queue_handler</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="c1"># There might be no queue_listener or it might already be closed (_thread is None)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">queue_listener</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">queue_listener</span><span class="o">.</span><span class="n">_thread</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">queue_listener</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">LogRecord</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">prio</span> <span class="o">=</span> <span class="n">PenlogPriority</span><span class="o">.</span><span class="n">from_level</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">levelno</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&lt;</span><span class="si">{</span><span class="n">prio</span><span class="si">}</span><span class="s2">&gt;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">record</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">):</span>
+            <span class="n">data</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
+
+
+<div class="viewcode-block" id="Logger">
+<a class="viewcode-back" href="../../api.html#gallia.log.Logger">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Logger</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Logger</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">trace</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">msg</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="n">exc_info</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">stack_info</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">extra</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">isEnabledFor</span><span class="p">(</span><span class="n">Loglevel</span><span class="o">.</span><span class="n">TRACE</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="p">(</span>
+                <span class="n">Loglevel</span><span class="o">.</span><span class="n">TRACE</span><span class="p">,</span>
+                <span class="n">msg</span><span class="p">,</span>
+                <span class="n">args</span><span class="p">,</span>
+                <span class="n">exc_info</span><span class="o">=</span><span class="n">exc_info</span><span class="p">,</span>
+                <span class="n">extra</span><span class="o">=</span><span class="n">extra</span><span class="p">,</span>
+                <span class="n">stack_info</span><span class="o">=</span><span class="n">stack_info</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">notice</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">msg</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="n">exc_info</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">stack_info</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">extra</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">isEnabledFor</span><span class="p">(</span><span class="n">Loglevel</span><span class="o">.</span><span class="n">NOTICE</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="p">(</span>
+                <span class="n">Loglevel</span><span class="o">.</span><span class="n">NOTICE</span><span class="p">,</span>
+                <span class="n">msg</span><span class="p">,</span>
+                <span class="n">args</span><span class="p">,</span>
+                <span class="n">exc_info</span><span class="o">=</span><span class="n">exc_info</span><span class="p">,</span>
+                <span class="n">extra</span><span class="o">=</span><span class="n">extra</span><span class="p">,</span>
+                <span class="n">stack_info</span><span class="o">=</span><span class="n">stack_info</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">result</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">msg</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="n">exc_info</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">stack_info</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">extra</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">extra</span> <span class="o">=</span> <span class="n">extra</span> <span class="k">if</span> <span class="n">extra</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{}</span>
+        <span class="n">extra</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;result&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">isEnabledFor</span><span class="p">(</span><span class="n">Loglevel</span><span class="o">.</span><span class="n">NOTICE</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="p">(</span>
+                <span class="n">Loglevel</span><span class="o">.</span><span class="n">NOTICE</span><span class="p">,</span>
+                <span class="n">msg</span><span class="p">,</span>
+                <span class="n">args</span><span class="p">,</span>
+                <span class="n">exc_info</span><span class="o">=</span><span class="n">exc_info</span><span class="p">,</span>
+                <span class="n">extra</span><span class="o">=</span><span class="n">extra</span><span class="p">,</span>
+                <span class="n">stack_info</span><span class="o">=</span><span class="n">stack_info</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+            <span class="p">)</span></div>
+
+
+
+<span class="n">logging</span><span class="o">.</span><span class="n">setLoggerClass</span><span class="p">(</span><span class="n">Logger</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">get_logger</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Logger</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">Logger</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
