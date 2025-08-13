@@ -8,7 +8,7 @@ from gallia.command import UDSScanner
 from gallia.command.config import AutoInt, Field, HexBytes
 from gallia.command.uds import UDSScannerConfig
 from gallia.log import get_logger
-from gallia.services.uds import NegativeResponse, UDSRequest, UDSRequestConfig, UDSResponse
+from gallia.services.uds import NegativeResponse, UDSRequest, UDSResponse
 from gallia.services.uds.core.exception import UDSException
 from gallia.services.uds.core.service import RawRequest, RawResponse
 from gallia.services.uds.helpers import raise_for_error
@@ -24,7 +24,6 @@ class SendPDUPrimitiveConfig(UDSScannerConfig):
         config_section=UDSScannerConfig._config_section,
     )
     pdu: HexBytes = Field(description="The raw pdu to send to the ECU", positional=True)
-    max_retry: int = Field(3, description="Set the uds' stack max_retry argument", short="r")
     session: AutoInt | None = Field(
         None, description="Change to this session prior to sending the pdu"
     )
@@ -54,9 +53,7 @@ class SendPDUPrimitive(UDSScanner):
         logger.info(f"Sending {parsed_request}")
 
         try:
-            response = await self.ecu.send_raw(
-                pdu, config=UDSRequestConfig(max_retry=self.config.max_retry)
-            )
+            response = await self.ecu.send_raw(pdu)
         except UDSException as e:
             logger.error(repr(e))
             sys.exit(1)
