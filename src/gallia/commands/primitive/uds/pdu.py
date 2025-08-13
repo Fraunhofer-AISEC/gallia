@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import sys
-
 from gallia.command import UDSScanner
 from gallia.command.config import AutoInt, Field, HexBytes
 from gallia.command.uds import UDSScannerConfig
@@ -23,45 +21,48 @@ class SendPDUPrimitiveConfig(UDSScannerConfig):
         cli_group=UDSScannerConfig._cli_group,
         config_section=UDSScannerConfig._config_section,
     )
-    pdu: HexBytes = Field(description="The raw pdu to send to the ECU", positional=True)
+    pdus: list[HexBytes] = Field(description="The raw PDU(s) to send to the ECU", positional=True)
     session: AutoInt | None = Field(
-        None, description="Change to this session prior to sending the pdu"
+        None, description="Change to this session prior to sending the PDU(s)"
     )
 
 
 class SendPDUPrimitive(UDSScanner):
-    """A raw scanner to send a plain pdu"""
+    """A raw scanner to send plain PDU(s)"""
 
     CONFIG_TYPE = SendPDUPrimitiveConfig
-    SHORT_HELP = "send a plain PDU"
+    SHORT_HELP = "send plain PDU(s)"
 
     def __init__(self, config: SendPDUPrimitiveConfig):
         super().__init__(config)
         self.config: SendPDUPrimitiveConfig = config
 
-    async def main(self) -> None:
-        pdu = self.config.pdu
-        if self.config.session is not None:
-            resp: UDSResponse = await self.ecu.set_session(self.config.session)
-            raise_for_error(resp)
-
+    async def _send_pdu(self, pdu: HexBytes) -> None:
         parsed_request = UDSRequest.parse_dynamic(pdu)
 
         if isinstance(parsed_request, RawRequest):
-            logger.warning("Could not parse the request pdu")
+            logger.warning("Could not parse the request PDU")
 
-        logger.info(f"Sending {parsed_request}")
+        logger.result(f"Sending {parsed_request}")
 
         try:
             response = await self.ecu.send_raw(pdu)
         except UDSException as e:
             logger.error(repr(e))
-            sys.exit(1)
+            return
 
         if isinstance(response, NegativeResponse):
             logger.warning(f"Received {response}")
         else:
             if isinstance(response, RawResponse):
-                logger.warning("Could not parse the response pdu")
-
+                logger.warning("Could not parse the response PDU")
             logger.result(f"Received {response}")
+
+    async def main(self) -> None:
+        if self.config.session is not None:
+            resp: UDSResponse = await self.ecu.set_session(self.config.session)
+            raise_for_error(resp)
+            logger.result(f"Switched to session 0x{self.config.session:02x}")
+
+        for pdu in self.config.pdus:
+            await self._send_pdu(pdu)
