@@ -130,6 +130,7 @@ class BaseTransport(ABC):
     BUFSIZE: int = io.DEFAULT_BUFFER_SIZE
 
     def __init__(self, target: TargetURI) -> None:
+        self.check_scheme(target)
         self.mutex = asyncio.Lock()
         self.target = target
         self.is_closed = False
