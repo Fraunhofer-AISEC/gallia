@@ -320,7 +320,7 @@ class HSFZTransport(BaseTransport, scheme="hsfz"):
     ):
         super().__init__(target)
 
-        self.config = HSFZConfig(**self.target.qs_flat)
+        self.config = HSFZConfig.model_validate(self.target.qs_flat)
         self._conn: HSFZConnection | None = None
 
     async def connect(
