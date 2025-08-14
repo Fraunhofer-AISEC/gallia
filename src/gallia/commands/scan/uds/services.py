@@ -67,7 +67,21 @@ class ServicesScanner(UDSScanner):
         clean_returns = True
 
         if self.config.sessions is None:
-            found[0], clean_returns = await self.perform_scan()
+            # Attempt to read session once for state update
+            try:
+                current_session = await self.ecu.read_session(
+                    UDSRequestConfig(
+                        timeout=2,
+                        max_retry=0,
+                    )
+                )
+                logger.notice(f"Performing scan in current session, which is {current_session:#x}")
+            except Exception as e:
+                current_session = 0
+                logger.notice(f"Performing scan in current (unknown) session: {e!r}")
+
+            found[current_session], clean_returns = await self.perform_scan()
+
         else:
             sessions = [
                 s
