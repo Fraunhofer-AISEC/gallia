@@ -1,0 +1,285 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Virtual ECUs &mdash; gallia  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Public API" href="../api.html" />
+    <link rel="prev" title="Scan Modes" href="scan_modes.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../transports.html">Transports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../env.html">Environment Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../logging.html">Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../plugins.html">Plugins</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Virtual ECUs</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#transport">transport</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#tcp-lines">tcp-lines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#iso-tp">iso-tp</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#model">model</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#rng">rng</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#db">db</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../api.html">Public API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Virtual ECUs</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/uds/virtual_ecu.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <!--
+SPDX-FileCopyrightText: AISEC Pentesting Team
+
+SPDX-License-Identifier: CC0-1.0
+-->
+<section id="virtual-ecus">
+<h1>Virtual ECUs<a class="headerlink" href="#virtual-ecus" title="Link to this heading"></a></h1>
+<p>For testing purposes, there exists the possibility to spawn virtual ECUs, against which the scanners can be run.
+The virtual ECUs can however also be used independently of the remaining Gallia tools.</p>
+<p>The generic command to create a virtual ECU is as follows:</p>
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>gallia<span class="w"> </span>script<span class="w"> </span>vecu<span class="w"> </span><span class="o">[</span>vecu-arguments<span class="o">]</span><span class="w"> </span>&lt;transport&gt;<span class="w"> </span>&lt;model&gt;<span class="w"> </span><span class="o">[</span>model-arguments<span class="o">]</span>
+</pre></div>
+</div>
+<p>The virtual ECUs support different transport schemes and answering models,
+which are explained in the following sections.</p>
+<section id="transport">
+<h2>transport<a class="headerlink" href="#transport" title="Link to this heading"></a></h2>
+<p>The virtual ECU model is separated from the transport layer that is used for communication.
+Currently, two different transport types are supported.
+For each of them, a corresponding transport scheme exists on the scanner side,
+which has to be used to enable communication between the scanner and the virtual ECU.</p>
+<section id="tcp-lines">
+<h3>tcp-lines<a class="headerlink" href="#tcp-lines" title="Link to this heading"></a></h3>
+<p>The transport scheme which is the easiest to use is the tcp-lines scheme.
+It requires no additional setup and can be used immediately.
+When using this transport scheme, the virtual ECU can handle requests from multiple UDS clients,
+but conversely a scanner can only talk to a single virtual ECU.
+For most scanners this is the intended behavior.
+For discovery scanners instead, the tcp-lines transport is not suitable.</p>
+<p>For example, a random virtual ECU, which uses the tcp-lines protocol for communication
+and listens for IPv4 connections on port 20162 can be started with the following command:</p>
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>gallia<span class="w"> </span>script<span class="w"> </span>vecu<span class="w"> </span><span class="s2">&quot;tcp-lines://127.0.0.1:20162&quot;</span><span class="w"> </span>rng
+</pre></div>
+</div>
+<p>For IPv6, the command would look as follows:</p>
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>gallia<span class="w"> </span>script<span class="w"> </span>vecu<span class="w"> </span><span class="s2">&quot;tcp-lines://[::1]:20162&quot;</span><span class="w"> </span>rng
+</pre></div>
+</div>
+</section>
+<section id="iso-tp">
+<h3>iso-tp<a class="headerlink" href="#iso-tp" title="Link to this heading"></a></h3>
+<p>The iso-tp scheme operates on an existing can interface, which can be a physical interface or a virtual interface.
+The following commands can be used to set up a virtual CAN interface with the name <em>vcan0</em>:</p>
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp"># </span>ip<span class="w"> </span>link<span class="w"> </span>add<span class="w"> </span>dev<span class="w"> </span>vcan0<span class="w"> </span><span class="nb">type</span><span class="w"> </span>vcan
+<span class="gp"># </span>ip<span class="w"> </span>link<span class="w"> </span><span class="nb">set</span><span class="w"> </span>up<span class="w"> </span>vcan0
+</pre></div>
+</div>
+<p>In contrast to the tcp-lines approach,
+using the iso-tp transport scheme allows to simulate a whole bus of several virtual ECUs,
+and is therefore also suitable for testing discovery scanners.</p>
+<p>For example, two random virtual ECUs, which uses the iso-tp protocol for communication
+and use the <em>vcan0</em> interface can be started with the following commands:</p>
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>gallia<span class="w"> </span>script<span class="w"> </span>vecu<span class="w"> </span><span class="s2">&quot;isotp://vcan0?src_addr=0x6aa&amp;dst_addr=0x6f4&amp;rx_ext_address=0xaa&amp;ext_address=0xf4&amp;is_fd=false&quot;</span><span class="w"> </span>rng
+<span class="gp">$ </span>gallia<span class="w"> </span>script<span class="w"> </span>vecu<span class="w"> </span><span class="s2">&quot;isotp://vcan0?src_addr=0x6bb&amp;dst_addr=0x6f4&amp;rx_ext_address=0xbb&amp;ext_address=0xf4&amp;is_fd=false&quot;</span><span class="w"> </span>rng
+</pre></div>
+</div>
+</section>
+</section>
+<section id="model">
+<h2>model<a class="headerlink" href="#model" title="Link to this heading"></a></h2>
+<p>There are currently two different types of ECU models, which can be used together with any of the supported transports.</p>
+<section id="rng">
+<h3>rng<a class="headerlink" href="#rng" title="Link to this heading"></a></h3>
+<p>This type of model, creates an ECU, with a random set of supported sessions, services, sub-functions and identifiers,
+where applicable.
+By default, this model makes use of all available default behaviors,
+thereby offering a very standard conformant behavior out of the box.
+As with any model, these default mechanisms can be disabled via the <em>vecu-options</em>.
+It can be further customized by specifying mandatory as well as optional sessions and services.
+Additionally, the probabilities which are used to compute the previously mentioned set of available
+functionality can be altered.</p>
+<p>For example, a random virtual ECU with no customization can be created with the following command:</p>
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>gallia<span class="w"> </span>vecu<span class="w"> </span><span class="s2">&quot;tcp-lines://127.0.0.1:20162&quot;</span><span class="w"> </span>rng
+<span class="go">Storing artifacts at ...</span>
+<span class="go">Starting ...</span>
+<span class="go">Initialized random UDS server with seed 1623483675214623782</span>
+<span class="go">    &quot;0x01&quot;: {</span>
+<span class="go">        &quot;0x01 (ShowCurrentData)&quot;: null,</span>
+<span class="go">        &quot;0x02 (ShowFreezeFrameData)&quot;: null,</span>
+<span class="go">        &quot;0x04 (ClearDiagnosticTroubleCodesAndStoredValues)&quot;: null,</span>
+<span class="go">        &quot;0x07 (ShowPendingDiagnosticTroubleCodes)&quot;: null,</span>
+<span class="go">        &quot;0x09 (RequestVehicleInformation)&quot;: null,</span>
+<span class="go">        &quot;0x10 (DiagnosticSessionControl)&quot;: &quot;[&#39;0x01&#39;]&quot;,</span>
+<span class="go">        &quot;0x14 (ClearDiagnosticInformation)&quot;: null,</span>
+<span class="go">        &quot;0x27 (SecurityAccess)&quot;: &quot;[&#39;0x29&#39;, &#39;0x2a&#39;, &#39;0x3f&#39;, &#39;0x40&#39;, &#39;0x63&#39;, &#39;0x64&#39;]&quot;,</span>
+<span class="go">        &quot;0x31 (RoutineControl)&quot;: &quot;[&#39;0x01&#39;, &#39;0x02&#39;, &#39;0x03&#39;]&quot;,</span>
+<span class="go">        &quot;0x3d (WriteMemoryByAddress)&quot;: null</span>
+<span class="go">    }</span>
+<span class="go">}</span>
+</pre></div>
+</div>
+<p>After the startup, the output shows an overview of the supported sessions, services and sub-functions.
+In this case only one session with ten services is offered.</p>
+<p>To enable reproducibility, at the startup, the output shows the seed, which has been used to initialize the random
+number generator.
+Using the same seed in combination with the same arguments, one can recreate the same virtual ECU:</p>
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="go">gallia vecu &quot;tcp-lines://127.0.0.1:20162&quot; rng --seed &lt;seed&gt;</span>
+</pre></div>
+</div>
+<p>The following command shows how to control the selection of services, by altering the mandatory and optional services,
+as well as the probability that determines, how likely one of the optional services is included.
+The same is possible for services.
+For other categories, only the probabilities can be changed.</p>
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>gallia<span class="w"> </span>vecu<span class="w"> </span><span class="s2">&quot;tcp-lines://127.0.0.1:20162&quot;</span><span class="w"> </span>rng<span class="w"> </span>--mandatory_services<span class="w"> </span><span class="s2">&quot;[DiagnosticSessionControl, ReadDataByIdentifier]&quot;</span><span class="w"> </span>--optional_services<span class="w"> </span><span class="s2">&quot;[RoutineControl]&quot;</span><span class="w"> </span>--p_service<span class="w"> </span><span class="m">0</span>.5
+<span class="go">Storing artifacts at ...</span>
+<span class="go">Starting ...</span>
+<span class="go">Initialized random UDS server with seed 222579011926250596</span>
+<span class="go">{</span>
+<span class="go">    &quot;0x01&quot;: {</span>
+<span class="go">        &quot;0x10 (DiagnosticSessionControl)&quot;: &quot;[&#39;0x01&#39;, &#39;0x46&#39;]&quot;,</span>
+<span class="go">        &quot;0x22 (ReadDataByIdentifier)&quot;: null,</span>
+<span class="go">        &quot;0x31 (RoutineControl)&quot;: &quot;[&#39;0x01&#39;, &#39;0x02&#39;, &#39;0x03&#39;]&quot;</span>
+<span class="go">    },</span>
+<span class="go">    &quot;0x46&quot;: {</span>
+<span class="go">        &quot;0x10 (DiagnosticSessionControl)&quot;: &quot;[&#39;0x01&#39;]&quot;,</span>
+<span class="go">        &quot;0x22 (ReadDataByIdentifier)&quot;: null</span>
+<span class="go">    }</span>
+<span class="go">}</span>
+</pre></div>
+</div>
+</section>
+<section id="db">
+<h3>db<a class="headerlink" href="#db" title="Link to this heading"></a></h3>
+<p>This type of model creates a virtual ECU that mimics the behavior of an already scanned ECU.
+This functionality is based on the database logging of the scanners.
+For each request that the virtual ECU receives, it looks up if there is a corresponding request and response pair in
+the database, which also satisfies other conditions, such as a matching ECU state.
+By default, it will return either the corresponding response, or no response at all, if no such pair exists.
+As with any model, default ECU mechanisms, such as a default request or correct handling of the
+suppressPosRespMsgIndicationBit are supported, but are disabled by default.
+They might be particularly useful to compensate for behavior, that is not intended to be handled explicitly,
+while being able to include the corresponding ECU in the testing procedure.</p>
+<p>When using the db model, the virtual ECU requires the path of the database to which scan results have been
+logged for the corresponding ECU.
+For example, a virtual ECU that mimics the behavior of an ECU,
+that was logged in <em>/path/to/db</em> can be created with the following command:</p>
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>gallia<span class="w"> </span>vecu<span class="w"> </span><span class="s2">&quot;tcp-lines://127.0.0.1:20162&quot;</span><span class="w"> </span>db<span class="w"> </span>/path/to/db
+</pre></div>
+</div>
+<p>If the database contains logs of multiple ECUs, one particular ECU can be chosen by its name.
+Note, that the name is not filled in automatically
+and may have to be manually added and referenced in one or more addresses.
+Additionally, it is possible to include only those scan runs, for which the ECU satisfied a set of properties.
+For example, the following command creates a virtual ECU that mimics the behavior of the ECU <em>XYZ</em> based on the logs
+in <em>/path/to/db</em> where the <em>software_version</em> was <em>1.2.3</em>:</p>
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>gallia<span class="w"> </span>vecu<span class="w"> </span><span class="s2">&quot;tcp-lines://127.0.0.1:20162&quot;</span><span class="w"> </span>db<span class="w"> </span>/path/to/db<span class="w"> </span>--ecu<span class="w"> </span><span class="s2">&quot;XYZ&quot;</span><span class="w"> </span>--properties<span class="w"> </span><span class="s1">&#39;{&quot;software_version&quot;: &quot;1.2.3&quot;}&#39;</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="scan_modes.html" class="btn btn-neutral float-left" title="Scan Modes" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../api.html" class="btn btn-neutral float-right" title="Public API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
