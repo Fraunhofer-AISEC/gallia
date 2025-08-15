@@ -57,7 +57,8 @@ class PDUFuzzer(UDSScanner):
 
     async def observe_can_messages(self, can_ids: list[int]) -> None:
         can_url = self.config.target.url._replace(scheme=RawCANTransport.SCHEME)
-        transport = await RawCANTransport.connect(TargetURI(can_url.geturl()))
+        transport = RawCANTransport(TargetURI(can_url.geturl()))
+        await transport.connect()
         transport.set_filter(can_ids, inv_filter=False)
 
         try:
