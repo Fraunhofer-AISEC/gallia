@@ -8,6 +8,7 @@ import gzip
 import json
 import mmap
 import shutil
+import sys
 import tempfile
 import warnings
 from argparse import ArgumentParser, BooleanOptionalAction
@@ -22,7 +23,11 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, BinaryIO
 
 import platformdirs
-import zstandard as zstd
+
+if sys.version_info < (3, 14):
+    import zstandard as zstd
+else:
+    from compression import zstd
 
 from gallia.log import PenlogPriority, PenlogRecord
 from gallia.services.uds.core.service import NegativeResponse, UDSRequest, UDSResponse
