@@ -8,6 +8,7 @@ import gzip
 import json
 import mmap
 import shutil
+import sys
 import tempfile
 import warnings
 from argparse import ArgumentParser, BooleanOptionalAction
@@ -22,7 +23,11 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, BinaryIO
 
 import platformdirs
-import zstandard as zstd
+
+if sys.version_info < (3, 14):
+    import zstandard as zstd
+else:
+    from compression import zstd
 
 from gallia.log import PenlogPriority, PenlogRecord
 from gallia.services.uds.core.service import NegativeResponse, UDSRequest, UDSResponse
@@ -274,9 +279,8 @@ class CursedHR:
             def copy_to_file(tmp_file: Any) -> None:
                 match self.in_file.suffix:
                     case ".zst":
-                        with self.in_file.open("rb") as in_file:
-                            decomp = zstd.ZstdDecompressor()
-                            decomp.copy_stream(in_file, file)
+                        with zstd.open(self.in_file, "rb") as in_file:
+                            shutil.copyfileobj(in_file, file)
                     case ".gz":
                         with gzip.open(self.in_file, "rb") as in_file:
                             shutil.copyfileobj(in_file, file)
