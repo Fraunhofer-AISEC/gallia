@@ -7,7 +7,7 @@
 from argparse import Namespace
 from typing import Any, Generic, TypeAlias
 
-from boltons.iterutils import get_path, remap  # type: ignore
+from boltons.iterutils import get_path, remap
 from pydantic import BaseModel
 
 from .namespaces import to_dict
@@ -66,7 +66,7 @@ class _NestedArgumentParser(Generic[PydanticModelT]):
 
                 if len(self.subcommand_path) > 0:
                     path = (*self.subcommand_path, key)
-                    value = get_path(self.args, path, value)
+                    value = get_path(self.args, path, value)  # type: ignore[no-untyped-call]
 
                 model_fields[key] = value
 
@@ -80,7 +80,7 @@ class _NestedArgumentParser(Generic[PydanticModelT]):
         # relying on the submodel defaults
         # -> thus, the submodel name/key needs to be kept in
         # the schema
-        return remap(schema, visit=lambda p, k, v: v is not None)
+        return remap(schema, visit=lambda p, k, v: v is not None)  # type: ignore[no-untyped-call]
 
     def validate(self) -> tuple[PydanticModelT, BaseModel]:
         """Return the root of the model, as well as the sub-model for the bottom subcommand"""

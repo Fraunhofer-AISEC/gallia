@@ -27,7 +27,10 @@ from queue import Queue
 from types import TracebackType
 from typing import Any, BinaryIO, Self, TextIO, TypeAlias, cast
 
-import zstandard as zstd
+if sys.version_info < (3, 14):
+    import zstandard as zstd
+else:
+    from compression import zstd
 
 gmt_offset = time.localtime().tm_gmtoff
 tz = datetime.timezone(datetime.timedelta(seconds=gmt_offset))
