@@ -50,8 +50,7 @@ dependencies = [
 "cursed-hr" = "gallia.cli.cursed_hr:main"
 "hr" = "gallia.cli.hr:main"
 
-# TODO: Change to dependency-groups once https://github.com/pypa/pip/issues/12963 is resolved
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
     "Sphinx >=8.0",
     "construct-typing >=0.5.2,<0.7.0",
