@@ -40,11 +40,15 @@ class UDSScannerConfig(ScannerConfig, cli_group="uds", config_section="gallia.pr
     ping: bool = Field(True, description="Enable/Disable initial TesterPresent request")
     tester_present_interval: float = Field(
         0.5,
-        description="Modify the interval of the cyclic tester present packets",
+        description="Time interval between cyclic tester present requests of the background worker",
         metavar="SECONDS",
     )
     tester_present: bool = Field(
         True, description="Enable/Disable tester present background worker"
+    )
+    tester_present_only_on_inactivity: bool = Field(
+        False,
+        description="If 'true', TesterPresent messages are sent if there is no UDS-activity for `interval` amount of time instead of every `interval` seconds",
     )
     properties: bool = Field(
         True, description="Read and store the ECU proporties prior and after scan"
@@ -164,7 +168,10 @@ class UDSScanner(Scanner, ABC):
         await self.ecu.connect()
 
         if self.config.tester_present:
-            await self.ecu.start_cyclic_tester_present(self.config.tester_present_interval)
+            await self.ecu.attach_tester_present_sender(
+                self.config.tester_present_interval,
+                self.config.tester_present_only_on_inactivity,
+            )
 
         if self.config.properties is True:
             properties = await self.ecu.properties(True)
@@ -203,7 +210,7 @@ class UDSScanner(Scanner, ABC):
                     logger.warning(f"Could not write the scan run to the database: {e!r}")
 
         if self.config.tester_present:
-            await self.ecu.stop_cyclic_tester_present()
+            await self.ecu.detach_tester_present_sender()
 
         # self.ecu.transport will be different from self.transport if self.ecu.reconnect() was called at any time
         # It is important to close this new transport as well!
