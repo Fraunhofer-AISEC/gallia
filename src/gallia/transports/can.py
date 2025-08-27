@@ -8,7 +8,7 @@ import struct
 import sys
 import time
 from dataclasses import dataclass
-from typing import Self
+from typing import Self, cast
 
 assert sys.platform.startswith("linux"), "unsupported platform"
 
@@ -267,3 +267,27 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
                 continue
         addr_idle.sort()
         return addr_idle
+
+    @staticmethod
+    def _swap_bytes_16(x: int) -> int:
+        return cast(int, struct.unpack(">H", struct.pack("<H", x))[0])
+
+    async def dumpcap_argument_list(self) -> list[str] | None:
+        src_addr = auto_int(self.target.qs["src_addr"][0]) if "src_addr" in self.target.qs else None
+        dst_addr = auto_int(self.target.qs["dst_addr"][0]) if "dst_addr" in self.target.qs else None
+        args = ["dumpcap", "-q", "-i", self.target.netloc, "-w", "-"]
+        # Debug this with `dumpcap -d` or `tshark -x` to inspect the captured buffer.
+        filter_ = ""
+
+        if src_addr is not None and dst_addr is not None:
+            # TODO: Support extended CAN IDs
+            if src_addr > 0x800 or dst_addr > 0x800:
+                logger.error("Extended CAN Ids are currently not supported!")
+                return None
+
+            filter_ += (
+                f"link[0:2] == {self._swap_bytes_16(src_addr):#x} "  # can_id is in little endian
+                f"|| link[0:2] == {self._swap_bytes_16(dst_addr):#x}"
+            )
+        args += ["-f", filter_]
+        return args

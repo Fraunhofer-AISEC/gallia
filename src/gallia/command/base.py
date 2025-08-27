@@ -7,7 +7,6 @@ import dataclasses
 import json
 import os
 import os.path
-import shutil
 import signal
 import sys
 from abc import ABC, abstractmethod
@@ -502,22 +501,19 @@ class Scanner(AsyncScript, ABC):
                     self.config.power_cycle_sleep, lambda: asyncio.sleep(2)
                 )
 
-        # Start dumpcap as the first subprocess; otherwise network
-        # traffic might be missing.
-        if self.artifacts_dir and self.config.dumpcap:
-            if shutil.which("dumpcap") is None:
-                raise RuntimeError("--dumpcap specified but `dumpcap` is not available")
-            self.dumpcap = await Dumpcap.start(self.config.target, self.artifacts_dir)
-            if self.dumpcap is None:
-                logger.error("`dumpcap` could not be started!")
-            else:
-                await self.dumpcap.sync()
-
         try:
             # If there is no transport yet, accessing self.transport will raise a RuntimeError
+            if self.artifacts_dir is not None and self.config.dumpcap is True:
+                await self.transport.dumpcap_start(self.artifacts_dir)
+
             await self.transport.connect()
+
         except RuntimeError:
             self.transport = load_transport(self.config.target)
+
+            if self.artifacts_dir is not None and self.config.dumpcap is True:
+                await self.transport.dumpcap_start(self.artifacts_dir)
+
             await self.transport.connect()
 
     async def teardown(self) -> None:
