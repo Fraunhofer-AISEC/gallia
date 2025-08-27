@@ -3,15 +3,18 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+import os
 import socket
 import struct
 from dataclasses import dataclass
 from enum import IntEnum, unique
 from typing import Any, Self
+from urllib.parse import urlparse
 
 from pydantic import BaseModel, field_validator
 
 from gallia.log import get_logger
+from gallia.net import split_host_port
 from gallia.transports.base import BaseTransport, TargetURI
 from gallia.utils import (
     auto_int,
@@ -872,5 +875,42 @@ class DoIPTransport(BaseTransport, scheme="doip"):
             # BrokenPipeError but instead ignore it here and let upper layers handle
             # missing responses
             logger.debug("DoIP message was ACKed with TargetUnreachable")
+            raise TimeoutError
 
         return len(data)
+
+    async def dumpcap_argument_list(self) -> list[str] | None:
+        try:
+            host, port = split_host_port(self.target.netloc)
+        except Exception as e:
+            logger.error(f"Invalid argument for target ip: {self.target.netloc}; {e}")
+            return None
+
+        if proxy := os.getenv("all_proxy"):
+            url = urlparse(proxy)
+            host = str(url.hostname) if url.hostname else "localhost"
+            port = url.port if url.port else 1080
+
+        loop = asyncio.get_running_loop()
+        res = await loop.getaddrinfo(
+            host,
+            port,
+            type=socket.SocketKind.SOCK_STREAM,
+        )
+        # We don't do round robin, ergo we only have
+        # 1 result. That's fine here. The data structure
+        # of the return value of getaddrinfo() is weird,
+        # but it's documented in the python docs:
+        # https://docs.python.org/3/library/socket.html
+        addr_tuple = res[0]
+        ip, port = addr_tuple[4][0], addr_tuple[4][1]
+        return [
+            "dumpcap",
+            "-q",
+            "-i",
+            "any",
+            "-w",
+            "-",
+            "-f",
+            f"host {ip} and tcp port {port}",
+        ]
