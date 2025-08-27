@@ -6,9 +6,11 @@ import asyncio
 import binascii
 import io
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Any, Protocol, Self
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
+from gallia.dumpcap import Dumpcap
 from gallia.log import get_logger
 from gallia.net import join_host_port
 from gallia.transports.schemes import TransportScheme
@@ -134,6 +136,7 @@ class BaseTransport(ABC):
         self.mutex = asyncio.Lock()
         self.target = target
         self.is_closed = False
+        self._dumpcap: Dumpcap | None = None
 
     def __init_subclass__(
         cls,
@@ -239,6 +242,37 @@ class BaseTransport(ABC):
         """
         await self.write(data, timeout, tags)
         return await self.read(timeout, tags)
+
+    async def dumpcap_start(self, save_directory: Path) -> None:
+        logger.debug("Attempting to start Dumpcap")
+
+        if self._dumpcap is not None:
+            logger.warning("Attempted to start Dumpcap, but it is already running!")
+            return
+
+        if (argument_list := await self.dumpcap_argument_list()) is None:
+            logger.warning(
+                f"Transport '{self.SCHEME}' of {self.target} does not support Dumpcap captures!"
+            )
+            return
+
+        self._dumpcap = await Dumpcap.start(argument_list, save_directory)
+        if self._dumpcap is None:
+            logger.error("Dumpcap could not be started!")
+        else:
+            await self._dumpcap.sync()
+
+    async def dumpcap_stop(self) -> None:
+        if self._dumpcap is None:
+            logger.warning("Attempting to stop Dumpcap, but it is not running!")
+            return
+
+        logger.warning("Stopping Dumpcap")
+        await self._dumpcap.stop()
+
+    @abstractmethod
+    async def dumpcap_argument_list(self) -> list[str] | None:
+        """Return the arguments required for Dumpcap to capture traffic of this transport or `None` if not supported."""
 
 
 class LinesTransportMixin:

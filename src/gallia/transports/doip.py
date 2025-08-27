@@ -11,7 +11,9 @@ from typing import Any, Self
 
 from pydantic import BaseModel, field_validator
 
+from gallia.dumpcap import dumpcap_argument_list_eth
 from gallia.log import get_logger
+from gallia.net import split_host_port
 from gallia.transports.base import BaseTransport, TargetURI
 from gallia.utils import (
     auto_int,
@@ -902,5 +904,15 @@ class DoIPTransport(BaseTransport, scheme="doip"):
             # BrokenPipeError but instead ignore it here and let upper layers handle
             # missing responses
             logger.debug("DoIP message was ACKed with TargetUnreachable")
+            raise TimeoutError
 
         return len(data)
+
+    async def dumpcap_argument_list(self) -> list[str] | None:
+        try:
+            host, port = split_host_port(self.target.netloc)
+        except Exception as e:
+            logger.error(f"Invalid argument for target ip: {self.target.netloc}; {e}")
+            return None
+
+        return await dumpcap_argument_list_eth(host, port)

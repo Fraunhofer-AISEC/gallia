@@ -19,3 +19,6 @@ class DummyTransport(BaseTransport, scheme="dummy"):
         self, data: bytes, timeout: float | None = None, tags: list[str] | None = None
     ) -> int:
         return len(data)
+
+    async def dumpcap_argument_list(self) -> list[str] | None:
+        return None
