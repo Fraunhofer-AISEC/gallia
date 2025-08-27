@@ -72,6 +72,9 @@ class UnixTransport(BaseTransport, scheme="unix"):
         logger.trace(data.hex(), extra={"tags": t})
         return data
 
+    async def dumpcap_argument_list(self) -> list[str] | None:
+        return None
+
 
 class UnixLinesTransport(LinesTransportMixin, UnixTransport, scheme="unix-lines"):
     def get_reader(self) -> asyncio.StreamReader:

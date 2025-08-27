@@ -7,7 +7,6 @@ import dataclasses
 import json
 import os
 import os.path
-import shutil
 import signal
 import sys
 from abc import ABC, abstractmethod
@@ -24,7 +23,6 @@ from pydantic import ConfigDict, field_serializer, model_validator
 from gallia import exitcodes
 from gallia.command.config import Field, GalliaBaseModel, Idempotent
 from gallia.db.handler import DBHandler
-from gallia.dumpcap import Dumpcap
 from gallia.log import _ZstdFileHandler, add_zst_log_handler, get_logger, remove_zst_log_handler, tz
 from gallia.power_supply import PowerSupply
 from gallia.power_supply.uri import PowerSupplyURI
@@ -461,7 +459,6 @@ class Scanner(AsyncScript, ABC):
     - `setup()` can be overwritten (do not forget to call `super().setup()`)
       for preparation tasks, such as establishing a network connection or
       starting background tasks.
-    - pcap logfiles can be recorded via a Dumpcap background task.
     - `teardown()` can be overwritten (do not forget to call `super().teardown()`)
       for cleanup tasks, such as terminating a network connection or background
       tasks.
@@ -475,7 +472,6 @@ class Scanner(AsyncScript, ABC):
         self.config: ScannerConfig = config
         self.power_supply: PowerSupply | None = None
         self._transport: BaseTransport | None = None
-        self.dumpcap: Dumpcap | None = None
 
     @property
     def transport(self) -> BaseTransport:
@@ -502,26 +498,21 @@ class Scanner(AsyncScript, ABC):
                     self.config.power_cycle_sleep, lambda: asyncio.sleep(2)
                 )
 
-        # Start dumpcap as the first subprocess; otherwise network
-        # traffic might be missing.
-        if self.artifacts_dir and self.config.dumpcap:
-            if shutil.which("dumpcap") is None:
-                raise RuntimeError("--dumpcap specified but `dumpcap` is not available")
-            self.dumpcap = await Dumpcap.start(self.config.target, self.artifacts_dir)
-            if self.dumpcap is None:
-                logger.error("`dumpcap` could not be started!")
-            else:
-                await self.dumpcap.sync()
-
-        try:
-            # If there is no transport yet, accessing self.transport will raise a RuntimeError
-            await self.transport.connect()
-        except RuntimeError:
+        # Checking `_transport` for None to check if a transport was already provided to the class
+        if self._transport is None:
+            logger.debug(
+                f"No transport present, loading from target string: '{self.config.target}'"
+            )
             self.transport = load_transport(self.config.target)
-            await self.transport.connect()
+        else:
+            logger.debug("Transport already present")
+
+        # Start dumpcap as the first subprocess; otherwise network traffic might be missing.
+        if self.artifacts_dir is not None and self.config.dumpcap is True:
+            await self.transport.dumpcap_start(self.artifacts_dir)
+
+        await self.transport.connect()
 
     async def teardown(self) -> None:
         await self.transport.close()
-
-        if self.dumpcap:
-            await self.dumpcap.stop()
+        await self.transport.dumpcap_stop()

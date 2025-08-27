@@ -4,7 +4,9 @@
 
 import asyncio
 
+from gallia.dumpcap import dumpcap_argument_list_eth
 from gallia.log import get_logger
+from gallia.net import split_host_port
 from gallia.transports.base import BaseTransport, LinesTransportMixin, TargetURI
 
 logger = get_logger(__name__)
@@ -69,6 +71,15 @@ class TCPTransport(BaseTransport, scheme="tcp"):
         t = tags + ["read"] if tags is not None else ["read"]
         logger.trace(data.hex(), extra={"tags": t})
         return data
+
+    async def dumpcap_argument_list(self) -> list[str] | None:
+        try:
+            host, port = split_host_port(self.target.netloc)
+        except Exception as e:
+            logger.error(f"Invalid argument for target ip: {self.target.netloc}; {e}")
+            return None
+
+        return await dumpcap_argument_list_eth(host, port)
 
 
 class TCPLinesTransport(LinesTransportMixin, TCPTransport, scheme="tcp-lines"):

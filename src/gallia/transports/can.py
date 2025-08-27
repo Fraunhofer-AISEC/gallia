@@ -14,6 +14,7 @@ assert sys.platform.startswith("linux"), "unsupported platform"
 
 from pydantic import BaseModel, field_validator
 
+from gallia.dumpcap import dumpcap_argument_list_can
 from gallia.log import get_logger
 from gallia.transports._can_constants import (
     CAN_EFF_FLAG,
@@ -267,3 +268,10 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
                 continue
         addr_idle.sort()
         return addr_idle
+
+    async def dumpcap_argument_list(self) -> list[str] | None:
+        return dumpcap_argument_list_can(
+            self.target.netloc,
+            auto_int(self.target.qs["src_addr"][0]) if "src_addr" in self.target.qs else None,
+            auto_int(self.target.qs["dst_addr"][0]) if "dst_addr" in self.target.qs else None,
+        )

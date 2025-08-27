@@ -12,7 +12,9 @@ from typing import Any, Self
 
 from pydantic import BaseModel, field_validator
 
+from gallia.dumpcap import dumpcap_argument_list_eth
 from gallia.log import get_logger
+from gallia.net import split_host_port
 from gallia.transports.base import BaseTransport, TargetURI
 from gallia.utils import auto_int, handle_task_error, set_task_handler_ctx_variable
 
@@ -378,3 +380,12 @@ class HSFZTransport(BaseTransport, scheme="hsfz"):
 
         await asyncio.wait_for(self._conn.write_diag_request(data), timeout)
         return len(data)
+
+    async def dumpcap_argument_list(self) -> list[str] | None:
+        try:
+            host, port = split_host_port(self.target.netloc)
+        except Exception as e:
+            logger.error(f"Invalid argument for target ip: {self.target.netloc}; {e}")
+            return None
+
+        return await dumpcap_argument_list_eth(host, port)

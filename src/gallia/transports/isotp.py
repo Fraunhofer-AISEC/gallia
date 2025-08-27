@@ -12,6 +12,7 @@ assert sys.platform == "linux", "unsupported platform"
 
 from pydantic import BaseModel, field_validator
 
+from gallia.dumpcap import dumpcap_argument_list_can
 from gallia.log import get_logger
 from gallia.transports._can_constants import (
     CAN_ISOTP_EXTEND_ADDR,
@@ -197,3 +198,10 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
             return
         self._sock.close()
         self._sock = None
+
+    async def dumpcap_argument_list(self) -> list[str] | None:
+        return dumpcap_argument_list_can(
+            self.target.netloc,
+            auto_int(self.target.qs["src_addr"][0]) if "src_addr" in self.target.qs else None,
+            auto_int(self.target.qs["dst_addr"][0]) if "dst_addr" in self.target.qs else None,
+        )
