@@ -68,7 +68,7 @@ def load_transports() -> list[type[BaseTransport]]:
     return transports
 
 
-def load_transport(target: TargetURI) -> type[BaseTransport]:
+def load_transport(target: TargetURI) -> BaseTransport:
     """Selects a transport class depending on a TargetURI.
     The lookup is performed in builtin transports and all
     classes behind the ``gallia_transports`` entry_point.
@@ -76,7 +76,7 @@ def load_transport(target: TargetURI) -> type[BaseTransport]:
     for plugin in load_plugins():
         for transport in plugin.transports():
             if target.scheme == transport.SCHEME:
-                return transport
+                return transport(target)
 
     raise ValueError(f"no transport for {target}")
 

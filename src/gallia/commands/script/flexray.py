@@ -13,6 +13,7 @@ assert sys.platform == "win32"
 
 from gallia.command import AsyncScript
 from gallia.transports._ctypes_vector_xl_wrapper import FlexRayCtypesBackend
+from gallia.transports.base import TargetURI
 from gallia.transports.flexray_vector import FlexRayFrame, RawFlexRayTransport, parse_frame_type
 
 
@@ -47,7 +48,8 @@ class FRDump(AsyncScript):
         return res
 
     async def main(self) -> None:
-        tp = await RawFlexRayTransport.connect("fr-raw:", None)
+        tp = RawFlexRayTransport(TargetURI("fr-raw:"))
+        await tp.connect()
 
         if len(self.config.slot) > 0:
             tp.add_block_all_filter()
