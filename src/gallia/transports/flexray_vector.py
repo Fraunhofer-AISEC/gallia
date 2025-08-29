@@ -132,6 +132,9 @@ class RawFlexRayTransport(BaseTransport, scheme="fr-raw"):
         async with self.mutex:
             await self.backend.close()
 
+    async def dumpcap_argument_list(self) -> list[str] | None:
+        return None
+
 
 class FlexrayTPLegacyConfig(BaseModel):
     src_slot_id: int
@@ -493,3 +496,6 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="fr-tp-legacy"):
 
     async def close(self) -> None:
         await self.fr_raw.close()
+
+    async def dumpcap_argument_list(self) -> list[str] | None:
+        return None
