@@ -1,0 +1,1012 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gallia.transports.doip &mdash; gallia  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../transports.html">Transports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../env.html">Environment Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../logging.html">Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../plugins.html">Plugins</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Public API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">gallia.transports.doip</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gallia.transports.doip</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-FileCopyrightText: AISEC Pentesting Team</span>
+<span class="c1">#</span>
+<span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">socket</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">struct</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">IntEnum</span><span class="p">,</span> <span class="n">unique</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Self</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">field_validator</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">gallia.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gallia.transports.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseTransport</span><span class="p">,</span> <span class="n">TargetURI</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gallia.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">auto_int</span><span class="p">,</span>
+    <span class="n">handle_task_error</span><span class="p">,</span>
+    <span class="n">set_task_handler_ctx_variable</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="nd">@unique</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ProtocolVersions</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">ISO_13400_2_2010</span> <span class="o">=</span> <span class="mh">0x01</span>
+    <span class="n">ISO_13400_2_2012</span> <span class="o">=</span> <span class="mh">0x02</span>
+    <span class="n">ISO_13400_2_2019</span> <span class="o">=</span> <span class="mh">0x03</span>
+
+
+<span class="nd">@unique</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">RoutingActivationRequestTypes</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">RESERVED</span> <span class="o">=</span> <span class="mh">0xFF</span>
+    <span class="n">ManufacturerSpecific</span> <span class="o">=</span> <span class="mh">0xFE</span>
+    <span class="n">Default</span> <span class="o">=</span> <span class="mh">0x00</span>
+    <span class="n">WWH_OBD</span> <span class="o">=</span> <span class="mh">0x01</span>
+    <span class="n">CentralSecurity</span> <span class="o">=</span> <span class="mh">0xE0</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_missing_</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;RoutingActivationRequestTypes&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mh">0xE1</span><span class="p">,</span> <span class="mh">0x100</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">ManufacturerSpecific</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">RESERVED</span>
+
+
+<span class="nd">@unique</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">RoutingActivationResponseCodes</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">RESERVED</span> <span class="o">=</span> <span class="mh">0xFF</span>
+    <span class="n">ManufacturerSpecific</span> <span class="o">=</span> <span class="mh">0xFE</span>
+    <span class="n">UnknownSourceAddress</span> <span class="o">=</span> <span class="mh">0x00</span>
+    <span class="n">NoResources</span> <span class="o">=</span> <span class="mh">0x01</span>
+    <span class="n">InvalidConnectionEntry</span> <span class="o">=</span> <span class="mh">0x02</span>
+    <span class="n">AlreadyActive</span> <span class="o">=</span> <span class="mh">0x03</span>
+    <span class="n">AuthenticationMissing</span> <span class="o">=</span> <span class="mh">0x04</span>
+    <span class="n">ConfirmationRejected</span> <span class="o">=</span> <span class="mh">0x05</span>
+    <span class="n">UnsupportedActivationType</span> <span class="o">=</span> <span class="mh">0x06</span>
+    <span class="n">TLSRequired</span> <span class="o">=</span> <span class="mh">0x07</span>
+    <span class="n">Success</span> <span class="o">=</span> <span class="mh">0x10</span>
+    <span class="n">SuccessConfirmationRequired</span> <span class="o">=</span> <span class="mh">0x11</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_missing_</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;RoutingActivationResponseCodes&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mh">0xE0</span><span class="p">,</span> <span class="mh">0xFF</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">ManufacturerSpecific</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">RESERVED</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">DoIPRoutingActivationDeniedError</span><span class="p">(</span><span class="ne">ConnectionAbortedError</span><span class="p">):</span>
+    <span class="n">rac_code</span><span class="p">:</span> <span class="n">RoutingActivationResponseCodes</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rac_code</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rac_code</span> <span class="o">=</span> <span class="n">RoutingActivationResponseCodes</span><span class="p">(</span><span class="n">rac_code</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;DoIP routing activation denied: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">rac_code</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">rac_code</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+
+
+<span class="nd">@unique</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">PayloadTypes</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">GenericDoIPHeaderNACK</span> <span class="o">=</span> <span class="mh">0x0000</span>
+    <span class="n">VehicleIdentificationRequestMessage</span> <span class="o">=</span> <span class="mh">0x0001</span>
+    <span class="n">VehicleIdentificationRequestMessageWithEID</span> <span class="o">=</span> <span class="mh">0x0002</span>
+    <span class="n">VehicleIdentificationRequestMessageWithVIN</span> <span class="o">=</span> <span class="mh">0x0003</span>
+    <span class="n">VehicleAnnouncementMessage</span> <span class="o">=</span> <span class="mh">0x004</span>
+    <span class="n">RoutingActivationRequest</span> <span class="o">=</span> <span class="mh">0x0005</span>
+    <span class="n">RoutingActivationResponse</span> <span class="o">=</span> <span class="mh">0x0006</span>
+    <span class="n">AliveCheckRequest</span> <span class="o">=</span> <span class="mh">0x0007</span>
+    <span class="n">AliveCheckResponse</span> <span class="o">=</span> <span class="mh">0x0008</span>
+    <span class="n">DoIPEntityStatusRequest</span> <span class="o">=</span> <span class="mh">0x4001</span>
+    <span class="n">DoIPEntityStatusResponse</span> <span class="o">=</span> <span class="mh">0x4002</span>
+    <span class="n">DiagnosticPowerModeInformationRequest</span> <span class="o">=</span> <span class="mh">0x4003</span>
+    <span class="n">DiagnosticPowerModeInformationResponse</span> <span class="o">=</span> <span class="mh">0x4004</span>
+    <span class="n">DiagnosticMessage</span> <span class="o">=</span> <span class="mh">0x8001</span>
+    <span class="n">DiagnosticMessagePositiveAcknowledgement</span> <span class="o">=</span> <span class="mh">0x8002</span>
+    <span class="n">DiagnosticMessageNegativeAcknowledgement</span> <span class="o">=</span> <span class="mh">0x8003</span>
+
+
+<span class="nd">@unique</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DiagnosticMessagePositiveAckCodes</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">Success</span> <span class="o">=</span> <span class="mh">0x00</span>
+
+
+<span class="nd">@unique</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DiagnosticMessageNegativeAckCodes</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">RESERVED</span> <span class="o">=</span> <span class="mh">0xFF</span>
+    <span class="n">InvalidSourceAddress</span> <span class="o">=</span> <span class="mh">0x02</span>
+    <span class="n">UnknownTargetAddress</span> <span class="o">=</span> <span class="mh">0x03</span>
+    <span class="n">DiagnosticMessageTooLarge</span> <span class="o">=</span> <span class="mh">0x04</span>
+    <span class="n">OutOfMemory</span> <span class="o">=</span> <span class="mh">0x05</span>
+    <span class="n">TargetUnreachable</span> <span class="o">=</span> <span class="mh">0x06</span>
+    <span class="n">UnknownNetwork</span> <span class="o">=</span> <span class="mh">0x07</span>
+    <span class="n">TransportProtocolError</span> <span class="o">=</span> <span class="mh">0x08</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_missing_</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;DiagnosticMessageNegativeAckCodes&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">RESERVED</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">DoIPNegativeAckError</span><span class="p">(</span><span class="ne">BrokenPipeError</span><span class="p">):</span>
+    <span class="n">nack_code</span><span class="p">:</span> <span class="n">DiagnosticMessageNegativeAckCodes</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">negative_ack_code</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nack_code</span> <span class="o">=</span> <span class="n">DiagnosticMessageNegativeAckCodes</span><span class="p">(</span><span class="n">negative_ack_code</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;DoIP negative ACK received: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">nack_code</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">negative_ack_code</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+
+
+<span class="nd">@unique</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">GenericDoIPHeaderNACKCodes</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">RESERVED</span> <span class="o">=</span> <span class="mh">0xFF</span>
+    <span class="n">IncorrectPatternFormat</span> <span class="o">=</span> <span class="mh">0x00</span>
+    <span class="n">UnknownPayloadType</span> <span class="o">=</span> <span class="mh">0x01</span>
+    <span class="n">MessageTooLarge</span> <span class="o">=</span> <span class="mh">0x02</span>
+    <span class="n">OutOfMemory</span> <span class="o">=</span> <span class="mh">0x03</span>
+    <span class="n">InvalidPayloadLength</span> <span class="o">=</span> <span class="mh">0x04</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_missing_</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;GenericDoIPHeaderNACKCodes&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">RESERVED</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">DoIPGenericHeaderNACKError</span><span class="p">(</span><span class="ne">ConnectionAbortedError</span><span class="p">):</span>
+    <span class="n">nack_code</span><span class="p">:</span> <span class="n">GenericDoIPHeaderNACKCodes</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nack_code</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nack_code</span> <span class="o">=</span> <span class="n">GenericDoIPHeaderNACKCodes</span><span class="p">(</span><span class="n">nack_code</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;DoIP generic header negative ACK: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">nack_code</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">nack_code</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">TimingAndCommunicationParameters</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">CtrlTimeout</span> <span class="o">=</span> <span class="mi">2000</span>
+    <span class="n">AnnounceWait</span> <span class="o">=</span> <span class="mi">500</span>
+    <span class="n">AnnounceInterval</span> <span class="o">=</span> <span class="mi">500</span>
+    <span class="n">AnnounceNum</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">DiagnosticMessageMessageAckTimeout</span> <span class="o">=</span> <span class="mi">2000</span>
+    <span class="n">RoutingActivationResponseTimeout</span> <span class="o">=</span> <span class="mi">2000</span>
+    <span class="n">DiagnosticMessageMessageTimeout</span> <span class="o">=</span> <span class="mi">2000</span>
+    <span class="n">TCPGeneralInactivityTimeout</span> <span class="o">=</span> <span class="mi">5000</span>
+    <span class="n">TCPInitialInactivityTimeout</span> <span class="o">=</span> <span class="mi">2000</span>
+    <span class="n">TCPAliveCheckTimeout</span> <span class="o">=</span> <span class="mi">500</span>
+    <span class="n">ProcessingTimeout</span> <span class="o">=</span> <span class="mi">2000</span>
+    <span class="n">VehicleDiscoveryTimeout</span> <span class="o">=</span> <span class="mi">5000</span>
+
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">GenericHeader</span><span class="p">:</span>
+    <span class="n">ProtocolVersion</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">PayloadType</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">PayloadLength</span><span class="p">:</span> <span class="nb">int</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">pack</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span>
+            <span class="s2">&quot;!BBHL&quot;</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ProtocolVersion</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ProtocolVersion</span> <span class="o">^</span> <span class="mh">0xFF</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">PayloadType</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">PayloadLength</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">unpack</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+        <span class="p">(</span>
+            <span class="n">protocol_version</span><span class="p">,</span>
+            <span class="n">inverse_protocol_version</span><span class="p">,</span>
+            <span class="n">payload_type</span><span class="p">,</span>
+            <span class="n">payload_length</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s2">&quot;!BBHL&quot;</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">protocol_version</span> <span class="o">!=</span> <span class="n">inverse_protocol_version</span> <span class="o">^</span> <span class="mh">0xFF</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;inverse protocol_version is invalid&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">protocol_version</span><span class="p">,</span>
+            <span class="n">payload_type</span><span class="p">,</span>
+            <span class="n">payload_length</span><span class="p">,</span>
+        <span class="p">)</span>
+
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">GenericDoIPHeaderNACK</span><span class="p">:</span>
+    <span class="n">GenericHeaderNACKCode</span><span class="p">:</span> <span class="n">GenericDoIPHeaderNACKCodes</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">pack</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span>
+            <span class="s2">&quot;!B&quot;</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">GenericHeaderNACKCode</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">unpack</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+        <span class="p">(</span><span class="n">generic_header_NACK_code</span><span class="p">,)</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s2">&quot;!B&quot;</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">GenericDoIPHeaderNACKCodes</span><span class="p">(</span><span class="n">generic_header_NACK_code</span><span class="p">),</span>
+        <span class="p">)</span>
+
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">VehicleIdentificationRequestMessage</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pack</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
+
+
+<span class="nd">@unique</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">FurtherActionCodes</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">RESERVED</span> <span class="o">=</span> <span class="mh">0x0F</span>
+    <span class="n">ManufacturerSpecific</span> <span class="o">=</span> <span class="mh">0xFF</span>
+    <span class="n">NoFurtherActionRequired</span> <span class="o">=</span> <span class="mh">0x00</span>
+    <span class="n">RoutingActivationRequiredToInitiateCentralSecurity</span> <span class="o">=</span> <span class="mh">0x10</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_missing_</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;FurtherActionCodes&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mh">0x11</span><span class="p">,</span> <span class="mh">0x100</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">ManufacturerSpecific</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">RESERVED</span>
+
+
+<span class="nd">@unique</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SynchronisationStatusCodes</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">RESERVED</span> <span class="o">=</span> <span class="mh">0xFF</span>
+    <span class="n">VINGIDSynchronized</span> <span class="o">=</span> <span class="mh">0x00</span>
+    <span class="n">IncompleteVINGIDNotSynchronized</span> <span class="o">=</span> <span class="mh">0x10</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_missing_</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;SynchronisationStatusCodes&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">RESERVED</span>
+
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">VehicleAnnouncementMessage</span><span class="p">:</span>
+    <span class="n">VIN</span><span class="p">:</span> <span class="nb">bytes</span>
+    <span class="n">LogicalAddress</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">EID</span><span class="p">:</span> <span class="nb">bytes</span>
+    <span class="n">GID</span><span class="p">:</span> <span class="nb">bytes</span>
+    <span class="n">FurtherActionRequired</span><span class="p">:</span> <span class="n">FurtherActionCodes</span>
+    <span class="n">VINGIDSyncStatus</span><span class="p">:</span> <span class="n">SynchronisationStatusCodes</span> <span class="o">|</span> <span class="kc">None</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">unpack</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">==</span> <span class="mi">32</span><span class="p">:</span>
+            <span class="c1"># VINGIDSyncStatus is optional</span>
+            <span class="p">(</span><span class="n">vin</span><span class="p">,</span> <span class="n">logical_address</span><span class="p">,</span> <span class="n">eid</span><span class="p">,</span> <span class="n">gid</span><span class="p">,</span> <span class="n">further_action_required</span><span class="p">)</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span>
+                <span class="s2">&quot;!17sH6s6sB&quot;</span><span class="p">,</span> <span class="n">data</span>
+            <span class="p">)</span>
+            <span class="n">vin_gid_sync_status</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="p">(</span>
+                <span class="n">vin</span><span class="p">,</span>
+                <span class="n">logical_address</span><span class="p">,</span>
+                <span class="n">eid</span><span class="p">,</span>
+                <span class="n">gid</span><span class="p">,</span>
+                <span class="n">further_action_required</span><span class="p">,</span>
+                <span class="n">vin_gid_sync_status</span><span class="p">,</span>
+            <span class="p">)</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s2">&quot;!17sH6s6sBB&quot;</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">vin</span><span class="p">,</span>
+            <span class="n">logical_address</span><span class="p">,</span>
+            <span class="n">eid</span><span class="p">,</span>
+            <span class="n">gid</span><span class="p">,</span>
+            <span class="n">FurtherActionCodes</span><span class="p">(</span><span class="n">further_action_required</span><span class="p">),</span>
+            <span class="n">SynchronisationStatusCodes</span><span class="p">(</span><span class="n">vin_gid_sync_status</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">vin_gid_sync_status</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">)</span>
+
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DoIPEntityStatusRequest</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pack</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
+
+
+<span class="nd">@unique</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">NodeTypes</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">RESERVED</span> <span class="o">=</span> <span class="mh">0xFF</span>
+    <span class="n">Gateway</span> <span class="o">=</span> <span class="mh">0x00</span>
+    <span class="n">Node</span> <span class="o">=</span> <span class="mh">0x01</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_missing_</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;NodeTypes&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">RESERVED</span>
+
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DoIPEntityStatusResponse</span><span class="p">:</span>
+    <span class="n">NodeType</span><span class="p">:</span> <span class="n">NodeTypes</span>
+    <span class="n">MaximumConcurrentTCP_DATASockets</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">CurrentlyOpenTCP_DATASockets</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">MaximumDataSize</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">unpack</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="c1"># MaximumDataSize is optional</span>
+            <span class="p">(</span><span class="n">nt</span><span class="p">,</span> <span class="n">mcts</span><span class="p">,</span> <span class="n">ncts</span><span class="p">)</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s2">&quot;!BBB&quot;</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+            <span class="n">mds</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="p">(</span><span class="n">nt</span><span class="p">,</span> <span class="n">mcts</span><span class="p">,</span> <span class="n">ncts</span><span class="p">,</span> <span class="n">mds</span><span class="p">)</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s2">&quot;!BBBI&quot;</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">NodeTypes</span><span class="p">(</span><span class="n">nt</span><span class="p">),</span> <span class="n">mcts</span><span class="p">,</span> <span class="n">ncts</span><span class="p">,</span> <span class="n">mds</span><span class="p">)</span>
+
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">RoutingActivationRequest</span><span class="p">:</span>
+    <span class="n">SourceAddress</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">ActivationType</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">Reserved</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mh">0x00000000</span>  <span class="c1"># Not used, default value.</span>
+    <span class="c1"># OEMReserved uint32</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">pack</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">&quot;!HBI&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">SourceAddress</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ActivationType</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Reserved</span><span class="p">)</span>
+
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">RoutingActivationResponse</span><span class="p">:</span>
+    <span class="n">SourceAddress</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">TargetAddress</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">RoutingActivationResponseCode</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">Reserved</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mh">0x00000000</span>  <span class="c1"># Not used, default value.</span>
+    <span class="c1"># OEMReserved uint32</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">unpack</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+        <span class="p">(</span>
+            <span class="n">source_address</span><span class="p">,</span>
+            <span class="n">target_address</span><span class="p">,</span>
+            <span class="n">routing_activation_response_code</span><span class="p">,</span>
+            <span class="n">reserved</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s2">&quot;!HHBI&quot;</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">reserved</span> <span class="o">!=</span> <span class="mh">0x00000000</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;reserved field contains data&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">source_address</span><span class="p">,</span>
+            <span class="n">target_address</span><span class="p">,</span>
+            <span class="n">routing_activation_response_code</span><span class="p">,</span>
+            <span class="n">reserved</span><span class="p">,</span>
+        <span class="p">)</span>
+
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DiagnosticMessage</span><span class="p">:</span>
+    <span class="n">SourceAddress</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">TargetAddress</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">UserData</span><span class="p">:</span> <span class="nb">bytes</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">pack</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span>
+                <span class="s2">&quot;!HH&quot;</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">SourceAddress</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">TargetAddress</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">UserData</span>
+        <span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">unpack</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+        <span class="n">source_address</span><span class="p">,</span> <span class="n">target_address</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s2">&quot;!HH&quot;</span><span class="p">,</span> <span class="n">data</span><span class="p">[:</span><span class="mi">4</span><span class="p">])</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">4</span><span class="p">:]</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">source_address</span><span class="p">,</span> <span class="n">target_address</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DiagnosticMessageAcknowledgement</span><span class="p">:</span>
+    <span class="n">SourceAddress</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">TargetAddress</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">ACKCode</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">PreviousDiagnosticMessageData</span><span class="p">:</span> <span class="nb">bytes</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">pack</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span>
+                <span class="s2">&quot;!HHB&quot;</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">SourceAddress</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">TargetAddress</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ACKCode</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">PreviousDiagnosticMessageData</span>
+        <span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">DiagnosticMessagePositiveAcknowledgement</span><span class="p">(</span><span class="n">DiagnosticMessageAcknowledgement</span><span class="p">):</span>
+    <span class="n">ACKCode</span><span class="p">:</span> <span class="n">DiagnosticMessagePositiveAckCodes</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">unpack</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+        <span class="n">source_address</span><span class="p">,</span> <span class="n">target_address</span><span class="p">,</span> <span class="n">ack_code</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s2">&quot;!HHB&quot;</span><span class="p">,</span> <span class="n">data</span><span class="p">[:</span><span class="mi">5</span><span class="p">])</span>
+        <span class="n">prev_data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">5</span><span class="p">:]</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">source_address</span><span class="p">,</span>
+            <span class="n">target_address</span><span class="p">,</span>
+            <span class="n">DiagnosticMessagePositiveAckCodes</span><span class="p">(</span><span class="n">ack_code</span><span class="p">),</span>
+            <span class="n">prev_data</span><span class="p">,</span>
+        <span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">DiagnosticMessageNegativeAcknowledgement</span><span class="p">(</span><span class="n">DiagnosticMessageAcknowledgement</span><span class="p">):</span>
+    <span class="n">ACKCode</span><span class="p">:</span> <span class="n">DiagnosticMessageNegativeAckCodes</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">unpack</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+        <span class="n">source_address</span><span class="p">,</span> <span class="n">target_address</span><span class="p">,</span> <span class="n">ack_code</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s2">&quot;!HHB&quot;</span><span class="p">,</span> <span class="n">data</span><span class="p">[:</span><span class="mi">5</span><span class="p">])</span>
+        <span class="n">prev_data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">5</span><span class="p">:]</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">source_address</span><span class="p">,</span>
+            <span class="n">target_address</span><span class="p">,</span>
+            <span class="n">DiagnosticMessageNegativeAckCodes</span><span class="p">(</span><span class="n">ack_code</span><span class="p">),</span>
+            <span class="n">prev_data</span><span class="p">,</span>
+        <span class="p">)</span>
+
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">AliveCheckRequest</span><span class="p">:</span>
+    <span class="k">pass</span>
+
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">AliveCheckResponse</span><span class="p">:</span>
+    <span class="n">SourceAddress</span><span class="p">:</span> <span class="nb">int</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">pack</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">&quot;!H&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">SourceAddress</span><span class="p">)</span>
+
+
+<span class="c1"># Messages expected to be sent by the DoIP gateway.</span>
+<span class="n">DoIPInData</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">GenericDoIPHeaderNACK</span>
+    <span class="o">|</span> <span class="n">RoutingActivationResponse</span>
+    <span class="o">|</span> <span class="n">DiagnosticMessage</span>
+    <span class="o">|</span> <span class="n">DiagnosticMessagePositiveAcknowledgement</span>
+    <span class="o">|</span> <span class="n">DiagnosticMessageNegativeAcknowledgement</span>
+    <span class="o">|</span> <span class="n">AliveCheckRequest</span>
+<span class="p">)</span>
+
+<span class="c1"># Messages expected to be sent by us.</span>
+<span class="n">DoIPOutData</span> <span class="o">=</span> <span class="n">RoutingActivationRequest</span> <span class="o">|</span> <span class="n">DiagnosticMessage</span> <span class="o">|</span> <span class="n">AliveCheckResponse</span>
+
+<span class="n">DoIPFrame</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">[</span>
+    <span class="n">GenericHeader</span><span class="p">,</span>
+    <span class="n">DoIPInData</span> <span class="o">|</span> <span class="n">DoIPOutData</span><span class="p">,</span>
+<span class="p">]</span>
+<span class="n">DoIPDiagFrame</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">GenericHeader</span><span class="p">,</span> <span class="n">DiagnosticMessage</span><span class="p">]</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">DoIPConnection</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>  <span class="c1"># noqa: PLR0913</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">reader</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamReader</span><span class="p">,</span>
+        <span class="n">writer</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamWriter</span><span class="p">,</span>
+        <span class="n">src_addr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">target_addr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">protocol_version</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">separate_diagnostic_message_queue</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reader</span> <span class="o">=</span> <span class="n">reader</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">writer</span> <span class="o">=</span> <span class="n">writer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_addr</span> <span class="o">=</span> <span class="n">src_addr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_addr</span> <span class="o">=</span> <span class="n">target_addr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">protocol_version</span> <span class="o">=</span> <span class="n">protocol_version</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">separate_diagnostic_message_queue</span> <span class="o">=</span> <span class="n">separate_diagnostic_message_queue</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_diagnostic_message_queue</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Queue</span><span class="p">[</span><span class="n">DoIPDiagFrame</span><span class="p">]</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Queue</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_read_queue</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Queue</span><span class="p">[</span><span class="n">DoIPFrame</span><span class="p">]</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Queue</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_read_task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_read_worker</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_read_task</span><span class="o">.</span><span class="n">add_done_callback</span><span class="p">(</span>
+            <span class="n">handle_task_error</span><span class="p">,</span>
+            <span class="n">context</span><span class="o">=</span><span class="n">set_task_handler_ctx_variable</span><span class="p">(</span><span class="vm">__name__</span><span class="p">,</span> <span class="s2">&quot;DoipReader&quot;</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_is_closed</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mutex</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span>  <span class="c1"># noqa: PLR0913</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">host</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">port</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">src_addr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">target_addr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">so_linger</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">protocol_version</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">ProtocolVersions</span><span class="o">.</span><span class="n">ISO_13400_2_2019</span><span class="p">,</span>
+        <span class="n">separate_diagnostic_message_queue</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+        <span class="n">reader</span><span class="p">,</span> <span class="n">writer</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">open_connection</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">so_linger</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="c1"># Depending on who will close the connection in the end, one party&#39;s socket</span>
+            <span class="c1"># will remain in a TIME_WAIT state, which occupies resources until enough</span>
+            <span class="c1"># time has passed. Setting the LINGER socket option tells our kernel to</span>
+            <span class="c1"># close the connection with a RST, which brings the TCP connection to an</span>
+            <span class="c1"># error state and thus avoids TIME_WAIT and instantly forces LISTEN or CLOSED</span>
+            <span class="c1"># For more info, see e.g. Note 3 of :</span>
+            <span class="c1"># https://www.ietf.org/rfc/rfc9293.html#name-state-machine-overview</span>
+            <span class="n">sock</span> <span class="o">=</span> <span class="n">writer</span><span class="o">.</span><span class="n">get_extra_info</span><span class="p">(</span><span class="s2">&quot;socket&quot;</span><span class="p">)</span>
+            <span class="n">sock</span><span class="o">.</span><span class="n">setsockopt</span><span class="p">(</span><span class="n">socket</span><span class="o">.</span><span class="n">SOL_SOCKET</span><span class="p">,</span> <span class="n">socket</span><span class="o">.</span><span class="n">SO_LINGER</span><span class="p">,</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">&quot;ii&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">reader</span><span class="p">,</span>
+            <span class="n">writer</span><span class="p">,</span>
+            <span class="n">src_addr</span><span class="p">,</span>
+            <span class="n">target_addr</span><span class="p">,</span>
+            <span class="n">protocol_version</span><span class="p">,</span>
+            <span class="n">separate_diagnostic_message_queue</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_read_frame</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DoIPFrame</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+        <span class="c1"># Header is fixed size 8 byte.</span>
+        <span class="n">hdr_buf</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">readexactly</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
+        <span class="n">hdr</span> <span class="o">=</span> <span class="n">GenericHeader</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="n">hdr_buf</span><span class="p">)</span>
+
+        <span class="n">payload_buf</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">readexactly</span><span class="p">(</span><span class="n">hdr</span><span class="o">.</span><span class="n">PayloadLength</span><span class="p">)</span>
+        <span class="n">payload</span><span class="p">:</span> <span class="n">DoIPInData</span>
+        <span class="k">match</span> <span class="n">hdr</span><span class="o">.</span><span class="n">PayloadType</span><span class="p">:</span>
+            <span class="k">case</span> <span class="n">PayloadTypes</span><span class="o">.</span><span class="n">GenericDoIPHeaderNACK</span><span class="p">:</span>
+                <span class="n">payload</span> <span class="o">=</span> <span class="n">GenericDoIPHeaderNACK</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="n">payload_buf</span><span class="p">)</span>
+            <span class="k">case</span> <span class="n">PayloadTypes</span><span class="o">.</span><span class="n">RoutingActivationResponse</span><span class="p">:</span>
+                <span class="n">payload</span> <span class="o">=</span> <span class="n">RoutingActivationResponse</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="n">payload_buf</span><span class="p">)</span>
+            <span class="k">case</span> <span class="n">PayloadTypes</span><span class="o">.</span><span class="n">DiagnosticMessagePositiveAcknowledgement</span><span class="p">:</span>
+                <span class="n">payload</span> <span class="o">=</span> <span class="n">DiagnosticMessagePositiveAcknowledgement</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="n">payload_buf</span><span class="p">)</span>
+            <span class="k">case</span> <span class="n">PayloadTypes</span><span class="o">.</span><span class="n">DiagnosticMessageNegativeAcknowledgement</span><span class="p">:</span>
+                <span class="n">payload</span> <span class="o">=</span> <span class="n">DiagnosticMessageNegativeAcknowledgement</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="n">payload_buf</span><span class="p">)</span>
+            <span class="k">case</span> <span class="n">PayloadTypes</span><span class="o">.</span><span class="n">DiagnosticMessage</span><span class="p">:</span>
+                <span class="n">payload</span> <span class="o">=</span> <span class="n">DiagnosticMessage</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="n">payload_buf</span><span class="p">)</span>
+            <span class="k">case</span> <span class="n">PayloadTypes</span><span class="o">.</span><span class="n">AliveCheckRequest</span><span class="p">:</span>
+                <span class="n">payload</span> <span class="o">=</span> <span class="n">AliveCheckRequest</span><span class="p">()</span>
+            <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;DoIP message with unhandled PayloadType: </span><span class="si">{</span><span class="n">hdr</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">payload_buf</span><span class="o">.</span><span class="n">hex</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="s2">&quot;Received DoIP message: </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">hdr</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">hdr</span><span class="p">,</span> <span class="n">payload</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_read_worker</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="n">hdr</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_frame</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">hdr</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="n">hdr</span><span class="o">.</span><span class="n">PayloadType</span> <span class="o">==</span> <span class="n">PayloadTypes</span><span class="o">.</span><span class="n">AliveCheckRequest</span><span class="p">:</span>
+                    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_alive_check_response</span><span class="p">()</span>
+                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">DiagnosticMessage</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">separate_diagnostic_message_queue</span><span class="p">:</span>
+                    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_diagnostic_message_queue</span><span class="o">.</span><span class="n">put</span><span class="p">((</span><span class="n">hdr</span><span class="p">,</span> <span class="n">data</span><span class="p">))</span>
+                    <span class="k">continue</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_queue</span><span class="o">.</span><span class="n">put</span><span class="p">((</span><span class="n">hdr</span><span class="p">,</span> <span class="n">data</span><span class="p">))</span>
+        <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;DoIP read worker got cancelled&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">IncompleteReadError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;DoIP read worker received EOF: </span><span class="si">{</span><span class="n">e</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;DoIP read worker died with </span><span class="si">{</span><span class="n">e</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Feeding EOF to reader and requesting a close&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">feed_eof</span><span class="p">()</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">read_frame_unsafe</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DoIPFrame</span><span class="p">:</span>
+        <span class="c1"># Avoid waiting on the queue forever when</span>
+        <span class="c1"># the connection has been terminated.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_closed</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ConnectionError</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_queue</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">read_frame</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DoIPFrame</span><span class="p">:</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mutex</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_frame_unsafe</span><span class="p">()</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">read_diag_request_raw</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DoIPDiagFrame</span><span class="p">:</span>
+        <span class="n">unexpected_packets</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">separate_diagnostic_message_queue</span><span class="p">:</span>
+                <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_diagnostic_message_queue</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+            <span class="n">hdr</span><span class="p">,</span> <span class="n">payload</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_frame</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="n">DiagnosticMessage</span><span class="p">):</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;expected DoIP DiagnosticMessage, instead got: </span><span class="si">{</span><span class="n">hdr</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">payload</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">unexpected_packets</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">hdr</span><span class="p">,</span> <span class="n">payload</span><span class="p">))</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">payload</span><span class="o">.</span><span class="n">SourceAddress</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_addr</span> <span class="ow">or</span> <span class="n">payload</span><span class="o">.</span><span class="n">TargetAddress</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_addr</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;DoIP-DiagnosticMessage: unexpected addresses (src:dst); expected </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_addr</span><span class="si">:</span><span class="s2">#04x</span><span class="si">}</span><span class="s2">:&quot;</span>
+                    <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">src_addr</span><span class="si">:</span><span class="s2">#04x</span><span class="si">}</span><span class="s2"> but got: </span><span class="si">{</span><span class="n">payload</span><span class="o">.</span><span class="n">SourceAddress</span><span class="si">:</span><span class="s2">#04x</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">payload</span><span class="o">.</span><span class="n">TargetAddress</span><span class="si">:</span><span class="s2">#04x</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+                <span class="n">unexpected_packets</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">hdr</span><span class="p">,</span> <span class="n">payload</span><span class="p">))</span>
+                <span class="k">continue</span>
+
+            <span class="c1"># Do not consume unexpected packets, but re-add them to the queue for other consumers</span>
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">unexpected_packets</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">hdr</span><span class="p">,</span> <span class="n">payload</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">read_diag_request</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">payload</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_diag_request_raw</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">payload</span><span class="o">.</span><span class="n">UserData</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_read_ack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prev_data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;This function consumes all DoIP Diagnostic Message ACKs and just logs a warning in case of mismatches.&quot;&quot;&quot;</span>
+
+        <span class="n">unexpected_packets</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">hdr</span><span class="p">,</span> <span class="n">payload</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_frame_unsafe</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="n">DiagnosticMessagePositiveAcknowledgement</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span>
+                <span class="n">payload</span><span class="p">,</span> <span class="n">DiagnosticMessageNegativeAcknowledgement</span>
+            <span class="p">):</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;expected DoIP positive/negative ACK, instead got: </span><span class="si">{</span><span class="n">hdr</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">payload</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">unexpected_packets</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">hdr</span><span class="p">,</span> <span class="n">payload</span><span class="p">))</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="n">payload</span><span class="o">.</span><span class="n">SourceAddress</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_addr</span> <span class="ow">or</span> <span class="n">payload</span><span class="o">.</span><span class="n">TargetAddress</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_addr</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;DoIP-ACK: unexpected addresses (src:dst); expected </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_addr</span><span class="si">:</span><span class="s2">#04x</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">src_addr</span><span class="si">:</span><span class="s2">#04x</span><span class="si">}</span><span class="s2"> &quot;</span>
+                    <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;but got: </span><span class="si">{</span><span class="n">payload</span><span class="o">.</span><span class="n">SourceAddress</span><span class="si">:</span><span class="s2">#04x</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">payload</span><span class="o">.</span><span class="n">TargetAddress</span><span class="si">:</span><span class="s2">#04x</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="nb">len</span><span class="p">(</span><span class="n">payload</span><span class="o">.</span><span class="n">PreviousDiagnosticMessageData</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+                <span class="ow">and</span> <span class="n">payload</span><span class="o">.</span><span class="n">PreviousDiagnosticMessageData</span>
+                <span class="o">!=</span> <span class="n">prev_data</span><span class="p">[:</span> <span class="nb">len</span><span class="p">(</span><span class="n">payload</span><span class="o">.</span><span class="n">PreviousDiagnosticMessageData</span><span class="p">)]</span>
+            <span class="p">):</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;DoIP-ACK: got: </span><span class="si">{</span><span class="n">payload</span><span class="o">.</span><span class="n">PreviousDiagnosticMessageData</span><span class="o">.</span><span class="n">hex</span><span class="p">()</span><span class="si">}</span><span class="s2">; expected: </span><span class="si">{</span><span class="n">prev_data</span><span class="o">.</span><span class="n">hex</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="c1"># Do not consume unexpected packets, but re-add them to the queue for other consumers</span>
+            <span class="c1"># Mismatched DoIP ACKs, however, are not re-added to avoid unnecessary confusion</span>
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">unexpected_packets</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="n">DiagnosticMessageNegativeAcknowledgement</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">DoIPNegativeAckError</span><span class="p">(</span><span class="n">payload</span><span class="o">.</span><span class="n">ACKCode</span><span class="p">)</span>
+            <span class="k">return</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_read_routing_activation_response</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">unexpected_packets</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">hdr</span><span class="p">,</span> <span class="n">payload</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_frame_unsafe</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="n">RoutingActivationResponse</span><span class="p">):</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;expected DoIP RoutingActivationResponse, instead got: </span><span class="si">{</span><span class="n">hdr</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">payload</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+                <span class="n">unexpected_packets</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">hdr</span><span class="p">,</span> <span class="n">payload</span><span class="p">))</span>
+                <span class="k">continue</span>
+
+            <span class="c1"># Do not consume unexpected packets, but re-add them to the queue for other consumers</span>
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">unexpected_packets</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">payload</span><span class="o">.</span><span class="n">RoutingActivationResponseCode</span> <span class="o">!=</span> <span class="n">RoutingActivationResponseCodes</span><span class="o">.</span><span class="n">Success</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">DoIPRoutingActivationDeniedError</span><span class="p">(</span><span class="n">payload</span><span class="o">.</span><span class="n">RoutingActivationResponseCode</span><span class="p">)</span>
+            <span class="k">return</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">write_request_raw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hdr</span><span class="p">:</span> <span class="n">GenericHeader</span><span class="p">,</span> <span class="n">payload</span><span class="p">:</span> <span class="n">DoIPOutData</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mutex</span><span class="p">:</span>
+            <span class="n">buf</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
+            <span class="n">buf</span> <span class="o">+=</span> <span class="n">hdr</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
+            <span class="n">buf</span> <span class="o">+=</span> <span class="n">payload</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">buf</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">drain</span><span class="p">()</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="s2">&quot;Sent DoIP message: hdr: </span><span class="si">%s</span><span class="s2">, payload: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">hdr</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">write_diag_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">hdr</span> <span class="o">=</span> <span class="n">GenericHeader</span><span class="p">(</span>
+            <span class="n">ProtocolVersion</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">protocol_version</span><span class="p">,</span>
+            <span class="n">PayloadType</span><span class="o">=</span><span class="n">PayloadTypes</span><span class="o">.</span><span class="n">DiagnosticMessage</span><span class="p">,</span>
+            <span class="n">PayloadLength</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">+</span> <span class="mi">4</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="n">DiagnosticMessage</span><span class="p">(</span>
+            <span class="n">SourceAddress</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">src_addr</span><span class="p">,</span>
+            <span class="n">TargetAddress</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">target_addr</span><span class="p">,</span>
+            <span class="n">UserData</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_request_raw</span><span class="p">(</span><span class="n">hdr</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span>
+
+        <span class="c1"># DiagnosticMessages will trigger an ACK message of the DoIP node/gateway that needs to be handled</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait_for</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_read_ack</span><span class="p">(</span><span class="n">payload</span><span class="o">.</span><span class="n">UserData</span><span class="p">),</span>
+                <span class="n">TimingAndCommunicationParameters</span><span class="o">.</span><span class="n">DiagnosticMessageMessageAckTimeout</span> <span class="o">/</span> <span class="mi">1000</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">TimeoutError</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Timeout while waiting for DoIP ACK for diagnostic message </span><span class="si">{</span><span class="n">payload</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="c1"># While not receiving a DoIP ACK is a violation of the standard, we deliberately</span>
+            <span class="c1"># do not close the connection or raise a BrokenPipeError here, since it&#39;s not yet a problem</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">write_routing_activation_request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">activation_type</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">hdr</span> <span class="o">=</span> <span class="n">GenericHeader</span><span class="p">(</span>
+            <span class="n">ProtocolVersion</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">protocol_version</span><span class="p">,</span>
+            <span class="n">PayloadType</span><span class="o">=</span><span class="n">PayloadTypes</span><span class="o">.</span><span class="n">RoutingActivationRequest</span><span class="p">,</span>
+            <span class="n">PayloadLength</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="n">RoutingActivationRequest</span><span class="p">(</span>
+            <span class="n">SourceAddress</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">src_addr</span><span class="p">,</span>
+            <span class="n">ActivationType</span><span class="o">=</span><span class="n">activation_type</span><span class="p">,</span>
+            <span class="n">Reserved</span><span class="o">=</span><span class="mh">0x00</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_request_raw</span><span class="p">(</span><span class="n">hdr</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span>
+
+        <span class="c1"># Sending a routing activation request triggers an immediate reply</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait_for</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_read_routing_activation_response</span><span class="p">(),</span>
+                <span class="n">TimingAndCommunicationParameters</span><span class="o">.</span><span class="n">RoutingActivationResponseTimeout</span> <span class="o">/</span> <span class="mi">1000</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">TimeoutError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">raise</span> <span class="ne">BrokenPipeError</span><span class="p">(</span><span class="s2">&quot;Timeout while waiting for Routing Activation Response&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">write_alive_check_response</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">hdr</span> <span class="o">=</span> <span class="n">GenericHeader</span><span class="p">(</span>
+            <span class="n">ProtocolVersion</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">protocol_version</span><span class="p">,</span>
+            <span class="n">PayloadType</span><span class="o">=</span><span class="n">PayloadTypes</span><span class="o">.</span><span class="n">AliveCheckResponse</span><span class="p">,</span>
+            <span class="n">PayloadLength</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="n">AliveCheckResponse</span><span class="p">(</span>
+            <span class="n">SourceAddress</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">src_addr</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_request_raw</span><span class="p">(</span><span class="n">hdr</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Closing DoIP connection...&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_closed</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;DoIP connection already closed!&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_is_closed</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Cancelling read worker&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_read_task</span><span class="o">.</span><span class="n">cancel</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Awaiting confirmation of closed writer&quot;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">wait_closed</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">ConnectionError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Exception while waiting for the writer to close: </span><span class="si">{</span><span class="n">e</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">DoIPConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">src_addr</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">target_addr</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">activation_type</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">RoutingActivationRequestTypes</span><span class="o">.</span><span class="n">WWH_OBD</span><span class="o">.</span><span class="n">value</span>
+    <span class="n">protocol_version</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">ProtocolVersions</span><span class="o">.</span><span class="n">ISO_13400_2_2019</span>
+
+    <span class="nd">@field_validator</span><span class="p">(</span>
+        <span class="s2">&quot;src_addr&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;target_addr&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;activation_type&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;protocol_version&quot;</span><span class="p">,</span>
+        <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;before&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">auto_int</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">auto_int</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="DoIPTransport">
+<a class="viewcode-back" href="../../../api.html#gallia.transports.DoIPTransport">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DoIPTransport</span><span class="p">(</span><span class="n">BaseTransport</span><span class="p">,</span> <span class="n">scheme</span><span class="o">=</span><span class="s2">&quot;doip&quot;</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">target</span><span class="p">:</span> <span class="n">TargetURI</span><span class="p">,</span>
+        <span class="n">port</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">DoIPConfig</span><span class="p">,</span>
+        <span class="n">conn</span><span class="p">:</span> <span class="n">DoIPConnection</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">port</span> <span class="o">=</span> <span class="n">port</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_conn</span> <span class="o">=</span> <span class="n">conn</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_is_closed</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_connect</span><span class="p">(</span>  <span class="c1"># noqa: PLR0913</span>
+        <span class="n">hostname</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">port</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">src_addr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">target_addr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">activation_type</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">protocol_version</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DoIPConnection</span><span class="p">:</span>
+        <span class="n">conn</span> <span class="o">=</span> <span class="k">await</span> <span class="n">DoIPConnection</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+            <span class="n">hostname</span><span class="p">,</span>
+            <span class="n">port</span><span class="p">,</span>
+            <span class="n">src_addr</span><span class="p">,</span>
+            <span class="n">target_addr</span><span class="p">,</span>
+            <span class="n">protocol_version</span><span class="o">=</span><span class="n">protocol_version</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">write_routing_activation_request</span><span class="p">(</span><span class="n">RoutingActivationRequestTypes</span><span class="p">(</span><span class="n">activation_type</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">conn</span>
+
+<div class="viewcode-block" id="DoIPTransport.connect">
+<a class="viewcode-back" href="../../../api.html#gallia.transports.DoIPTransport.connect">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">target</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">TargetURI</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">target</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">TargetURI</span><span class="p">)</span> <span class="k">else</span> <span class="n">TargetURI</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">check_scheme</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">hostname</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;no hostname specified&quot;</span><span class="p">)</span>
+
+        <span class="n">port</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">port</span> <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">port</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">13400</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">DoIPConfig</span><span class="p">(</span><span class="o">**</span><span class="n">t</span><span class="o">.</span><span class="n">qs_flat</span><span class="p">)</span>
+        <span class="n">conn</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait_for</span><span class="p">(</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_connect</span><span class="p">(</span>
+                <span class="n">t</span><span class="o">.</span><span class="n">hostname</span><span class="p">,</span>
+                <span class="n">port</span><span class="p">,</span>
+                <span class="n">config</span><span class="o">.</span><span class="n">src_addr</span><span class="p">,</span>
+                <span class="n">config</span><span class="o">.</span><span class="n">target_addr</span><span class="p">,</span>
+                <span class="n">config</span><span class="o">.</span><span class="n">activation_type</span><span class="p">,</span>
+                <span class="n">config</span><span class="o">.</span><span class="n">protocol_version</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">timeout</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">conn</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DoIPTransport.reconnect">
+<a class="viewcode-back" href="../../../api.html#gallia.transports.DoIPTransport.reconnect">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">reconnect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+        <span class="c1"># It might be that the DoIP endpoint is not immediately ready for another</span>
+        <span class="c1"># connection, so set the timeout to 10s by default.</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">reconnect</span><span class="p">(</span><span class="mi">10</span> <span class="k">if</span> <span class="n">timeout</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">timeout</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DoIPTransport.close">
+<a class="viewcode-back" href="../../../api.html#gallia.transports.DoIPTransport.close">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Closing DoIP transport...&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_closed</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;DoIP transport already closed&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_is_closed</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conn</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="DoIPTransport.read">
+<a class="viewcode-back" href="../../../api.html#gallia.transports.DoIPTransport.read">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait_for</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_conn</span><span class="o">.</span><span class="n">read_diag_request</span><span class="p">(),</span> <span class="n">timeout</span><span class="p">)</span>
+
+        <span class="n">t</span> <span class="o">=</span> <span class="n">tags</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;read&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">tags</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[</span><span class="s2">&quot;read&quot;</span><span class="p">]</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">hex</span><span class="p">(),</span> <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="n">t</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">data</span></div>
+
+
+<div class="viewcode-block" id="DoIPTransport.write">
+<a class="viewcode-back" href="../../../api.html#gallia.transports.DoIPTransport.write">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">tags</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;write&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">tags</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[</span><span class="s2">&quot;write&quot;</span><span class="p">]</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">hex</span><span class="p">(),</span> <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="n">t</span><span class="p">})</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait_for</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_conn</span><span class="o">.</span><span class="n">write_diag_request</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">timeout</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">DoIPNegativeAckError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">nack_code</span> <span class="o">!=</span> <span class="n">DiagnosticMessageNegativeAckCodes</span><span class="o">.</span><span class="n">TargetUnreachable</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">e</span>
+            <span class="c1"># TargetUnreachable can be just a temporary issue. Thus, we do not raise</span>
+            <span class="c1"># BrokenPipeError but instead ignore it here and let upper layers handle</span>
+            <span class="c1"># missing responses</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;DoIP message was ACKed with TargetUnreachable&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
