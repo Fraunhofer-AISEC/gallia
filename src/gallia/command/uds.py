@@ -209,7 +209,7 @@ class UDSScanner(Scanner, ABC):
                 except Exception as e:
                     logger.warning(f"Could not write the scan run to the database: {e!r}")
 
-        if self.config.tester_present:
+        if self.ecu.tester_present_task:
             await self.ecu.detach_tester_present_sender()
 
         # self.ecu.transport will be different from self.transport if self.ecu.reconnect() was called at any time
