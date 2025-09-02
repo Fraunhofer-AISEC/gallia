@@ -368,7 +368,7 @@ class ECU(UDSClient):
         timeout: float | None = 10,
     ) -> bool:
         """Wait for ecu to be alive again (e.g. after reset).
-        Sends a ping every 0.4s and waits at most timeout.
+        Sends a ping every 0.5s and waits at most timeout.
         If timeout is None, wait endlessly"""
         logger.info(f"Waiting for {timeout}s for ECU to respond")
         if self.tester_present_task is not None:
