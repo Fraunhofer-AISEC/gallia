@@ -27,7 +27,7 @@ from queue import Queue
 from types import TracebackType
 from typing import Any, BinaryIO, Self, TextIO, TypeAlias, cast
 
-import zstandard
+import zstandard as zstd
 
 gmt_offset = time.localtime().tm_gmtoff
 tz = datetime.timezone(datetime.timedelta(seconds=gmt_offset))
@@ -541,9 +541,8 @@ class PenlogReader:
             tmpfile = tempfile.TemporaryFile()
             match path.suffix:
                 case ".zst":
-                    with self.path.open("rb") as f:
-                        decomp = zstandard.ZstdDecompressor()
-                        decomp.copy_stream(f, tmpfile)
+                    with zstd.open(self.path, "rb") as f:
+                        shutil.copyfileobj(cast(BinaryIO, f), tmpfile)
                 case ".gz":
                     with gzip.open(self.path, "rb") as f:
                         shutil.copyfileobj(cast(BinaryIO, f), tmpfile)
@@ -746,15 +745,7 @@ class _ZstdFileHandler(logging.Handler):
         self, path: Path, queue_handler: QueueHandler, level: int | str = logging.NOTSET
     ) -> None:
         super().__init__(level)
-        self.file = zstandard.open(
-            filename=path,
-            mode="wb",
-            cctx=zstandard.ZstdCompressor(
-                write_checksum=True,
-                write_content_size=True,
-                threads=-1,
-            ),
-        )
+        self.file = zstd.open(path, "wb")
         self.queue_handler = queue_handler
         self.queue_listener: QueueListener | None = None
 

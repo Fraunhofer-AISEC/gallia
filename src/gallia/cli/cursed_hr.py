@@ -274,9 +274,8 @@ class CursedHR:
             def copy_to_file(tmp_file: Any) -> None:
                 match self.in_file.suffix:
                     case ".zst":
-                        with self.in_file.open("rb") as in_file:
-                            decomp = zstd.ZstdDecompressor()
-                            decomp.copy_stream(in_file, file)
+                        with zstd.open(self.in_file, "rb") as in_file:
+                            shutil.copyfileobj(in_file, file)
                     case ".gz":
                         with gzip.open(self.in_file, "rb") as in_file:
                             shutil.copyfileobj(in_file, file)
