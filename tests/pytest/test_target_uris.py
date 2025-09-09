@@ -46,19 +46,19 @@ def _test_uri(uri: str) -> None:
     parsed_uri = TargetURI(uri)
     match parsed_uri.scheme:
         case TransportScheme.DOIP:
-            DoIPConfig(**parsed_uri.qs_flat)
+            DoIPConfig.model_validate(parsed_uri.qs_flat)
         case TransportScheme.ISOTP:
-            ISOTPConfig(**parsed_uri.qs_flat)
+            ISOTPConfig.model_validate(parsed_uri.qs_flat)
         case _:
             raise ValueError(f"uncovered scheme: {parsed_uri.scheme}")
 
 
-def test_uris() -> None:
-    for uri in uris:
+@pytest.mark.parametrize("uri", uris)
+def test_uris(uri: str) -> None:
+    _test_uri(uri)
+
+
+@pytest.mark.parametrize("uri", invalid_uris)
+def test_invalid_uris(uri: str) -> None:
+    with pytest.raises(ValidationError):
         _test_uri(uri)
-
-
-def test_invalid_uris() -> None:
-    for uri in invalid_uris:
-        with pytest.raises(ValidationError):
-            _test_uri(uri)

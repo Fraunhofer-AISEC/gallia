@@ -14,147 +14,121 @@ from gallia.services.uds.core.utils import (
 setup_logging()
 
 
-def test_split_host_port_v4() -> None:
-    host, port = split_host_port("1.2.3.4:82")
-    assert host == "1.2.3.4"
-    assert port == 82
-
-
-def test_split_host_port_v6() -> None:
-    host, port = split_host_port("[fec2::10]:80")
-    assert host == "fec2::10"
-    assert port == 80
-    host, port = split_host_port("[::1]:80")
-    assert host == "::1"
-    assert port == 80
-
-
-def test_split_host_port_broken() -> None:
+@pytest.mark.parametrize("hostport", ["[fec2::10]:4509823409582350", "hallo:3575983275498230"])
+def test_split_host_port_broken(hostport: str) -> None:
     with pytest.raises(ValueError):
-        split_host_port("[fec2::10]:4509823409582350")
+        split_host_port(hostport)
 
+
+@pytest.mark.parametrize(
+    "hostport,default_port,expected_host,expected_port",
+    [
+        ("1.1.1.1", None, "1.1.1.1", None),
+        ("1.1.1.1:80", 22, "1.1.1.1", 80),
+        ("::1", 22, "::1", 22),
+        ("[::1]:80", None, "::1", 80),
+        ("[fec2::10]:1234", 22, "fec2::10", 1234),
+        ("[fec2::10]:80", None, "fec2::10", 80),
+        ("fec2::10", 22, "fec2::10", 22),
+        ("foo", 22, "foo", 22),
+        ("foo", None, "foo", None),
+        ("foo:1234", 22, "foo", 1234),
+    ],
+)
+def test_split_host_port_default(
+    hostport: str, default_port: int | None, expected_host: str, expected_port: int | None
+) -> None:
+    host, port = split_host_port(hostport, default_port)
+    assert host == expected_host
+    assert port == expected_port
+
+
+@pytest.mark.parametrize(
+    "address,size,addr_and_len,expected_fmt,expected_addr,expected_size",
+    [
+        # Arbitrary test case with one size having even and one odd nibble size
+        (
+            0x1234567890,
+            0x12345,
+            None,
+            0x35,
+            bytes([0x12, 0x34, 0x56, 0x78, 0x90]),
+            bytes([0x01, 0x23, 0x45]),
+        ),
+        # Using an explicit addressAndLengthFormatIdentifier
+        (
+            0x1234567890,
+            0x12345,
+            0x56,
+            0x56,
+            bytes([0x00, 0x12, 0x34, 0x56, 0x78, 0x90]),
+            bytes([0x00, 0x00, 0x01, 0x23, 0x45]),
+        ),
+        # The value zero should also result in one byte (corner case for lowest applicable value)
+        (0x0, 0x0, None, 0x11, bytes([0x00]), bytes([0x00])),
+        # The max value should result in the max bytes (corner case for highest applicable value)
+        (256**15 - 1, 256**15 - 1, None, 0xFF, bytes([0xFF] * 15), bytes([0xFF] * 15)),
+        # Corner case between two byte sizes
+        (0xFF, 0x100, None, 0x21, bytes([0xFF]), bytes([0x01, 0x00])),
+    ],
+)
+def test_uds_memory_parameters(
+    address: int,
+    size: int,
+    addr_and_len: int | None,
+    expected_fmt: int,
+    expected_addr: bytes,
+    expected_size: bytes,
+) -> None:
+    fmt, addr, sz = uds_memory_parameters(address, size, addr_and_len)
+    assert fmt == expected_fmt
+    assert addr == expected_addr
+    assert sz == expected_size
+
+
+@pytest.mark.parametrize(
+    "address,size,address_and_len,expected_exception",
+    [
+        (256**15, 1, None, OverflowError),
+        (1, 256**15, None, OverflowError),
+        (-1, 1, None, OverflowError),
+        (1, -1, None, OverflowError),
+        (256, 0, 0x11, OverflowError),
+        (0, 256, 0x11, OverflowError),
+        (0, 0, 0x100, ValueError),
+        (0, 0, 0x01, ValueError),
+        (0, 0, 0x10, ValueError),
+    ],
+)
+def test_uds_memory_parameters_errors(
+    address: int, size: int, address_and_len: int | None, expected_exception: type[Exception]
+) -> None:
+    with pytest.raises(expected_exception):
+        uds_memory_parameters(address, size, address_and_len)
+
+
+@pytest.mark.parametrize(
+    "address_and_len,expected_addr_len,expected_size_len",
+    [
+        # Arbitrary test case with different lengths
+        (0x74, 4, 7),
+        # Lowest applicable value
+        (0x11, 1, 1),
+        # Highest applicable value
+        (0xFF, 0xF, 0xF),
+    ],
+)
+def test_address_and_size_length(
+    address_and_len: int,
+    expected_addr_len: int,
+    expected_size_len: int,
+) -> None:
+    address_length, size_length = address_and_size_length(address_and_len)
+    assert address_length == expected_addr_len
+    assert size_length == expected_size_len
+
+
+@pytest.mark.parametrize("input_", [0x10, 0x01, 0x100])
+def test_invalid_address_and_size_length(input_: int) -> None:
     with pytest.raises(ValueError):
-        split_host_port("hallo:3575983275498230")
-
-
-def test_split_host_port_default() -> None:
-    host, port = split_host_port("1.1.1.1", 22)
-    assert host == "1.1.1.1"
-    assert port == 22
-    host, port = split_host_port("1.1.1.1")
-    assert port is None
-    host, port = split_host_port("fec2::10", 22)
-    assert host == "fec2::10"
-    assert port == 22
-    host, port = split_host_port("::1", 22)
-    assert host == "::1"
-    assert port == 22
-    host, port = split_host_port("[fec2::10]:1234", 22)
-    assert host == "fec2::10"
-    assert port == 1234
-    host, port = split_host_port("foo:1234", 22)
-    assert host == "foo"
-    assert port == 1234
-    host, port = split_host_port("foo", 22)
-    assert host == "foo"
-    assert port == 22
-    host, port = split_host_port("foo")
-    assert host == "foo"
-    assert port is None
-
-
-def test_uds_memory_parameters() -> None:
-    # Arbitrary test case with one size having even and one odd nibble size
-    fmt, addr, size = uds_memory_parameters(0x1234567890, 0x12345)
-    assert fmt == 0x35
-    assert addr == bytes([0x12, 0x34, 0x56, 0x78, 0x90])
-    assert size == bytes([0x01, 0x23, 0x45])
-
-    # Using an explicit addressAndLengthFormatIdentifier
-    fmt, addr, size = uds_memory_parameters(0x1234567890, 0x12345, 0x56)
-    assert fmt == 0x56
-    assert addr == bytes([0x00, 0x12, 0x34, 0x56, 0x78, 0x90])
-    assert size == bytes([0x00, 0x00, 0x01, 0x23, 0x45])
-
-    # The value zero should also result in one byte (corner case for lowest applicable value)
-    fmt, addr, size = uds_memory_parameters(0x0, 0x0)
-    assert fmt == 0x11
-    assert addr == bytes([0x00])
-    assert size == bytes([0x00])
-
-    # The max value should result in the max bytes (corner case for highest applicable value)
-    fmt, addr, size = uds_memory_parameters(256**15 - 1, 256**15 - 1)
-    assert fmt == 0xFF
-    assert addr == bytes([0xFF] * 15)
-    assert size == bytes([0xFF] * 15)
-
-    # Corner case between two byte sizes
-    fmt, addr, size = uds_memory_parameters(0xFF, 0x100)
-    assert fmt == 0x21
-    assert addr == bytes([0xFF])
-    assert size == bytes([0x01, 0x00])
-
-    # Lowest value which is out of range
-    with pytest.raises(OverflowError):
-        uds_memory_parameters(256**15, 1)
-
-    # Lowest value which is out of range
-    with pytest.raises(OverflowError):
-        uds_memory_parameters(1, 256**15)
-
-    # Highest value which is out of range
-    with pytest.raises(OverflowError):
-        uds_memory_parameters(-1, 1)
-
-    # Highest value which is out of range
-    with pytest.raises(OverflowError):
-        uds_memory_parameters(1, -1)
-
-    # Values not representable using the given addressAndLengthFormatIdentifier
-    with pytest.raises(OverflowError):
-        uds_memory_parameters(256, 0, 0x11)
-
-    # Values not representable using the given addressAndLengthFormatIdentifier
-    with pytest.raises(OverflowError):
-        uds_memory_parameters(0, 256, 0x11)
-
-    # Invalid addressAndLengthFormatIdentifier
-    with pytest.raises(ValueError):
-        uds_memory_parameters(0, 0, 0x100)
-
-    # Invalid addressAndLengthFormatIdentifier
-    with pytest.raises(ValueError):
-        uds_memory_parameters(0, 0, 0x01)
-
-    # Invalid addressAndLengthFormatIdentifier
-    with pytest.raises(ValueError):
-        uds_memory_parameters(0, 0, 0x10)
-
-
-def test_address_and_size_length() -> None:
-    # Arbitrary test case with different lengths
-    address_length, size_length = address_and_size_length(0x74)
-    assert address_length == 4
-    assert size_length == 7
-
-    # Lowest applicable value
-    address_length, size_length = address_and_size_length(0x11)
-    assert address_length == 1
-    assert size_length == 1
-
-    # Highest applicable value
-    address_length, size_length = address_and_size_length(0xFF)
-    assert address_length == 0xF
-    assert size_length == 0xF
-
-    # Invalid addressAndLengthFormatIdentifier
-    with pytest.raises(ValueError):
-        address_and_size_length(0x10)
-
-    # Invalid addressAndLengthFormatIdentifier
-    with pytest.raises(ValueError):
-        address_and_size_length(0x01)
-
-    # Invalid addressAndLengthFormatIdentifier
-    with pytest.raises(ValueError):
-        address_and_size_length(0x100)
+        address_and_size_length(input_)
