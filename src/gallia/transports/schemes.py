@@ -8,6 +8,7 @@ from enum import StrEnum, unique
 TCP = "tcp"
 TCP_LINES = "tcp-lines"
 DOIP = "doip"
+DUMMY = "dummy"
 
 
 if sys.platform.startswith("linux"):
@@ -17,10 +18,11 @@ if sys.platform.startswith("linux"):
         TCP = TCP
         TCP_LINES = TCP_LINES
         DOIP = DOIP
+        DUMMY = DUMMY
+
         HSFZ = "hsfz"
         UNIX = "unix"
         UNIX_LINES = "unix-lines"
-
         ISOTP = "isotp"
         CAN_RAW = "can-raw"
 
@@ -32,6 +34,7 @@ if sys.platform == "win32":
         TCP = TCP
         TCP_LINES = TCP_LINES
         DOIP = DOIP
+        DUMMY = DUMMY
 
         FLEXRAY_RAW = "fr-raw"
         FLEXRAY_TP_LEGACY = "fr-tp-legacy"
