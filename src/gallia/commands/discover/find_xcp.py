@@ -9,8 +9,7 @@ from abc import ABC
 
 assert sys.platform.startswith("linux"), "unsupported platform"
 
-from gallia.command import AsyncScript
-from gallia.command.base import AsyncScriptConfig
+from gallia.command.base import MetaScanner, MetaScannerConfig
 from gallia.command.config import AutoInt, Field, Ranges
 from gallia.log import get_logger
 from gallia.services.uds.core.utils import bytes_repr, g_repr
@@ -20,7 +19,7 @@ from gallia.utils import can_id_repr
 logger = get_logger(__name__)
 
 
-class FindXCPConfig(AsyncScriptConfig):
+class FindXCPConfig(MetaScannerConfig):
     pass
 
 
@@ -45,7 +44,7 @@ class UdpFindXCPConfig(FindXCPConfig):
     udp_ports: Ranges = Field(description="List of UDP ports to test for XCP")
 
 
-class FindXCP(AsyncScript, ABC):
+class FindXCP(MetaScanner, ABC):
     """Find XCP Slave"""
 
     def __init__(self, config: FindXCPConfig):

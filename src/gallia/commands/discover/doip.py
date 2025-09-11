@@ -9,8 +9,7 @@ from collections.abc import Iterable
 from itertools import product
 from urllib.parse import parse_qs, urlparse
 
-from gallia.command import AsyncScript
-from gallia.command.base import AsyncScriptConfig
+from gallia.command.base import MetaScanner, MetaScannerConfig
 from gallia.command.config import AutoInt, Field
 from gallia.log import get_logger
 from gallia.net import net_if_broadcast_addrs
@@ -33,7 +32,7 @@ from gallia.transports.doip import (
 logger = get_logger(__name__)
 
 
-class DoIPDiscovererConfig(AsyncScriptConfig):
+class DoIPDiscovererConfig(MetaScannerConfig):
     start: AutoInt = Field(
         0x00, description="Set start address of TargetAddress search range", metavar="INT"
     )
@@ -57,7 +56,7 @@ class DoIPDiscovererConfig(AsyncScriptConfig):
     )
 
 
-class DoIPDiscoverer(AsyncScript):
+class DoIPDiscoverer(MetaScanner):
     """This script scans for active DoIP endpoints and automatically enumerates allowed
     RoutingActivationTypes and known SourceAddresses. Once valid endpoints are acquired,
     the script continues to discover valid TargetAddresses that are accepted and respond
