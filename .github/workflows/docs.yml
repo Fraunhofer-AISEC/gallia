@@ -46,6 +46,7 @@ jobs:
     - name: Archive webpage
       uses: actions/upload-artifact@v4
       with:
+        name: docs
         path: |
           docs/_build/html
 
@@ -57,12 +58,15 @@ jobs:
     steps:
     - name: Download all workflow run artifacts
       uses: actions/download-artifact@v5
+      with:
+        name: docs
+        path: docs_html
 
     - name: Deploy docs to Github Pages
       uses: crazy-max/ghaction-github-pages@v4
       with:
         target_branch: gh-pages
-        build_dir: artifact
+        build_dir: docs_html
         jekyll: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
