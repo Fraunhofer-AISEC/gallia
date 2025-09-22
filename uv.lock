@@ -299,7 +299,7 @@ wheels = [
 
 [[package]]
 name = "gallia"
-version = "2.0.0a4"
+version = "2.0.0b1"
 source = { editable = "." }
 dependencies = [
     { name = "aiosqlite" },

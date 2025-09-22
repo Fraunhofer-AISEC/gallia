@@ -8,7 +8,7 @@ build-backend = "uv_build"
 
 [project]
 name = "gallia"
-version = "2.0.0a4"
+version = "2.0.0b1"
 description = "Extendable Pentesting Framework"
 readme = "README.md"
 authors = [{name = "AISEC Pentesting Team"}]
