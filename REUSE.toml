@@ -1,0 +1,10 @@
+version = 1
+
+[[annotations]]
+path = [
+    "uv.lock",
+    ".python-version",
+    "tests/bats/testfiles/*",
+]
+SPDX-FileCopyrightText = "AISEC Pentesting Team"
+SPDX-License-Identifier = "CC0-1.0"
