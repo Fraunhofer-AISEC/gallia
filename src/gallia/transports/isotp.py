@@ -14,35 +14,20 @@ assert sys.platform == "linux", "unsupported platform"
 from pydantic import BaseModel, field_validator
 
 from gallia.log import get_logger
+from gallia.transports._can_constants import (
+    CAN_ISOTP_EXTEND_ADDR,
+    CAN_ISOTP_LL_OPTS,
+    CAN_ISOTP_OPTS,
+    CAN_ISOTP_RECV_FC,
+    CAN_ISOTP_RX_EXT_ADDR,
+    CAN_ISOTP_RX_PADDING,
+    CAN_ISOTP_TX_PADDING,
+    SOL_CAN_ISOTP,
+)
 from gallia.transports.base import BaseTransport, TargetURI
 from gallia.utils import auto_int
 
 logger = get_logger(__name__)
-
-# Socket Constants not available in the socket module,
-# see linux/can/isotp.h
-# TODO: Can be removed in the future…
-# https://github.com/python/cpython/pull/23794
-SOL_CAN_ISOTP = s.SOL_CAN_BASE + s.CAN_ISOTP
-
-# Valuetypes for SOL_CAN_ISOTP
-CAN_ISOTP_OPTS = 1
-CAN_ISOTP_RECV_FC = 2
-CAN_ISOTP_TX_STMIN = 3
-CAN_ISOTP_RX_STMIN = 4
-CAN_ISOTP_LL_OPTS = 5
-
-# Flags for setsockopt CAN_ISOTP_OPTS
-CAN_ISOTP_LISTEN_MODE = 0x001
-CAN_ISOTP_EXTEND_ADDR = 0x002
-CAN_ISOTP_TX_PADDING = 0x004
-CAN_ISOTP_RX_PADDING = 0x008
-CAN_ISOTP_CHK_PAD_LEN = 0x010
-CAN_ISOTP_CHK_PAD_DATA = 0x020
-CAN_ISOTP_HALF_DUPLEX = 0x040
-CAN_ISOTP_FORCE_TXSTMIN = 0x080
-CAN_ISOTP_FORCE_RXSTMIN = 0x100
-CAN_ISOTP_RX_EXT_ADDR = 0x200
 
 
 class ISOTPConfig(BaseModel):
