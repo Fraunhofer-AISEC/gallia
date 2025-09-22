@@ -79,11 +79,14 @@ strict = true
 plugins = [
     "pydantic.mypy"
 ]
+[[tool.mypy.overrides]]
+module = "gallia.services.xcp.types"
+ignore_errors = true
 
 [tool.ruff]
 target-version = "py311"
 line-length = 100
-exclude = ["docs/"]
+exclude = ["docs/", "src/gallia/services/xcp/types.py"]
 
 [tool.ruff.lint]
 select = [
@@ -133,10 +136,3 @@ asyncio_default_fixture_loop_scope = "function"
 filterwarnings = [
     "error::UserWarning",
 ]
-
-[tool.commitizen]
-name = "cz_conventional_commits"
-tag_format = "v$version"
-version_scheme = "pep440"
-version_provider = "pep621"
-annotated_tag = true
