@@ -336,7 +336,7 @@ class HSFZTransport(BaseTransport, scheme="hsfz"):
             raise ValueError("no hostname specified")
 
         port = t.port if t.port is not None else 6801
-        config = HSFZConfig(**t.qs_flat)
+        config = HSFZConfig.model_validate(t.qs_flat)
         conn = await HSFZConnection.connect(
             t.hostname,
             port,

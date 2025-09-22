@@ -55,7 +55,7 @@ class RawFlexRayTransport(BaseTransport, scheme="fr-raw"):
         super().__init__(target)
 
         self.check_scheme(target)
-        self.config = RawFlexRayConfig(**target.qs_flat)
+        self.config = RawFlexRayConfig.model_validate(target.qs_flat)
 
         self.backend = _ctypes_vector_xl_wrapper.FlexRayCtypesBackend.create(
             channel_no=self.config.channel_no,
@@ -312,7 +312,7 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="fr-tp-legacy"):
         super().__init__(target)
 
         self.check_scheme(target)
-        self.config = FlexrayTPLegacyConfig(**target.qs_flat)
+        self.config = FlexrayTPLegacyConfig.model_validate(target.qs_flat)
         self.mutex = asyncio.Lock()
 
         self.fr_raw = fr_raw
