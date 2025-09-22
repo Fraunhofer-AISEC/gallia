@@ -150,7 +150,7 @@ release increment: && print_debian_hint
     uv version --bump --increment {{ increment }}
 
     git commit -a -m "$(uv version)"
-    git tag -a -m "$(uv version)"
+    git tag -a -m "$(uv version)" v"$(uv version --short)"
     git push --follow-tags
 
     gh release create "v$(uv version --short)"
@@ -168,7 +168,7 @@ pre-release premode increment="": && print_debian_hint
     fi
 
     git commit -a -m "$(uv version)"
-    git tag -a -m "$(uv version)"
+    git tag -a -m "$(uv version)" v"$(uv version --short)"
     git push --follow-tags
 
     gh release create --prerelease "v$(uv version --short)"
