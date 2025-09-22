@@ -73,7 +73,7 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
         if t.hostname is None:
             raise ValueError("empty interface")
 
-        config = ISOTPConfig(**t.qs_flat)
+        config = ISOTPConfig.model_validate(t.qs_flat)
         sock = s.socket(s.PF_CAN, s.SOCK_DGRAM, s.CAN_ISOTP)
         sock.setblocking(False)
 
