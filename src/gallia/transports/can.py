@@ -158,7 +158,7 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
 
         sock = s.socket(s.PF_CAN, s.SOCK_RAW, CAN_RAW)
         sock.bind((t.hostname,))
-        config = RawCANConfig(**t.qs_flat)
+        config = RawCANConfig.model_validate(t.qs_flat)
 
         if config.is_fd is True:
             sock.setsockopt(SOL_CAN_RAW, CAN_RAW_FD_FRAMES, 1)
