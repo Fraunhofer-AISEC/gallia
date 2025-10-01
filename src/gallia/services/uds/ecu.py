@@ -567,7 +567,7 @@ class TesterPresentSender:
             pass
         self._task = None
 
-    async def _run(self):
+    async def _run(self) -> None:
         evt = self._activity_event
         while True:
             evt.clear()
