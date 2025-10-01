@@ -535,7 +535,7 @@ class TesterPresentSender:
         self._oneshot = oneshot
         self._legacy_spam = legacy_spam
         self._activity_event = asyncio.Event()
-        self._task: asyncio.Task | None = None
+        self._task: asyncio.Task[None] | None = None
 
     async def reset_timer(self) -> None:
         """Call this whenever you send or receive real traffic to reset the timer"""
