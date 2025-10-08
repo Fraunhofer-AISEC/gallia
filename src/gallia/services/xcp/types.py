@@ -7,6 +7,7 @@
 #!/usr/bin/env python
 import enum
 from collections import namedtuple
+from typing import Any
 
 import construct
 from construct import (
@@ -53,7 +54,7 @@ class XcpResponseError(Exception):
     Raise an `exception` from an XCP error packet.
     """
 
-    def get_error_code(self):
+    def get_error_code(self) -> Any:
         return self.args[0]
 
 
