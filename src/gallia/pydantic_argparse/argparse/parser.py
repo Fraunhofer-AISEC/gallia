@@ -309,16 +309,19 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
                 ):
                     field.extra_default = self.extra_defaults[model][field.name]
 
-                if isinstance(field.info, ArgFieldInfo) and field.info.hidden:
+                if isinstance(field.original_info, ArgFieldInfo) and field.original_info.hidden:
                     continue
 
-                if isinstance(field.info, ArgFieldInfo) and field.info.group is not None:
-                    if field.info.group not in explicit_groups:
-                        explicit_groups[field.info.group] = self.add_argument_group(
-                            field.info.group
+                if (
+                    isinstance(field.original_info, ArgFieldInfo)
+                    and field.original_info.group is not None
+                ):
+                    if field.original_info.group not in explicit_groups:
+                        explicit_groups[field.original_info.group] = self.add_argument_group(
+                            field.original_info.group
                         )
 
-                    parsers.add_field(explicit_groups[field.info.group], field)
+                    parsers.add_field(explicit_groups[field.original_info.group], field)
                     added = True
 
                 if not added:

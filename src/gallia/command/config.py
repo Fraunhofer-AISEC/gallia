@@ -373,7 +373,7 @@ class GalliaBaseModel(BaseCommand, ABC):
     def attributes_from_config(cls, config: Config, source: str = "config file") -> dict[str, Any]:
         result = {}
 
-        for name, info in cls.model_fields.items():
+        for name, info in cls._original_field_infos.items():
             if isinstance(info, ConfigArgFieldInfo):
                 config_attribute = (
                     f"{info.config_section}.{name}" if info.config_section != "" else name
@@ -388,7 +388,7 @@ class GalliaBaseModel(BaseCommand, ABC):
     def attributes_from_env(cls) -> dict[str, Any]:
         result = {}
 
-        for name, info in cls.model_fields.items():
+        for name, info in cls._original_field_infos.items():
             if isinstance(info, ConfigArgFieldInfo):
                 config_attribute = f"GALLIA_{name.upper()}"
 
