@@ -25,7 +25,7 @@ from typing import (
     get_origin,
 )
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from pydantic.fields import FieldInfo
 from pydantic_core import PydanticUndefined
 
@@ -40,6 +40,43 @@ PydanticValidator = classmethod
 NoneType = type(None)
 
 
+class BaseArgument(BaseModel):
+    """Base pydantic model for argument groups."""
+
+    model_config = ConfigDict(json_schema_extra={"subcommand": False})
+
+
+class BaseCommand(BaseModel):
+    """Base pydantic model for command groups.
+
+    This class is only a convenience base class that sets the
+    `model_config` parameter to have the `json_schema_extra` parameter to
+    have `subcommand=True`.
+    """
+
+    model_config = ConfigDict(json_schema_extra={"subcommand": True}, defer_build=True)
+
+    # Quick fix for pydantic 2.12 not returning the original field infos
+    _original_field_infos: dict[str, FieldInfo] | None = None
+
+    def __init_subclass__(
+        cls,
+        /,
+        **kwargs: Any,
+    ) -> None:
+        super().__init_subclass__(**kwargs)
+
+        if isinstance(cls._original_field_infos, dict):
+            cls._original_field_infos = cls._original_field_infos.copy()
+        else:
+            cls._original_field_infos = {}
+
+        for attribute, info in vars(cls).items():
+            # Attribute specific annotation takes precedence
+            if isinstance(info, FieldInfo):
+                cls._original_field_infos[attribute] = info
+
+
 @dataclass
 class PydanticField:
     """Simple Pydantic v2.0 field wrapper.
@@ -52,6 +89,7 @@ class PydanticField:
 
     name: str
     info: FieldInfo
+    original_info: FieldInfo | None = None
     extra_default: tuple[str, Any] | None = None
 
     @classmethod
@@ -61,8 +99,15 @@ class PydanticField:
         Yields:
             Instances of self (`PydanticField`)
         """
+        # Quick fix for pydantic 2.12 not returning the original field infos
         for name, info in model.model_fields.items():
-            yield cls(name, info)
+            if isinstance(model, BaseCommand) or issubclass(model, BaseCommand):
+                try:
+                    yield cls(name, info, model._original_field_infos[name])
+                except KeyError:
+                    yield cls(name, info)
+            else:
+                yield cls(name, info)
 
     def _get_type(self, annotation: type | None) -> type | tuple[type | None, ...] | None:
         origin = get_origin(annotation)
@@ -213,14 +258,14 @@ class PydanticField:
         """
         name = self.info.title or self.name
 
-        if isinstance(self.info, ArgFieldInfo) and self.info.positional:
+        if isinstance(self.original_info, ArgFieldInfo) and self.original_info.positional:
             return (name,)
 
         prefix = "--no-" if invert else "--"
         long_name = f"{prefix}{name.replace('_', '-')}"
 
-        if isinstance(self.info, ArgFieldInfo) and self.info.short is not None:
-            return f"-{self.info.short}", long_name
+        if isinstance(self.original_info, ArgFieldInfo) and self.original_info.short is not None:
+            return f"-{self.original_info.short}", long_name
 
         return (long_name,)
 
@@ -259,11 +304,11 @@ class PydanticField:
                 Otherwise, return constituent type names.
         """
         # check metavar first
-        if isinstance(self.info, ArgFieldInfo):
-            if self.info.metavar is not None:
-                return self.info.metavar
+        if isinstance(self.original_info, ArgFieldInfo):
+            if self.original_info.metavar is not None:
+                return self.original_info.metavar
 
-            if self.info.positional:
+            if self.original_info.positional:
                 return self.arg_names()[0].upper()
 
         # otherwise default to the type
@@ -278,7 +323,7 @@ class PydanticField:
     def arg_required(self) -> dict[str, bool]:
         return (
             {}
-            if isinstance(self.info, ArgFieldInfo) and self.info.positional
+            if isinstance(self.original_info, ArgFieldInfo) and self.original_info.positional
             else {"required": self.info.is_required() and self.extra_default is None}
         )
 
@@ -286,22 +331,23 @@ class PydanticField:
         return (
             {}
             if self.extra_default is None
-            or isinstance(self.info, ArgFieldInfo)
-            and self.info.positional
+            or isinstance(self.original_info, ArgFieldInfo)
+            and self.original_info.positional
             else {"default": self.extra_default[1]}
         )
 
     def arg_const(self) -> dict[str, Any]:
         return (
-            {"const": self.info.const, "nargs": "?"}
-            if isinstance(self.info, ArgFieldInfo) and self.info.const is not PydanticUndefined
+            {"const": self.original_info.const, "nargs": "?"}
+            if isinstance(self.original_info, ArgFieldInfo)
+            and self.original_info.const is not PydanticUndefined
             else {}
         )
 
     def arg_dest(self) -> dict[str, str]:
         return (
             {}
-            if isinstance(self.info, ArgFieldInfo) and self.info.positional
+            if isinstance(self.original_info, ArgFieldInfo) and self.original_info.positional
             else {"dest": self.name}
         )
 
