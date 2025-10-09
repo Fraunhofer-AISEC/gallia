@@ -68,7 +68,7 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
         add_help: bool = True,
         exit_on_error: bool = True,
         extra_defaults: dict[type, dict[str, tuple[str, Any]]] | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Instantiates the typed Argument Parser with its `pydantic` model.
 
