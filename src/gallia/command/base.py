@@ -137,9 +137,6 @@ class BaseCommandConfig(GalliaBaseModel, cli_group="generic", config_section="ga
     hooks: bool = Field(
         True, description="execute pre and post hooks", config_section="gallia.hooks"
     )
-    lock_file: Path | None = Field(
-        None, description="path to file used for a posix lock", metavar="PATH"
-    )
     db: Path | None = Field(None, description="Path to sqlite3 database")
     artifacts_base: Path | None = Field(
         None,
@@ -149,7 +146,7 @@ class BaseCommandConfig(GalliaBaseModel, cli_group="generic", config_section="ga
     )
 
 
-class BaseCommand(FlockMixin, ABC):
+class BaseCommand(ABC):
     """BaseCommand is the baseclass for all gallia commands.
     This class can be used in standalone scripts via the
     gallia command line interface facility.
@@ -300,14 +297,6 @@ class BaseCommand(FlockMixin, ABC):
             return artifacts_dir.absolute()
 
     async def entry_point(self) -> int:
-        if (p := self.config.lock_file) is not None:
-            try:
-                self._lock_file_fd = self._open_lockfile(p)
-                await self._aquire_flock()
-            except OSError as e:
-                logger.critical(f"Unable to lock {p}: {e}")
-                return exitcodes.OSFILE
-
         self.artifacts_dir = self.prepare_artifacts_dir()
         if self.artifacts_dir is not None:
             self.log_file_handlers.append(
@@ -378,9 +367,6 @@ class BaseCommand(FlockMixin, ABC):
         if self.config.hooks:
             self.run_hook(HookVariant.POST, exit_code)
 
-        if self._lock_file_fd is not None:
-            self._release_flock()
-
         return exit_code
 
 
@@ -396,7 +382,8 @@ class AsyncScriptConfig(
 class AsyncScript(BaseCommand, ABC):
     """AsyncScript is a base class for a asynchronous gallia command.
     To implement an async script, create a subclass and implement
-    the .main() method."""
+    the .main() method.
+    """
 
     GROUP = "script"
 
@@ -416,13 +403,44 @@ class AsyncScript(BaseCommand, ABC):
         return exitcodes.OK
 
 
-class ScannerConfig(AsyncScriptConfig, cli_group="scanner", config_section="gallia.scanner"):
-    dumpcap: bool = Field(
-        sys.platform.startswith("linux"), description="Enable/Disable creating a pcap file"
+class LockableScriptConfig(
+    AsyncScriptConfig,
+    ABC,
+    cli_group=BaseCommandConfig._cli_group,
+    config_section=BaseCommandConfig._config_section,
+):
+    lock_file: Path | None = Field(
+        None, description="path to file used for a posix lock", metavar="PATH"
     )
-    target: Idempotent[TargetURI] = Field(
-        description="URI that describes the target", metavar="TARGET"
-    )
+
+
+class LockableScript(AsyncScript, FlockMixin, ABC):
+    """Lockable Script adds locking functionality to the AsyncScript. Runs between multiple LockableScript instances can be locked to avoid conflicting access on certain resources, which could otherwise disrupt the other script."""
+
+    def __init__(self, config: LockableScriptConfig):
+        super().__init__(config)
+        self.config: LockableScriptConfig = config
+
+    async def entry_point(self) -> int:
+        if (p := self.config.lock_file) is not None:
+            try:
+                self._lock_file_fd = self._open_lockfile(p)
+                await self._aquire_flock()
+            except OSError as e:
+                logger.critical(f"Unable to lock {p}: {e}")
+                return exitcodes.OSFILE
+
+        exit_code = await super().entry_point()
+
+        if self._lock_file_fd is not None:
+            self._release_flock()
+
+        return exit_code
+
+
+class MetaScannerConfig(
+    LockableScriptConfig, ABC, cli_group="scanner", config_section="gallia.scanner"
+):
     power_supply: Idempotent[PowerSupplyURI] | None = Field(
         None,
         description="URI specifying the location of the relevant opennetzteil server",
@@ -436,13 +454,6 @@ class ScannerConfig(AsyncScriptConfig, cli_group="scanner", config_section="gall
         5.0, description="time to sleep after the power-cycle", metavar="SECs"
     )
 
-    @field_serializer("target", "power_supply")
-    def serialize_target_uri(self, target_uri: TargetURI | None) -> Any:
-        if target_uri is None:
-            return None
-
-        return target_uri.raw
-
     @model_validator(mode="after")
     def check_power_supply_required(self) -> Self:
         if self.power_cycle and self.power_supply is None:
@@ -451,13 +462,50 @@ class ScannerConfig(AsyncScriptConfig, cli_group="scanner", config_section="gall
         return self
 
 
-class Scanner(AsyncScript, ABC):
+class MetaScanner(LockableScript, ABC):
+    """MetaScanner is a base class for scanners that are not restricted to s single target, but communicate with multiple potentially unknown targets, e.g. discovery scripts.
+    It has the following properties:
+
+        - Controlling PowerSupplies via the opennetzteil API is supported.
+        - Runs between multiple MetaScanners can be locked to avoid conflicting access on certain resources, such as the power supply which could otherwise disrupt the other scan.
+    """
+
+    def __init__(self, config: MetaScannerConfig):
+        super().__init__(config)
+        self.config: MetaScannerConfig = config
+        self.power_supply: PowerSupply | None = None
+
+    async def setup(self) -> None:
+        if self.config.power_supply is not None:
+            self.power_supply = await PowerSupply.connect(self.config.power_supply)
+            if self.config.power_cycle is True:
+                await self.power_supply.power_cycle(
+                    self.config.power_cycle_sleep, lambda: asyncio.sleep(2)
+                )
+
+
+class ScannerConfig(MetaScannerConfig, cli_group="scanner", config_section="gallia.scanner"):
+    dumpcap: bool = Field(
+        sys.platform.startswith("linux"), description="Enable/Disable creating a pcap file"
+    )
+    target: Idempotent[TargetURI] = Field(
+        description="URI that describes the target", metavar="TARGET"
+    )
+
+    @field_serializer("target", "power_supply")
+    def serialize_target_uri(self, target_uri: TargetURI | None) -> Any:
+        if target_uri is None:
+            return None
+
+        return target_uri.raw
+
+
+class Scanner(MetaScanner, ABC):
     """Scanner is a base class for all scanning related commands.
     A scanner has the following properties:
 
     - It is async.
     - It loads transports via TargetURIs; available via `self.transport`.
-    - Controlling PowerSupplies via the opennetzteil API is supported.
     - `setup()` can be overwritten (do not forget to call `super().setup()`)
       for preparation tasks, such as establishing a network connection or
       starting background tasks.
@@ -473,7 +521,6 @@ class Scanner(AsyncScript, ABC):
     def __init__(self, config: ScannerConfig):
         super().__init__(config)
         self.config: ScannerConfig = config
-        self.power_supply: PowerSupply | None = None
         self._transport: BaseTransport | None = None
         self.dumpcap: Dumpcap | None = None
 
@@ -489,18 +536,10 @@ class Scanner(AsyncScript, ABC):
             logger.critical(f"Attempting to assign wrong type to transport: {type(transport)}")
         self._transport = transport
 
-    @abstractmethod
-    async def main(self) -> None: ...
-
     async def setup(self) -> None:
-        from gallia.plugins.plugin import load_transport
+        await super().setup()
 
-        if self.config.power_supply is not None:
-            self.power_supply = await PowerSupply.connect(self.config.power_supply)
-            if self.config.power_cycle is True:
-                await self.power_supply.power_cycle(
-                    self.config.power_cycle_sleep, lambda: asyncio.sleep(2)
-                )
+        from gallia.plugins.plugin import load_transport
 
         # Start dumpcap as the first subprocess; otherwise network
         # traffic might be missing.
