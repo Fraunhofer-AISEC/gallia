@@ -8,7 +8,7 @@ from pydantic.fields import FieldInfo, _FromFieldInfoInputs
 from pydantic_core import PydanticUndefined
 
 
-class ArgFieldInfo(FieldInfo):
+class ArgFieldInfo(FieldInfo):  # type: ignore[misc]
     def __init__(
         self,
         default: Any,
