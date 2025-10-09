@@ -79,11 +79,9 @@ class RawFlexRayTransport(BaseTransport, scheme="fr-raw"):
     @classmethod
     async def connect(
         cls,
-        target: str | TargetURI,
         timeout: float | None = None,
-    ) -> Self:
-        t = TargetURI(target) if isinstance(target, str) else target
-        return cls(t)
+    ) -> None:
+        pass
 
     async def write_frame_unsafe(self, frame: FlexRayFrame) -> None:
         await self.backend.transmit(frame.slot_id, frame.data)
@@ -324,12 +322,10 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="fr-tp-legacy"):
     @classmethod
     async def connect(
         cls,
-        target: str | TargetURI,
         timeout: float | None = None,
-    ) -> Self:
-        t = TargetURI(target) if isinstance(target, str) else target
-        fr_raw = await RawFlexRayTransport.connect("fr-raw:", timeout)
-        return cls(t, fr_raw)
+    ) -> None:
+        fr_raw = RawFlexRayTransport(TargetURI("fr-raw:"))
+        await fr_raw.connect(timeout)
 
     async def write_bytes(self, data: bytes) -> None:
         frame = FlexRayFrame(

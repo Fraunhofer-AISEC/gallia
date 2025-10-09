@@ -66,7 +66,8 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
             logger.result("----------------------------")
             logger.result(f"Probing ECU: {target}")
 
-            transport = await ISOTPTransport.connect(target)
+            transport = ISOTPTransport(target)
+            await transport.connect()
             uds_client = UDSClient(transport, timeout=2)
             logger.result(f"reading device description at {g_repr(did)}")
             try:
@@ -106,7 +107,8 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
         return frame
 
     async def main(self) -> None:
-        transport = await RawCANTransport.connect(self.config.target)
+        transport = RawCANTransport(self.config.target)
+        await transport.connect()
         found = []
 
         sniff_time: int = self.config.sniff_time
