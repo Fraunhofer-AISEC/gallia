@@ -101,13 +101,20 @@ class PydanticField:
         """
         # Quick fix for pydantic 2.12 not returning the original field infos
         for name, info in model.model_fields.items():
-            if isinstance(model, BaseCommand) or issubclass(model, BaseCommand):
+            original_info: FieldInfo | None = None
+
+            if (
+                isinstance(model, BaseCommand)
+                or isinstance(model, type)
+                and issubclass(model, BaseCommand)
+            ):
                 try:
-                    yield cls(name, info, model._original_field_infos[name])
+                    if (original_infos := model._original_field_infos) is not None:
+                        original_info = original_infos[name]
                 except KeyError:
-                    yield cls(name, info)
-            else:
-                yield cls(name, info)
+                    pass
+
+            yield cls(name, info, original_info)
 
     def _get_type(self, annotation: type | None) -> type | tuple[type | None, ...] | None:
         origin = get_origin(annotation)

@@ -205,7 +205,7 @@ else:
     """
 
 
-class ConfigArgFieldInfo(ArgFieldInfo):
+class ConfigArgFieldInfo(ArgFieldInfo):  # type: ignore[misc]
     def __init__(
         self,
         default: Any,
@@ -373,14 +373,15 @@ class GalliaBaseModel(BaseCommand, ABC):
     def attributes_from_config(cls, config: Config, source: str = "config file") -> dict[str, Any]:
         result = {}
 
-        for name, info in cls._original_field_infos.items():
-            if isinstance(info, ConfigArgFieldInfo):
-                config_attribute = (
-                    f"{info.config_section}.{name}" if info.config_section != "" else name
-                )
+        if (original_infos := cls._original_field_infos) is not None:
+            for name, info in original_infos.items():
+                if isinstance(info, ConfigArgFieldInfo):
+                    config_attribute = (
+                        f"{info.config_section}.{name}" if info.config_section != "" else name
+                    )
 
-                if (value := config.get_value(config_attribute)) is not None:
-                    result[name] = (f"{source} ({info.config_section}:{name})", value)
+                    if (value := config.get_value(config_attribute)) is not None:
+                        result[name] = (f"{source} ({info.config_section}:{name})", value)
 
         return result
 
@@ -388,11 +389,12 @@ class GalliaBaseModel(BaseCommand, ABC):
     def attributes_from_env(cls) -> dict[str, Any]:
         result = {}
 
-        for name, info in cls._original_field_infos.items():
-            if isinstance(info, ConfigArgFieldInfo):
-                config_attribute = f"GALLIA_{name.upper()}"
+        if (original_infos := cls._original_field_infos) is not None:
+            for name, info in original_infos.items():
+                if isinstance(info, ConfigArgFieldInfo):
+                    config_attribute = f"GALLIA_{name.upper()}"
 
-                if (value := os.getenv(config_attribute)) is not None:
-                    result[name] = (f"environment variable ({config_attribute})", value)
+                    if (value := os.getenv(config_attribute)) is not None:
+                        result[name] = (f"environment variable ({config_attribute})", value)
 
         return result
