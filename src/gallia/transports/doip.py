@@ -62,7 +62,7 @@ class RoutingActivationRequestTypes(IntEnumWithMissing):
 
 
 @unique
-class RoutingActivationResponseCodes(IntEnum):
+class RoutingActivationResponseCodes(IntEnumWithMissing):
     UnknownSourceAddress = 0x00
     NoResources = 0x01
     InvalidConnectionEntry = 0x02
@@ -116,7 +116,7 @@ class DiagnosticMessagePositiveAckCodes(IntEnum):
 
 
 @unique
-class DiagnosticMessageNegativeAckCodes(IntEnum):
+class DiagnosticMessageNegativeAckCodes(IntEnumWithMissing):
     InvalidSourceAddress = 0x02
     UnknownTargetAddress = 0x03
     DiagnosticMessageTooLarge = 0x04
@@ -139,7 +139,7 @@ class DoIPNegativeAckError(BrokenPipeError):
 
 
 @unique
-class GenericDoIPHeaderNACKCodes(IntEnum):
+class GenericDoIPHeaderNACKCodes(IntEnumWithMissing):
     IncorrectPatternFormat = 0x00
     UnknownPayloadType = 0x01
     MessageTooLarge = 0x02
@@ -231,7 +231,7 @@ class VehicleIdentificationRequestMessage:
 
 
 @unique
-class FurtherActionCodes(IntEnum):
+class FurtherActionCodes(IntEnumWithMissing):
     NoFurtherActionRequired = 0x00
     RoutingActivationRequiredToInitiateCentralSecurity = 0x10
 
@@ -244,7 +244,7 @@ class FurtherActionCodes(IntEnum):
 
 
 @unique
-class SynchronisationStatusCodes(IntEnum):
+class SynchronisationStatusCodes(IntEnumWithMissing):
     VINGIDSynchronized = 0x00
     IncompleteVINGIDNotSynchronized = 0x10
 
@@ -299,7 +299,7 @@ class DoIPEntityStatusRequest:
 
 
 @unique
-class NodeTypes(IntEnum):
+class NodeTypes(IntEnumWithMissing):
     Gateway = 0x00
     Node = 0x01
 
