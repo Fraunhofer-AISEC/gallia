@@ -5,7 +5,6 @@
 import asyncio
 import socket
 import struct
-from abc import abstractmethod
 from dataclasses import dataclass
 from enum import IntEnum, unique
 from typing import Any, Self
@@ -31,9 +30,9 @@ class ProtocolVersions(IntEnum):
 
 
 class IntEnumWithMissing(IntEnum):
-    @abstractmethod
     @staticmethod
-    def missing_name(value: int) -> str: ...
+    def missing_name(value: int) -> str:
+        return "Missing"
 
     @classmethod
     def _missing_(cls, value: Any) -> Self:
