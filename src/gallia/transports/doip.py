@@ -31,23 +31,29 @@ class ProtocolVersions(IntEnum):
 
 @unique
 class RoutingActivationRequestTypes(IntEnum):
-    RESERVED = 0xFF
-    ManufacturerSpecific = 0xFE
     Default = 0x00
     WWH_OBD = 0x01
     CentralSecurity = 0xE0
 
     @classmethod
-    def _missing_(cls, value: Any) -> "RoutingActivationRequestTypes":
+    def _missing_(cls, value: Any) -> Self:
+        if not isinstance(value, int):
+            raise ValueError(f"{value!r} is not a valid {cls.__name__}")
+
+        pseudo = int.__new__(cls, value)
+
         if value in range(0xE1, 0x100):
-            return cls.ManufacturerSpecific
-        return cls.RESERVED
+            pseudo._name_ = "ManufacturerSpecific"
+        else:
+            pseudo._name_ = "RESERVED"
+        pseudo._value_ = value
+
+        cls._value2member_map_[value] = pseudo
+        return pseudo
 
 
 @unique
 class RoutingActivationResponseCodes(IntEnum):
-    RESERVED = 0xFF
-    ManufacturerSpecific = 0xFE
     UnknownSourceAddress = 0x00
     NoResources = 0x01
     InvalidConnectionEntry = 0x02
@@ -60,10 +66,20 @@ class RoutingActivationResponseCodes(IntEnum):
     SuccessConfirmationRequired = 0x11
 
     @classmethod
-    def _missing_(cls, value: Any) -> "RoutingActivationResponseCodes":
+    def _missing_(cls, value: Any) -> Self:
+        if not isinstance(value, int):
+            raise ValueError(f"{value!r} is not a valid {cls.__name__}")
+
+        pseudo = int.__new__(cls, value)
+
         if value in range(0xE0, 0xFF):
-            return cls.ManufacturerSpecific
-        return cls.RESERVED
+            pseudo._name_ = "ManufacturerSpecific"
+        else:
+            pseudo._name_ = "RESERVED"
+        pseudo._value_ = value
+
+        cls._value2member_map_[value] = pseudo
+        return pseudo
 
 
 class DoIPRoutingActivationDeniedError(ConnectionAbortedError):
@@ -101,7 +117,6 @@ class DiagnosticMessagePositiveAckCodes(IntEnum):
 
 @unique
 class DiagnosticMessageNegativeAckCodes(IntEnum):
-    RESERVED = 0xFF
     InvalidSourceAddress = 0x02
     UnknownTargetAddress = 0x03
     DiagnosticMessageTooLarge = 0x04
@@ -111,8 +126,16 @@ class DiagnosticMessageNegativeAckCodes(IntEnum):
     TransportProtocolError = 0x08
 
     @classmethod
-    def _missing_(cls, value: Any) -> "DiagnosticMessageNegativeAckCodes":
-        return cls.RESERVED
+    def _missing_(cls, value: Any) -> Self:
+        if not isinstance(value, int):
+            raise ValueError(f"{value!r} is not a valid {cls.__name__}")
+
+        pseudo = int.__new__(cls, value)
+        pseudo._name_ = "RESERVED"
+        pseudo._value_ = value
+
+        cls._value2member_map_[value] = pseudo
+        return pseudo
 
 
 class DoIPNegativeAckError(BrokenPipeError):
@@ -125,7 +148,6 @@ class DoIPNegativeAckError(BrokenPipeError):
 
 @unique
 class GenericDoIPHeaderNACKCodes(IntEnum):
-    RESERVED = 0xFF
     IncorrectPatternFormat = 0x00
     UnknownPayloadType = 0x01
     MessageTooLarge = 0x02
@@ -133,8 +155,16 @@ class GenericDoIPHeaderNACKCodes(IntEnum):
     InvalidPayloadLength = 0x04
 
     @classmethod
-    def _missing_(cls, value: Any) -> "GenericDoIPHeaderNACKCodes":
-        return cls.RESERVED
+    def _missing_(cls, value: Any) -> Self:
+        if not isinstance(value, int):
+            raise ValueError(f"{value!r} is not a valid {cls.__name__}")
+
+        pseudo = int.__new__(cls, value)
+        pseudo._name_ = "RESERVED"
+        pseudo._value_ = value
+
+        cls._value2member_map_[value] = pseudo
+        return pseudo
 
 
 class DoIPGenericHeaderNACKError(ConnectionAbortedError):
@@ -218,27 +248,42 @@ class VehicleIdentificationRequestMessage:
 
 @unique
 class FurtherActionCodes(IntEnum):
-    RESERVED = 0x0F
-    ManufacturerSpecific = 0xFF
     NoFurtherActionRequired = 0x00
     RoutingActivationRequiredToInitiateCentralSecurity = 0x10
 
     @classmethod
-    def _missing_(cls, value: Any) -> "FurtherActionCodes":
+    def _missing_(cls, value: Any) -> Self:
+        if not isinstance(value, int):
+            raise ValueError(f"{value!r} is not a valid {cls.__name__}")
+
+        pseudo = int.__new__(cls, value)
+
         if value in range(0x11, 0x100):
-            return cls.ManufacturerSpecific
-        return cls.RESERVED
+            pseudo._name_ = "ManufacturerSpecific"
+        else:
+            pseudo._name_ = "RESERVED"
+        pseudo._value_ = value
+
+        cls._value2member_map_[value] = pseudo
+        return pseudo
 
 
 @unique
 class SynchronisationStatusCodes(IntEnum):
-    RESERVED = 0xFF
     VINGIDSynchronized = 0x00
     IncompleteVINGIDNotSynchronized = 0x10
 
     @classmethod
-    def _missing_(cls, value: Any) -> "SynchronisationStatusCodes":
-        return cls.RESERVED
+    def _missing_(cls, value: Any) -> Self:
+        if not isinstance(value, int):
+            raise ValueError(f"{value!r} is not a valid {cls.__name__}")
+
+        pseudo = int.__new__(cls, value)
+        pseudo._name_ = "RESERVED"
+        pseudo._value_ = value
+
+        cls._value2member_map_[value] = pseudo
+        return pseudo
 
 
 @dataclass
@@ -288,13 +333,20 @@ class DoIPEntityStatusRequest:
 
 @unique
 class NodeTypes(IntEnum):
-    RESERVED = 0xFF
     Gateway = 0x00
     Node = 0x01
 
     @classmethod
-    def _missing_(cls, value: Any) -> "NodeTypes":
-        return cls.RESERVED
+    def _missing_(cls, value: Any) -> Self:
+        if not isinstance(value, int):
+            raise ValueError(f"{value!r} is not a valid {cls.__name__}")
+
+        pseudo = int.__new__(cls, value)
+        pseudo._name_ = "RESERVED"
+        pseudo._value_ = value
+
+        cls._value2member_map_[value] = pseudo
+        return pseudo
 
 
 @dataclass
