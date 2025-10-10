@@ -29,25 +29,40 @@ class ProtocolVersions(IntEnum):
     ISO_13400_2_2019 = 0x03
 
 
+class _IntEnumWithMissing(IntEnum):
+    @staticmethod
+    def missing_name(value: int) -> str:
+        return "RESERVED"
+
+    @classmethod
+    def _missing_(cls, value: Any) -> Self:
+        if not isinstance(value, int):
+            raise ValueError(f"{value!r} is not a valid {cls.__name__}")
+
+        pseudo = int.__new__(cls, value)
+        pseudo._name_ = cls.missing_name(value)
+        pseudo._value_ = value
+
+        cls._value2member_map_[value] = pseudo
+        return pseudo
+
+
 @unique
-class RoutingActivationRequestTypes(IntEnum):
-    RESERVED = 0xFF
-    ManufacturerSpecific = 0xFE
+class RoutingActivationRequestTypes(_IntEnumWithMissing):
     Default = 0x00
     WWH_OBD = 0x01
     CentralSecurity = 0xE0
 
-    @classmethod
-    def _missing_(cls, value: Any) -> "RoutingActivationRequestTypes":
+    @staticmethod
+    def missing_name(value: int) -> str:
         if value in range(0xE1, 0x100):
-            return cls.ManufacturerSpecific
-        return cls.RESERVED
+            return "ManufacturerSpecific"
+        else:
+            return "RESERVED"
 
 
 @unique
-class RoutingActivationResponseCodes(IntEnum):
-    RESERVED = 0xFF
-    ManufacturerSpecific = 0xFE
+class RoutingActivationResponseCodes(_IntEnumWithMissing):
     UnknownSourceAddress = 0x00
     NoResources = 0x01
     InvalidConnectionEntry = 0x02
@@ -59,11 +74,12 @@ class RoutingActivationResponseCodes(IntEnum):
     Success = 0x10
     SuccessConfirmationRequired = 0x11
 
-    @classmethod
-    def _missing_(cls, value: Any) -> "RoutingActivationResponseCodes":
-        if value in range(0xE0, 0xFF):
-            return cls.ManufacturerSpecific
-        return cls.RESERVED
+    @staticmethod
+    def missing_name(value: int) -> str:
+        if value in range(0xE0, 0xFF):  # 0xFF is indeed RESERVED!
+            return "ManufacturerSpecific"
+        else:
+            return "RESERVED"
 
 
 class DoIPRoutingActivationDeniedError(ConnectionAbortedError):
@@ -75,12 +91,12 @@ class DoIPRoutingActivationDeniedError(ConnectionAbortedError):
 
 
 @unique
-class PayloadTypes(IntEnum):
+class PayloadTypes(_IntEnumWithMissing):
     GenericDoIPHeaderNACK = 0x0000
     VehicleIdentificationRequestMessage = 0x0001
     VehicleIdentificationRequestMessageWithEID = 0x0002
     VehicleIdentificationRequestMessageWithVIN = 0x0003
-    VehicleAnnouncementMessage = 0x004
+    VehicleAnnouncementMessage = 0x0004
     RoutingActivationRequest = 0x0005
     RoutingActivationResponse = 0x0006
     AliveCheckRequest = 0x0007
@@ -93,15 +109,21 @@ class PayloadTypes(IntEnum):
     DiagnosticMessagePositiveAcknowledgement = 0x8002
     DiagnosticMessageNegativeAcknowledgement = 0x8003
 
+    @staticmethod
+    def missing_name(value: int) -> str:
+        if value in range(0xF000, 0x10000):
+            return "ManufacturerSpecific"
+        else:
+            return "RESERVED"
+
 
 @unique
-class DiagnosticMessagePositiveAckCodes(IntEnum):
+class DiagnosticMessagePositiveAckCodes(_IntEnumWithMissing):
     Success = 0x00
 
 
 @unique
-class DiagnosticMessageNegativeAckCodes(IntEnum):
-    RESERVED = 0xFF
+class DiagnosticMessageNegativeAckCodes(_IntEnumWithMissing):
     InvalidSourceAddress = 0x02
     UnknownTargetAddress = 0x03
     DiagnosticMessageTooLarge = 0x04
@@ -109,10 +131,6 @@ class DiagnosticMessageNegativeAckCodes(IntEnum):
     TargetUnreachable = 0x06
     UnknownNetwork = 0x07
     TransportProtocolError = 0x08
-
-    @classmethod
-    def _missing_(cls, value: Any) -> "DiagnosticMessageNegativeAckCodes":
-        return cls.RESERVED
 
 
 class DoIPNegativeAckError(BrokenPipeError):
@@ -124,17 +142,12 @@ class DoIPNegativeAckError(BrokenPipeError):
 
 
 @unique
-class GenericDoIPHeaderNACKCodes(IntEnum):
-    RESERVED = 0xFF
+class GenericDoIPHeaderNACKCodes(_IntEnumWithMissing):
     IncorrectPatternFormat = 0x00
     UnknownPayloadType = 0x01
     MessageTooLarge = 0x02
     OutOfMemory = 0x03
     InvalidPayloadLength = 0x04
-
-    @classmethod
-    def _missing_(cls, value: Any) -> "GenericDoIPHeaderNACKCodes":
-        return cls.RESERVED
 
 
 class DoIPGenericHeaderNACKError(ConnectionAbortedError):
@@ -217,28 +230,22 @@ class VehicleIdentificationRequestMessage:
 
 
 @unique
-class FurtherActionCodes(IntEnum):
-    RESERVED = 0x0F
-    ManufacturerSpecific = 0xFF
+class FurtherActionCodes(_IntEnumWithMissing):
     NoFurtherActionRequired = 0x00
     RoutingActivationRequiredToInitiateCentralSecurity = 0x10
 
-    @classmethod
-    def _missing_(cls, value: Any) -> "FurtherActionCodes":
+    @staticmethod
+    def missing_name(value: int) -> str:
         if value in range(0x11, 0x100):
-            return cls.ManufacturerSpecific
-        return cls.RESERVED
+            return "ManufacturerSpecific"
+        else:
+            return "RESERVED"
 
 
 @unique
-class SynchronisationStatusCodes(IntEnum):
-    RESERVED = 0xFF
+class SynchronisationStatusCodes(_IntEnumWithMissing):
     VINGIDSynchronized = 0x00
     IncompleteVINGIDNotSynchronized = 0x10
-
-    @classmethod
-    def _missing_(cls, value: Any) -> "SynchronisationStatusCodes":
-        return cls.RESERVED
 
 
 @dataclass
@@ -287,14 +294,9 @@ class DoIPEntityStatusRequest:
 
 
 @unique
-class NodeTypes(IntEnum):
-    RESERVED = 0xFF
+class NodeTypes(_IntEnumWithMissing):
     Gateway = 0x00
     Node = 0x01
-
-    @classmethod
-    def _missing_(cls, value: Any) -> "NodeTypes":
-        return cls.RESERVED
 
 
 @dataclass

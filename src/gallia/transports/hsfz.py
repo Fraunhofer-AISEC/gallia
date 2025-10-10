@@ -20,7 +20,6 @@ logger = get_logger(__name__)
 
 
 class HSFZStatus(IntEnum):
-    UNDEFINED = -0x01
     Data = 0x01
     Ack = 0x02
     Klemme15 = 0x10
@@ -36,8 +35,16 @@ class HSFZStatus(IntEnum):
     OutOfMemory = 0xFF
 
     @classmethod
-    def _missing_(cls, value: Any) -> "HSFZStatus":
-        return cls.UNDEFINED
+    def _missing_(cls, value: Any) -> Self:
+        if not isinstance(value, int):
+            raise ValueError(f"{value!r} is not a valid {cls.__name__}")
+
+        pseudo = int.__new__(cls, value)
+        pseudo._name_ = "UNDEFINED"
+        pseudo._value_ = value
+
+        cls._value2member_map_[value] = pseudo
+        return pseudo
 
 
 @dataclass
