@@ -5,6 +5,7 @@
 import asyncio
 import socket
 import struct
+from abc import abstractmethod
 from dataclasses import dataclass
 from enum import IntEnum, unique
 from typing import Any, Self
@@ -29,11 +30,10 @@ class ProtocolVersions(IntEnum):
     ISO_13400_2_2019 = 0x03
 
 
-@unique
-class RoutingActivationRequestTypes(IntEnum):
-    Default = 0x00
-    WWH_OBD = 0x01
-    CentralSecurity = 0xE0
+class IntEnumWithMissing(IntEnum):
+    @abstractmethod
+    @staticmethod
+    def missing_name(value: int) -> str: ...
 
     @classmethod
     def _missing_(cls, value: Any) -> Self:
@@ -41,15 +41,25 @@ class RoutingActivationRequestTypes(IntEnum):
             raise ValueError(f"{value!r} is not a valid {cls.__name__}")
 
         pseudo = int.__new__(cls, value)
-
-        if value in range(0xE1, 0x100):
-            pseudo._name_ = "ManufacturerSpecific"
-        else:
-            pseudo._name_ = "RESERVED"
+        pseudo._name_ = cls.missing_name(value)
         pseudo._value_ = value
 
         cls._value2member_map_[value] = pseudo
         return pseudo
+
+
+@unique
+class RoutingActivationRequestTypes(IntEnumWithMissing):
+    Default = 0x00
+    WWH_OBD = 0x01
+    CentralSecurity = 0xE0
+
+    @staticmethod
+    def missing_name(value: int) -> str:
+        if value in range(0xE1, 0x100):
+            return "ManufacturerSpecific"
+        else:
+            return "RESERVED"
 
 
 @unique
@@ -65,21 +75,12 @@ class RoutingActivationResponseCodes(IntEnum):
     Success = 0x10
     SuccessConfirmationRequired = 0x11
 
-    @classmethod
-    def _missing_(cls, value: Any) -> Self:
-        if not isinstance(value, int):
-            raise ValueError(f"{value!r} is not a valid {cls.__name__}")
-
-        pseudo = int.__new__(cls, value)
-
+    @staticmethod
+    def missing_name(value: int) -> str:
         if value in range(0xE0, 0xFF):
-            pseudo._name_ = "ManufacturerSpecific"
+            return "ManufacturerSpecific"
         else:
-            pseudo._name_ = "RESERVED"
-        pseudo._value_ = value
-
-        cls._value2member_map_[value] = pseudo
-        return pseudo
+            return "RESERVED"
 
 
 class DoIPRoutingActivationDeniedError(ConnectionAbortedError):
@@ -125,17 +126,9 @@ class DiagnosticMessageNegativeAckCodes(IntEnum):
     UnknownNetwork = 0x07
     TransportProtocolError = 0x08
 
-    @classmethod
-    def _missing_(cls, value: Any) -> Self:
-        if not isinstance(value, int):
-            raise ValueError(f"{value!r} is not a valid {cls.__name__}")
-
-        pseudo = int.__new__(cls, value)
-        pseudo._name_ = "RESERVED"
-        pseudo._value_ = value
-
-        cls._value2member_map_[value] = pseudo
-        return pseudo
+    @staticmethod
+    def missing_name(value: int) -> str:
+        return "RESERVED"
 
 
 class DoIPNegativeAckError(BrokenPipeError):
@@ -154,17 +147,9 @@ class GenericDoIPHeaderNACKCodes(IntEnum):
     OutOfMemory = 0x03
     InvalidPayloadLength = 0x04
 
-    @classmethod
-    def _missing_(cls, value: Any) -> Self:
-        if not isinstance(value, int):
-            raise ValueError(f"{value!r} is not a valid {cls.__name__}")
-
-        pseudo = int.__new__(cls, value)
-        pseudo._name_ = "RESERVED"
-        pseudo._value_ = value
-
-        cls._value2member_map_[value] = pseudo
-        return pseudo
+    @staticmethod
+    def missing_name(value: int) -> str:
+        return "RESERVED"
 
 
 class DoIPGenericHeaderNACKError(ConnectionAbortedError):
@@ -251,21 +236,12 @@ class FurtherActionCodes(IntEnum):
     NoFurtherActionRequired = 0x00
     RoutingActivationRequiredToInitiateCentralSecurity = 0x10
 
-    @classmethod
-    def _missing_(cls, value: Any) -> Self:
-        if not isinstance(value, int):
-            raise ValueError(f"{value!r} is not a valid {cls.__name__}")
-
-        pseudo = int.__new__(cls, value)
-
+    @staticmethod
+    def missing_name(value: int) -> str:
         if value in range(0x11, 0x100):
-            pseudo._name_ = "ManufacturerSpecific"
+            return "ManufacturerSpecific"
         else:
-            pseudo._name_ = "RESERVED"
-        pseudo._value_ = value
-
-        cls._value2member_map_[value] = pseudo
-        return pseudo
+            return "RESERVED"
 
 
 @unique
@@ -273,17 +249,9 @@ class SynchronisationStatusCodes(IntEnum):
     VINGIDSynchronized = 0x00
     IncompleteVINGIDNotSynchronized = 0x10
 
-    @classmethod
-    def _missing_(cls, value: Any) -> Self:
-        if not isinstance(value, int):
-            raise ValueError(f"{value!r} is not a valid {cls.__name__}")
-
-        pseudo = int.__new__(cls, value)
-        pseudo._name_ = "RESERVED"
-        pseudo._value_ = value
-
-        cls._value2member_map_[value] = pseudo
-        return pseudo
+    @staticmethod
+    def missing_name(value: int) -> str:
+        return "RESERVED"
 
 
 @dataclass
@@ -336,17 +304,9 @@ class NodeTypes(IntEnum):
     Gateway = 0x00
     Node = 0x01
 
-    @classmethod
-    def _missing_(cls, value: Any) -> Self:
-        if not isinstance(value, int):
-            raise ValueError(f"{value!r} is not a valid {cls.__name__}")
-
-        pseudo = int.__new__(cls, value)
-        pseudo._name_ = "RESERVED"
-        pseudo._value_ = value
-
-        cls._value2member_map_[value] = pseudo
-        return pseudo
+    @staticmethod
+    def missing_name(value: int) -> str:
+        return "RESERVED"
 
 
 @dataclass
