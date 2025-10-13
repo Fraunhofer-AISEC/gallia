@@ -107,16 +107,6 @@ class ECU(UDSClient):
     ) -> ECUProperties:
         return ECUProperties()
 
-    async def ping(
-        self, config: UDSRequestConfig | None = None
-    ) -> service.NegativeResponse | service.TesterPresentResponse:
-        """Send an UDS TesterPresent message.
-
-        Returns:
-            UDS response.
-        """
-        return await self.tester_present(suppress_response=False, config=config)
-
     async def read_session(self, config: UDSRequestConfig | None = None) -> int:
         """Read out current session.
 
@@ -355,7 +345,7 @@ class ECU(UDSClient):
             logger.info(f"Waiting for ECU{'.' * i}")
             try:
                 await asyncio.sleep(sleep_time)
-                await self.ping(config=config)
+                await self.tester_present(suppress_response=False, config=config)
                 break
             # When the ECU is not ready, we expect an UDSException, e.g. MissingResponse.
             # On ConnectionError, we additionally reconnect the transport to ensure connectivity.

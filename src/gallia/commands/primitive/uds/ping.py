@@ -45,7 +45,7 @@ class PingPrimitive(UDSScanner):
 
         i = 1
         while True:
-            ret = await self.ecu.ping()
+            ret = await self.ecu.tester_present(suppress_response=False)
             if isinstance(ret, NegativeResponse):
                 logger.warning(ret)
             logger.result("ECU is alive!")
