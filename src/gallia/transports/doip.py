@@ -250,10 +250,36 @@ class SynchronisationStatusCodes(_IntEnumWithMissing):
     IncompleteVINGIDNotSynchronized = 0x10
 
 
+@unique
+class LogicalAddresses(_IntEnumWithMissing):
+    WWH_OBD_functional_group = 0xE000
+
+    @staticmethod
+    def missing_name(value: int) -> str:
+        if value in range(0x0001, 0x0E00):
+            return "ManufacturerSpecific"
+        elif value in range(0x0E00, 0x0E80):
+            return "ExternalLegislated"
+        elif value in range(0x0E80, 0x0F00):
+            return "External"
+        elif value in range(0x0F00, 0x0F80):
+            return "InternalManufacturer"
+        elif value in range(0x0F80, 0x1000):
+            return "ExternalDataCollection"
+        elif value in range(0x1000, 0x8000):
+            return "ManufacturerSpecific"
+        elif value in range(0xD000, 0xE000):
+            return "TruckAndBusReserved"
+        elif value in range(0xE400, 0xF000):
+            return "ManufacturerSpecificFunctionalGroup"
+        else:
+            return "RESERVED"
+
+
 @dataclass
 class VehicleAnnouncementMessage:
     VIN: bytes
-    LogicalAddress: int
+    LogicalAddress: LogicalAddresses
     EID: bytes
     GID: bytes
     FurtherActionRequired: FurtherActionCodes
@@ -279,7 +305,7 @@ class VehicleAnnouncementMessage:
 
         return cls(
             vin,
-            logical_address,
+            LogicalAddresses(logical_address),
             eid,
             gid,
             FurtherActionCodes(further_action_required),
