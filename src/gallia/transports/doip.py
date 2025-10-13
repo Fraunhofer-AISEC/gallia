@@ -159,6 +159,8 @@ class DoIPGenericHeaderNACKError(ConnectionAbortedError):
 
 
 class TimingAndCommunicationParameters(IntEnum):
+    """Time values in `ms`"""
+
     CtrlTimeout = 2000
     AnnounceWait = 500
     AnnounceInterval = 500
@@ -166,7 +168,7 @@ class TimingAndCommunicationParameters(IntEnum):
     DiagnosticMessageMessageAckTimeout = 2000
     RoutingActivationResponseTimeout = 2000
     DiagnosticMessageMessageTimeout = 2000
-    TCPGeneralInactivityTimeout = 5000
+    TCPGeneralInactivityTimeout = 60000 * 5  # 5 min
     TCPInitialInactivityTimeout = 2000
     TCPAliveCheckTimeout = 500
     ProcessingTimeout = 2000
