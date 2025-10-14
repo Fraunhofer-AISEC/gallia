@@ -101,8 +101,7 @@ class UDSScanner(Scanner, ABC):
 
     @property
     def ecu(self) -> ECU:
-        if self._ecu is None:
-            raise RuntimeError("ECU accessed before first initialization!")
+        assert self._ecu is not None, "ECU accessed before first initialization!"
         return self._ecu
 
     @ecu.setter
