@@ -475,14 +475,14 @@ class Scanner(AsyncScript, ABC):
 
     @property
     def transport(self) -> BaseTransport:
-        if self._transport is None:
-            raise RuntimeError("Transport accessed before first initialization!")
+        assert self._transport is not None, "Transport accessed before first initialization!"
         return self._transport
 
     @transport.setter
     def transport(self, transport: BaseTransport) -> None:
-        if not isinstance(transport, BaseTransport):
-            logger.critical(f"Attempting to assign wrong type to transport: {type(transport)}")
+        assert isinstance(transport, BaseTransport), (
+            f"Attempting to assign wrong type to transport: {type(transport)}"
+        )
         self._transport = transport
 
     @abstractmethod
