@@ -222,22 +222,3 @@ class UDSScanner(Scanner, ABC):
 
         # This must be the last one.
         await super().teardown()
-
-
-class UDSDiscoveryScannerConfig(ScannerConfig):
-    timeout: float = Field(0.5, description="timeout value for request")
-
-
-class UDSDiscoveryScanner(Scanner, ABC):
-    def __init__(self, config: UDSDiscoveryScannerConfig):
-        super().__init__(config)
-        self.config: UDSDiscoveryScannerConfig = config
-
-    async def setup(self) -> None:
-        await super().setup()
-
-        if self.db_handler is not None:
-            try:
-                await self.db_handler.insert_discovery_run(self.config.target.url.scheme)
-            except Exception as e:
-                logger.warning(f"Could not write the discovery run to the database: {e!r}")
