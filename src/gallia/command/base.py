@@ -221,14 +221,14 @@ class BaseCommand(FlockMixin, ABC):
             stdout = p.stdout
             stderr = p.stderr
         except CalledProcessError as e:
-            logger.warning(f"{variant.value}-hook failed (exit code: {p.returncode})")
+            logger.warning(f"{variant.value}-hook failed (exit code: {e.returncode})")
             stdout = e.stdout
             stderr = e.stderr
 
         if stdout:
-            logger.info(p.stdout.strip(), extra={"tags": [hook_id, "stdout"]})
+            logger.info(stdout.strip(), extra={"tags": [hook_id, "stdout"]})
         if stderr:
-            logger.info(p.stderr.strip(), extra={"tags": [hook_id, "stderr"]})
+            logger.info(stderr.strip(), extra={"tags": [hook_id, "stderr"]})
 
     async def _db_connect_and_insert_run_meta(self, db_path: Path) -> None:
         self.db_handler = DBHandler(db_path)
