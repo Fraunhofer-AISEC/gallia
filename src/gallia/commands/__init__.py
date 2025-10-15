@@ -4,7 +4,7 @@
 
 import sys
 
-from gallia.command.base import BaseCommand
+from gallia.command.base import AsyncScript
 from gallia.commands.discover.doip import DoIPDiscoverer
 from gallia.commands.discover.hsfz import HSFZDiscoverer
 from gallia.commands.primitive.generic.pdu import GenericPDUPrimitive
@@ -30,7 +30,7 @@ from gallia.commands.scan.uds.sa_dump_seeds import SASeedsDumper
 from gallia.commands.scan.uds.services import ServicesScanner
 from gallia.commands.scan.uds.sessions import SessionsScanner
 
-registry: list[type[BaseCommand]] = [
+registry: list[type[AsyncScript]] = [
     DoIPDiscoverer,
     ECUResetPrimitive,
     GenericPDUPrimitive,

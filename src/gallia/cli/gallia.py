@@ -19,8 +19,8 @@ from pydantic import Field, create_model
 from pydantic_core import PydanticUndefined
 
 from gallia import exitcodes
-from gallia.command import BaseCommand
-from gallia.command.base import BaseCommandConfig
+from gallia.command import AsyncScript
+from gallia.command.base import AsyncScriptConfig
 from gallia.command.config import GalliaBaseModel
 from gallia.config import Config, load_config_file
 from gallia.log import Loglevel, setup_logging
@@ -33,7 +33,7 @@ _CLASS_ATTR = "_dynamic_gallia_command_class_reference"
 
 
 def _create_parser_from_command(
-    command: type[BaseCommand], config: Config, extra_defaults: defaults, model_counter: int = 0
+    command: type[AsyncScript], config: Config, extra_defaults: defaults, model_counter: int = 0
 ) -> tuple[type[PydanticBaseCommand], defaults, int]:
     config_attributes = command.CONFIG_TYPE.attributes_from_config(config)
     env_attributes = command.CONFIG_TYPE.attributes_from_env()
@@ -83,7 +83,7 @@ def _create_parser_from_tree(
 
 # TODO: Move this function into some CLI library package.
 def create_parser(
-    commands: type[BaseCommand] | MutableMapping[str, CommandTree | type[BaseCommand]],
+    commands: type[AsyncScript] | MutableMapping[str, CommandTree | type[AsyncScript]],
 ) -> ArgumentParser[PydanticBaseCommand]:
     """
     Creates an argument parser out of the given command hierarchy.
@@ -106,14 +106,14 @@ def create_parser(
     return ArgumentParser(model=model, extra_defaults=extra_defaults)
 
 
-def get_command(config: BaseCommandConfig) -> BaseCommand:
+def get_command(config: AsyncScriptConfig) -> AsyncScript:
     """
     Retrieve the command out of the config returned by an argument parser as created by create_parser().
 
     :param config:
     :return: The command initiated with the given config.
     """
-    cmd: type[BaseCommand] = getattr(config, _CLASS_ATTR)
+    cmd: type[AsyncScript] = getattr(config, _CLASS_ATTR)
 
     return cmd(config)
 
@@ -129,7 +129,7 @@ def _get_log_level(cli_level: int) -> Loglevel:
 
 # TODO: Move this function into some CLI library package.
 def parse_and_run(
-    commands: type[BaseCommand] | MutableMapping[str, CommandTree | type[BaseCommand]],
+    commands: type[AsyncScript] | MutableMapping[str, CommandTree | type[AsyncScript]],
     auto_complete: bool = True,
     setup_log: bool = True,
     top_level_options: Mapping[str, tuple[Callable[[], None], str]] | None = None,
@@ -184,7 +184,7 @@ def parse_and_run(
 
     _, config = parser.parse_typed_args()
 
-    assert isinstance(config, BaseCommandConfig)
+    assert isinstance(config, AsyncScriptConfig)
 
     volatile_info = config.volatile_info
     if sys.stderr.isatty() is False:
@@ -209,7 +209,7 @@ def version() -> None:
 
 
 def _walk_commands(
-    commands: Mapping[str, CommandTree | type[BaseCommand]], level: int = 0
+    commands: Mapping[str, CommandTree | type[AsyncScript]], level: int = 0
 ) -> tuple[str, int]:
     command_str = ""
     command_ctr = 0
