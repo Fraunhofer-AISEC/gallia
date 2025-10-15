@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import asyncio
-from asyncio import Task
+from collections.abc import Awaitable, Callable
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from enum import Enum
@@ -96,8 +96,7 @@ class ECU(UDSClient):
         power_supply: PowerSupply | None = None,
     ) -> None:
         super().__init__(transport, timeout, max_retry)
-        self.tester_present_task: Task[None] | None = None
-        self.tester_present_interval: float | None = None
+        self.tester_present_task: TesterPresentSender | None = None
         self.power_supply = power_supply
         self.state = ECUState()
         self.db_handler: DBHandler | None = None
@@ -378,8 +377,8 @@ class ECU(UDSClient):
         Sends a ping every 0.5s and waits at most timeout.
         If timeout is None, wait endlessly"""
         logger.info(f"Waiting for {timeout}s for ECU to respond")
-        if self.tester_present_task and self.tester_present_interval:
-            await self.stop_cyclic_tester_present()
+        if self.tester_present_task is not None:
+            await self.tester_present_task.stop()
 
         try:
             await asyncio.wait_for(self._wait_for_ecu_endless_loop(0.5), timeout=timeout)
@@ -388,53 +387,44 @@ class ECU(UDSClient):
             logger.critical("Timeout while waiting for ECU!")
             return False
         finally:
-            if self.tester_present_task and self.tester_present_interval:
-                await self.start_cyclic_tester_present(self.tester_present_interval)
+            if self.tester_present_task is not None:
+                await self.tester_present_task.start()
 
-    async def _tester_present_worker(self, interval: float) -> None:
-        assert self.transport
-        logger.debug("tester present worker started")
-        task = asyncio.current_task()
-        while task is not None and task.cancelling() == 0:
-            try:
-                await asyncio.sleep(interval)
-                # TODO: Only send tester_present if there was no other UDS traffic for `interval` amount of time
-                await self.tester_present(config=UDSRequestConfig(max_retry=0, tags=["tp"]))
-            except asyncio.CancelledError:
-                logger.debug("tester present worker terminated")
-                raise
-            except ConnectionError:
-                logger.info("connection lost; tester present waiting…")
-            except Exception as e:
-                logger.warning(f"Tester present worker got {e!r}")
-        logger.debug("Tester present worker was cancelled but received no asyncio.CancelledError")
+    async def _send_tester_present(self) -> None:
+        try:
+            await self.tester_present(config=UDSRequestConfig(max_retry=0, tags=["tp"]))
+        except ConnectionError:
+            logger.info("connection lost; tester present waiting…")
+        except Exception as e:
+            logger.warning(f"Tester present worker got {e!r}")
 
-    async def start_cyclic_tester_present(self, interval: float) -> None:
-        logger.debug("Starting tester present worker")
-        self.tester_present_interval = interval
-        coroutine = self._tester_present_worker(interval)
-        self.tester_present_task = asyncio.create_task(coroutine)
-        self.tester_present_task.add_done_callback(
-            handle_task_error,
-            context=set_task_handler_ctx_variable(__name__, "TesterPresent"),
-        )
+    async def attach_tester_present_sender(
+        self,
+        interval: float,
+        ignore_activity: bool = False,
+        task_timeout: float = 1,
+    ) -> None:
+        logger.debug("Attaching TesterPresentSender")
 
-        # enforce context switch
-        # this ensures, that the task is executed at least once
-        # if the task is not executed, task.cancel will fail with CancelledError
-        await asyncio.sleep(0)
-
-    async def stop_cyclic_tester_present(self) -> None:
-        logger.debug("Stopping tester present worker")
         if self.tester_present_task is None:
-            logger.warning("BUG: stop_cyclic_tester_present() called but no task running")
+            self.tester_present_task = TesterPresentSender(
+                interval,
+                lambda: self._send_tester_present(timeout=task_timeout),
+                oneshot=False,
+                ignore_activity=ignore_activity,
+            )
+
+        await self.tester_present_task.start()
+
+    async def detach_tester_present_sender(self) -> None:
+        logger.debug("Detaching TesterPresentSender")
+
+        if self.tester_present_task is None:
+            logger.warning("Attempted to detach TesterPresentSender, but it is already gone!")
             return
 
-        self.tester_present_task.cancel()
-        try:
-            await self.tester_present_task
-        except asyncio.CancelledError:
-            pass
+        await self.tester_present_task.stop()
+        self.tester_present_task = None
 
     async def update_state(
         self, request: service.UDSRequest, response: service.UDSResponse
@@ -492,9 +482,14 @@ class ECU(UDSClient):
         send_time = datetime.now(UTC).astimezone()
         receive_time = None
 
+        if self.tester_present_task is not None:
+            await self.tester_present_task.reset_timer()
+
         try:
             response = await super()._request(request, config)
             receive_time = datetime.now(UTC).astimezone()
+            if self.tester_present_task is not None:
+                await self.tester_present_task.reset_timer()
             return response
         except ResponseException as e:
             exception = e
@@ -525,3 +520,79 @@ class ECU(UDSClient):
 
             if response is not None:
                 await self.update_state(request, response)
+
+
+class TesterPresentSender:
+    """Send TesterPresent after periods of inactivity"""
+
+    def __init__(
+        self,
+        delay: float,
+        send_tester_present: Callable[[], Awaitable[None]],
+        oneshot: bool = False,
+        ignore_activity: bool = False,
+    ):
+        """
+        delay: idle time in seconds (e.g. 0.5)
+        send_tester_present: async callable that sends the keepalive on your channel
+        oneshot:  if True, send once, then wait for next real activity to re-arm;
+                  if False, keep sending every 'delay' while idle.
+        ignore_activity: ignore activity() calls such that keepalives are sent regardless of activity
+        """
+        self._delay = delay
+        self._send = send_tester_present
+        self._oneshot = oneshot
+        self._ignore_activity = ignore_activity
+        self._activity_event = asyncio.Event()
+        self._task: asyncio.Task[None] | None = None
+        self._cancelled: bool = False
+
+    async def reset_timer(self) -> None:
+        """Call this whenever you send or receive real traffic to reset the timer"""
+        if self._ignore_activity is True:
+            return
+        self._activity_event.set()
+
+    async def start(self) -> None:
+        self._cancelled = False
+
+        if self._task is not None:
+            logger.warning("TesterPresentSender already running")
+            return
+
+        logger.info("Starting TesterPresentSender")
+        self._task = asyncio.create_task(self._run())
+        self._task.add_done_callback(
+            handle_task_error,
+            context=set_task_handler_ctx_variable(__name__, "TesterPresentSender"),
+        )
+
+    async def stop(self) -> None:
+        self._cancelled = True
+
+        if self._task is None:
+            logger.warning("TesterPresentSender already stopped")
+            return
+
+        logger.info("Stopping TesterPresentSender")
+        self._task.cancel()
+        try:
+            await self._task
+        except asyncio.CancelledError:
+            pass
+        self._task = None
+
+    async def _run(self) -> None:
+        evt = self._activity_event
+        while self._cancelled is False:
+            evt.clear()
+            try:
+                # If activity happens before timeout, loop and wait again
+                await asyncio.wait_for(evt.wait(), timeout=self._delay)
+                continue
+            except TimeoutError:
+                # Idle period elapsed -> send keepalive
+                await self._send()
+                if self._oneshot:
+                    # One-shot mode: re-arm only after next activity
+                    await evt.wait()
