@@ -5,7 +5,7 @@
 import sys
 from collections.abc import Mapping
 
-from gallia.command import BaseCommand
+from gallia.command import AsyncScript
 from gallia.plugins.plugin import CommandTree, Plugin
 
 
@@ -19,8 +19,8 @@ class XCPPlugin(Plugin):
         return "Default Gallia plugin for Universal Measurement and Calibration Protocol (XCP) functionality"
 
     @classmethod
-    def commands(cls) -> Mapping[str, CommandTree | type[BaseCommand]]:
-        tree: dict[str, CommandTree | type[BaseCommand]] = {}
+    def commands(cls) -> Mapping[str, CommandTree | type[AsyncScript]]:
+        tree: dict[str, CommandTree | type[AsyncScript]] = {}
 
         if sys.platform.startswith("linux"):
             from gallia.commands.discover.find_xcp import CanFindXCP, TcpFindXCP, UdpFindXCP
