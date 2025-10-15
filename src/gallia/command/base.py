@@ -54,7 +54,7 @@ class RunMeta:
 logger = get_logger(__name__)
 
 
-class BaseCommandConfig(GalliaBaseModel, cli_group="generic", config_section="gallia"):
+class AsyncScriptConfig(GalliaBaseModel, cli_group="generic", config_section="gallia"):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     verbose: int = Field(
@@ -75,8 +75,8 @@ class BaseCommandConfig(GalliaBaseModel, cli_group="generic", config_section="ga
     )
 
 
-class BaseCommand(ABC):
-    """BaseCommand is the baseclass for all gallia commands.
+class AsyncScript(ABC):
+    """AsyncScript is the baseclass for all gallia commands.
     This class can be used in standalone scripts via the
     gallia command line interface facility.
 
@@ -91,7 +91,7 @@ class BaseCommand(ABC):
 
     # The config type which is accepted by this class
     # This is used for automatically creating the CLI
-    CONFIG_TYPE: type[BaseCommandConfig] = BaseCommandConfig
+    CONFIG_TYPE: type[AsyncScriptConfig] = AsyncScriptConfig
 
     #: The string which is shown on the cli with --help.
     SHORT_HELP: str | None = None
@@ -105,7 +105,7 @@ class BaseCommand(ABC):
 
     log_file_handlers: list[_ZstdFileHandler]
 
-    def __init__(self, config: BaseCommandConfig) -> None:
+    def __init__(self, config: AsyncScriptConfig) -> None:
         self.id = camel_to_snake(self.__class__.__name__)
         self.config = config
         self.artifacts_dir: Path | None = None
@@ -119,8 +119,22 @@ class BaseCommand(ABC):
         self.db_handler: DBHandler | None = None
         self.log_file_handlers = []
 
+    async def setup(self) -> None: ...
+
     @abstractmethod
-    async def run(self) -> int: ...
+    async def main(self) -> None: ...
+
+    async def teardown(self) -> None: ...
+
+    async def run(self) -> int:
+        await self.setup()
+        try:
+            await self.main()
+        finally:
+            await self.teardown()
+        # Note that above's try-except does not catch `SystemExit`s raised by sys.exit()
+        # somewhere in main(), so OK is only returned if everything was fine!
+        return exitcodes.OK
 
     async def _db_connect_and_insert_run_meta(self, db_path: Path) -> None:
         self.db_handler = DBHandler(db_path)
@@ -255,38 +269,6 @@ class BaseCommand(ABC):
                     )
 
         return exit_code
-
-
-class AsyncScriptConfig(
-    BaseCommandConfig,
-    ABC,
-    cli_group=BaseCommandConfig._cli_group,
-    config_section=BaseCommandConfig._config_section,
-):
-    pass
-
-
-class AsyncScript(BaseCommand, ABC):
-    """AsyncScript is a base class for a asynchronous gallia command.
-    To implement an async script, create a subclass and implement
-    the .main() method."""
-
-    GROUP = "script"
-
-    async def setup(self) -> None: ...
-
-    @abstractmethod
-    async def main(self) -> None: ...
-
-    async def teardown(self) -> None: ...
-
-    async def run(self) -> int:
-        await self.setup()
-        try:
-            await self.main()
-        finally:
-            await self.teardown()
-        return exitcodes.OK
 
 
 class ScannerConfig(AsyncScriptConfig, cli_group="scanner", config_section="gallia.scanner"):
