@@ -143,8 +143,20 @@ class BaseCommand(ABC):
         self.db_handler: DBHandler | None = None
         self.log_file_handlers = []
 
+    async def setup(self) -> None: ...
+
     @abstractmethod
-    async def run(self) -> int: ...
+    async def main(self) -> None: ...
+
+    async def teardown(self) -> None: ...
+
+    async def run(self) -> int:
+        await self.setup()
+        try:
+            await self.main()
+        finally:
+            await self.teardown()
+        return exitcodes.OK
 
     def run_hook(self, variant: HookVariant, exit_code: int | None = None) -> None:
         script = self.config.pre_hook if variant == HookVariant.PRE else self.config.post_hook
@@ -322,39 +334,7 @@ class BaseCommand(ABC):
         return exit_code
 
 
-class AsyncScriptConfig(
-    BaseCommandConfig,
-    ABC,
-    cli_group=BaseCommandConfig._cli_group,
-    config_section=BaseCommandConfig._config_section,
-):
-    pass
-
-
-class AsyncScript(BaseCommand, ABC):
-    """AsyncScript is a base class for a asynchronous gallia command.
-    To implement an async script, create a subclass and implement
-    the .main() method."""
-
-    GROUP = "script"
-
-    async def setup(self) -> None: ...
-
-    @abstractmethod
-    async def main(self) -> None: ...
-
-    async def teardown(self) -> None: ...
-
-    async def run(self) -> int:
-        await self.setup()
-        try:
-            await self.main()
-        finally:
-            await self.teardown()
-        return exitcodes.OK
-
-
-class ScannerConfig(AsyncScriptConfig, cli_group="scanner", config_section="gallia.scanner"):
+class ScannerConfig(BaseCommandConfig, cli_group="scanner", config_section="gallia.scanner"):
     dumpcap: bool = Field(
         sys.platform.startswith("linux"), description="Enable/Disable creating a pcap file"
     )
@@ -389,7 +369,7 @@ class ScannerConfig(AsyncScriptConfig, cli_group="scanner", config_section="gall
         return self
 
 
-class Scanner(AsyncScript, ABC):
+class Scanner(BaseCommand, ABC):
     """Scanner is a base class for all scanning related commands.
     A scanner has the following properties:
 

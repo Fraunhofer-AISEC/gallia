@@ -12,15 +12,14 @@ from typing import Any, Self
 import aiosqlite
 from pydantic import model_validator
 
-from gallia.command import BaseCommand
-from gallia.command.base import AsyncScript, AsyncScriptConfig
+from gallia.command import BaseCommand, BaseCommandConfig
 from gallia.command.config import Field
 from gallia.log import get_logger
 
 logger = get_logger(__name__)
 
 
-class RerunnerConfig(AsyncScriptConfig):
+class RerunnerConfig(BaseCommandConfig):
     id: int | None = Field(None, description="The id of the run_meta entry in the db")
     file: Path | None = Field(None, description="The path of the META.json in the logs")
 
@@ -39,7 +38,7 @@ class RerunnerConfig(AsyncScriptConfig):
         return self
 
 
-class Rerunner(AsyncScript):
+class Rerunner(BaseCommand):
     CONFIG_TYPE = RerunnerConfig
     SHORT_HELP = "Rerun a previous gallia command based on its run_meta in the database"
 

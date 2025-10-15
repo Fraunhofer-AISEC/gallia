@@ -10,8 +10,7 @@ from typing import Any, Self
 
 from pydantic import field_serializer, model_validator
 
-from gallia.command import AsyncScript
-from gallia.command.base import AsyncScriptConfig
+from gallia.command import BaseCommand, BaseCommandConfig
 from gallia.command.config import Field, Idempotent
 from gallia.log import get_logger
 from gallia.services.uds.server import (
@@ -26,7 +25,7 @@ from gallia.transports import TargetURI, TransportScheme
 logger = get_logger(__name__)
 
 
-class VirtualECUConfig(AsyncScriptConfig):
+class VirtualECUConfig(BaseCommandConfig):
     target: Idempotent[TargetURI] = Field(positional=True)
 
     @field_serializer("target")
@@ -67,7 +66,7 @@ class RngVirtualECUConfig(
     )
 
 
-class VirtualECU(AsyncScript, ABC):
+class VirtualECU(BaseCommand, ABC):
     """Spawn a virtual ECU for testing purposes"""
 
     EPILOG = "https://fraunhofer-aisec.github.io/gallia/uds/virtual_ecu.html"

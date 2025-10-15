@@ -6,25 +6,24 @@ import base64
 import pickle
 import sys
 
-from gallia.command.base import AsyncScriptConfig
+from gallia.command import BaseCommand, BaseCommandConfig
 from gallia.command.config import AutoInt, Field, Ranges
 
 assert sys.platform == "win32"
 
-from gallia.command import AsyncScript
 from gallia.transports._ctypes_vector_xl_wrapper import FlexRayCtypesBackend
 from gallia.transports.base import TargetURI
 from gallia.transports.flexray_vector import FlexRayFrame, RawFlexRayTransport, parse_frame_type
 
 
-class FRDumpConfig(AsyncScriptConfig):
+class FRDumpConfig(BaseCommandConfig):
     target_slot: AutoInt | None = Field(description="the target flexray slot")
     isotp: bool = Field(False, description="the target flexray slot")
     filter_null_frames: bool = Field(True, description="filter mysterious null frames out")
     slot: Ranges = Field([], description="filter on flexray slot")
 
 
-class FRDump(AsyncScript):
+class FRDump(BaseCommand):
     """Dump the content of the flexray bus"""
 
     CONFIG_TYPE = FRDumpConfig
@@ -73,12 +72,12 @@ class FRDump(AsyncScript):
                 print(f"slot_id: {frame.slot_id:03d}; data: {frame.data.hex()}")
 
 
-class FRConfigDumpConfig(AsyncScriptConfig):
+class FRConfigDumpConfig(BaseCommandConfig):
     channel: int | None = Field(description="the channel number of the flexray device")
     pretty: bool = Field(False, description="pretty print the configuration", short="p")
 
 
-class FRConfigDump(AsyncScript):
+class FRConfigDump(BaseCommand):
     """Dump the flexray configuration as base64"""
 
     CONFIG_TYPE = FRConfigDumpConfig
