@@ -10,9 +10,9 @@ from pydantic import model_validator
 
 assert sys.platform.startswith("linux"), "unsupported platform"
 
-from gallia.command import UDSDiscoveryScanner
+from gallia.command import Scanner
+from gallia.command.base import ScannerConfig
 from gallia.command.config import AutoInt, Field, HexBytes
-from gallia.command.uds import UDSDiscoveryScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse, UDSClient, UDSRequest
 from gallia.services.uds.core.utils import g_repr
@@ -22,7 +22,7 @@ from gallia.utils import can_id_repr
 logger = get_logger(__name__)
 
 
-class IsotpDiscovererConfig(UDSDiscoveryScannerConfig):
+class IsotpDiscovererConfig(ScannerConfig):
     start: AutoInt = Field(description="set start address", metavar="INT")
     stop: AutoInt = Field(description="set end address", metavar="INT")
     padding: AutoInt | None = Field(None, description="set isotp padding")
@@ -46,7 +46,7 @@ class IsotpDiscovererConfig(UDSDiscoveryScannerConfig):
         return self
 
 
-class IsotpDiscoverer(UDSDiscoveryScanner):
+class IsotpDiscoverer(Scanner):
     """Discovers all UDS endpoints on an ECU using ISO-TP normal addressing.
     This is the default protocol used by OBD.
     When using normal addressing, the ISO-TP header does not include an address and there is no generic tester address.
@@ -107,6 +107,12 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
         return frame
 
     async def main(self) -> None:
+        if self.db_handler is not None:
+            try:
+                await self.db_handler.insert_discovery_run(self.config.target.url.scheme)
+            except Exception as e:
+                logger.warning(f"Could not write the discovery run to the database: {e!r}")
+
         transport = RawCANTransport(self.config.target)
         await transport.connect()
         found = []

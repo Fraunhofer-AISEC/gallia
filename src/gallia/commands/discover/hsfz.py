@@ -4,9 +4,9 @@
 
 import asyncio
 
-from gallia.command import UDSDiscoveryScanner
+from gallia.command import Scanner
+from gallia.command.base import ScannerConfig
 from gallia.command.config import AutoInt, Field
-from gallia.command.uds import UDSDiscoveryScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds.core.service import (
     DiagnosticSessionControlRequest,
@@ -20,14 +20,15 @@ from gallia.transports.hsfz import HSFZConnection
 logger = get_logger(__name__)
 
 
-class HSFZDiscovererConfig(UDSDiscoveryScannerConfig):
+class HSFZDiscovererConfig(ScannerConfig):
     reversed: bool = Field(False, description="scan in reversed order")
     src_addr: AutoInt = Field(0xF4, description="HSFZ source address")
     start: AutoInt = Field(0x00, description="set start address", metavar="INT")
     stop: AutoInt = Field(0xFF, description="set end address", metavar="INT")
+    timeout: float = Field(0.5, description="timeout value for request")
 
 
-class HSFZDiscoverer(UDSDiscoveryScanner):
+class HSFZDiscoverer(Scanner):
     """ECU and routing discovery scanner for HSFZ"""
 
     SHORT_HELP = ""
@@ -93,6 +94,12 @@ class HSFZDiscoverer(UDSDiscoveryScanner):
         return None
 
     async def main(self) -> None:
+        if self.db_handler is not None:
+            try:
+                await self.db_handler.insert_discovery_run(self.config.target.url.scheme)
+            except Exception as e:
+                logger.warning(f"Could not write the discovery run to the database: {e!r}")
+
         found = []
         gen = (
             range(self.config.stop + 1, self.config.start)
