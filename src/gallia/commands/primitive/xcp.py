@@ -3,7 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import sys
-from typing import Self
+from collections.abc import Awaitable, Callable
+from typing import Any, Self, TypeVar
 
 from pydantic import model_validator
 
@@ -12,10 +13,25 @@ assert sys.platform.startswith("linux"), "unsupported platform"
 from gallia.command import Scanner
 from gallia.command.base import ScannerConfig
 from gallia.command.config import AutoInt, Field
+from gallia.log import get_logger
 from gallia.plugins.plugin import load_transport
 from gallia.services.xcp import CANXCPSerivce, XCPService
 from gallia.transports import ISOTPTransport, RawCANTransport
-from gallia.utils import catch_and_log_exception
+
+T = TypeVar("T")
+logger = get_logger(__name__)
+
+
+async def catch_and_log_exception(
+    func: Callable[..., Awaitable[T]],
+    *args: Any,
+    **kwargs: Any,
+) -> T | None:
+    try:
+        return await func(*args, **kwargs)
+    except Exception as e:
+        logger.error(f"func {func.__name__} failed: {repr(e)}")
+        return None
 
 
 class SimpleTestXCPConfig(ScannerConfig):

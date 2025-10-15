@@ -4,12 +4,10 @@
 
 import asyncio
 import contextvars
-import importlib.util
 import re
 import sys
-from collections.abc import Awaitable, Callable
+from collections.abc import Callable
 from functools import wraps
-from types import ModuleType
 from typing import Any, ParamSpec, TypeVar
 
 from gallia.log import Loglevel, get_logger
@@ -147,54 +145,6 @@ def unravel_2d(listing: str) -> dict[int, list[int] | None]:
     }
 
 
-T = TypeVar("T")
-
-
-async def catch_and_log_exception(
-    func: Callable[..., Awaitable[T]],
-    *args: Any,
-    **kwargs: Any,
-) -> T | None:
-    """Runs an async function. If an exception is raised,
-    it will be logged via logger.
-
-    :param logger: an instance of gallia.penlog.Logger
-    :param func: a async function object which will be awaited
-    :return: None
-    """
-    try:
-        return await func(*args, **kwargs)
-    except Exception as e:
-        logger.error(f"func {func.__name__} failed: {repr(e)}")
-        return None
-
-
-def lazy_import(name: str) -> ModuleType:
-    if name in sys.modules:
-        return sys.modules[name]
-    spec = importlib.util.find_spec(name)
-    if spec is None or spec.loader is None:
-        raise ImportError
-
-    loader = importlib.util.LazyLoader(spec.loader)
-    spec.loader = loader
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[name] = module
-    loader.exec_module(module)
-    return module
-
-
-# TODO: (Re)move these functions
-def dump_args(args: Any) -> dict[str, str | int | float]:
-    settings = {}
-    for key, value in args.__dict__.items():
-        match value:
-            case str() | int() | float():
-                settings[key] = value
-
-    return settings
-
-
 def get_log_level(cli_level: int) -> Loglevel:
     level = Loglevel.INFO
     if cli_level == 1:
@@ -247,6 +197,7 @@ def handle_task_error(fut: asyncio.Future[Any]) -> None:
 
 
 P = ParamSpec("P")
+T = TypeVar("T")
 
 
 def supports_platform(*platform: str) -> Callable[[Callable[P, T]], Callable[P, T]]:

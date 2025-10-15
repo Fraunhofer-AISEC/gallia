@@ -24,7 +24,7 @@ class XCPPlugin(Plugin):
 
         if sys.platform.startswith("linux"):
             from gallia.commands.discover.find_xcp import CanFindXCP, TcpFindXCP, UdpFindXCP
-            from gallia.commands.primitive.uds.xcp import SimpleTestXCP
+            from gallia.commands.primitive.xcp import SimpleTestXCP
 
             tree = {
                 "discover": CommandTree(
