@@ -338,13 +338,12 @@ class ECU(UDSClient):
 
     async def _wait_for_ecu_endless_loop(self, sleep_time: float) -> None:
         """Internal method with endless loop in case of no answer from ECU"""
-        config = UDSRequestConfig(timeout=0.5, max_retry=0, skip_hooks=True)
+        config = UDSRequestConfig(timeout=sleep_time, max_retry=0, skip_hooks=True)
         i = -1
         while True:
             i = (i + 1) % 4
             logger.info(f"Waiting for ECU{'.' * i}")
             try:
-                await asyncio.sleep(sleep_time)
                 await self.tester_present(suppress_response=False, config=config)
                 break
             # When the ECU is not ready, we expect an UDSException, e.g. MissingResponse.
@@ -371,7 +370,7 @@ class ECU(UDSClient):
             await self.tester_present_task.stop()
 
         try:
-            await asyncio.wait_for(self._wait_for_ecu_endless_loop(0.5), timeout=timeout)
+            await asyncio.wait_for(self._wait_for_ecu_endless_loop(1), timeout=timeout)
             return True
         except TimeoutError:
             logger.critical("Timeout while waiting for ECU!")
