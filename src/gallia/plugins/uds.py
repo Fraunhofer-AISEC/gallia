@@ -5,7 +5,7 @@
 import sys
 from collections.abc import Mapping
 
-from gallia.command import BaseCommand
+from gallia.command import AsyncScript
 from gallia.commands import HSFZDiscoverer
 from gallia.commands.discover.doip import DoIPDiscoverer
 from gallia.commands.primitive.generic.pdu import GenericPDUPrimitive
@@ -64,7 +64,7 @@ class UDSPlugin(Plugin):
         return [ECU]
 
     @classmethod
-    def commands(cls) -> Mapping[str, CommandTree | type[BaseCommand]]:
+    def commands(cls) -> Mapping[str, CommandTree | type[AsyncScript]]:
         tree = {
             "discover": CommandTree(
                 description="discover scanners for hosts and endpoints",

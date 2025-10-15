@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from importlib.metadata import entry_points
 from typing import Union
 
-from gallia.command import BaseCommand
+from gallia.command import AsyncScript
 from gallia.services.uds import ECU
 from gallia.transports import BaseTransport, TargetURI
 
@@ -16,7 +16,7 @@ from gallia.transports import BaseTransport, TargetURI
 @dataclass
 class CommandTree:
     description: str | None
-    subtree: MutableMapping[str, Union["CommandTree", type[BaseCommand]]]
+    subtree: MutableMapping[str, Union["CommandTree", type[AsyncScript]]]
 
 
 class Plugin(ABC):
@@ -37,7 +37,7 @@ class Plugin(ABC):
         return []
 
     @classmethod
-    def commands(cls) -> Mapping[str, CommandTree | type[BaseCommand]]:
+    def commands(cls) -> Mapping[str, CommandTree | type[AsyncScript]]:
         return {}
 
 
@@ -106,8 +106,8 @@ def load_ecu(vendor: str) -> type[ECU]:
 
 
 def _merge_commands(
-    c1: MutableMapping[str, CommandTree | type[BaseCommand]],
-    c2: Mapping[str, CommandTree | type[BaseCommand]],
+    c1: MutableMapping[str, CommandTree | type[AsyncScript]],
+    c2: Mapping[str, CommandTree | type[AsyncScript]],
 ) -> None:
     for key, value in c2.items():
         if key not in c1:
@@ -132,9 +132,9 @@ def _merge_command_trees(tree1: CommandTree, tree2: CommandTree) -> None:
     _merge_commands(tree1.subtree, tree2.subtree)
 
 
-def load_commands() -> MutableMapping[str, CommandTree | type[BaseCommand]]:
+def load_commands() -> MutableMapping[str, CommandTree | type[AsyncScript]]:
     plugins = load_plugins()
-    commands: MutableMapping[str, CommandTree | type[BaseCommand]] = {}
+    commands: MutableMapping[str, CommandTree | type[AsyncScript]] = {}
 
     for plugin in plugins:
         try:
