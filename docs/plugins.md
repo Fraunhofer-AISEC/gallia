@@ -11,7 +11,7 @@ SPDX-License-Identifier: CC0-1.0
 These entry points are known by `gallia`:
 
 `gallia_commands`
-: List of subclasses of {class}`gallia.command.BaseCommand` add new a command to the CLI.
+: List of subclasses of {class}`gallia.command.AsyncScript` add new a command to the CLI.
 
 `gallia_cli_init`
 : List of callables which get called during the initialization phase of the `ArgumentParser`; can be used to add new groups to the CLI.
