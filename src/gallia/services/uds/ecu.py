@@ -128,7 +128,7 @@ class ECU(UDSClient):
             raise as_exception(resp)
         return from_bytes(resp.data_record)
 
-    async def set_session_pre(self, level: int, config: UDSRequestConfig | None = None) -> bool:
+    async def set_session_pre(self, session: int, config: UDSRequestConfig | None = None) -> bool:
         """set_session_pre() is called before the diagnostic session control
         pdu is written on the wire. Implement this if there are special
         preconditions for a particular session, such as disabling error
@@ -143,7 +143,7 @@ class ECU(UDSClient):
         """
         return True
 
-    async def set_session_post(self, level: int, config: UDSRequestConfig | None = None) -> bool:
+    async def set_session_post(self, session: int, config: UDSRequestConfig | None = None) -> bool:
         """set_session_post() is called after the diagnostic session control
         pdu was written on the wire. Implement this if there are special
         cleanup routines or sleeping until a certain moment is required.
@@ -237,7 +237,7 @@ class ECU(UDSClient):
 
     async def leave_session(
         self,
-        level: int,
+        session: int,
         config: UDSRequestConfig | None = None,
         sleep: float | None = None,
     ) -> bool:
@@ -265,22 +265,22 @@ class ECU(UDSClient):
 
     async def set_session(
         self,
-        level: int,
+        session: int,
         config: UDSRequestConfig | None = None,
         use_db: bool = True,
     ) -> service.NegativeResponse | service.DiagnosticSessionControlResponse:
         config = config if config is not None else UDSRequestConfig()
 
         if not config.skip_hooks:
-            await self.set_session_pre(level, config=config)
+            await self.set_session_pre(session, config=config)
 
-        resp = await self.diagnostic_session_control(level, config=config)
+        resp = await self.diagnostic_session_control(session, config=config)
 
         if isinstance(resp, service.NegativeResponse) and self.db_handler is not None and use_db:
             logger.debug("Could not switch to session. Trying with database transitions ...")
 
             if self.db_handler is not None:
-                steps = await self.db_handler.get_session_transition(level)
+                steps = await self.db_handler.get_session_transition(session)
 
                 logger.debug(f"Found the following steps in database: {steps}")
 
@@ -288,10 +288,10 @@ class ECU(UDSClient):
                     for step in steps:
                         await self.set_session(step, use_db=False)
 
-                    resp = await self.diagnostic_session_control(level, config=config)
+                    resp = await self.diagnostic_session_control(session, config=config)
 
         if not isinstance(resp, service.NegativeResponse) and not config.skip_hooks:
-            await self.set_session_post(level, config=config)
+            await self.set_session_post(session, config=config)
 
         return resp
 
