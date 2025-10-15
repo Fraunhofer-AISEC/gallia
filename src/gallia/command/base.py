@@ -17,7 +17,7 @@ from enum import Enum, unique
 from logging import WARNING
 from pathlib import Path
 from subprocess import CalledProcessError, run
-from typing import Any, Protocol, Self, cast
+from typing import Any, Self, cast
 
 from pydantic import ConfigDict, field_serializer, model_validator
 
@@ -63,53 +63,6 @@ class RunMeta:
 logger = get_logger(__name__)
 
 
-if sys.platform.startswith("linux") or sys.platform == "darwin":
-    import fcntl
-
-    class Flockable(Protocol):
-        @property
-        def _lock_file_fd(self) -> int | None: ...
-
-    class FlockMixin:
-        def _open_lockfile(self, path: Path) -> int | None:
-            if not path.exists():
-                path.touch()
-
-            logger.notice("opening lockfile…")
-            return os.open(path, os.O_RDONLY)
-
-        async def _aquire_flock(self: Flockable) -> None:
-            assert self._lock_file_fd is not None
-
-            try:
-                # First do a non blocking flock. If waiting is required,
-                # log a message and do a blocking wait afterwards.
-                fcntl.flock(self._lock_file_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            except BlockingIOError:
-                logger.notice("waiting for flock…")
-                await asyncio.to_thread(fcntl.flock, self._lock_file_fd, fcntl.LOCK_EX)
-            logger.info("Acquired lock. Continuing…")
-
-        def _release_flock(self: Flockable) -> None:
-            assert self._lock_file_fd is not None
-            fcntl.flock(self._lock_file_fd, fcntl.LOCK_UN)
-            os.close(self._lock_file_fd)
-
-
-if sys.platform == "win32":
-
-    class FlockMixin:
-        def _open_lockfile(self, path: Path) -> int | None:
-            logger.warn("lockfile in windows is not supported")
-            return None
-
-        async def _aquire_flock(self) -> None:
-            pass
-
-        def _release_flock(self) -> None:
-            pass
-
-
 class BaseCommandConfig(GalliaBaseModel, cli_group="generic", config_section="gallia"):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -137,9 +90,6 @@ class BaseCommandConfig(GalliaBaseModel, cli_group="generic", config_section="ga
     hooks: bool = Field(
         True, description="execute pre and post hooks", config_section="gallia.hooks"
     )
-    lock_file: Path | None = Field(
-        None, description="path to file used for a posix lock", metavar="PATH"
-    )
     db: Path | None = Field(None, description="Path to sqlite3 database")
     artifacts_base: Path | None = Field(
         None,
@@ -149,7 +99,7 @@ class BaseCommandConfig(GalliaBaseModel, cli_group="generic", config_section="ga
     )
 
 
-class BaseCommand(FlockMixin, ABC):
+class BaseCommand(ABC):
     """BaseCommand is the baseclass for all gallia commands.
     This class can be used in standalone scripts via the
     gallia command line interface facility.
@@ -190,7 +140,6 @@ class BaseCommand(FlockMixin, ABC):
             end_time="",
             config=json.loads(config.model_dump_json()),
         )
-        self._lock_file_fd: int | None = None
         self.db_handler: DBHandler | None = None
         self.log_file_handlers = []
 
@@ -300,14 +249,6 @@ class BaseCommand(FlockMixin, ABC):
             return artifacts_dir.absolute()
 
     async def entry_point(self) -> int:
-        if (p := self.config.lock_file) is not None:
-            try:
-                self._lock_file_fd = self._open_lockfile(p)
-                await self._aquire_flock()
-            except OSError as e:
-                logger.critical(f"Unable to lock {p}: {e}")
-                return exitcodes.OSFILE
-
         self.artifacts_dir = self.prepare_artifacts_dir()
         if self.artifacts_dir is not None:
             self.log_file_handlers.append(
@@ -377,9 +318,6 @@ class BaseCommand(FlockMixin, ABC):
 
         if self.config.hooks:
             self.run_hook(HookVariant.POST, exit_code)
-
-        if self._lock_file_fd is not None:
-            self._release_flock()
 
         return exit_code
 
