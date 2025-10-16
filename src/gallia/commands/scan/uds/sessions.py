@@ -245,10 +245,7 @@ class SessionsScanner(UDSScanner):
             for res in sorted(negative_results, key=lambda x: x["session"]):
                 session = res["session"]
 
-                if (
-                    session not in activated_sessions
-                    and res["error"] != UDSErrorCodes.subFunctionNotSupportedInActiveSession
-                ):
+                if session not in activated_sessions:
                     if session != previous_session:
                         previous_session = session
                         logger.result(f"* Session {g_repr(session)} ")
