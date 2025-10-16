@@ -224,16 +224,21 @@ class ECU(UDSClient):
         return False
 
     async def power_cycle(self, sleep: float = 5) -> bool:
+        """
+        Perform a power cycle and wait for the ECU to recover.
+
+        Returns `False` on Error, and `True` if power cycle was successful or there is no power supply.
+        """
         if self.power_supply is None:
             logger.debug("no power_supply available")
-            return False
+            return True
 
-        async def callback() -> None:
-            await self.wait_for_ecu()
+        # Hold mutex to prevent requests from being made during a power cycle
+        async with self.mutex:
+            await self.power_supply.power_cycle(sleep)
+            self.state.reset()
 
-        await self.power_supply.power_cycle(sleep, callback)
-        self.state.reset()
-        return True
+        return await self.wait_for_ecu()
 
     async def leave_session(
         self,
@@ -251,7 +256,6 @@ class ECU(UDSClient):
                 await self.power_cycle(sleep=sleep)
             else:
                 await self.power_cycle()
-            await self.reconnect()
         await self.wait_for_ecu()
 
         resp = await self.set_session(0x01, config=config)
@@ -260,7 +264,6 @@ class ECU(UDSClient):
                 await self.power_cycle(sleep=sleep)
             else:
                 await self.power_cycle()
-            await self.reconnect()
         return True
 
     async def set_session(

@@ -136,7 +136,6 @@ class ResetScanner(UDSScanner):
                 )
                 try:
                     await self.ecu.power_cycle(self.config.power_cycle_sleep)
-                    await self.ecu.wait_for_ecu()
                 except (TimeoutError, ConnectionError) as e:
                     logger.error(f"Failed to recover ECU: {g_repr(e)}; exit")
                     sys.exit(1)
