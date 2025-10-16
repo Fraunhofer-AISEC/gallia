@@ -186,9 +186,9 @@ class DBHandler:
                 try:
                     await self.connection.execute(query, query_parameter)
                     await self.connection.commit()
-                except aiosqlite.OperationalError:
+                except aiosqlite.OperationalError as e:
                     logger.warning(
-                        f"Could not log message for {query_parameter[5]} to database. Retrying ..."
+                        f"Could not log message for {query_parameter[5]} to database: {e!r}. Retrying ..."
                     )
                     # TODO: This could lead to an infinite loop when there are recurring OperationalErrors!
                     await self._execute_queue.put((query, query_parameter))
