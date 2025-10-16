@@ -17,11 +17,9 @@ setup_gallia_toml() {
 		echo "verbosity = 1"
 		echo "artifacts_base = \"$BATS_TMPDIR/gallia\""
 
-		echo "[gallia.scanner]"
+		echo "[gallia.uds]"
 		echo 'target = "unix-lines:///tmp/vecu.sock"'
 		echo 'dumpcap = false'
-
-		echo "[gallia.protocols.uds]"
 		echo 'ecu_reset = 0x01'
 	} >"$BATS_FILE_TMPDIR/gallia.toml"
 
