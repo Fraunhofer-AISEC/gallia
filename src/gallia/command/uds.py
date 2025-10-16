@@ -129,6 +129,10 @@ class UDSScanner(AsyncScript, ABC):
     SUBGROUP: str | None = "uds"
     CAUGHT_EXCEPTIONS: list[type[Exception]] = [ConnectionError, UDSException]
 
+    #: Depending on the Subclass of `UDSScanner` this property can contain results of various types.
+    #: By default, it is `None`.
+    result: Any = None
+
     def __init__(self, config: UDSScannerConfig):
         super().__init__(config)
         self.config: UDSScannerConfig = config
