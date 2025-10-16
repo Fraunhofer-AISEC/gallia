@@ -108,7 +108,7 @@ class AsyncScript(ABC):
     #: A list of exception types for which tracebacks are
     #: suppressed at the top level. For these exceptions
     #: a log message with level critical is logged.
-    CATCHED_EXCEPTIONS: list[type[Exception]] = []
+    CAUGHT_EXCEPTIONS: list[type[Exception]] = []
 
     log_file_handlers: list[_ZstdFileHandler]
 
@@ -246,7 +246,7 @@ class AsyncScript(ABC):
                 case _:
                     exit_code = exitcodes.SOFTWARE
         except Exception as e:
-            for t in self.CATCHED_EXCEPTIONS:
+            for t in self.CAUGHT_EXCEPTIONS:
                 if isinstance(e, t):
                     # TODO: Map the exitcode to superclass of builtin exceptions.
                     exit_code = exitcodes.IOERR
