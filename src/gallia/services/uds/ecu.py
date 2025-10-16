@@ -338,54 +338,72 @@ class ECU(UDSClient):
 
     async def _wait_for_ecu_endless_loop(self, sleep_time: float) -> None:
         """Internal method with endless loop in case of no answer from ECU"""
-        config = UDSRequestConfig(timeout=sleep_time, max_retry=0, skip_hooks=True)
         i = -1
         while True:
             i = (i + 1) % 4
             logger.info(f"Waiting for ECU{'.' * i}")
-            try:
-                await self.tester_present(suppress_response=False, config=config)
+            if await self._send_tester_present(timeout=sleep_time) is True:
                 break
-            # When the ECU is not ready, we expect an UDSException, e.g. MissingResponse.
-            # On ConnectionError, we additionally reconnect the transport to ensure connectivity.
-            # Since Gallia converts a ConnectionError to a MissingResponse in `request_unsafe`, however,
-            # there is a need to reconnect the transport also in case of high-level UDSExceptions
-            # such as MissingResponses that are raised (__cause__) from ConnectionErrors.
-            except (ConnectionError, UDSException) as e:
-                logger.debug(f"ECU not ready: {e!r}")
-                if isinstance(e, ConnectionError) or isinstance(e.__cause__, ConnectionError):
-                    logger.debug("Reconnecting…")
-                    await self.reconnect()
         logger.info("ECU ready")
 
     async def wait_for_ecu(
         self,
-        timeout: float | None = 10,
+        timeout: float = 10,
     ) -> bool:
-        """Wait for ecu to be alive again (e.g. after reset).
-        Sends a ping every 0.5s and waits at most timeout.
-        If timeout is None, wait endlessly"""
+        """
+        Wait for ECU to be alive again (e.g. after reset) for at most `timeout`.
+
+        If present, this method utilizes TesterPresentSender background job,
+        otherwise it sends a TesterPresent request every 1s.
+
+        This function automatically handles necessary reconnects!
+        """
+
         logger.info(f"Waiting for {timeout}s for ECU to respond")
-        if self.tester_present_task is not None:
-            await self.tester_present_task.stop()
 
         try:
-            await asyncio.wait_for(self._wait_for_ecu_endless_loop(1), timeout=timeout)
+            if self.tester_present_task is not None:
+                await self.tester_present_task.wait_for_responsiveness(timeout=timeout)
+            else:
+                await asyncio.wait_for(self._wait_for_ecu_endless_loop(1), timeout=timeout)
             return True
         except TimeoutError:
             logger.critical("Timeout while waiting for ECU!")
             return False
-        finally:
-            if self.tester_present_task is not None:
-                await self.tester_present_task.start()
 
-    async def _send_tester_present(self) -> None:
+    async def _send_tester_present(self, timeout: float = 1) -> bool:
+        """
+        Send TesterPresent to ECU and return `True` on any UDS response.
+        """
+
+        logger.debug("Sending TesterPresent request to ECU...")
         try:
-            await self.tester_present(config=UDSRequestConfig(max_retry=0, tags=["tp"]))
-        except ConnectionError:
-            logger.info("connection lost; tester present waiting…")
+            await self.tester_present(
+                config=UDSRequestConfig(
+                    max_retry=0,
+                    tags=["tp"],
+                    timeout=timeout,
+                    skip_hooks=True,
+                )
+            )
+
+        # When the ECU is not ready, we expect an UDSException, e.g. MissingResponse.
+        # On ConnectionError, we additionally reconnect the transport to ensure connectivity.
+        # Since Gallia converts a ConnectionError to a MissingResponse in `request_unsafe`, however,
+        # there is a need to reconnect the transport also in case of high-level UDSExceptions
+        # such as MissingResponses that are raised (__cause__) from ConnectionErrors.
+        except (ConnectionError, UDSException) as e:
+            logger.debug(f"TesterPresent failed: {e!r}")
+            if isinstance(e, ConnectionError) or isinstance(e.__cause__, ConnectionError):
+                logger.info("Connection lost; reconnecting...")
+                await self.reconnect()
+            return False
+
         except Exception as e:
-            logger.warning(f"Tester present worker got {e!r}")
+            logger.warning(f"TesterPresent got {e!r}")
+            return False
+
+        return True
 
     async def attach_tester_present_sender(
         self,
@@ -517,7 +535,7 @@ class TesterPresentSender:
     def __init__(
         self,
         delay: float,
-        send_tester_present: Callable[[], Awaitable[None]],
+        send_tester_present: Callable[[], Awaitable[bool]],
         oneshot: bool = False,
         ignore_activity: bool = False,
     ):
@@ -533,6 +551,7 @@ class TesterPresentSender:
         self._oneshot = oneshot
         self._ignore_activity = ignore_activity
         self._activity_event = asyncio.Event()
+        self._responsive = asyncio.Event()
         self._task: asyncio.Task[None] | None = None
         self._cancelled: bool = False
 
@@ -571,6 +590,15 @@ class TesterPresentSender:
             pass
         self._task = None
 
+    async def wait_for_responsiveness(self, timeout: float = 10) -> None:
+        """
+        This method blocks until `send_tester_present` returns `True`, meaning the ECU responds.
+
+        If no response was detected within `timeout`, it raises an `TimeoutError`.
+        """
+        self._responsive.clear()
+        await asyncio.wait_for(self._responsive.wait(), timeout=timeout)
+
     async def _run(self) -> None:
         evt = self._activity_event
         while self._cancelled is False:
@@ -581,7 +609,8 @@ class TesterPresentSender:
                 continue
             except TimeoutError:
                 # Idle period elapsed -> send keepalive
-                await self._send()
-                if self._oneshot:
+                if await self._send() is True:
+                    self._responsive.set()
+                if self._oneshot is True:
                     # One-shot mode: re-arm only after next activity
                     await evt.wait()
