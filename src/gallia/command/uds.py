@@ -127,7 +127,7 @@ class UDSScanner(AsyncScript, ABC):
     """
 
     SUBGROUP: str | None = "uds"
-    CATCHED_EXCEPTIONS: list[type[Exception]] = [ConnectionError, UDSException]
+    CAUGHT_EXCEPTIONS: list[type[Exception]] = [ConnectionError, UDSException]
 
     def __init__(self, config: UDSScannerConfig):
         super().__init__(config)
