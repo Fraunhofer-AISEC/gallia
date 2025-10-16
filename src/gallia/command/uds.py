@@ -2,23 +2,29 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import asyncio
+import sys
 from abc import ABC
+from typing import Any, Self
 
-from pydantic import field_validator
+from pydantic import field_serializer, field_validator, model_validator
 
-from gallia.command.base import FileNames, Scanner, ScannerConfig
-from gallia.command.config import Field
+from gallia.command.base import AsyncScript, AsyncScriptConfig, FileNames
+from gallia.command.config import Field, Idempotent
 from gallia.log import get_logger
 from gallia.plugins.plugin import load_ecu, load_ecus
+from gallia.power_supply import PowerSupply
+from gallia.power_supply.uri import PowerSupplyURI
+from gallia.services.uds.core.exception import UDSException
 from gallia.services.uds.core.service import NegativeResponse, UDSResponse
 from gallia.services.uds.ecu import ECU
 from gallia.services.uds.helpers import raise_for_error
-from gallia.transports.base import BaseTransport
+from gallia.transports.base import BaseTransport, TargetURI
 
 logger = get_logger(__name__)
 
 
-class UDSScannerConfig(ScannerConfig, cli_group="uds", config_section="gallia.protocols.uds"):
+class UDSScannerConfig(AsyncScriptConfig, cli_group="uds", config_section="gallia.uds"):
     ecu_reset: int | None = Field(
         None,
         description="Trigger an initial ecu_reset via UDS; reset level is optional",
@@ -59,6 +65,38 @@ class UDSScannerConfig(ScannerConfig, cli_group="uds", config_section="gallia.pr
     compare_properties: bool = Field(
         True, description="Compare properties before and after the scan"
     )
+    dumpcap: bool = Field(
+        sys.platform.startswith("linux"), description="Enable/Disable creating a pcap file"
+    )
+    target: Idempotent[TargetURI] = Field(
+        description="URI that describes the target", metavar="TARGET"
+    )
+    power_supply: Idempotent[PowerSupplyURI] | None = Field(
+        None,
+        description="URI specifying the location of the relevant opennetzteil server",
+        metavar="URI",
+    )
+    power_cycle: bool = Field(
+        False,
+        description="use the configured power supply to power-cycle the ECU when needed (e.g. before starting the scan, or to recover bad state during scanning)",
+    )
+    power_cycle_sleep: float = Field(
+        5.0, description="time to sleep after the power-cycle", metavar="SECs"
+    )
+
+    @field_serializer("target", "power_supply")
+    def serialize_target_uri(self, target_uri: TargetURI | None) -> Any:
+        if target_uri is None:
+            return None
+
+        return target_uri.raw
+
+    @model_validator(mode="after")
+    def check_power_supply_required(self) -> Self:
+        if self.power_cycle and self.power_supply is None:
+            raise ValueError("power-cycle needs power-supply")
+
+        return self
 
     @field_validator("oem")
     @classmethod
@@ -71,19 +109,31 @@ class UDSScannerConfig(ScannerConfig, cli_group="uds", config_section="gallia.pr
         return v
 
 
-class UDSScanner(Scanner, ABC):
+class UDSScanner(AsyncScript, ABC):
     """UDSScanner is a baseclass, particularly for scanning tasks
-    related to the UDS protocol. The differences to Scanner are:
+    related to the UDS protocol. It has the following properties:
 
+    - It loads transports via TargetURIs; available via `self.transport`.
+    - `main()` is the relevant entry_point for the scanner and must be implemented.
+    - Controlling PowerSupplies via the opennetzteil API is supported.
+    - `setup()` can be overwritten (do not forget to call `super().setup()`)
+      for preparation tasks, such as establishing a network connection or
+      starting background tasks.
+    - `teardown()` can be overwritten (do not forget to call `super().teardown()`)
+      for cleanup tasks, such as terminating a network connection or background
+      tasks.
     - `self.ecu` contains a OEM specific UDS client object.
     - A background tasks sends TesterPresent regularly to avoid timeouts.
     """
 
     SUBGROUP: str | None = "uds"
+    CATCHED_EXCEPTIONS: list[type[Exception]] = [ConnectionError, UDSException]
 
     def __init__(self, config: UDSScannerConfig):
         super().__init__(config)
         self.config: UDSScannerConfig = config
+        self.power_supply: PowerSupply | None = None
+        self._transport: BaseTransport | None = None
         self._ecu: ECU | None = None
         self._implicit_logging = True
 
@@ -93,7 +143,8 @@ class UDSScanner(Scanner, ABC):
             logger.debug(
                 "Transport is accessed without initialized ECU, returning Scanner transport!"
             )
-            return super().transport
+            assert self._transport is not None, "Transport accessed before first initialization!"
+            return self._transport
         return self.ecu.transport
 
     @transport.setter
@@ -101,6 +152,9 @@ class UDSScanner(Scanner, ABC):
         if self._ecu is None:
             logger.debug(
                 "Transport is accessed without initialized ECU, setting Scanner transport!"
+            )
+            assert isinstance(transport, BaseTransport), (
+                f"Attempting to assign wrong type to transport: {type(transport)}"
             )
             self._transport = transport
         else:
@@ -132,7 +186,29 @@ class UDSScanner(Scanner, ABC):
         self.ecu.implicit_logging = self._implicit_logging
 
     async def setup(self) -> None:
-        await super().setup()
+        from gallia.plugins.plugin import load_transport
+
+        if self.config.power_supply is not None:
+            self.power_supply = await PowerSupply.connect(self.config.power_supply)
+            if self.config.power_cycle is True:
+                await self.power_supply.power_cycle(
+                    self.config.power_cycle_sleep, lambda: asyncio.sleep(2)
+                )
+
+        # Checking `_transport` for None to check if a transport was already provided to the class
+        if self._transport is None:
+            logger.debug(
+                f"No transport present, loading from target string: '{self.config.target}'"
+            )
+            self.transport = load_transport(self.config.target)
+        else:
+            logger.debug("Transport already present")
+
+        # Start dumpcap as the first subprocess; otherwise network traffic might be missing.
+        if self.artifacts_dir is not None and self.config.dumpcap is True:
+            await self.transport.dumpcap_start(self.artifacts_dir)
+
+        await self.transport.connect()
 
         self.ecu = load_ecu(self.config.oem)(
             self.transport,
@@ -220,5 +296,5 @@ class UDSScanner(Scanner, ABC):
         logger.debug("Closing transport object of ECU/UDSClient")
         await self.ecu.transport.close()
 
-        # This must be the last one.
-        await super().teardown()
+        await self.transport.close()
+        await self.transport.dumpcap_stop()

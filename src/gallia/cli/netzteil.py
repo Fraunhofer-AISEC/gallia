@@ -8,8 +8,9 @@ from pydantic import field_serializer, model_validator
 
 from gallia.cli.gallia import parse_and_run
 from gallia.command import AsyncScript
-from gallia.command.base import AsyncScriptConfig, ScannerConfig
+from gallia.command.base import AsyncScriptConfig
 from gallia.command.config import Field, Idempotent
+from gallia.command.uds import UDSScannerConfig
 from gallia.power_supply import power_supply_drivers
 from gallia.power_supply.base import BasePowerSupplyDriver
 from gallia.power_supply.uri import PowerSupplyURI
@@ -22,7 +23,7 @@ class CLIConfig(AsyncScriptConfig):
         description="URI specifying the location of the powersupply",
         metavar="URI",
         short="t",
-        config_section=ScannerConfig._config_section,
+        config_section=UDSScannerConfig._config_section,
     )
     channel: int = Field(description="the channel number to control", short="c")
     attr: Literal["voltage", "current", "output"] = Field(
