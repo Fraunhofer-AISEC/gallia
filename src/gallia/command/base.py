@@ -6,21 +6,19 @@ import asyncio
 import dataclasses
 import json
 import os
-import os.path
 import signal
-import sys
 from abc import ABC, abstractmethod
 from collections.abc import MutableMapping
 from datetime import UTC, datetime
 from enum import Enum, unique
 from logging import WARNING
 from pathlib import Path
-from typing import Any, Self, cast
+from typing import Any, cast
 
-from pydantic import ConfigDict, field_serializer, model_validator
+from pydantic import ConfigDict
 
 from gallia import exitcodes
-from gallia.command.config import Field, GalliaBaseModel, Idempotent
+from gallia.command.config import Field, GalliaBaseModel
 from gallia.db.handler import DBHandler
 from gallia.log import (
     Loglevel,
@@ -30,10 +28,6 @@ from gallia.log import (
     remove_zst_log_handler,
     tz,
 )
-from gallia.power_supply import PowerSupply
-from gallia.power_supply.uri import PowerSupplyURI
-from gallia.services.uds.core.exception import UDSException
-from gallia.transports import BaseTransport, TargetURI
 from gallia.utils import camel_to_snake
 
 
@@ -286,107 +280,3 @@ class AsyncScript(ABC):
                     )
 
         return exit_code
-
-
-class ScannerConfig(AsyncScriptConfig, cli_group="scanner", config_section="gallia.scanner"):
-    dumpcap: bool = Field(
-        sys.platform.startswith("linux"), description="Enable/Disable creating a pcap file"
-    )
-    target: Idempotent[TargetURI] = Field(
-        description="URI that describes the target", metavar="TARGET"
-    )
-    power_supply: Idempotent[PowerSupplyURI] | None = Field(
-        None,
-        description="URI specifying the location of the relevant opennetzteil server",
-        metavar="URI",
-    )
-    power_cycle: bool = Field(
-        False,
-        description="use the configured power supply to power-cycle the ECU when needed (e.g. before starting the scan, or to recover bad state during scanning)",
-    )
-    power_cycle_sleep: float = Field(
-        5.0, description="time to sleep after the power-cycle", metavar="SECs"
-    )
-
-    @field_serializer("target", "power_supply")
-    def serialize_target_uri(self, target_uri: TargetURI | None) -> Any:
-        if target_uri is None:
-            return None
-
-        return target_uri.raw
-
-    @model_validator(mode="after")
-    def check_power_supply_required(self) -> Self:
-        if self.power_cycle and self.power_supply is None:
-            raise ValueError("power-cycle needs power-supply")
-
-        return self
-
-
-class Scanner(AsyncScript, ABC):
-    """Scanner is a base class for all scanning related commands.
-    A scanner has the following properties:
-
-    - It is async.
-    - It loads transports via TargetURIs; available via `self.transport`.
-    - Controlling PowerSupplies via the opennetzteil API is supported.
-    - `setup()` can be overwritten (do not forget to call `super().setup()`)
-      for preparation tasks, such as establishing a network connection or
-      starting background tasks.
-    - `teardown()` can be overwritten (do not forget to call `super().teardown()`)
-      for cleanup tasks, such as terminating a network connection or background
-      tasks.
-    - `main()` is the relevant entry_point for the scanner and must be implemented.
-    """
-
-    CATCHED_EXCEPTIONS: list[type[Exception]] = [ConnectionError, UDSException]
-
-    def __init__(self, config: ScannerConfig):
-        super().__init__(config)
-        self.config: ScannerConfig = config
-        self.power_supply: PowerSupply | None = None
-        self._transport: BaseTransport | None = None
-
-    @property
-    def transport(self) -> BaseTransport:
-        assert self._transport is not None, "Transport accessed before first initialization!"
-        return self._transport
-
-    @transport.setter
-    def transport(self, transport: BaseTransport) -> None:
-        assert isinstance(transport, BaseTransport), (
-            f"Attempting to assign wrong type to transport: {type(transport)}"
-        )
-        self._transport = transport
-
-    @abstractmethod
-    async def main(self) -> None: ...
-
-    async def setup(self) -> None:
-        from gallia.plugins.plugin import load_transport
-
-        if self.config.power_supply is not None:
-            self.power_supply = await PowerSupply.connect(self.config.power_supply)
-            if self.config.power_cycle is True:
-                await self.power_supply.power_cycle(
-                    self.config.power_cycle_sleep, lambda: asyncio.sleep(2)
-                )
-
-        # Checking `_transport` for None to check if a transport was already provided to the class
-        if self._transport is None:
-            logger.debug(
-                f"No transport present, loading from target string: '{self.config.target}'"
-            )
-            self.transport = load_transport(self.config.target)
-        else:
-            logger.debug("Transport already present")
-
-        # Start dumpcap as the first subprocess; otherwise network traffic might be missing.
-        if self.artifacts_dir is not None and self.config.dumpcap is True:
-            await self.transport.dumpcap_start(self.artifacts_dir)
-
-        await self.transport.connect()
-
-    async def teardown(self) -> None:
-        await self.transport.close()
-        await self.transport.dumpcap_stop()
