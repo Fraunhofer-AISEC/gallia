@@ -16,18 +16,14 @@ from enum import Enum, unique
 from logging import WARNING
 from pathlib import Path
 from subprocess import CalledProcessError, run
-from typing import Any, Protocol, Self, cast
+from typing import Any, Protocol, cast
 
-from pydantic import ConfigDict, field_serializer, model_validator
+from pydantic import ConfigDict
 
 from gallia import exitcodes
-from gallia.command.config import Field, GalliaBaseModel, Idempotent
+from gallia.command.config import Field, GalliaBaseModel
 from gallia.db.handler import DBHandler
 from gallia.log import _ZstdFileHandler, add_zst_log_handler, get_logger, remove_zst_log_handler, tz
-from gallia.power_supply import PowerSupply
-from gallia.power_supply.uri import PowerSupplyURI
-from gallia.services.uds.core.exception import UDSException
-from gallia.transports import BaseTransport, TargetURI
 from gallia.utils import camel_to_snake, get_file_log_level
 
 
@@ -108,7 +104,7 @@ if sys.platform == "win32":
             pass
 
 
-class BaseCommandConfig(GalliaBaseModel, cli_group="generic", config_section="gallia"):
+class AsyncScriptConfig(GalliaBaseModel, cli_group="generic", config_section="gallia"):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     verbose: int = Field(
@@ -147,8 +143,8 @@ class BaseCommandConfig(GalliaBaseModel, cli_group="generic", config_section="ga
     )
 
 
-class BaseCommand(FlockMixin, ABC):
-    """BaseCommand is the baseclass for all gallia commands.
+class AsyncScript(FlockMixin, ABC):
+    """AsyncScript is the baseclass for all gallia commands.
     This class can be used in standalone scripts via the
     gallia command line interface facility.
 
@@ -163,7 +159,7 @@ class BaseCommand(FlockMixin, ABC):
 
     # The config type which is accepted by this class
     # This is used for automatically creating the CLI
-    CONFIG_TYPE: type[BaseCommandConfig] = BaseCommandConfig
+    CONFIG_TYPE: type[AsyncScriptConfig] = AsyncScriptConfig
 
     #: The string which is shown on the cli with --help.
     SHORT_HELP: str | None = None
@@ -173,11 +169,11 @@ class BaseCommand(FlockMixin, ABC):
     #: A list of exception types for which tracebacks are
     #: suppressed at the top level. For these exceptions
     #: a log message with level critical is logged.
-    CATCHED_EXCEPTIONS: list[type[Exception]] = []
+    CAUGHT_EXCEPTIONS: list[type[Exception]] = []
 
     log_file_handlers: list[_ZstdFileHandler]
 
-    def __init__(self, config: BaseCommandConfig) -> None:
+    def __init__(self, config: AsyncScriptConfig) -> None:
         self.id = camel_to_snake(self.__class__.__name__)
         self.config = config
         self.artifacts_dir: Path | None = None
@@ -192,8 +188,22 @@ class BaseCommand(FlockMixin, ABC):
         self.db_handler: DBHandler | None = None
         self.log_file_handlers = []
 
+    async def setup(self) -> None: ...
+
     @abstractmethod
-    async def run(self) -> int: ...
+    async def main(self) -> None: ...
+
+    async def teardown(self) -> None: ...
+
+    async def run(self) -> int:
+        await self.setup()
+        try:
+            await self.main()
+        finally:
+            await self.teardown()
+        # Note that above's try-except does not catch `SystemExit`s raised by sys.exit()
+        # somewhere in main(), so OK is only returned if everything was fine!
+        return exitcodes.OK
 
     def run_hook(self, variant: HookVariant, exit_code: int | None = None) -> None:
         script = self.config.pre_hook if variant == HookVariant.PRE else self.config.post_hook
@@ -340,7 +350,7 @@ class BaseCommand(FlockMixin, ABC):
                 case _:
                     exit_code = exitcodes.SOFTWARE
         except Exception as e:
-            for t in self.CATCHED_EXCEPTIONS:
+            for t in self.CAUGHT_EXCEPTIONS:
                 if isinstance(e, t):
                     # TODO: Map the exitcode to superclass of builtin exceptions.
                     exit_code = exitcodes.IOERR
@@ -380,139 +390,3 @@ class BaseCommand(FlockMixin, ABC):
             self._release_flock()
 
         return exit_code
-
-
-class AsyncScriptConfig(
-    BaseCommandConfig,
-    ABC,
-    cli_group=BaseCommandConfig._cli_group,
-    config_section=BaseCommandConfig._config_section,
-):
-    pass
-
-
-class AsyncScript(BaseCommand, ABC):
-    """AsyncScript is a base class for a asynchronous gallia command.
-    To implement an async script, create a subclass and implement
-    the .main() method."""
-
-    GROUP = "script"
-
-    async def setup(self) -> None: ...
-
-    @abstractmethod
-    async def main(self) -> None: ...
-
-    async def teardown(self) -> None: ...
-
-    async def run(self) -> int:
-        await self.setup()
-        try:
-            await self.main()
-        finally:
-            await self.teardown()
-        return exitcodes.OK
-
-
-class ScannerConfig(AsyncScriptConfig, cli_group="scanner", config_section="gallia.scanner"):
-    dumpcap: bool = Field(
-        sys.platform.startswith("linux"), description="Enable/Disable creating a pcap file"
-    )
-    target: Idempotent[TargetURI] = Field(
-        description="URI that describes the target", metavar="TARGET"
-    )
-    power_supply: Idempotent[PowerSupplyURI] | None = Field(
-        None,
-        description="URI specifying the location of the relevant opennetzteil server",
-        metavar="URI",
-    )
-    power_cycle: bool = Field(
-        False,
-        description="use the configured power supply to power-cycle the ECU when needed (e.g. before starting the scan, or to recover bad state during scanning)",
-    )
-    power_cycle_sleep: float = Field(
-        5.0, description="time to sleep after the power-cycle", metavar="SECs"
-    )
-
-    @field_serializer("target", "power_supply")
-    def serialize_target_uri(self, target_uri: TargetURI | None) -> Any:
-        if target_uri is None:
-            return None
-
-        return target_uri.raw
-
-    @model_validator(mode="after")
-    def check_power_supply_required(self) -> Self:
-        if self.power_cycle and self.power_supply is None:
-            raise ValueError("power-cycle needs power-supply")
-
-        return self
-
-
-class Scanner(AsyncScript, ABC):
-    """Scanner is a base class for all scanning related commands.
-    A scanner has the following properties:
-
-    - It is async.
-    - It loads transports via TargetURIs; available via `self.transport`.
-    - Controlling PowerSupplies via the opennetzteil API is supported.
-    - `setup()` can be overwritten (do not forget to call `super().setup()`)
-      for preparation tasks, such as establishing a network connection or
-      starting background tasks.
-    - `teardown()` can be overwritten (do not forget to call `super().teardown()`)
-      for cleanup tasks, such as terminating a network connection or background
-      tasks.
-    - `main()` is the relevant entry_point for the scanner and must be implemented.
-    """
-
-    CATCHED_EXCEPTIONS: list[type[Exception]] = [ConnectionError, UDSException]
-
-    def __init__(self, config: ScannerConfig):
-        super().__init__(config)
-        self.config: ScannerConfig = config
-        self.power_supply: PowerSupply | None = None
-        self._transport: BaseTransport | None = None
-
-    @property
-    def transport(self) -> BaseTransport:
-        assert self._transport is not None, "Transport accessed before first initialization!"
-        return self._transport
-
-    @transport.setter
-    def transport(self, transport: BaseTransport) -> None:
-        assert isinstance(transport, BaseTransport), (
-            f"Attempting to assign wrong type to transport: {type(transport)}"
-        )
-        self._transport = transport
-
-    @abstractmethod
-    async def main(self) -> None: ...
-
-    async def setup(self) -> None:
-        from gallia.plugins.plugin import load_transport
-
-        if self.config.power_supply is not None:
-            self.power_supply = await PowerSupply.connect(self.config.power_supply)
-            if self.config.power_cycle is True:
-                await self.power_supply.power_cycle(
-                    self.config.power_cycle_sleep, lambda: asyncio.sleep(2)
-                )
-
-        # Checking `_transport` for None to check if a transport was already provided to the class
-        if self._transport is None:
-            logger.debug(
-                f"No transport present, loading from target string: '{self.config.target}'"
-            )
-            self.transport = load_transport(self.config.target)
-        else:
-            logger.debug("Transport already present")
-
-        # Start dumpcap as the first subprocess; otherwise network traffic might be missing.
-        if self.artifacts_dir is not None and self.config.dumpcap is True:
-            await self.transport.dumpcap_start(self.artifacts_dir)
-
-        await self.transport.connect()
-
-    async def teardown(self) -> None:
-        await self.transport.close()
-        await self.transport.dumpcap_stop()

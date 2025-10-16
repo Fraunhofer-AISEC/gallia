@@ -6,17 +6,17 @@ import sys
 from collections.abc import Awaitable, Callable
 from typing import Any, Self, TypeVar
 
-from pydantic import model_validator
+from pydantic import field_serializer, model_validator
 
 assert sys.platform.startswith("linux"), "unsupported platform"
 
-from gallia.command import Scanner
-from gallia.command.base import ScannerConfig
-from gallia.command.config import AutoInt, Field
+from gallia.command import AsyncScript
+from gallia.command.base import AsyncScriptConfig
+from gallia.command.config import AutoInt, Field, Idempotent
 from gallia.log import get_logger
 from gallia.plugins.plugin import load_transport
 from gallia.services.xcp import CANXCPSerivce, XCPService
-from gallia.transports import ISOTPTransport, RawCANTransport
+from gallia.transports import ISOTPTransport, RawCANTransport, TargetURI
 
 T = TypeVar("T")
 logger = get_logger(__name__)
@@ -34,9 +34,19 @@ async def catch_and_log_exception(
         return None
 
 
-class SimpleTestXCPConfig(ScannerConfig):
+class SimpleTestXCPConfig(AsyncScriptConfig):
     can_master: AutoInt | None = Field(None)
     can_slave: AutoInt | None = Field(None)
+    target: Idempotent[TargetURI] = Field(
+        description="URI that describes the target", metavar="TARGET"
+    )
+
+    @field_serializer("target")
+    def serialize_target_uri(self, target_uri: TargetURI | None) -> Any:
+        if target_uri is None:
+            return None
+
+        return target_uri.raw
 
     @model_validator(mode="after")
     def check_transport_requirements(self) -> Self:
@@ -51,7 +61,7 @@ class SimpleTestXCPConfig(ScannerConfig):
         return self
 
 
-class SimpleTestXCP(Scanner):
+class SimpleTestXCP(AsyncScript):
     """Test XCP Slave"""
 
     CONFIG_TYPE = SimpleTestXCPConfig
