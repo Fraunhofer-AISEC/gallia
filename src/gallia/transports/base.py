@@ -264,10 +264,10 @@ class BaseTransport(ABC):
 
     async def dumpcap_stop(self) -> None:
         if self._dumpcap is None:
-            logger.warning("Attempting to stop Dumpcap, but it is not running!")
+            logger.debug("Attempting to stop Dumpcap, but it is not running!")
             return
 
-        logger.warning("Stopping Dumpcap")
+        logger.info("Stopping Dumpcap")
         await self._dumpcap.stop()
 
     @abstractmethod
