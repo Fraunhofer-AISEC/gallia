@@ -75,19 +75,19 @@ gen-constants: && fmt
     CANFD_BRS = 0x01
     CANFD_ESI = 0x02
 
-    CAN_EFF_FLAG = {socket.CAN_EFF_FLAG}
-    CAN_ERR_FLAG = {socket.CAN_ERR_FLAG}
-    CAN_RTR_FLAG = {socket.CAN_RTR_FLAG}
+    CAN_EFF_FLAG = {socket.CAN_EFF_FLAG:#x}
+    CAN_ERR_FLAG = {socket.CAN_ERR_FLAG:#x}
+    CAN_RTR_FLAG = {socket.CAN_RTR_FLAG:#x}
 
-    CAN_EFF_MASK = {socket.CAN_EFF_MASK}
+    CAN_EFF_MASK = {socket.CAN_EFF_MASK:#x}
     CAN_INV_FILTER = 0x20000000  # TODO: Add to CPython
-    CAN_SFF_MASK = {socket.CAN_SFF_MASK}
+    CAN_SFF_MASK = {socket.CAN_SFF_MASK:#x}
 
-    CAN_RAW = {socket.CAN_RAW}
-    CAN_RAW_FD_FRAMES = {socket.CAN_RAW_FD_FRAMES}
-    CAN_RAW_FILTER = {socket.CAN_RAW_FILTER}
-    CAN_RAW_JOIN_FILTERS = {socket.CAN_RAW_JOIN_FILTERS}
-    SOL_CAN_RAW = {socket.SOL_CAN_RAW}
+    CAN_RAW = {socket.CAN_RAW:#x}
+    CAN_RAW_FD_FRAMES = {socket.CAN_RAW_FD_FRAMES:#x}
+    CAN_RAW_FILTER = {socket.CAN_RAW_FILTER:#x}
+    CAN_RAW_JOIN_FILTERS = {socket.CAN_RAW_JOIN_FILTERS:#x}
+    SOL_CAN_RAW = {socket.SOL_CAN_RAW:#x}
 
     # Socket Constants not available in the socket module,
     # see linux/can/isotp.h
