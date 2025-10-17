@@ -1,0 +1,185 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Configuration &mdash; gallia  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Transports" href="transports.html" />
+    <link rel="prev" title="Automation" href="automation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="automation.html">Automation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#gallia-toml">gallia.toml</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#hooks">Hooks</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="transports.html">Transports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env.html">Environment Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="logging.html">Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plugins.html">Plugins</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Public API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Configuration</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/config.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <!--
+SPDX-FileCopyrightText: AISEC Pentesting Team
+
+SPDX-License-Identifier: CC0-1.0
+-->
+<section id="configuration">
+<h1>Configuration<a class="headerlink" href="#configuration" title="Link to this heading"></a></h1>
+<section id="gallia-toml">
+<h2>gallia.toml<a class="headerlink" href="#gallia-toml" title="Link to this heading"></a></h2>
+<p>All <code class="docutils literal notranslate"><span class="pre">gallia</span></code> settings stem from the commandline interface.
+The documentation for all available settings per subcommand is available via <code class="docutils literal notranslate"><span class="pre">-h/--help</span></code>.
+Frequently used settings can be put in a configfile which is called <code class="docutils literal notranslate"><span class="pre">gallia.toml</span></code>.
+Settings from the config file set the <strong>default</strong> of the respective commandline option.
+The config can always be overwritten by manually setting the relevant cli option.</p>
+<p>The configuration file <code class="docutils literal notranslate"><span class="pre">gallia.toml</span></code> is written in <a class="reference external" href="https://toml.io/en/">TOML</a>.
+Inheritence is not supported; the first file is loaded.
+The <code class="docutils literal notranslate"><span class="pre">gallia.toml</span></code> file is loaded from these locations (in this particular order):</p>
+<ul class="simple">
+<li><p>path specified in the env variable <code class="docutils literal notranslate"><span class="pre">GALLIA_CONFIG</span></code>; see <a class="reference internal" href="env.html"><span class="doc">Environment Variables</span></a>.</p></li>
+<li><p>current directory</p></li>
+<li><p>current Git root (if the current directory is a Git repository)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">$XDG_CONFIG_HOME/gallia/gallia.toml</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">~/.config/gallia/gallia.toml</span></code></p></li>
+</ul>
+<p>Only some cli options are exposed to the config file.
+The available config settings can be obtained from <code class="docutils literal notranslate"><span class="pre">gallia</span> <span class="pre">--template</span></code>.
+The output of <code class="docutils literal notranslate"><span class="pre">--template</span></code> is maintained to be up to date and is intended as a starting point.</p>
+</section>
+<section id="hooks">
+<h2>Hooks<a class="headerlink" href="#hooks" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">gallia</span></code> supports hooks for preparation or cleanup/postprocessing tasks.
+Alternatively, they can be useful for e.g. sending notifications about the exit_code via e.g. matrix or ntfy.sh.
+Hooks are shell scripts which are executed before (= pre-hook) or after (= post-hook) the <code class="docutils literal notranslate"><span class="pre">main()</span></code> method.
+These scripts can be specified via <code class="docutils literal notranslate"><span class="pre">--pre-hook</span></code> or <code class="docutils literal notranslate"><span class="pre">--post-hook</span></code> or via <code class="docutils literal notranslate"><span class="pre">gallia.toml</span></code> as well.</p>
+<p>The hook scripts have these environment variables set; some are optional and hook scripts are encouraged to check their presence before accessing them:</p>
+<dl class="simple myst">
+<dt>GALLIA_HOOK</dt><dd><p>Either <code class="docutils literal notranslate"><span class="pre">pre</span></code> or <code class="docutils literal notranslate"><span class="pre">post</span></code>.</p>
+</dd>
+<dt>GALLIA_ARTIFACTS_DIR</dt><dd><p>Path to the artifactsdir for the current testrun.</p>
+</dd>
+<dt>GALLIA_EXIT_CODE (post)</dt><dd><p>Is set to the exit_code which <code class="docutils literal notranslate"><span class="pre">gallia</span></code> will use after the hook terminates.
+For instance GALLIA_EXIT_CODE different from zero means that the current testrun failed.</p>
+</dd>
+<dt>GALLIA_META (post)</dt><dd><p>Contains the JSON encoded content of <code class="docutils literal notranslate"><span class="pre">META.json</span></code>.</p>
+</dd>
+<dt>GALLIA_INVOCATION</dt><dd><p>The content os <code class="docutils literal notranslate"><span class="pre">sys.argv</span></code>, in other words the raw invocation of <code class="docutils literal notranslate"><span class="pre">gallia</span></code>.</p>
+</dd>
+<dt>GALLIA_GROUP (optional)</dt><dd><p>Usually the first part of the command on the cli. For instance, for <code class="docutils literal notranslate"><span class="pre">gallia</span> <span class="pre">scan</span> <span class="pre">uds</span> <span class="pre">identifiers</span></code>
+<code class="docutils literal notranslate"><span class="pre">GALLIA_GROUP</span></code> is <code class="docutils literal notranslate"><span class="pre">scan</span></code>.</p>
+</dd>
+<dt>GALLIA_SUBGROUP (optional)</dt><dd><p>Usually the second part of the command on the cli. For instance, for <code class="docutils literal notranslate"><span class="pre">gallia</span> <span class="pre">scan</span> <span class="pre">uds</span> <span class="pre">identifiers</span></code>
+<code class="docutils literal notranslate"><span class="pre">GALLIA_GROUP</span></code> is <code class="docutils literal notranslate"><span class="pre">uds</span></code>.</p>
+</dd>
+<dt>GALLIA_COMMAND (optional)</dt><dd><p>Usually the last part of the command on the cli. For instance, for <code class="docutils literal notranslate"><span class="pre">gallia</span> <span class="pre">scan</span> <span class="pre">uds</span> <span class="pre">identifiers</span></code>
+<code class="docutils literal notranslate"><span class="pre">GALLIA_COMMAND</span></code> is <code class="docutils literal notranslate"><span class="pre">identifiers</span></code>.</p>
+</dd>
+</dl>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="automation.html" class="btn btn-neutral float-left" title="Automation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="transports.html" class="btn btn-neutral float-right" title="Transports" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
