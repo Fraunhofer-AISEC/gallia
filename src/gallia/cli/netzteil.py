@@ -7,8 +7,7 @@ from typing import Any, Literal, Self
 from pydantic import field_serializer, model_validator
 
 from gallia.cli.gallia import parse_and_run
-from gallia.command import AsyncScript
-from gallia.command.base import AsyncScriptConfig, ScannerConfig
+from gallia.command.base import LockableScript, LockableScriptConfig, MetaScannerConfig
 from gallia.command.config import Field, Idempotent
 from gallia.power_supply import power_supply_drivers
 from gallia.power_supply.base import BasePowerSupplyDriver
@@ -17,12 +16,12 @@ from gallia.transports import TargetURI
 from gallia.utils import strtobool
 
 
-class CLIConfig(AsyncScriptConfig):
+class CLIConfig(LockableScriptConfig):
     power_supply: Idempotent[PowerSupplyURI] = Field(
         description="URI specifying the location of the powersupply",
         metavar="URI",
         short="t",
-        config_section=ScannerConfig._config_section,
+        config_section=MetaScannerConfig._config_section,
     )
     channel: int = Field(description="the channel number to control", short="c")
     attr: Literal["voltage", "current", "output"] = Field(
@@ -52,7 +51,7 @@ class SetCLIConfig(CLIConfig):
     value: str = Field(positional=True)
 
 
-class CLI(AsyncScript, ABC):
+class CLI(LockableScript, ABC):
     def __init__(self, config: CLIConfig):
         super().__init__(config)
         self.config: CLIConfig = config
