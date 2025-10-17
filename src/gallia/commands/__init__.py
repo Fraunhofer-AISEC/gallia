@@ -104,7 +104,6 @@ if sys.platform.startswith("linux"):
     from gallia.commands.discover.find_xcp import CanFindXCP, TcpFindXCP, UdpFindXCP
     from gallia.commands.discover.uds.isotp import IsotpDiscoverer
     from gallia.commands.fuzz.uds.pdu import PDUFuzzer
-    from gallia.commands.primitive.xcp import SimpleTestXCP
     from gallia.commands.script.vecu import DbVirtualECU, RngVirtualECU
 
     registry += [
@@ -113,7 +112,6 @@ if sys.platform.startswith("linux"):
         TcpFindXCP,
         IsotpDiscoverer,
         PDUFuzzer,
-        SimpleTestXCP,
         DbVirtualECU,
         RngVirtualECU,
     ]
@@ -124,7 +122,6 @@ if sys.platform.startswith("linux"):
         "TcpFindXCP",
         "IsotpDiscoverer",
         "PDUFuzzer",
-        "SimpleTestXCP",
         "DbVirtualECU",
         "RngVirtualECU",
     ]
