@@ -44,7 +44,7 @@ class CLIWrapper:
 
     def get_files(self) -> list[str]:
         raw_resp = self.call_gh_api(urljoin(self.repo_api_base, f"pulls/{self.pr}/files"))
-        return [r["filename"] for r in raw_resp]
+        return [r["filename"] for r in raw_resp if "filename" in r]
 
     def get_mr_sha(self) -> str:
         raw_resp = self.call_gh_api(urljoin(self.repo_api_base, f"pulls/{self.pr}"))
@@ -56,6 +56,9 @@ class CLIWrapper:
         )
         authors = []
         for commit in raw_resp:
+            if "author" not in commit and "login" not in commit["author"]:
+                continue
+
             author = commit["author"]["login"]
             if "[bot]" in author:
                 continue
@@ -64,7 +67,7 @@ class CLIWrapper:
 
     def get_team_members(self, team: str) -> list[str]:
         raw_resp = self.call_gh_api(f"/orgs/{self.user}/teams/{team}/members")
-        return [r["login"] for r in raw_resp]
+        return [r["login"] for r in raw_resp if "login" in r]
 
     def get_mr_author(self) -> str:
         raw_resp = self.call_gh_api(urljoin(self.repo_api_base, f"pulls/{self.pr}"))
