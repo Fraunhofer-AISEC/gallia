@@ -32,7 +32,6 @@ dependencies = [
     "aiosqlite >=0.18",
     "argcomplete >=2,<4",
     "boltons>=24.1.0",
-    "construct >=2.10,<3.0",
     "platformdirs >=2.6,<5.0",
     "pydantic >=2.12,<3.0",
     "tabulate >=0.9",
@@ -42,7 +41,6 @@ dependencies = [
 
 [project.entry-points."gallia_plugins"]
 "uds" = "gallia.plugins.uds:UDSPlugin"
-"xcp" = "gallia.plugins.xcp:XCPPlugin"
 
 [project.scripts]
 "gallia" = "gallia.cli.gallia:main"
@@ -54,7 +52,6 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "Sphinx >=8.0",
-    "construct-typing >=0.5.2,<0.7.0",
     "mypy >=1.0,<2.0",
     "myst-parser >=3.0.1,<4.1",
     "pylsp-mypy >=0.6,<0.8",
@@ -81,9 +78,6 @@ strict = true
 plugins = [
     "pydantic.mypy"
 ]
-[[tool.mypy.overrides]]
-module = "gallia.services.xcp.types"
-ignore_errors = true
 
 [tool.ruff]
 target-version = "py311"
