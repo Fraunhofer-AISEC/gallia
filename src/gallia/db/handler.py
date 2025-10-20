@@ -345,7 +345,7 @@ class DBHandler:
 
     async def insert_scan_result(  # noqa: PLR0913
         self,
-        state: dict[str, Any],
+        state: str,
         request: UDSRequest,
         response: UDSResponse | None,
         exception: Exception | None,
@@ -410,7 +410,7 @@ class DBHandler:
         # This has do be done here, in order to make sure, that only "immutable" objects are passed to a different task
         query_parameter = (
             self.scan_run,
-            json.dumps(state),
+            state,
             bytes_repr(request.pdu),
             send_time.timestamp(),
             send_time.tzname(),
