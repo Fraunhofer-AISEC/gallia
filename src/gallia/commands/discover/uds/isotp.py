@@ -190,19 +190,23 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
                         found.append(target)
                     break
 
-        logger.result(f"finished; found {len(found)} UDS endpoints")
+        logger.result(f"Finished: found {len(found)} UDS endpoints")
 
-        if self.artifacts_dir is not None:
-            ecus_file = self.artifacts_dir.joinpath("ECUs.txt")
-            logger.result(f"Writing urls to file: {ecus_file}")
-            with ecus_file.open("w") as f:
-                for target in found:
-                    f.write(f"{target}\n")
-
-        if self.db_handler is not None:
-            logger.result("Writing urls to database")
+        if len(found) > 0:
             for target in found:
-                await self.db_handler.insert_discovery_result(str(target))
+                logger.result(f" -> {target}")
+
+            if self.artifacts_dir is not None:
+                ecus_file = self.artifacts_dir.joinpath("ECUs.txt")
+                logger.result(f"Writing targets to file: {ecus_file}")
+                with ecus_file.open("w") as f:
+                    for target in found:
+                        f.write(f"{target}\n")
+
+            if self.db_handler is not None:
+                logger.result("Adding targets to database")
+                for target in found:
+                    await self.db_handler.insert_discovery_result(str(target))
 
         if self.config.query:
             await self.query_description(found, self.config.info_did)
