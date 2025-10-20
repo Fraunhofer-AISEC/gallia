@@ -23,6 +23,9 @@ class IsotpDiscovererConfig(AsyncScriptConfig):
     iface: str = Field(description="Discover on this CAN interface")
     start: AutoInt = Field(0, description="set start address", metavar="INT")
     stop: AutoInt = Field(0x7FF, description="set end address", metavar="INT")
+    force_extended_ids: bool = Field(
+        False, description="Force extended CAN IDs bit also for IDs in range 0-0x7FF"
+    )
     padding: AutoInt | None = Field(None, description="set isotp padding")
     pdu: HexBytes = Field(bytes([0x3E, 0x00]), description="set pdu used for discovery")
     sleep: float = Field(0.01, description="set sleeptime between loop iterations")
@@ -110,7 +113,12 @@ class IsotpDiscoverer(AsyncScript):
                 logger.warning(f"Could not write the discovery run to the database: {e!r}")
 
         transport = RawCANTransport(
-            TargetURI.from_parts(RawCANTransport.SCHEME, self.config.iface, None, {})
+            TargetURI.from_parts(
+                RawCANTransport.SCHEME,
+                self.config.iface,
+                None,
+                {"force_extended_ids": "true" if self.config.force_extended_ids else "false"},
+            )
         )
         await transport.connect()
         found = []
@@ -169,7 +177,9 @@ class IsotpDiscoverer(AsyncScript):
                         )
                         target_args = {}
                         target_args["is_fd"] = str(transport.config.is_fd).lower()
-                        target_args["is_extended"] = str(transport.config.is_extended).lower()
+                        target_args["is_extended"] = (
+                            "true" if addr > 0x7FF or self.config.force_extended_ids else "false"
+                        )
 
                         if self.config.extended_addr:
                             target_args["ext_address"] = hex(ID)
