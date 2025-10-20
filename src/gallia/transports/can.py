@@ -43,9 +43,9 @@ logger = get_logger(__name__)
 class CANMessage:
     timestamp: float = 0.0
     arbitration_id: int = 0
+    force_extended_id: bool = False
 
     # TODO: Add a frametype attribute?
-    is_extended_id: bool = False
     is_remote_frame: bool = False
     is_error_frame: bool = False
 
@@ -64,7 +64,7 @@ class CANMessage:
 
     def _compose_arbitration_id(self) -> int:
         can_id = self.arbitration_id
-        if self.is_extended_id:
+        if can_id > CAN_SFF_MASK or self.force_extended_id:
             can_id |= CAN_EFF_FLAG
         if self.is_remote_frame:
             can_id |= CAN_RTR_FLAG
@@ -114,7 +114,6 @@ class CANMessage:
 
         return cls(
             arbitration_id=arbitration_id,
-            is_extended_id=is_extended_frame_format,
             is_remote_frame=is_remote_transmission_request,
             is_error_frame=is_error_frame,
             is_fd=is_fd,
@@ -126,9 +125,9 @@ class CANMessage:
 
 
 class RawCANConfig(BaseModel):
-    is_extended: bool = False
     is_fd: bool = False
     dst_id: int | None = None
+    force_extended_ids: bool = False
 
     @field_validator(
         "dst_id",
@@ -172,12 +171,17 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
 
         if not can_ids:
             return
-        filter_mask = CAN_EFF_MASK if self.config.is_extended else CAN_SFF_MASK
         data = b""
         for can_id in can_ids:
             if inv_filter:
                 can_id |= CAN_INV_FILTER  # noqa: PLW2901
-            data += struct.pack("@II", can_id, filter_mask)
+            data += struct.pack(
+                "@II",
+                can_id,
+                CAN_EFF_MASK
+                if can_id > CAN_SFF_MASK or self.config.force_extended_ids
+                else CAN_SFF_MASK,
+            )
         self._sock.setsockopt(SOL_CAN_RAW, CAN_RAW_FILTER, data)
         if inv_filter:
             self._sock.setsockopt(SOL_CAN_RAW, CAN_RAW_JOIN_FILTERS, 1)
@@ -211,15 +215,12 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
 
         msg = CANMessage(
             arbitration_id=dst,
+            force_extended_id=self.config.force_extended_ids,
             data=data,
-            is_extended_id=self.config.is_extended,
             is_fd=self.config.is_fd,
         )
         t = tags + ["write"] if tags is not None else ["write"]
-        if self.config.is_extended:
-            logger.trace(f"{dst:08x}#{data.hex()}", extra={"tags": t})
-        else:
-            logger.trace(f"{dst:03x}#{data.hex()}", extra={"tags": t})
+        logger.trace(f"{hex(msg.arbitration_id)}#{msg.data.hex()}", extra={"tags": t})
 
         loop = asyncio.get_running_loop()
         await asyncio.wait_for(loop.sock_sendall(self._sock, msg.pack()), timeout)
@@ -238,10 +239,7 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
         msg = CANMessage.unpack(can_frame)
 
         t = tags + ["read"] if tags is not None else ["read"]
-        if msg.is_extended_id:
-            logger.trace(f"{msg.arbitration_id:08x}#{msg.data.hex()}", extra={"tags": t})
-        else:
-            logger.trace(f"{msg.arbitration_id:03x}#{msg.data.hex()}", extra={"tags": t})
+        logger.trace(f"{hex(msg.arbitration_id)}#{msg.data.hex()}", extra={"tags": t})
         return msg.arbitration_id, msg.data
 
     async def close(self) -> None:
