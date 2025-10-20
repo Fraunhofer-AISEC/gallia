@@ -254,5 +254,5 @@ class SessionsScanner(UDSScanner):
                             await self.db_handler.insert_session_transition(session, res["stack"])
 
                     logger.result(
-                        f"\tvia stack: {'->'.join([f'{g_repr(i)}' for i in res['stack']])} (NRC: {res['error']})"
+                        f"\tvia stack: {'->'.join([f'{g_repr(i)}' for i in res['stack']])} (NRC: {res['error'].name})"
                     )
