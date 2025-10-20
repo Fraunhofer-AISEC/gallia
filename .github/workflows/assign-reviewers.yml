@@ -1,0 +1,29 @@
+# SPDX-FileCopyrightText: AISEC Pentesting Team
+#
+# SPDX-License-Identifier: CC0-1.0
+
+name: reviewers
+
+on:
+  pull_request:
+
+jobs:
+  assign-reviewers:
+    runs-on: ubuntu-latest
+    # FIXME: The current version of gh on default runners is outdated and fails its tasks due to this bug: https://github.com/cli/cli/pull/11835
+    container: archlinux
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 50
+          
+      - run: |
+         pacman -Syu --noconfirm github-cli python
+  
+      - run: |
+         .github/workflows/assign_reviewers.py \
+            --team-members rumpelsepp peckto emeisd ferdinandjarisch fkglr \
+            --repo ${{ github.repository }} \
+            --pr-id ${{ github.event.pull_request.number }}
