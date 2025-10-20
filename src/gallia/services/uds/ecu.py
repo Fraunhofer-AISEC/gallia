@@ -35,24 +35,27 @@ from gallia.utils import handle_task_error, set_task_handler_ctx_variable
 if TYPE_CHECKING:
     from gallia.db.handler import DBHandler
 
+logger = get_logger(__name__)
 
+
+@dataclass
 class ECUState:
-    def __init__(self) -> None:
-        self.session: int | None = None
-        self.security_access_level: int | None = None
+    session: int | None = None
+    security_access_level: int | None = None
 
     def reset(self) -> None:
         self.session = None
         self.security_access_level = None
 
-    def to_dict(self) -> dict[str, Any]:
-        return self.__dict__
+    def to_json(self, indent: int | str | None = None) -> str:
+        return dumps(asdict(self), indent=indent, sort_keys=True, cls=self.json_encoder)
+
+    @property
+    def json_encoder(self) -> type[JSONEncoder]:
+        return GalliaJSONEncoder
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}({', '.join(f'{key}={g_repr(value)}' for key, value in self.__dict__.items())})"
-
-
-logger = get_logger(__name__)
 
 
 @dataclass
@@ -63,17 +66,17 @@ class ECUProperties:
 
     @property
     def json_encoder(self) -> type[JSONEncoder]:
-        return ECUPropertiesEncoder
+        return GalliaJSONEncoder
 
 
-class ECUPropertiesEncoder(JSONEncoder):
-    def default(self, obj):  # type: ignore
-        if isinstance(obj, bytes):
-            return obj.hex()
-        elif isinstance(obj, Enum):
-            return obj.value
+class GalliaJSONEncoder(JSONEncoder):
+    def default(self, o: Any) -> Any:
+        if isinstance(o, bytes):
+            return o.hex()
+        elif isinstance(o, Enum):
+            return o.value
 
-        return super().default(obj)
+        return super().default(o)
 
 
 class ECU(UDSClient):
@@ -509,7 +512,7 @@ class ECU(UDSClient):
                         mode = LogMode.emphasized
 
                     await self.db_handler.insert_scan_result(
-                        self.state.to_dict(),
+                        self.state.to_json(),
                         service.UDSRequest.parse_dynamic(request.pdu),
                         response,
                         exception,
