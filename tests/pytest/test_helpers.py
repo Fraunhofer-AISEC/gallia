@@ -4,14 +4,11 @@
 
 import pytest
 
-from gallia.log import setup_logging
 from gallia.net import split_host_port
 from gallia.services.uds.core.utils import (
     address_and_size_length,
     uds_memory_parameters,
 )
-
-setup_logging()
 
 
 @pytest.mark.parametrize("hostport", ["[fec2::10]:4509823409582350", "hallo:3575983275498230"])
