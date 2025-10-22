@@ -17,13 +17,13 @@ from gallia.net import net_if_broadcast_addrs
 from gallia.services.uds.core.service import TesterPresentRequest, TesterPresentResponse
 from gallia.transports.doip import (
     DiagnosticMessageNegativeAckCodes,
+    DiagnosticMessageNegativeAckError,
     DoIPConnection,
-    DoIPEntityStatusResponse,
-    DoIPNegativeAckError,
-    DoIPRoutingActivationDeniedError,
+    EntityStatusResponse,
     GenericHeader,
     PayloadTypes,
     ProtocolVersions,
+    RoutingActivationDeniedError,
     RoutingActivationRequestTypes,
     RoutingActivationResponseCodes,
     TimingAndCommunicationParameters,
@@ -197,13 +197,13 @@ class DoIPDiscoverer(AsyncScript):
         # only differ in their response, so let's reuse code...
         for req_type in [
             PayloadTypes.VehicleIdentificationRequestMessage,
-            PayloadTypes.DoIPEntityStatusRequest,
+            PayloadTypes.EntityStatusRequest,
         ]:
             logger.info(f"[🥚] Sending {req_type.name}...")
 
             hdr = GenericHeader(
                 ProtocolVersion=self.protocol_version
-                if req_type == PayloadTypes.DoIPEntityStatusRequest
+                if req_type == PayloadTypes.EntityStatusRequest
                 else 0xFF,
                 PayloadType=req_type,
                 PayloadLength=0,
@@ -224,8 +224,8 @@ class DoIPDiscoverer(AsyncScript):
                 )
                 logger.info(f"[🎯] Setting protocol version to {hdr.ProtocolVersion}")
                 self.protocol_version = hdr.ProtocolVersion
-            elif hdr.PayloadType == PayloadTypes.DoIPEntityStatusResponse:
-                status = DoIPEntityStatusResponse.unpack(data[8:])
+            elif hdr.PayloadType == PayloadTypes.EntityStatusResponse:
+                status = EntityStatusResponse.unpack(data[8:])
                 logger.notice(
                     f"[👏] This DoIP entity is a {status.NodeType.name} with {status.CurrentlyOpenTCP_DATASockets}/{status.MaximumConcurrentTCP_DATASockets} concurrent TCP sockets currently open and a maximum data size of {status.MaximumDataSize} ({status.MaximumDataSize:#0x})."
                 )
@@ -263,7 +263,7 @@ class DoIPDiscoverer(AsyncScript):
 
             try:
                 await conn.write_routing_activation_request(routing_activation_type)
-            except DoIPRoutingActivationDeniedError as e:
+            except RoutingActivationDeniedError as e:
                 logger.info(
                     f"[🌟] Brilliant, RoutingActivationType {routing_activation_type:#x} and SourceAddress {source_address:#x} yields {e.rac_code.name}"
                 )
@@ -333,7 +333,7 @@ class DoIPDiscoverer(AsyncScript):
 
                 # Here is where "reader_task" comes into play, which monitors incoming DiagnosticMessage replies
 
-            except DoIPNegativeAckError as e:
+            except DiagnosticMessageNegativeAckError as e:
                 if e.nack_code == DiagnosticMessageNegativeAckCodes.UnknownTargetAddress:
                     logger.info(f"[🫥] {target_addr:#x} is an unknown target address")
                     continue
