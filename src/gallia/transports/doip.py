@@ -691,7 +691,11 @@ class DoIPConnection:
         unexpected_packets: list[tuple[Any, Any]] = []
         while True:
             hdr, response = await self.get_next_non_diag_frame()
-            # TODO: Also handle generic DoIP ACKs, which might also be "MessageTooLarge"
+
+            # We can still receive Generic DoIP nACKs, e.g. "MessageTooLarge" or "OutOfMemory"
+            if isinstance(response, GenericHeaderNegativeAck):
+                raise GenericHeaderNegativeAckError(response.nack_code)
+
             if not isinstance(
                 response, DiagnosticMessagePositiveAcknowledgement
             ) and not isinstance(response, DiagnosticMessageNegativeAcknowledgement):
