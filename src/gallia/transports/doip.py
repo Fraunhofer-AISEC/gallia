@@ -84,17 +84,17 @@ class RoutingActivationResponseCodes(_IntEnumWithMissing):
             return "RESERVED"
 
 
-class DoIPRoutingActivationDeniedError(ConnectionAbortedError):
+class RoutingActivationDeniedError(ConnectionAbortedError):
     rac_code: RoutingActivationResponseCodes
 
     def __init__(self, rac_code: int):
         self.rac_code = RoutingActivationResponseCodes(rac_code)
-        super().__init__(f"DoIP routing activation denied: {self.rac_code.name} ({rac_code})")
+        super().__init__(f"DoIP RoutingActivation denied: {self.rac_code.name} ({rac_code})")
 
 
 @unique
 class PayloadTypes(_IntEnumWithMissing):
-    GenericDoIPHeaderNACK = 0x0000
+    GenericHeaderNegativeAcknowledgement = 0x0000
     VehicleIdentificationRequestMessage = 0x0001
     VehicleIdentificationRequestMessageWithEID = 0x0002
     VehicleIdentificationRequestMessageWithVIN = 0x0003
@@ -103,8 +103,8 @@ class PayloadTypes(_IntEnumWithMissing):
     RoutingActivationResponse = 0x0006
     AliveCheckRequest = 0x0007
     AliveCheckResponse = 0x0008
-    DoIPEntityStatusRequest = 0x4001
-    DoIPEntityStatusResponse = 0x4002
+    EntityStatusRequest = 0x4001
+    EntityStatusResponse = 0x4002
     DiagnosticPowerModeInformationRequest = 0x4003
     DiagnosticPowerModeInformationResponse = 0x4004
     DiagnosticMessage = 0x8001
@@ -135,16 +135,18 @@ class DiagnosticMessageNegativeAckCodes(_IntEnumWithMissing):
     TransportProtocolError = 0x08
 
 
-class DoIPNegativeAckError(BrokenPipeError):
+class DiagnosticMessageNegativeAckError(BrokenPipeError):
     nack_code: DiagnosticMessageNegativeAckCodes
 
-    def __init__(self, negative_ack_code: int):
-        self.nack_code = DiagnosticMessageNegativeAckCodes(negative_ack_code)
-        super().__init__(f"DoIP negative ACK received: {self.nack_code.name} ({negative_ack_code})")
+    def __init__(self, nack_code: int):
+        self.nack_code = DiagnosticMessageNegativeAckCodes(nack_code)
+        super().__init__(
+            f"DoIP DiagnosticMessage negative ACK: {self.nack_code.name} ({nack_code})"
+        )
 
 
 @unique
-class GenericDoIPHeaderNACKCodes(_IntEnumWithMissing):
+class GenericHeaderNegativeAckCodes(_IntEnumWithMissing):
     IncorrectPatternFormat = 0x00
     UnknownPayloadType = 0x01
     MessageTooLarge = 0x02
@@ -152,12 +154,12 @@ class GenericDoIPHeaderNACKCodes(_IntEnumWithMissing):
     InvalidPayloadLength = 0x04
 
 
-class DoIPGenericHeaderNACKError(ConnectionAbortedError):
-    nack_code: GenericDoIPHeaderNACKCodes
+class GenericHeaderNegativeAckError(ConnectionAbortedError):
+    nack_code: GenericHeaderNegativeAckCodes
 
     def __init__(self, nack_code: int):
-        self.nack_code = GenericDoIPHeaderNACKCodes(nack_code)
-        super().__init__(f"DoIP generic header negative ACK: {self.nack_code.name} ({nack_code})")
+        self.nack_code = GenericHeaderNegativeAckCodes(nack_code)
+        super().__init__(f"DoIP GenericHeader negative ACK: {self.nack_code.name} ({nack_code})")
 
 
 class TimingAndCommunicationParameters(IntEnum):
@@ -210,20 +212,20 @@ class GenericHeader:
 
 
 @dataclass
-class GenericDoIPHeaderNACK:
-    GenericHeaderNACKCode: GenericDoIPHeaderNACKCodes
+class GenericHeaderNegativeAck:
+    nack_code: GenericHeaderNegativeAckCodes
 
     def pack(self) -> bytes:
         return struct.pack(
             "!B",
-            self.GenericHeaderNACKCode,
+            self.nack_code,
         )
 
     @classmethod
     def unpack(cls, data: bytes) -> Self:
         (generic_header_NACK_code,) = struct.unpack("!B", data)
         return cls(
-            GenericDoIPHeaderNACKCodes(generic_header_NACK_code),
+            GenericHeaderNegativeAckCodes(generic_header_NACK_code),
         )
 
 
@@ -247,7 +249,7 @@ class FurtherActionCodes(_IntEnumWithMissing):
 
 
 @unique
-class SynchronisationStatusCodes(_IntEnumWithMissing):
+class SynchronizationStatusCodes(_IntEnumWithMissing):
     VINGIDSynchronized = 0x00
     IncompleteVINGIDNotSynchronized = 0x10
 
@@ -285,7 +287,7 @@ class VehicleAnnouncementMessage:
     EID: bytes
     GID: bytes
     FurtherActionRequired: FurtherActionCodes
-    VINGIDSyncStatus: SynchronisationStatusCodes | None
+    VINGIDSyncStatus: SynchronizationStatusCodes | None
 
     @classmethod
     def unpack(cls, data: bytes) -> Self:
@@ -311,14 +313,14 @@ class VehicleAnnouncementMessage:
             eid,
             gid,
             FurtherActionCodes(further_action_required),
-            SynchronisationStatusCodes(vin_gid_sync_status)
+            SynchronizationStatusCodes(vin_gid_sync_status)
             if vin_gid_sync_status is not None
             else None,
         )
 
 
 @dataclass
-class DoIPEntityStatusRequest:
+class EntityStatusRequest:
     def pack(self) -> bytes:
         return b""
 
@@ -330,7 +332,7 @@ class NodeTypes(_IntEnumWithMissing):
 
 
 @dataclass
-class DoIPEntityStatusResponse:
+class EntityStatusResponse:
     NodeType: NodeTypes
     MaximumConcurrentTCP_DATASockets: int
     CurrentlyOpenTCP_DATASockets: int
@@ -474,7 +476,7 @@ class AliveCheckResponse:
 
 # Messages expected to be sent by the DoIP gateway.
 DoIPInData = (
-    GenericDoIPHeaderNACK
+    GenericHeaderNegativeAck
     | RoutingActivationResponse
     | DiagnosticMessage
     | DiagnosticMessagePositiveAcknowledgement
@@ -569,8 +571,8 @@ class DoIPConnection:
         payload_buf = await self.reader.readexactly(hdr.PayloadLength)
         payload: DoIPInData
         match hdr.PayloadType:
-            case PayloadTypes.GenericDoIPHeaderNACK:
-                payload = GenericDoIPHeaderNACK.unpack(payload_buf)
+            case PayloadTypes.GenericHeaderNegativeAcknowledgement:
+                payload = GenericHeaderNegativeAck.unpack(payload_buf)
             case PayloadTypes.RoutingActivationResponse:
                 payload = RoutingActivationResponse.unpack(payload_buf)
             case PayloadTypes.DiagnosticMessagePositiveAcknowledgement:
@@ -726,7 +728,7 @@ class DoIPConnection:
                 await self._read_queue.put(item)
 
             if isinstance(response, DiagnosticMessageNegativeAcknowledgement):
-                raise DoIPNegativeAckError(response.ACKCode)
+                raise DiagnosticMessageNegativeAckError(response.ACKCode)
 
             return
 
@@ -746,7 +748,7 @@ class DoIPConnection:
                 await self._read_queue.put(item)
 
             if payload.RoutingActivationResponseCode != RoutingActivationResponseCodes.Success:
-                raise DoIPRoutingActivationDeniedError(payload.RoutingActivationResponseCode)
+                raise RoutingActivationDeniedError(payload.RoutingActivationResponseCode)
 
             return
 
@@ -960,7 +962,7 @@ class DoIPTransport(BaseTransport, scheme="doip"):
             await asyncio.wait_for(
                 self._conn.write_diag_request(self.config.target_addr, data), timeout
             )
-        except DoIPNegativeAckError as e:
+        except DiagnosticMessageNegativeAckError as e:
             if e.nack_code != DiagnosticMessageNegativeAckCodes.TargetUnreachable:
                 raise e
             # TargetUnreachable can be just a temporary issue. Thus, we do not raise
