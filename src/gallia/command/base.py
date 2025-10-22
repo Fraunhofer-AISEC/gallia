@@ -15,7 +15,6 @@ from datetime import UTC, datetime
 from enum import Enum, unique
 from logging import WARNING
 from pathlib import Path
-from subprocess import CalledProcessError, run
 from typing import Any, Self, cast
 
 from pydantic import ConfigDict, field_serializer, model_validator
@@ -38,12 +37,6 @@ class FileNames(Enum):
     META = "META.json"
     ENV = "ENV"
     LOGFILE = "log.json.zst"
-
-
-@unique
-class HookVariant(Enum):
-    PRE = "pre"
-    POST = "post"
 
 
 @dataclasses.dataclass
@@ -73,21 +66,6 @@ class BaseCommandConfig(GalliaBaseModel, cli_group="generic", config_section="ga
         True, description="Overwrite log lines with level info or lower in terminal output"
     )
     trace_log: bool = Field(False, description="set the loglevel of the logfile to TRACE")
-    pre_hook: str | None = Field(
-        None,
-        description="shell script to run before the main entry_point",
-        metavar="SCRIPT",
-        config_section="gallia.hooks",
-    )
-    post_hook: str | None = Field(
-        None,
-        description="shell script to run after the main entry_point",
-        metavar="SCRIPT",
-        config_section="gallia.hooks",
-    )
-    hooks: bool = Field(
-        True, description="execute pre and post hooks", config_section="gallia.hooks"
-    )
     db: Path | None = Field(None, description="Path to sqlite3 database")
     artifacts_base: Path | None = Field(
         None,
@@ -143,41 +121,6 @@ class BaseCommand(ABC):
 
     @abstractmethod
     async def run(self) -> int: ...
-
-    def run_hook(self, variant: HookVariant, exit_code: int | None = None) -> None:
-        script = self.config.pre_hook if variant == HookVariant.PRE else self.config.post_hook
-        if script is None or script == "":
-            return
-
-        hook_id = f"{variant.value}-hook"
-
-        argv = sys.argv[:]
-        argv[0] = Path(argv[0]).name
-        env = {
-            "GALLIA_ARTIFACTS_DIR": str(self.artifacts_dir),
-            "GALLIA_HOOK": variant.value,
-            "GALLIA_INVOCATION": " ".join(argv),
-        } | os.environ
-
-        if variant == HookVariant.POST:
-            env["GALLIA_META"] = self.run_meta.json()
-
-        if exit_code is not None:
-            env["GALLIA_EXIT_CODE"] = str(exit_code)
-
-        try:
-            p = run(script, env=env, text=True, capture_output=True, shell=True, check=True)
-            stdout = p.stdout
-            stderr = p.stderr
-        except CalledProcessError as e:
-            logger.warning(f"{variant.value}-hook failed (exit code: {e.returncode})")
-            stdout = e.stdout
-            stderr = e.stderr
-
-        if stdout:
-            logger.info(stdout.strip(), extra={"tags": [hook_id, "stdout"]})
-        if stderr:
-            logger.info(stderr.strip(), extra={"tags": [hook_id, "stderr"]})
 
     async def _db_connect_and_insert_run_meta(self, db_path: Path) -> None:
         self.db_handler = DBHandler(db_path)
@@ -257,9 +200,6 @@ class BaseCommand(ABC):
                 )
             )
 
-        if self.config.hooks:
-            self.run_hook(HookVariant.PRE)
-
         if self.config.db is not None:
             # Explicitly set log level of aiosqlite to WARNING to avoid log spam
             db_logger = get_logger("aiosqlite")
@@ -313,9 +253,6 @@ class BaseCommand(ABC):
                         logger_name="gallia",
                         handler=self.log_file_handlers.pop(),
                     )
-
-        if self.config.hooks:
-            self.run_hook(HookVariant.POST, exit_code)
 
         return exit_code
 
