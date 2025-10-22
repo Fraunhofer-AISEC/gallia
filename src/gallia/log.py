@@ -202,7 +202,7 @@ class PenlogPriority(IntEnum):
 
 
 def setup_logging(
-    level: Loglevel | None = None,
+    level: Loglevel = Loglevel.DEBUG,
     logger_name: str = "gallia",
     volatile_info: bool = False,
     colors: bool = True,
@@ -221,9 +221,6 @@ def setup_logging(
     :param path: The path to the logfile containing json records.
     :param color_mode: The color mode to use for the console.
     """
-    if level is None:
-        level = Loglevel.DEBUG
-
     # These are slow and not used by gallia.
     logging.logMultiprocessing = False
     logging.logThreads = False
