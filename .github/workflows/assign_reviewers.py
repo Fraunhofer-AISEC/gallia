@@ -56,7 +56,9 @@ class CLIWrapper:
         )
         authors = []
         for commit in raw_resp:
-            if "author" not in commit and "login" not in commit["author"]:
+            if "author" not in commit:
+                continue
+            if isinstance(commit["author"], dict) and commit["author"]["login"]:
                 continue
 
             author = commit["author"]["login"]
