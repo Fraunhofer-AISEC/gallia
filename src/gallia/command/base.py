@@ -66,7 +66,7 @@ class BaseCommandConfig(GalliaBaseModel, cli_group="generic", config_section="ga
 
     verbose: int = Field(
         0,
-        description="Increase verbosity of the console log (0: INFO, 1: DEBUG, 2: TRACE). If set to DEBUG/TRACE disables 'volatile-info, and if set to TRACE enables 'trace_log'.",
+        description="Increase verbosity of the console log (0: INFO, 1: DEBUG, 2: TRACE). If set to DEBUG/TRACE disables 'volatile-info', and if set to TRACE enables 'trace_log'.",
         short="v",
     )
     volatile_info: bool = Field(
