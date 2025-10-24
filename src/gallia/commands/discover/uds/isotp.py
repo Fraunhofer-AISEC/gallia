@@ -4,15 +4,12 @@
 
 import asyncio
 import sys
-from typing import Self
-
-from pydantic import model_validator
 
 assert sys.platform.startswith("linux"), "unsupported platform"
 
-from gallia.command import UDSDiscoveryScanner
+from gallia.command import AsyncScript
+from gallia.command.base import AsyncScriptConfig
 from gallia.command.config import AutoInt, Field, HexBytes
-from gallia.command.uds import UDSDiscoveryScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse, UDSClient, UDSRequest
 from gallia.services.uds.core.utils import g_repr
@@ -22,9 +19,13 @@ from gallia.utils import can_id_repr
 logger = get_logger(__name__)
 
 
-class IsotpDiscovererConfig(UDSDiscoveryScannerConfig):
-    start: AutoInt = Field(description="set start address", metavar="INT")
-    stop: AutoInt = Field(description="set end address", metavar="INT")
+class IsotpDiscovererConfig(AsyncScriptConfig):
+    iface: str = Field(description="Discover on this CAN interface")
+    start: AutoInt = Field(0, description="set start address", metavar="INT")
+    stop: AutoInt = Field(0x7FF, description="set end address", metavar="INT")
+    force_extended_ids: bool = Field(
+        False, description="Force extended CAN IDs bit also for IDs in range 0-0x7FF"
+    )
     padding: AutoInt | None = Field(None, description="set isotp padding")
     pdu: HexBytes = Field(bytes([0x3E, 0x00]), description="set pdu used for discovery")
     sleep: float = Field(0.01, description="set sleeptime between loop iterations")
@@ -36,17 +37,8 @@ class IsotpDiscovererConfig(UDSDiscoveryScannerConfig):
         5, description="Time in seconds to sniff on bus for current traffic", metavar="SECONDS"
     )
 
-    @model_validator(mode="after")
-    def check_transport_requirements(self) -> Self:
-        if self.target is not None and (not self.target.scheme == RawCANTransport.SCHEME):
-            raise ValueError(f"Unsupported transport schema {self.target.scheme}; must be can-raw!")
-        if self.extended_addr and (self.start > 0xFF or self.stop > 0xFF):
-            raise ValueError("start/stop maximum value is 0xFF")
 
-        return self
-
-
-class IsotpDiscoverer(UDSDiscoveryScanner):
+class IsotpDiscoverer(AsyncScript):
     """Discovers all UDS endpoints on an ECU using ISO-TP normal addressing.
     This is the default protocol used by OBD.
     When using normal addressing, the ISO-TP header does not include an address and there is no generic tester address.
@@ -107,7 +99,27 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
         return frame
 
     async def main(self) -> None:
-        transport = RawCANTransport(self.config.target)
+        if self.config.extended_addr and (self.config.start > 0xFF or self.config.stop > 0xFF):
+            logger.warning(
+                "Capping maximum value of start/stop to 0xFF, because it is the maximum of ISOTP's extended addressing!"
+            )
+            self.config.start = min(self.config.start, 0xFF)
+            self.config.stop = min(self.config.stop, 0xFF)
+
+        if self.db_handler is not None:
+            try:
+                await self.db_handler.insert_discovery_run(ISOTPTransport.SCHEME)
+            except Exception as e:
+                logger.warning(f"Could not write the discovery run to the database: {e!r}")
+
+        transport = RawCANTransport(
+            TargetURI.from_parts(
+                RawCANTransport.SCHEME,
+                self.config.iface,
+                None,
+                {"force_extended_ids": "true" if self.config.force_extended_ids else "false"},
+            )
+        )
         await transport.connect()
         found = []
 
@@ -165,7 +177,9 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
                         )
                         target_args = {}
                         target_args["is_fd"] = str(transport.config.is_fd).lower()
-                        target_args["is_extended"] = str(transport.config.is_extended).lower()
+                        target_args["is_extended"] = (
+                            "true" if addr > 0x7FF or self.config.force_extended_ids else "false"
+                        )
 
                         if self.config.extended_addr:
                             target_args["ext_address"] = hex(ID)
@@ -181,11 +195,8 @@ class IsotpDiscoverer(UDSDiscoveryScanner):
                         if self.config.padding is not None:
                             target_args["rx_padding"] = f"{self.config.padding}"
 
-                        hostname = self.config.target.hostname
-                        assert hostname is not None
-
                         target = TargetURI.from_parts(
-                            ISOTPTransport.SCHEME, hostname, None, target_args
+                            ISOTPTransport.SCHEME, self.config.iface, None, target_args
                         )
                         found.append(target)
                     break
