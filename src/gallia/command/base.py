@@ -66,30 +66,16 @@ class BaseCommandConfig(GalliaBaseModel, cli_group="generic", config_section="ga
 
     verbose: int = Field(
         0,
-        description="Increase verbosity of the console log (0: INFO, 1: DEBUG, 2: TRACE)",
+        description="Increase verbosity of the console log (0: INFO, 1: DEBUG, 2: TRACE). If set to DEBUG/TRACE disables 'volatile-info, and if set to TRACE enables 'trace_log'.",
         short="v",
     )
     volatile_info: bool = Field(
         True, description="Overwrite log lines with level info or lower in terminal output"
     )
-    trace_log: bool = Field(False, description="set the loglevel of the logfile to TRACE")
+    trace_log: bool = Field(False, description="Set the loglevel of the logfile from DEBUG to TRACE")
     syslog_format: bool = Field(
-        False, description="Logs in a format which is appropriate for systemd-journald"
-    )
-    pre_hook: str | None = Field(
-        None,
-        description="shell script to run before the main entry_point",
-        metavar="SCRIPT",
-        config_section="gallia.hooks",
-    )
-    post_hook: str | None = Field(
-        None,
-        description="shell script to run after the main entry_point",
-        metavar="SCRIPT",
-        config_section="gallia.hooks",
-    )
-    hooks: bool = Field(
-        True, description="execute pre and post hooks", config_section="gallia.hooks"
+        False,
+        description="Print logs in a format appropriate for systemd-journald: prefixed with priority, without timestamps, without colors, and without volatile info",
     )
     db: Path | None = Field(None, description="Path to sqlite3 database")
     artifacts_base: Path | None = Field(

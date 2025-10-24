@@ -255,7 +255,9 @@ def add_stderr_log_handler(
 
     console_formatter = _ConsoleFormatter()
     console_formatter.colors = colors
-    console_formatter.volatile_info = volatile_info
+    console_formatter.volatile_info = (
+        volatile_info and level == Loglevel.INFO
+    )  # Disable volatile info for DEBUG/TRACE
     console_formatter.syslog_format = syslog_format
 
     stderr_handler.setFormatter(console_formatter)
@@ -369,7 +371,7 @@ def _format_record_for_syslog(
     stacktrace: str | None,
 ) -> str:
     priority = PenlogPriority.from_level(levelno).value
-    msg = f"<{priority}>{name} {_format_tags(tags)} {data}\n"
+    msg = f"<{priority}>{name}{_format_tags(tags)} {data}\n"
     if stacktrace is not None:
         return msg + "\n" + stacktrace
     return msg
@@ -391,7 +393,7 @@ def _format_record(  # noqa: PLR0913
 
     msg = ""
     if volatile_info:
-        msg += "\33[2K"
+        msg += "\33[2K"  # Clean current line
     extra_len = 4
     msg += dt.strftime("%b %d %H:%M:%S.%f")[:-3]
     msg += " "
