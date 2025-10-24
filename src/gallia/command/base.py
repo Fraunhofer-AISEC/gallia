@@ -72,7 +72,9 @@ class BaseCommandConfig(GalliaBaseModel, cli_group="generic", config_section="ga
     volatile_info: bool = Field(
         True, description="Overwrite log lines with level info or lower in terminal output"
     )
-    trace_log: bool = Field(False, description="Set the loglevel of the logfile from DEBUG to TRACE")
+    trace_log: bool = Field(
+        False, description="Set the loglevel of the logfile from DEBUG to TRACE"
+    )
     syslog_format: bool = Field(
         False,
         description="Print logs in a format appropriate for systemd-journald: prefixed with priority, without timestamps, without colors, and without volatile info",
