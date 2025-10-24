@@ -363,7 +363,6 @@ def _format_tags(tags: list[str] | None) -> str:
 
 
 def _format_record_for_syslog(
-    dt: datetime.datetime,
     name: str,
     data: str,
     levelno: int,
@@ -386,11 +385,7 @@ def _format_record(  # noqa: PLR0913
     stacktrace: str | None,
     colors: bool = False,
     volatile_info: bool = False,
-    syslog_format: bool = False,
 ) -> str:
-    if syslog_format:
-        return _format_record_for_syslog(dt, name, data, levelno, tags, stacktrace)
-
     msg = ""
     if volatile_info:
         msg += "\33[2K"  # Clean current line
@@ -727,17 +722,30 @@ class _ConsoleFormatter(logging.Formatter):
             stacktrace = "\n"
             stacktrace += "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
 
-        return _format_record(
-            dt=datetime.datetime.fromtimestamp(record.created),
-            name=record.name,
-            data=record.getMessage(),
-            levelno=record.levelno,
-            tags=record.__dict__["tags"] if "tags" in record.__dict__ else None,
-            stacktrace=stacktrace,
-            colors=self.colors,
-            volatile_info=self.volatile_info,
-            syslog_format=self.syslog_format,
-        )
+        name = record.name
+        data = record.getMessage()
+        levelno = record.levelno
+        tags = record.__dict__["tags"] if "tags" in record.__dict__ else None
+
+        if self.syslog_format is True:
+            return _format_record_for_syslog(
+                name=name,
+                data=data,
+                levelno=levelno,
+                tags=tags,
+                stacktrace=stacktrace,
+            )
+        else:
+            return _format_record(
+                dt=datetime.datetime.fromtimestamp(record.created),
+                name=name,
+                data=data,
+                levelno=levelno,
+                tags=tags,
+                stacktrace=stacktrace,
+                colors=self.colors,
+                volatile_info=self.volatile_info,
+            )
 
 
 class _ZstdFileHandler(logging.Handler):
