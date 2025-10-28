@@ -10,7 +10,7 @@ from collections.abc import Callable
 from functools import wraps
 from typing import Any, ParamSpec, TypeVar
 
-from gallia.log import Loglevel, get_logger
+from gallia.log import get_logger
 
 logger = get_logger(__name__)
 
@@ -143,26 +143,6 @@ def unravel_2d(listing: str) -> dict[int, list[int] | None]:
         x: None if (ur := unsorted_result[x]) is None else sorted(ur)
         for x in sorted(unsorted_result)
     }
-
-
-def get_log_level(cli_level: int) -> Loglevel:
-    level = Loglevel.INFO
-    if cli_level == 1:
-        level = Loglevel.DEBUG
-    elif cli_level == 2:
-        level = Loglevel.TRACE
-    return level
-
-
-def get_file_log_level(args: Any) -> Loglevel:
-    level = Loglevel.DEBUG
-    if hasattr(args, "trace_log"):
-        if args.trace_log:
-            level = Loglevel.TRACE
-    elif hasattr(args, "verbose"):
-        if args.verbose >= 2:
-            level = Loglevel.TRACE
-    return level
 
 
 CONTEXT_SHARED_VARIABLE = "logger_name"
