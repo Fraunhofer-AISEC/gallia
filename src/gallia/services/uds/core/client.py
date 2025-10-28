@@ -130,6 +130,7 @@ class UDSClient:
                 logger.info(
                     f"Received ResponsePending: {n_pending}/{MAX_N_PENDING}; "
                     + f"waiting for next message: {n_timeout}/{int(max_n_timeout)}"
+                    + f"{'' if i == 0 else f' [Retry {i}/{max_retry}]'}"
                 )
                 try:
                     raw_resp = await self._read(timeout=waiting_time, tags=config.tags)
