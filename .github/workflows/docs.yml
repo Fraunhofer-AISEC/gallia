@@ -44,7 +44,7 @@ jobs:
         uv run make -C docs SPHINXOPTS="-W" html
 
     - name: Archive webpage
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: docs
         path: |
