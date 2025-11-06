@@ -156,20 +156,6 @@ class UDSClient:
         logger.debug(f"{request} failed after retry loop")
         raise last_exception
 
-    async def _tester_present(
-        self, suppress_resp: bool = False, config: UDSRequestConfig | None = None
-    ) -> service.UDSResponse | None:
-        config = config if config is not None else UDSRequestConfig()
-        timeout = config.timeout if config.timeout else self.timeout
-        if suppress_resp:
-            pdu = service.TesterPresentRequest(suppress_response=True).pdu
-            tags = config.tags if config.tags is not None else []
-            logger.debug(pdu.hex(), extra={"tags": ["write", "uds"] + tags})
-            await self.transport.write(pdu, timeout, config.tags)
-            # TODO: This is not fail safe: What if there is an answer???
-            return None
-        return await self.tester_present(False, config)
-
     async def send_raw(
         self, pdu: bytes, config: UDSRequestConfig | None = None
     ) -> service.NegativeResponse | service.PositiveResponse:
