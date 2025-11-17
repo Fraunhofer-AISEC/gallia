@@ -103,7 +103,7 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
         return can_id & s.CAN_SFF_MASK
 
     @staticmethod
-    def _setsockopts(  # noqa: PLR0913
+    def _setsockopts(
         sock: s.socket,
         frame_txtime: int,
         tx_padding: int | None = None,

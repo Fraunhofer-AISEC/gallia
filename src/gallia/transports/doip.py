@@ -507,7 +507,7 @@ class DoIPConnection:
     the foreign DoIP node.
     """
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         reader: asyncio.StreamReader,
         writer: asyncio.StreamWriter,
@@ -533,7 +533,7 @@ class DoIPConnection:
         self._write_mutex = asyncio.Lock()
 
     @classmethod
-    async def connect(  # noqa: PLR0913
+    async def connect(
         cls,
         host: str,
         port: int,
@@ -880,7 +880,7 @@ class DoIPTransport(BaseTransport, scheme="doip"):
         self._conn: DoIPConnection | None = None
 
     @staticmethod
-    async def _connect(  # noqa: PLR0913
+    async def _connect(
         hostname: str,
         port: int,
         src_addr: int,

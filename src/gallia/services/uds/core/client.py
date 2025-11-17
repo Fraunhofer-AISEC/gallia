@@ -396,7 +396,7 @@ class UDSClient:
             service.WriteDataByIdentifierRequest(data_identifier, data_record), config
         )
 
-    async def write_memory_by_address(  # noqa: PLR0913
+    async def write_memory_by_address(
         self,
         memory_address: int,
         data_record: bytes,
@@ -815,7 +815,7 @@ class UDSClient:
             config,
         )
 
-    async def request_download(  # noqa: PLR0913
+    async def request_download(
         self,
         memory_address: int,
         memory_size: int,
@@ -850,7 +850,7 @@ class UDSClient:
             config,
         )
 
-    async def request_upload(  # noqa: PLR0913
+    async def request_upload(
         self,
         memory_address: int,
         memory_size: int,

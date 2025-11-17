@@ -239,7 +239,7 @@ class DoIPDiscoverer(AsyncScript):
         routing_activation_types: Iterable[int],
         source_addresses: Iterable[int],
         tcp_connect_delay: float,
-    ) -> tuple[list[int], list[int], list[str]]:  # noqa: PLR0913
+    ) -> tuple[list[int], list[int], list[str]]:
         rat_not_unsupported: list[int] = []
         rat_not_unknown: list[int] = []
         targets: list[str] = []
@@ -305,7 +305,7 @@ class DoIPDiscoverer(AsyncScript):
         stop: int,
         tcp_connect_delay: float,
         timeout: None | float = None,
-    ) -> None:  # noqa: PLR0913
+    ) -> None:
         known_targets = []
         unreachable_targets = []
         search_space = range(start, stop + 1)
@@ -456,7 +456,7 @@ class DoIPDiscoverer(AsyncScript):
         port: int,
         routing_activation_type: int,
         src_addr: int,
-    ) -> DoIPConnection:  # noqa: PLR0913
+    ) -> DoIPConnection:
         while True:
             try:  # Ensure that connections do not remain in TIME_WAIT
                 conn = await DoIPConnection.connect(
