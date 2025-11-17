@@ -14,7 +14,7 @@ T = TypeVar("T")
 class SupportsAddArgument(Protocol):
     """ArgumentParser protocol that captures the base parser and argument groups."""
 
-    def add_argument(  # noqa: D102
+    def add_argument(
         self,
         *name_or_flags: str,
         action: str | type[Action] = ...,

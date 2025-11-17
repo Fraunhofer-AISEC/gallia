@@ -385,7 +385,7 @@ def _colorize_msg(data: str, levelno: int) -> tuple[str, int]:
     return out, len(style)
 
 
-def _format_record(  # noqa: PLR0913
+def _format_record(
     dt: datetime.datetime,
     name: str,
     data: str,

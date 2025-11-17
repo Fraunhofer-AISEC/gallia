@@ -250,7 +250,7 @@ class DBHandler:
                 f"The version of the database schema is not supported! ({version} != {schema_version})"
             )
 
-    async def insert_run_meta(  # noqa: PLR0913
+    async def insert_run_meta(
         self,
         script: str,
         config: GalliaBaseModel,
@@ -343,7 +343,7 @@ class DBHandler:
         await self.connection.execute(query, (target, self.discovery_run))
         await self.connection.commit()
 
-    async def insert_scan_result(  # noqa: PLR0913
+    async def insert_scan_result(
         self,
         state: str,
         request: UDSRequest,

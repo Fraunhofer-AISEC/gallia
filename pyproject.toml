@@ -111,13 +111,15 @@ select = [
     "I",    # isort
     "IC",   # flake8-import-conventions
     "LOG",  # flake8-logging
+    "PGH",  # pygrep-hooks
     "PIE",  # flake8-pie
     "PL",   # pylint
     "PTH",  # flake8-use-pathlib
     "Q",    # flake8-quotes
     "RSE",  # flake8-raise
-    "TID",  # flake8-tidy-imports
+    "RUF100",  # unused-noqa
     "TD",   # flake8-todos
+    "TID",  # flake8-tidy-imports
     "UP",   # pyupgrade
 ]
 ignore = [
