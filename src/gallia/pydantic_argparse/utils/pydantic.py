@@ -198,7 +198,7 @@ class PydanticField:
                 is_type
                 or t in types
                 or (is_valid and isinstance(t, types))
-                or (is_valid and issubclass(t, types))  # type: ignore
+                or (is_valid and issubclass(t, types))  # type: ignore[arg-type]
             )
 
         return is_type
@@ -238,7 +238,7 @@ class PydanticField:
         default = False
         try:
             model = self.model_type
-            value = model.model_config["json_schema_extra"].get("subcommand", default)  # type: ignore
+            value = model.model_config["json_schema_extra"].get("subcommand", default)  # type: ignore[union-attr]
             return cast(bool, value)
         except (KeyError, AttributeError, TypeError):
             # KeyError if:
@@ -377,7 +377,7 @@ def is_subcommand(model: BaseModel | type[BaseModel]) -> bool:
     """
     default = False
     try:
-        value = model.model_config["json_schema_extra"].get("subcommand", default)  # type: ignore
+        value = model.model_config["json_schema_extra"].get("subcommand", default)  # type: ignore[union-attr]
         return cast(bool, value)
     except (KeyError, AttributeError):
         # KeyError if:

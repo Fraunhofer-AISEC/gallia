@@ -598,7 +598,7 @@ class RandomUDSServer(UDSServer):
                 request.service_id, UDSErrorCodes.incorrectMessageLengthOrInvalidFormat
             )
 
-        return request.RESPONSE_TYPE(request.routine_identifier, rng.random_payload())  # type: ignore
+        return request.RESPONSE_TYPE(request.routine_identifier, rng.random_payload())  # type: ignore[call-arg]
 
     def read_data_by_identifier(
         self, request: service.ReadDataByIdentifierRequest
@@ -644,7 +644,7 @@ class RandomUDSServer(UDSServer):
                 request.service_id, UDSErrorCodes.incorrectMessageLengthOrInvalidFormat
             )
 
-        return request.RESPONSE_TYPE(request.data_identifier, rng.random_payload(min_len=1))  # type: ignore
+        return request.RESPONSE_TYPE(request.data_identifier, rng.random_payload(min_len=1))  # type: ignore[call-arg]
 
     def clear_diagnostic_information(
         self, request: service.ClearDiagnosticInformationRequest

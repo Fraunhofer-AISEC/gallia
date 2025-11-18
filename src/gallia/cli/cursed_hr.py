@@ -312,7 +312,7 @@ class CursedHR:
                 file.close()
                 raise
         else:
-            file = self.in_file.open("rb")  # type: ignore
+            file = self.in_file.open("rb")  # type: ignore[assignment]
 
         return file
 

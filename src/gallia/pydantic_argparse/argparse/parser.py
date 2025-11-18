@@ -220,7 +220,7 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
         # Raise Error
         # raise argparse.ArgumentError(None, msg)
 
-    def _commands(self) -> argparse._SubParsersAction:  # type: ignore
+    def _commands(self) -> argparse._SubParsersAction:  # type: ignore[type-arg]
         """Creates and Retrieves Subcommands Action for the ArgumentParser.
 
         Returns:

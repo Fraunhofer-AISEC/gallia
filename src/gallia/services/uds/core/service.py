@@ -449,7 +449,7 @@ class SubFunctionRequest(
     UDSRequest,
     ABC,
     service_id=None,
-    response_type=SubFunctionResponse,  # type: ignore
+    response_type=SubFunctionResponse,  # type: ignore[type-abstract]
     minimal_length=2,
     maximal_length=None,
 ):
@@ -503,7 +503,7 @@ class SpecializedSubFunctionRequest(
     SubFunctionRequest,
     ABC,
     service_id=None,
-    response_type=SpecializedSubFunctionResponse,  # type: ignore
+    response_type=SpecializedSubFunctionResponse,  # type: ignore[type-abstract]
     minimal_length=2,
     maximal_length=None,
 ):

@@ -19,7 +19,7 @@ from typing import (
 )
 
 
-class SubParsersAction(argparse._SubParsersAction):  # type: ignore
+class SubParsersAction(argparse._SubParsersAction):  # type: ignore[type-arg]
     """Recursively Nesting Sub-Parsers Action for Typed Argument Parsing.
 
     This custom action differs in functionality from the existing standard

@@ -129,7 +129,7 @@ class XL_Status(IntEnum):
     XL_ERR_UNKNOWN_FLAG = 518  # =0x206
 
 
-def check_status_operation(result, function, arguments):  # type: ignore
+def check_status_operation(result, function, arguments):  # type: ignore[no-untyped-def]
     if result > 0:
         raise VectorOperationError(
             result,
@@ -139,7 +139,7 @@ def check_status_operation(result, function, arguments):  # type: ignore
     return result
 
 
-def check_rxtx_operation(result, function, arguments):  # type: ignore
+def check_rxtx_operation(result, function, arguments):  # type: ignore[no-untyped-def]
     match result:
         case XL_Status.XL_ERR_QUEUE_IS_FULL:
             raise VectorQueueIsFullError(
@@ -164,7 +164,7 @@ def check_rxtx_operation(result, function, arguments):  # type: ignore
     return result
 
 
-def check_status_initialization(result, function, arguments):  # type: ignore
+def check_status_initialization(result, function, arguments):  # type: ignore[no-untyped-def]
     if result > 0:
         raise VectorInitializationError(
             result,
