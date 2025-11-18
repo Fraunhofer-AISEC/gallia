@@ -85,7 +85,7 @@ def _add_logging_level(level_name: str, level_num: int) -> None:
     # This method was inspired by the answers to Stack Overflow post
     # http://stackoverflow.com/q/2183233/2988730, especially
     # http://stackoverflow.com/a/13638084/2988730
-    def for_level(self, message, *args, **kwargs):  # type: ignore
+    def for_level(self, message, *args, **kwargs):  # type: ignore[no-untyped-def]
         if self.isEnabledFor(level_num):
             self._log(
                 level_num,
@@ -94,7 +94,7 @@ def _add_logging_level(level_name: str, level_num: int) -> None:
                 **kwargs,
             )
 
-    def to_root(message, *args, **kwargs):  # type: ignore
+    def to_root(message, *args, **kwargs):  # type: ignore[no-untyped-def]
         logging.log(level_num, message, *args, **kwargs)  # noqa: LOG015
 
     logging.addLevelName(level_num, level_name)
@@ -124,10 +124,10 @@ class Loglevel(IntEnum):
     CRITICAL = logging.CRITICAL
     ERROR = logging.ERROR
     WARNING = logging.WARNING
-    NOTICE = logging.NOTICE  # type: ignore
+    NOTICE = logging.NOTICE  # type: ignore[attr-defined]
     INFO = logging.INFO
     DEBUG = logging.DEBUG
-    TRACE = logging.TRACE  # type: ignore
+    TRACE = logging.TRACE  # type: ignore[attr-defined]
 
 
 @unique

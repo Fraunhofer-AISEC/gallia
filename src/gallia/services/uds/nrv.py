@@ -119,7 +119,7 @@ def nrv2b_decompress_8_blindly(
 
     # Wrapper around f to enable code sharing with nrv2b_compress_blindly using
     # _execute_nrv_operation_blindly
-    def f_wrapper(a, b, c, d):  # type: ignore
+    def f_wrapper(a, b, c, d):  # type: ignore[no-untyped-def]
         return f(a, b, c, d, None)
 
     return _execute_nrv_operation_blindly(in_data, f_wrapper, buffer_limit)
@@ -162,7 +162,7 @@ def nrv2b_compress_blindly(
 
     # Wrapper around f to enable code sharing with nrv2b_decompress_8_blindly using
     # _execute_nrv_operation_blindly
-    def f_wrapper(a, b, c, d):  # type: ignore
+    def f_wrapper(a, b, c, d):  # type: ignore[no-untyped-def]
         return f(a, b, c, d, None, level, None, None)
 
     return _execute_nrv_operation_blindly(in_data, f_wrapper, buffer_limit)
