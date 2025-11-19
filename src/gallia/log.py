@@ -735,17 +735,16 @@ class _ConsoleFormatter(logging.Formatter):
                 tags=tags,
                 stacktrace=stacktrace,
             )
-        else:
-            return _format_record(
-                dt=datetime.datetime.fromtimestamp(record.created),
-                name=name,
-                data=data,
-                levelno=levelno,
-                tags=tags,
-                stacktrace=stacktrace,
-                colors=self.colors,
-                volatile_info=self.volatile_info,
-            )
+        return _format_record(
+            dt=datetime.datetime.fromtimestamp(record.created),
+            name=name,
+            data=data,
+            levelno=levelno,
+            tags=tags,
+            stacktrace=stacktrace,
+            colors=self.colors,
+            volatile_info=self.volatile_info,
+        )
 
 
 class _ZstdFileHandler(logging.Handler):
