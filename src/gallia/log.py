@@ -376,7 +376,7 @@ def _format_record_for_syslog(
     return msg
 
 
-def _format_record(  # noqa: PLR0913
+def _format_record(
     dt: datetime.datetime,
     name: str,
     data: str,
