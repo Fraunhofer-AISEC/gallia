@@ -54,5 +54,6 @@ For the format of the `--target` argument see the [transports documentation](htt
 ## Acknowledgments
 
 This work was partly funded by the German Federal Ministry of Education and Research (BMBF) as part of the [SecForCARs](https://www.secforcars.de/) project (grant no. 16KIS0790).
+This work was partly funded by the German Federal Ministry of Economic Affairs and Energy (BMWE) as part of the [ATLAS-L4](https://www.atlas-l4.com/) project (grant no. 19A21048D).
 A short presentation and demo video is available at this [page](https://www.secforcars.de/demos/10-automotive-scanning-framework.html).
 
