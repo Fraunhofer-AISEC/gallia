@@ -882,6 +882,34 @@ if sys.platform.startswith("linux"):
                     traceback.print_exc()
                     break
 
+    class QueueServerTransport(UDSServerTransport):
+        def __init__(
+            self,
+            server: UDSServer,
+            read_queue: asyncio.Queue[bytes],
+            write_queue: asyncio.Queue[bytes],
+        ):
+            self.server = server
+            self.read_queue = read_queue
+            self.write_queue = write_queue
+            self.last_time_active = time()
+
+        async def run(self) -> None:
+            while True:
+                try:
+                    uds_request_raw = await self.read_queue.get()
+                    uds_response_raw, _ = await self.handle_request(uds_request_raw)
+
+                    if uds_response_raw is not None:
+                        await self.write_queue.put(uds_response_raw)
+                except asyncio.CancelledError:
+                    logger.debug("Cancellation signal received.")
+                    break
+                except Exception as e:
+                    logger.error(f"Unexpected exception when handling client communication: {e!r}")
+                    traceback.print_exc()
+                    break
+
 
 if sys.platform.startswith("linux") or sys.platform == "darwin":
 
