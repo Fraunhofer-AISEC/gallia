@@ -26,6 +26,7 @@ class IsotpDiscovererConfig(AsyncScriptConfig):
     force_extended_ids: bool = Field(
         False, description="Force extended CAN IDs bit also for IDs in range 0-0x7FF"
     )
+    is_fd: bool = Field(False, description="Enable CAN-FD")
     padding: AutoInt | None = Field(None, description="set isotp padding")
     pdu: HexBytes = Field(bytes([0x3E, 0x00]), description="set pdu used for discovery")
     sleep: float = Field(0.01, description="set sleeptime between loop iterations")
@@ -117,7 +118,10 @@ class IsotpDiscoverer(AsyncScript):
                 RawCANTransport.SCHEME,
                 self.config.iface,
                 None,
-                {"force_extended_ids": "true" if self.config.force_extended_ids else "false"},
+                {
+                    "force_extended_ids": "true" if self.config.force_extended_ids else "false",
+                    "is_fd": "true" if self.config.is_fd else "false",
+                },
             )
         )
         await transport.connect()
