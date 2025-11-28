@@ -12,7 +12,7 @@ from pydantic import field_serializer, field_validator, model_validator
 from gallia.command.base import AsyncScript, AsyncScriptConfig, FileNames
 from gallia.command.config import Field, Idempotent
 from gallia.log import get_logger
-from gallia.plugins.plugin import load_ecu, load_ecus
+from gallia.plugins.plugin import load_ecu, load_ecus, load_transport
 from gallia.power_supply import PowerSupply
 from gallia.power_supply.uri import PowerSupplyURI
 from gallia.services.uds.core.exception import UDSException
@@ -190,8 +190,6 @@ class UDSScanner(AsyncScript, ABC):
         self.ecu.implicit_logging = self._implicit_logging
 
     async def setup(self) -> None:
-        from gallia.plugins.plugin import load_transport
-
         if self.config.power_supply is not None:
             self.power_supply = await PowerSupply.connect(self.config.power_supply)
             if self.config.power_cycle is True:
