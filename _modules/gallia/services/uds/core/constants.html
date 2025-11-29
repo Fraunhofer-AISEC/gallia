@@ -1,0 +1,383 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gallia.services.uds.core.constants &mdash; gallia  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../index.html" class="icon icon-home">
+            gallia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../automation.html">Automation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../transports.html">Transports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../env.html">Environment Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../logging.html">Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../plugins.html">Plugins</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">UDS</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../uds/database.html">Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../uds/scan_modes.html">Scan Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../uds/virtual_ecu.html">Virtual ECUs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api.html">Public API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">gallia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">gallia.services.uds.core.constants</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for gallia.services.uds.core.constants</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-FileCopyrightText: AISEC Pentesting Team</span>
+<span class="c1">#</span>
+<span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">IntEnum</span><span class="p">,</span> <span class="n">unique</span>
+
+
+<div class="viewcode-block" id="UDSIsoServices">
+<a class="viewcode-back" href="../../../../../api.html#gallia.services.uds.UDSIsoServices">[docs]</a>
+<span class="nd">@unique</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">UDSIsoServices</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">ShowCurrentData</span> <span class="o">=</span> <span class="mh">0x01</span>
+    <span class="n">ShowFreezeFrameData</span> <span class="o">=</span> <span class="mh">0x02</span>
+    <span class="n">ShowStoredDiagnosticTroubleCodes</span> <span class="o">=</span> <span class="mh">0x03</span>
+    <span class="n">ClearDiagnosticTroubleCodesAndStoredValues</span> <span class="o">=</span> <span class="mh">0x04</span>
+    <span class="n">TestResultsOxygenSensorMonitoring</span> <span class="o">=</span> <span class="mh">0x05</span>
+    <span class="n">TestResultsOtherComponentSystemMonitoring</span> <span class="o">=</span> <span class="mh">0x06</span>
+    <span class="n">ShowPendingDiagnosticTroubleCodes</span> <span class="o">=</span> <span class="mh">0x07</span>
+    <span class="n">ControlOperationOfOnBoardComponentSystem</span> <span class="o">=</span> <span class="mh">0x08</span>
+    <span class="n">RequestVehicleInformation</span> <span class="o">=</span> <span class="mh">0x09</span>
+    <span class="n">PermanentDiagnosticTroubleCodes</span> <span class="o">=</span> <span class="mh">0x0A</span>
+    <span class="n">DiagnosticSessionControl</span> <span class="o">=</span> <span class="mh">0x10</span>
+    <span class="n">EcuReset</span> <span class="o">=</span> <span class="mh">0x11</span>
+    <span class="n">SecurityAccess</span> <span class="o">=</span> <span class="mh">0x27</span>
+    <span class="n">CommunicationControl</span> <span class="o">=</span> <span class="mh">0x28</span>
+    <span class="n">TesterPresent</span> <span class="o">=</span> <span class="mh">0x3E</span>
+    <span class="n">Authentication</span> <span class="o">=</span> <span class="mh">0x29</span>
+    <span class="n">AccessTimingParameter</span> <span class="o">=</span> <span class="mh">0x83</span>
+    <span class="n">SecuredDataTransmission</span> <span class="o">=</span> <span class="mh">0x84</span>
+    <span class="n">ControlDTCSetting</span> <span class="o">=</span> <span class="mh">0x85</span>
+    <span class="n">ResponseOnEvent</span> <span class="o">=</span> <span class="mh">0x86</span>
+    <span class="n">LinkControl</span> <span class="o">=</span> <span class="mh">0x87</span>
+    <span class="n">ReadDataByIdentifier</span> <span class="o">=</span> <span class="mh">0x22</span>
+    <span class="n">ReadMemoryByAddress</span> <span class="o">=</span> <span class="mh">0x23</span>
+    <span class="n">ReadScalingDataByIdentifier</span> <span class="o">=</span> <span class="mh">0x24</span>
+    <span class="n">ReadDataByPeriodicIdentifier</span> <span class="o">=</span> <span class="mh">0x2A</span>
+    <span class="n">DynamicallyDefineDataIdentifier</span> <span class="o">=</span> <span class="mh">0x2C</span>
+    <span class="n">WriteDataByIdentifier</span> <span class="o">=</span> <span class="mh">0x2E</span>
+    <span class="n">WriteMemoryByAddress</span> <span class="o">=</span> <span class="mh">0x3D</span>
+    <span class="n">ClearDiagnosticInformation</span> <span class="o">=</span> <span class="mh">0x14</span>
+    <span class="n">ReadDTCInformation</span> <span class="o">=</span> <span class="mh">0x19</span>
+    <span class="n">InputOutputControlByIdentifier</span> <span class="o">=</span> <span class="mh">0x2F</span>
+    <span class="n">RoutineControl</span> <span class="o">=</span> <span class="mh">0x31</span>
+    <span class="n">RequestDownload</span> <span class="o">=</span> <span class="mh">0x34</span>
+    <span class="n">RequestUpload</span> <span class="o">=</span> <span class="mh">0x35</span>
+    <span class="n">TransferData</span> <span class="o">=</span> <span class="mh">0x36</span>
+    <span class="n">RequestTransferExit</span> <span class="o">=</span> <span class="mh">0x37</span>
+    <span class="n">RequestFileTransfer</span> <span class="o">=</span> <span class="mh">0x38</span>
+    <span class="n">NegativeResponse</span> <span class="o">=</span> <span class="mh">0x7F</span></div>
+
+
+
+<div class="viewcode-block" id="UDSErrorCodes">
+<a class="viewcode-back" href="../../../../../api.html#gallia.services.uds.UDSErrorCodes">[docs]</a>
+<span class="nd">@unique</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">UDSErrorCodes</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">generalReject</span> <span class="o">=</span> <span class="mh">0x10</span>
+    <span class="n">serviceNotSupported</span> <span class="o">=</span> <span class="mh">0x11</span>
+    <span class="n">subFunctionNotSupported</span> <span class="o">=</span> <span class="mh">0x12</span>
+    <span class="n">incorrectMessageLengthOrInvalidFormat</span> <span class="o">=</span> <span class="mh">0x13</span>
+    <span class="n">responseTooLong</span> <span class="o">=</span> <span class="mh">0x14</span>
+    <span class="n">busyRepeatRequest</span> <span class="o">=</span> <span class="mh">0x21</span>
+    <span class="n">conditionsNotCorrect</span> <span class="o">=</span> <span class="mh">0x22</span>
+    <span class="n">requestSequenceError</span> <span class="o">=</span> <span class="mh">0x24</span>
+    <span class="n">noResponseFromSubnetComponent</span> <span class="o">=</span> <span class="mh">0x25</span>
+    <span class="n">failurePreventsExecutionOfRequestedAction</span> <span class="o">=</span> <span class="mh">0x26</span>
+    <span class="n">requestOutOfRange</span> <span class="o">=</span> <span class="mh">0x31</span>
+    <span class="n">securityAccessDenied</span> <span class="o">=</span> <span class="mh">0x33</span>
+    <span class="n">authenticationRequired</span> <span class="o">=</span> <span class="mh">0x34</span>
+    <span class="n">invalidKey</span> <span class="o">=</span> <span class="mh">0x35</span>
+    <span class="n">exceededNumberOfAttempts</span> <span class="o">=</span> <span class="mh">0x36</span>
+    <span class="n">requiredTimeDelayNotExpired</span> <span class="o">=</span> <span class="mh">0x37</span>
+    <span class="n">secureDataTransmissionRequired</span> <span class="o">=</span> <span class="mh">0x38</span>
+    <span class="n">secureDataTransmissionNotAllowed</span> <span class="o">=</span> <span class="mh">0x39</span>
+    <span class="n">secureDataVerificationFailed</span> <span class="o">=</span> <span class="mh">0x3A</span>
+    <span class="n">certificateVerificationFailedInvalidTimePeriod</span> <span class="o">=</span> <span class="mh">0x50</span>
+    <span class="n">certificateVerificationFailedInvalidSignature</span> <span class="o">=</span> <span class="mh">0x51</span>
+    <span class="n">certificateVerificationFailedInvalidChainOfTrust</span> <span class="o">=</span> <span class="mh">0x52</span>
+    <span class="n">certificateVerificationFailedInvalidType</span> <span class="o">=</span> <span class="mh">0x53</span>
+    <span class="n">certificateVerificationFailedInvalidFormat</span> <span class="o">=</span> <span class="mh">0x54</span>
+    <span class="n">certificateVerificationFailedInvalidContent</span> <span class="o">=</span> <span class="mh">0x55</span>
+    <span class="n">certificateVerificationFailedInvalidScope</span> <span class="o">=</span> <span class="mh">0x56</span>
+    <span class="n">certificateVerificationFailedInvalidCertificateRevoked</span> <span class="o">=</span> <span class="mh">0x57</span>
+    <span class="n">ownershipVerificationFailed</span> <span class="o">=</span> <span class="mh">0x58</span>
+    <span class="n">challengeCalculationFailed</span> <span class="o">=</span> <span class="mh">0x59</span>
+    <span class="n">settingAccessRightsFailed</span> <span class="o">=</span> <span class="mh">0x5A</span>
+    <span class="n">sessionKeyCreationOrDerivationFailed</span> <span class="o">=</span> <span class="mh">0x5B</span>
+    <span class="n">configurationDataUsageFailed</span> <span class="o">=</span> <span class="mh">0x5C</span>
+    <span class="n">deAuthenticationFailed</span> <span class="o">=</span> <span class="mh">0x5D</span>
+    <span class="n">uploadDownloadNotAccepted</span> <span class="o">=</span> <span class="mh">0x70</span>
+    <span class="n">transferDataSuspended</span> <span class="o">=</span> <span class="mh">0x71</span>
+    <span class="n">generalProgrammingFailure</span> <span class="o">=</span> <span class="mh">0x72</span>
+    <span class="n">wrongBlockSequenceCounter</span> <span class="o">=</span> <span class="mh">0x73</span>
+    <span class="n">requestCorrectlyReceivedResponsePending</span> <span class="o">=</span> <span class="mh">0x78</span>
+    <span class="n">subFunctionNotSupportedInActiveSession</span> <span class="o">=</span> <span class="mh">0x7E</span>
+    <span class="n">serviceNotSupportedInActiveSession</span> <span class="o">=</span> <span class="mh">0x7F</span>
+    <span class="n">rpmTooHigh</span> <span class="o">=</span> <span class="mh">0x81</span>
+    <span class="n">rpmTooLow</span> <span class="o">=</span> <span class="mh">0x82</span>
+    <span class="n">engineIsRunning</span> <span class="o">=</span> <span class="mh">0x83</span>
+    <span class="n">engineIsNotRunning</span> <span class="o">=</span> <span class="mh">0x84</span>
+    <span class="n">engineRunTimeTooLow</span> <span class="o">=</span> <span class="mh">0x85</span>
+    <span class="n">temperatureTooHigh</span> <span class="o">=</span> <span class="mh">0x86</span>
+    <span class="n">temperatureTooLow</span> <span class="o">=</span> <span class="mh">0x87</span>
+    <span class="n">vehicleSpeedTooHigh</span> <span class="o">=</span> <span class="mh">0x88</span>
+    <span class="n">vehicleSpeedTooLow</span> <span class="o">=</span> <span class="mh">0x89</span>
+    <span class="n">throttlePedalTooHigh</span> <span class="o">=</span> <span class="mh">0x8A</span>
+    <span class="n">throttlePedalTooLow</span> <span class="o">=</span> <span class="mh">0x8B</span>
+    <span class="n">transmissionRangeNotInNeutral</span> <span class="o">=</span> <span class="mh">0x8C</span>
+    <span class="n">transmissionRangeNotInGear</span> <span class="o">=</span> <span class="mh">0x8D</span>
+    <span class="n">brakeSwitchNotClosed</span> <span class="o">=</span> <span class="mh">0x8F</span>
+    <span class="n">shifterLeverNotInPark</span> <span class="o">=</span> <span class="mh">0x90</span>
+    <span class="n">torqueConverterClutchLocked</span> <span class="o">=</span> <span class="mh">0x91</span>
+    <span class="n">voltageTooHigh</span> <span class="o">=</span> <span class="mh">0x92</span>
+    <span class="n">voltageTooLow</span> <span class="o">=</span> <span class="mh">0x93</span>
+    <span class="n">resourceTemporarilyNotAvailable</span> <span class="o">=</span> <span class="mh">0x94</span>
+    <span class="n">vehicleManufacturerSpecificConditionsNotCorrectF0</span> <span class="o">=</span> <span class="mh">0xF0</span>
+    <span class="n">vehicleManufacturerSpecificConditionsNotCorrectF1</span> <span class="o">=</span> <span class="mh">0xF1</span>
+    <span class="n">vehicleManufacturerSpecificConditionsNotCorrectF2</span> <span class="o">=</span> <span class="mh">0xF2</span>
+    <span class="n">vehicleManufacturerSpecificConditionsNotCorrectF3</span> <span class="o">=</span> <span class="mh">0xF3</span>
+    <span class="n">vehicleManufacturerSpecificConditionsNotCorrectF4</span> <span class="o">=</span> <span class="mh">0xF4</span>
+    <span class="n">vehicleManufacturerSpecificConditionsNotCorrectF5</span> <span class="o">=</span> <span class="mh">0xF5</span>
+    <span class="n">vehicleManufacturerSpecificConditionsNotCorrectF6</span> <span class="o">=</span> <span class="mh">0xF6</span>
+    <span class="n">vehicleManufacturerSpecificConditionsNotCorrectF7</span> <span class="o">=</span> <span class="mh">0xF7</span>
+    <span class="n">vehicleManufacturerSpecificConditionsNotCorrectF8</span> <span class="o">=</span> <span class="mh">0xF8</span>
+    <span class="n">vehicleManufacturerSpecificConditionsNotCorrectF9</span> <span class="o">=</span> <span class="mh">0xF9</span>
+    <span class="n">vehicleManufacturerSpecificConditionsNotCorrectFA</span> <span class="o">=</span> <span class="mh">0xFA</span>
+    <span class="n">vehicleManufacturerSpecificConditionsNotCorrectFB</span> <span class="o">=</span> <span class="mh">0xFB</span>
+    <span class="n">vehicleManufacturerSpecificConditionsNotCorrectFC</span> <span class="o">=</span> <span class="mh">0xFC</span>
+    <span class="n">vehicleManufacturerSpecificConditionsNotCorrectFD</span> <span class="o">=</span> <span class="mh">0xFD</span>
+    <span class="n">vehicleManufacturerSpecificConditionsNotCorrectFE</span> <span class="o">=</span> <span class="mh">0xFE</span></div>
+
+
+
+<span class="nd">@unique</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DiagnosticSessionControlSubFuncs</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">defaultSession</span> <span class="o">=</span> <span class="mh">0x01</span>
+    <span class="n">programmingSession</span> <span class="o">=</span> <span class="mh">0x02</span>
+    <span class="n">extendedDiagnosticSession</span> <span class="o">=</span> <span class="mh">0x03</span>
+    <span class="n">safetySystemDiagnosticSession</span> <span class="o">=</span> <span class="mh">0x04</span>
+
+
+<span class="nd">@unique</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">RoutineControlSubFuncs</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">startRoutine</span> <span class="o">=</span> <span class="mh">0x01</span>
+    <span class="n">stopRoutine</span> <span class="o">=</span> <span class="mh">0x02</span>
+    <span class="n">requestRoutineResults</span> <span class="o">=</span> <span class="mh">0x03</span>
+
+
+<span class="nd">@unique</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CCSubFuncs</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">enableRxAndTx</span> <span class="o">=</span> <span class="mh">0x00</span>
+    <span class="n">enableRxAndDisableTx</span> <span class="o">=</span> <span class="mh">0x01</span>
+    <span class="n">disableRxAndEnableTx</span> <span class="o">=</span> <span class="mh">0x02</span>
+    <span class="n">disableRxAndTx</span> <span class="o">=</span> <span class="mh">0x03</span>
+    <span class="c1"># Plus vendor specific stuff...</span>
+
+
+<span class="nd">@unique</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CDTCSSubFuncs</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">ON</span> <span class="o">=</span> <span class="mh">0x01</span>
+    <span class="n">OFF</span> <span class="o">=</span> <span class="mh">0x02</span>
+    <span class="c1"># Plus vendor specific stuff...</span>
+
+
+<span class="nd">@unique</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ReadDTCInformationSubFuncs</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">reportNumberOfDTCByStatusMask</span> <span class="o">=</span> <span class="mh">0x01</span>
+    <span class="n">reportDTCByStatusMask</span> <span class="o">=</span> <span class="mh">0x02</span>
+    <span class="n">reportDTCSnapshotIdentification</span> <span class="o">=</span> <span class="mh">0x03</span>
+    <span class="n">reportDTCSnapshotRecordByDTCNumber</span> <span class="o">=</span> <span class="mh">0x04</span>
+    <span class="n">reportDTCStoredDataByRecordNumber</span> <span class="o">=</span> <span class="mh">0x05</span>
+    <span class="n">reportDTCExtDataRecordByDTCNumber</span> <span class="o">=</span> <span class="mh">0x06</span>
+    <span class="n">reportNumberOfDTCBySeverityMaskRecord</span> <span class="o">=</span> <span class="mh">0x07</span>
+    <span class="n">reportDTCBySeverityMaskRecord</span> <span class="o">=</span> <span class="mh">0x08</span>
+    <span class="n">reportSeverityInformationOfDTC</span> <span class="o">=</span> <span class="mh">0x09</span>
+    <span class="n">reportSupportedDTC</span> <span class="o">=</span> <span class="mh">0x0A</span>
+    <span class="n">reportFirstTestFailedDTC</span> <span class="o">=</span> <span class="mh">0x0B</span>
+    <span class="n">reportFirstConfirmedDTC</span> <span class="o">=</span> <span class="mh">0x0C</span>
+    <span class="n">reportMostRecentTestFailedDTC</span> <span class="o">=</span> <span class="mh">0x0D</span>
+    <span class="n">reportMostRecentConfirmedDTC</span> <span class="o">=</span> <span class="mh">0x0E</span>
+    <span class="n">reportMirrorMemoryDTCByStatusMask</span> <span class="o">=</span> <span class="mh">0x0F</span>
+    <span class="n">reportNumberOfMirrorMemoryDTCByStatusMask</span> <span class="o">=</span> <span class="mh">0x11</span>
+    <span class="n">reportNumberOfEmissionsRelatedOBDDTCByStatusMask</span> <span class="o">=</span> <span class="mh">0x12</span>
+    <span class="n">reportEmissionsRelatedOBDDTCByStatusMask</span> <span class="o">=</span> <span class="mh">0x13</span>
+    <span class="n">reportDTCFaultDetectionCounter</span> <span class="o">=</span> <span class="mh">0x14</span>
+    <span class="n">reportDTCWithPermanentStatus</span> <span class="o">=</span> <span class="mh">0x15</span>
+    <span class="n">reportDTCExtDataRecordByRecordNumber</span> <span class="o">=</span> <span class="mh">0x16</span>
+    <span class="n">reportUserDefMemoryDTCByStatusMask</span> <span class="o">=</span> <span class="mh">0x17</span>
+    <span class="n">reportUserDefMemoryDTCSnapshotRecordByDTCNumber</span> <span class="o">=</span> <span class="mh">0x18</span>
+    <span class="n">reportUserDefMemoryDTCExtDataRecordByDTCNumber</span> <span class="o">=</span> <span class="mh">0x19</span>
+    <span class="n">reportDTCExtendedDataRecordIdentification</span> <span class="o">=</span> <span class="mh">0x1A</span>
+    <span class="n">reportWWHOBDDTCByMaskRecord</span> <span class="o">=</span> <span class="mh">0x42</span>
+    <span class="n">reportWWHOBDDTCWithPermanentStatus</span> <span class="o">=</span> <span class="mh">0x55</span>
+    <span class="n">reportDTCInformationByDTCReadinessGroupIdentifier</span> <span class="o">=</span> <span class="mh">0x56</span>
+
+
+<span class="nd">@unique</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">EcuResetSubFuncs</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">hardReset</span> <span class="o">=</span> <span class="mh">0x01</span>
+    <span class="n">keyOffOnReset</span> <span class="o">=</span> <span class="mh">0x02</span>
+    <span class="n">softReset</span> <span class="o">=</span> <span class="mh">0x03</span>
+    <span class="n">enableRapidPowerShutDown</span> <span class="o">=</span> <span class="mh">0x04</span>
+    <span class="n">disableRapidPowerShutDown</span> <span class="o">=</span> <span class="mh">0x05</span>
+
+
+<span class="nd">@unique</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">InputOutputControlParameter</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">returnControlToECU</span> <span class="o">=</span> <span class="mh">0x00</span>
+    <span class="n">resetToDefault</span> <span class="o">=</span> <span class="mh">0x01</span>
+    <span class="n">freezeCurrentState</span> <span class="o">=</span> <span class="mh">0x02</span>
+    <span class="n">shortTermAdjustment</span> <span class="o">=</span> <span class="mh">0x03</span>
+
+
+<span class="nd">@unique</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DTCFormatIdentifier</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="c1"># ISO15031-6DTCFormat</span>
+    <span class="n">ISO_15031_6</span> <span class="o">=</span> <span class="mh">0x00</span>
+    <span class="c1"># ISO14229-1DTCFormat</span>
+    <span class="n">ISO_14229_1</span> <span class="o">=</span> <span class="mh">0x01</span>
+    <span class="c1"># SAEJ1939-73DTCFormat</span>
+    <span class="n">SAE_J1939_73</span> <span class="o">=</span> <span class="mh">0x02</span>
+    <span class="c1"># ISO11992-4DTCFormat</span>
+    <span class="n">ISO_11992_4</span> <span class="o">=</span> <span class="mh">0x03</span>
+
+
+<span class="c1"># This dictionary maps UDS services to the echo length of their responses.</span>
+<span class="c1"># Echos in that context are values which are identical to the corresponding entry in a request.</span>
+<span class="c1"># Therefore they can be used to match responses to requests but are not adding any new information.</span>
+<span class="c1"># Some services (e.g. rdbi) can accept more data records in a request and response accordingly.</span>
+<span class="c1"># In that case there can be several echos. However, as of the time of writing, multiple data</span>
+<span class="c1"># records are not considered in the rest of the code.</span>
+<span class="c1"># For a complete handling one might need to transfer this to a function.</span>
+<span class="n">UDSIsoServicesEchoLength</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">UDSIsoServices</span><span class="o">.</span><span class="n">DiagnosticSessionControl</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">UDSIsoServices</span><span class="o">.</span><span class="n">EcuReset</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">UDSIsoServices</span><span class="o">.</span><span class="n">SecurityAccess</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">UDSIsoServices</span><span class="o">.</span><span class="n">CommunicationControl</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">UDSIsoServices</span><span class="o">.</span><span class="n">TesterPresent</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">UDSIsoServices</span><span class="o">.</span><span class="n">AccessTimingParameter</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">UDSIsoServices</span><span class="o">.</span><span class="n">ControlDTCSetting</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">UDSIsoServices</span><span class="o">.</span><span class="n">ResponseOnEvent</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>  <span class="c1"># There are a number of echos but only one byte is a prefix</span>
+    <span class="n">UDSIsoServices</span><span class="o">.</span><span class="n">LinkControl</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">UDSIsoServices</span><span class="o">.</span><span class="n">ReadDataByIdentifier</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="n">UDSIsoServices</span><span class="o">.</span><span class="n">ReadScalingDataByIdentifier</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="n">UDSIsoServices</span><span class="o">.</span><span class="n">ReadDataByPeriodicIdentifier</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>  <span class="c1"># This one is a little weird</span>
+    <span class="n">UDSIsoServices</span><span class="o">.</span><span class="n">DynamicallyDefineDataIdentifier</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+    <span class="n">UDSIsoServices</span><span class="o">.</span><span class="n">WriteDataByIdentifier</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="c1"># This one would require to parse the addressAndLengthFormatIdentifier field</span>
+    <span class="c1"># UDSIsoServices.WriteMemoryByAddress: None,</span>
+    <span class="n">UDSIsoServices</span><span class="o">.</span><span class="n">ReadDTCInformation</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">UDSIsoServices</span><span class="o">.</span><span class="n">InputOutputControlByIdentifier</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="n">UDSIsoServices</span><span class="o">.</span><span class="n">RoutineControl</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+    <span class="n">UDSIsoServices</span><span class="o">.</span><span class="n">TransferData</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<span class="nd">@unique</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DataIdentifier</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">ActiveDiagnosticSessionDataIdentifier</span> <span class="o">=</span> <span class="mh">0xF186</span>
+
+
+<span class="nd">@unique</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DynamicallyDefineDataIdentifierSubFuncs</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">defineByIdentifier</span> <span class="o">=</span> <span class="mh">0x01</span>
+    <span class="n">defineByMemoryAddress</span> <span class="o">=</span> <span class="mh">0x02</span>
+    <span class="n">clearDynamicallyDefinedDataIdentifier</span> <span class="o">=</span> <span class="mh">0x03</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, AISEC Pentest Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
