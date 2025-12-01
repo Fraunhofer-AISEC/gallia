@@ -337,7 +337,7 @@ class GalliaBaseModel(BaseCommand, ABC):
                     info.config_section = config_section
 
                 # Add config to registry
-                if info.config_section is not None:
+                if info.config_section is not None and info.hidden is False:
                     config_attribute = (
                         f"{info.config_section}.{attribute}"
                         if info.config_section != ""
