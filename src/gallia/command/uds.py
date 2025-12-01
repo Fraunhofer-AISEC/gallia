@@ -83,6 +83,11 @@ class UDSScannerConfig(AsyncScriptConfig, cli_group="uds", config_section="galli
     power_cycle_sleep: float = Field(
         5.0, description="time to sleep after the power-cycle", metavar="SECs"
     )
+    transport: BaseTransport | None = Field(
+        None,
+        description="If a transport is provided, it basically overrides 'target' and skips 'load_transport'.",
+        hidden=True,
+    )
 
     @field_serializer("target", "power_supply")
     def serialize_target_uri(self, target_uri: TargetURI | None) -> Any:
@@ -137,32 +142,8 @@ class UDSScanner(AsyncScript, ABC):
         super().__init__(config)
         self.config: UDSScannerConfig = config
         self.power_supply: PowerSupply | None = None
-        self._transport: BaseTransport | None = None
         self._ecu: ECU | None = None
         self._implicit_logging = True
-
-    @property
-    def transport(self) -> BaseTransport:
-        if self._ecu is None:
-            logger.debug(
-                "Transport is accessed without initialized ECU, returning Scanner transport!"
-            )
-            assert self._transport is not None, "Transport accessed before first initialization!"
-            return self._transport
-        return self.ecu.transport
-
-    @transport.setter
-    def transport(self, transport: BaseTransport) -> None:
-        if self._ecu is None:
-            logger.debug(
-                "Transport is accessed without initialized ECU, setting Scanner transport!"
-            )
-            assert isinstance(transport, BaseTransport), (
-                f"Attempting to assign wrong type to transport: {type(transport)}"
-            )
-            self._transport = transport
-        else:
-            self.ecu.transport = transport
 
     @property
     def ecu(self) -> ECU:
@@ -172,8 +153,6 @@ class UDSScanner(AsyncScript, ABC):
     @ecu.setter
     def ecu(self, ecu: ECU) -> None:
         self._ecu = ecu
-        # An initialized ECU has its own transport, no need to maintain a copy!
-        self._transport = None
 
     @property
     def implicit_logging(self) -> bool:
@@ -197,23 +176,22 @@ class UDSScanner(AsyncScript, ABC):
                     self.config.power_cycle_sleep, lambda: asyncio.sleep(2)
                 )
 
-        # Checking `_transport` for None to check if a transport was already provided to the class
-        if self._transport is None:
-            logger.debug(
-                f"No transport present, loading from target string: '{self.config.target}'"
-            )
-            self.transport = load_transport(self.config.target)
+        # Check whether `transport` was provided and use it over `target`
+        if self.config.transport is None:
+            logger.debug(f"No transport given, loading from target string: '{self.config.target}'")
+            transport = load_transport(self.config.target)
         else:
-            logger.debug("Transport already present")
+            logger.debug("Transport given, ignoring target string")
+            transport = self.config.transport
 
         # Start dumpcap as the first subprocess; otherwise network traffic might be missing.
         if self.artifacts_dir is not None and self.config.dumpcap is True:
-            await self.transport.dumpcap_start(self.artifacts_dir)
+            await transport.dumpcap_start(self.artifacts_dir)
 
-        await self.transport.connect()
+        await transport.connect()
 
         self.ecu = load_ecu(self.config.oem)(
-            self.transport,
+            transport,
             timeout=self.config.timeout,
             max_retry=self.config.max_retries,
             power_supply=self.power_supply,
@@ -293,10 +271,6 @@ class UDSScanner(AsyncScript, ABC):
         if self.ecu.tester_present_task is not None:
             await self.ecu.detach_tester_present_sender()
 
-        # self.ecu.transport will be different from self.transport if self.ecu.reconnect() was called at any time
-        # It is important to close this new transport as well!
         logger.debug("Closing transport object of ECU/UDSClient")
         await self.ecu.transport.close()
-
-        await self.transport.close()
-        await self.transport.dumpcap_stop()
+        await self.ecu.transport.dumpcap_stop()
