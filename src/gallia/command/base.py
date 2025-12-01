@@ -78,7 +78,6 @@ class AsyncScriptConfig(GalliaBaseModel, cli_group="generic", config_section="ga
         None,
         description="Base directory for artifacts. Required to save artifacts such as logs.",
         metavar="DIR",
-        config_section="gallia",
     )
 
 
