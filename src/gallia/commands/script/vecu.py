@@ -99,14 +99,14 @@ class VirtualECU(AsyncScript, ABC):
                 case TransportScheme.UNIX_LINES:
                     transport = UnixUDSServerTransport(server, target)
                 case _:
-                    assert False
+                    raise ValueError(f"unsupported scheme: {target.scheme}")
 
         if sys.platform.startswith("win32"):
             match target.scheme:
                 case TransportScheme.TCP:
                     transport = TCPUDSServerTransport(server, target)
                 case _:
-                    assert False
+                    raise ValueError(f"unsupported scheme: {target.scheme}")
 
         try:
             await server.setup()
