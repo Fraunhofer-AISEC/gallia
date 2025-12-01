@@ -9,6 +9,7 @@ on:
 
 jobs:
   assign-reviewers:
+    continue-on-error: true
     runs-on: ubuntu-latest
     # FIXME: The current version of gh on default runners is outdated and fails its tasks due to this bug: https://github.com/cli/cli/pull/11835
     container: archlinux
