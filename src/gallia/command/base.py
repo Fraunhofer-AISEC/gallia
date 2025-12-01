@@ -126,12 +126,14 @@ class AsyncScript(ABC):
         self.db_handler: DBHandler | None = None
         self.log_file_handlers = []
 
-    async def setup(self) -> None: ...
+    async def setup(self) -> None:
+        return None
 
     @abstractmethod
     async def main(self) -> None: ...
 
-    async def teardown(self) -> None: ...
+    async def teardown(self) -> None:
+        return None
 
     async def run(self) -> int:
         await self.setup()
