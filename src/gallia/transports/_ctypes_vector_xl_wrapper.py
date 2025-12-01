@@ -22,8 +22,8 @@ INFINITE: int
 try:
     # Try builtin Python 3 Windows API
     from _winapi import WaitForSingleObject
-except ImportError:
-    raise RuntimeError("platform does not provide WaitForSingleObject")
+except ImportError as e:
+    raise RuntimeError("platform does not provide WaitForSingleObject") from e
 
 
 class FlexRayCtypesBackend:

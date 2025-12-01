@@ -1237,7 +1237,9 @@ class ReadDataByIdentifierResponse(
     def pdu(self) -> bytes:
         pdu = pack("!B", self.RESPONSE_SERVICE_ID)
 
-        for data_identifier, data_record in zip(self.data_identifiers, self.data_records):
+        for data_identifier, data_record in zip(
+            self.data_identifiers, self.data_records, strict=False
+        ):
             pdu = pdu + to_bytes(data_identifier, 2) + data_record
 
         return pdu
@@ -1267,7 +1269,9 @@ class ReadDataByIdentifierResponse(
 
             return all(
                 req_id == resp_id
-                for req_id, resp_id in zip(request.data_identifiers, self.data_identifiers)
+                for req_id, resp_id in zip(
+                    request.data_identifiers, self.data_identifiers, strict=False
+                )
             )
 
         return request.data_identifiers[0] == self.data_identifiers[0]
@@ -1628,7 +1632,10 @@ class DefineByIdentifierRequest(
         )
 
         for source_data_identifier, position_in_source_data_record, memory_size in zip(
-            self.source_data_identifiers, self.positions_in_source_data_record, self.memory_sizes
+            self.source_data_identifiers,
+            self.positions_in_source_data_record,
+            self.memory_sizes,
+            strict=False,
         ):
             pdu = (
                 pdu
@@ -1730,7 +1737,7 @@ class DefineByMemoryAddressRequest(
 
         # In case the address_and_length_format_identifier is None, this calculates it based on the longest address and size
         # Otherwise it checks for all addresses and size if they can be represented with its length constraints.
-        for address, size in zip(self.memory_addresses, self.memory_sizes):
+        for address, size in zip(self.memory_addresses, self.memory_sizes, strict=False):
             computed_address_and_length_format_identifier, _, _ = uds_memory_parameters(
                 address, size, address_and_length_format_identifier
             )
@@ -1774,7 +1781,9 @@ class DefineByMemoryAddressRequest(
             self.address_and_length_format_identifier,
         )
 
-        for memory_address, memory_size in zip(self.memory_addresses, self.memory_sizes):
+        for memory_address, memory_size in zip(
+            self.memory_addresses, self.memory_sizes, strict=False
+        ):
             _, address, size = uds_memory_parameters(
                 memory_address, memory_size, self.address_and_length_format_identifier
             )
@@ -2741,7 +2750,7 @@ class ReportDTCExtDataRecordByDTCNumberResponse(
 
             self.dtc_and_status_record = dtc_and_status_record
 
-        for dtc_ext_data_record_number, dtc_ext_data_record in dtc_ext_data_records.items():
+        for dtc_ext_data_record_number, _dtc_ext_data_record in dtc_ext_data_records.items():
             check_range(dtc_ext_data_record_number, "dtc_ext_data_record_number", 0, 0xFD)
 
         self.dtc_ext_data_records = dtc_ext_data_records
