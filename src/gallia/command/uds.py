@@ -19,7 +19,7 @@ from gallia.services.uds.core.exception import UDSException
 from gallia.services.uds.core.service import NegativeResponse, UDSResponse
 from gallia.services.uds.ecu import ECU
 from gallia.services.uds.helpers import raise_for_error
-from gallia.transports.base import BaseTransport, TargetURI
+from gallia.transports.base import TargetURI
 
 logger = get_logger(__name__)
 
@@ -137,32 +137,8 @@ class UDSScanner(AsyncScript, ABC):
         super().__init__(config)
         self.config: UDSScannerConfig = config
         self.power_supply: PowerSupply | None = None
-        self._transport: BaseTransport | None = None
         self._ecu: ECU | None = None
         self._implicit_logging = True
-
-    @property
-    def transport(self) -> BaseTransport:
-        if self._ecu is None:
-            logger.debug(
-                "Transport is accessed without initialized ECU, returning Scanner transport!"
-            )
-            assert self._transport is not None, "Transport accessed before first initialization!"
-            return self._transport
-        return self.ecu.transport
-
-    @transport.setter
-    def transport(self, transport: BaseTransport) -> None:
-        if self._ecu is None:
-            logger.debug(
-                "Transport is accessed without initialized ECU, setting Scanner transport!"
-            )
-            assert isinstance(transport, BaseTransport), (
-                f"Attempting to assign wrong type to transport: {type(transport)}"
-            )
-            self._transport = transport
-        else:
-            self.ecu.transport = transport
 
     @property
     def ecu(self) -> ECU:
@@ -172,8 +148,6 @@ class UDSScanner(AsyncScript, ABC):
     @ecu.setter
     def ecu(self, ecu: ECU) -> None:
         self._ecu = ecu
-        # An initialized ECU has its own transport, no need to maintain a copy!
-        self._transport = None
 
     @property
     def implicit_logging(self) -> bool:
@@ -197,23 +171,16 @@ class UDSScanner(AsyncScript, ABC):
                     self.config.power_cycle_sleep, lambda: asyncio.sleep(2)
                 )
 
-        # Checking `_transport` for None to check if a transport was already provided to the class
-        if self._transport is None:
-            logger.debug(
-                f"No transport present, loading from target string: '{self.config.target}'"
-            )
-            self.transport = load_transport(self.config.target)
-        else:
-            logger.debug("Transport already present")
+        transport = load_transport(self.config.target)
 
         # Start dumpcap as the first subprocess; otherwise network traffic might be missing.
         if self.artifacts_dir is not None and self.config.dumpcap is True:
-            await self.transport.dumpcap_start(self.artifacts_dir)
+            await transport.dumpcap_start(self.artifacts_dir)
 
-        await self.transport.connect()
+        await transport.connect()
 
         self.ecu = load_ecu(self.config.oem)(
-            self.transport,
+            transport,
             timeout=self.config.timeout,
             max_retry=self.config.max_retries,
             power_supply=self.power_supply,
@@ -293,10 +260,6 @@ class UDSScanner(AsyncScript, ABC):
         if self.ecu.tester_present_task is not None:
             await self.ecu.detach_tester_present_sender()
 
-        # self.ecu.transport will be different from self.transport if self.ecu.reconnect() was called at any time
-        # It is important to close this new transport as well!
         logger.debug("Closing transport object of ECU/UDSClient")
         await self.ecu.transport.close()
-
-        await self.transport.close()
-        await self.transport.dumpcap_stop()
+        await self.ecu.transport.dumpcap_stop()
