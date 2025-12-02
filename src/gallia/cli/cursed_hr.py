@@ -1038,7 +1038,7 @@ class CursedHR:
                 nonlocal line_start
                 nonlocal display_entries
 
-                for _ in range(max_lines - 1):
+                for _ in range(max_lines - 1):  # noqa: B023
                     old_entry_start = entry_start
                     old_line_start = line_start
 
@@ -1058,7 +1058,7 @@ class CursedHR:
                 nonlocal entry_start
                 nonlocal line_start
 
-                if display_entries[0].entry_line_number == 0:
+                if display_entries[0].entry_line_number == 0:  # noqa: B023
                     if entry_start > 0:
                         entry_start = max(0, entry_start - 1)
                         line_start = -1

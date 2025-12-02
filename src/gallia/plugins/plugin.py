@@ -116,7 +116,7 @@ def _merge_commands(
             try:
                 _merge_command_trees(cmd, value)
             except ValueError as e:
-                raise ValueError(f"{key} {str(e)}")
+                raise ValueError(f"{key} {str(e)}") from e
         else:
             raise ValueError(f"{key} ]: There already exists a leaf command")
 
