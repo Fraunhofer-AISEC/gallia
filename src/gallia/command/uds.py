@@ -87,6 +87,7 @@ class UDSScannerConfig(AsyncScriptConfig, cli_group="uds", config_section="galli
         None,
         description="If a transport is provided, it basically overrides 'target' and skips 'load_transport'.",
         hidden=True,
+        exclude=True,
     )
 
     @field_serializer("target", "power_supply")
