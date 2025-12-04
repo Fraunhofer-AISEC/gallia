@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: CC0-1.0
 
-# https://github.com/actions/setup-python/issues/374
-
 name: linters
 
 on:
@@ -30,31 +28,55 @@ jobs:
     steps:
     - uses: actions/checkout@v6
 
-    - name: Install uv
-      uses: astral-sh/setup-uv@v7
+    - uses: ./.github/actions/setup
       with:
-        enable-cache: true
-
-    - name: Set up Python ${{ matrix.python-version }}
-      run: |
-        uv python install ${{ matrix.python-version }}
-        uv python pin ${{ matrix.python-version }}
-
-    - name: Install the project
-      run: |
-        uv sync --all-extras --dev
+        python-version: ${{ matrix.python-version }}
 
     - name: Run reuse lint
       run: |
         uv run just lint-reuse
 
+    - name: Run ruff check
+      run: |
+        uv run just lint-ruff-check
+
     - name: Run ruff format
       run: |
         uv run just lint-ruff-format
 
-    - name: Run ruff check
+  linters-win32:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12', '3.13', '3.14']
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - uses: ./.github/actions/setup
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Run mypy
       run: |
-        uv run just lint-ruff-check
+        uv run just win32-lint-mypy
+
+  type-checks:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12', '3.13', '3.14']
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - uses: ./.github/actions/setup
+      with:
+        python-version: ${{ matrix.python-version }}
 
     - name: Run mypy
       run: |
