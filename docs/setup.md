@@ -10,9 +10,11 @@ SPDX-License-Identifier: CC0-1.0
 This project has the following system level dependencies:
 
 * [Linux](https://kernel.org) >= 5.10
-* [Python](https://python.org) (latest - 2 up to latest)
+* [Python](https://python.org) >= 3.11 (roughly aligns with the current version in Debian stable)
 * [uv](https://docs.astral.sh/uv/) (optional, for development)
-* [dumpcap](https://www.wireshark.org/docs/man-pages/dumpcap.html) (optional, part of [wireshark](https://www.wireshark.org/))
+* [dumpcap](https://www.wireshark.org/docs/man-pages/dumpcap.html) (optional for recording network traces, part of [wireshark](https://www.wireshark.org/))
+* [git](https://git-scm.com/) (optional, used to detect config file)
+* [iproute2](https://git.kernel.org/pub/scm/network/iproute2/iproute2.git) (optional, used to query network settings in some scanners)
 
 The Python version is roughly aligned with the Debian release and Ubuntu cycles.
 It is guaranteed, that gallia is compatible with the current Debian stable and Ubuntu LTS releases.
@@ -42,7 +44,7 @@ $ pipx install gallia
 ### Debian Package
 
 The goal is to bring gallia into the Debian package repository.
-The package scripts are available on [salsa.debian.org](https://salsa.debian.org/rumpelsepp/gallia).
+The package scripts are available on [salsa.debian.org](https://salsa.debian.org/python-team/packages/gallia/).
 The [Github Releases](https://github.com/Fraunhofer-AISEC/gallia/releases) starting with version v2.0.0a4 contain a Debian package.
 
 ``` shell-session

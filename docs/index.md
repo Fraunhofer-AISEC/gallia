@@ -38,7 +38,6 @@ plugins
 :maxdepth: 1
 :caption: UDS
 
-uds/database
 uds/scan_modes
 uds/virtual_ecu
 ```
@@ -57,4 +56,3 @@ api
 
 `gallia` is designed as a pentesting framework where each test produces a lot of data.
 It is possible to design own standalone tools or plugins utilizing the `gallia` Python modules.
-
