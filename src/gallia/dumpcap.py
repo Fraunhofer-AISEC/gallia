@@ -154,7 +154,7 @@ if sys.platform.startswith("linux") or sys.platform == "darwin":
             assert self.proc.stdout
             with await asyncio.to_thread(gzip.open, self.outfile, "wb") as f:
                 while True:
-                    chunk = await self.proc.stdout.read(64 * 1024)
+                    chunk = await self.proc.stdout.read(self.BUFSIZE)
                     if chunk == b"":
                         break
                     # Dumpcap first writes the pcap header. It does this

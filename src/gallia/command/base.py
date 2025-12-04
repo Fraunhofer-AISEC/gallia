@@ -190,7 +190,7 @@ class AsyncScript(ABC):
         try:
             symlink.symlink_to(latest_dir)
         except (OSError, NotImplementedError) as e:
-            logger.warn(f"symlink error: {e}")
+            logger.warning(f"symlink error: {e}")
 
     def prepare_artifacts_dir(self) -> Path | None:
         if self.config.artifacts_base is None:

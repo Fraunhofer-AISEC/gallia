@@ -20,6 +20,10 @@ lint-shellcheck:
 [private]
 lint-reuse:
     reuse lint
+    
+[private]
+lint-ty:
+    ty check
 
 lint: lint-mypy lint-ruff-check lint-ruff-format lint-ruff-format lint-shellcheck lint-reuse
 
