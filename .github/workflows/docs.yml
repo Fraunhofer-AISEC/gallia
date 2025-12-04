@@ -25,19 +25,7 @@ jobs:
     steps:
     - uses: actions/checkout@v6
 
-    - name: Install uv
-      uses: astral-sh/setup-uv@v7
-      with:
-        enable-cache: true
-
-    - name: "Set up Python"
-      uses: actions/setup-python@v6
-      with:
-        python-version-file: ".python-version"
-
-    - name: Install the project
-      run: |
-        uv sync --all-extras --dev
+    - uses: ./.github/actions/setup
 
     - name: Invoke sphinx-build
       run: |
