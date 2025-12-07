@@ -57,10 +57,10 @@ class SASeedsDumperConfig(UDSScannerConfig):
 
 
 class SASeedsDumper(UDSScanner):
-    """This scanner tries to enable ProgrammingSession and dump seeds for 12h."""
+    """This scanner tries to dump SecurityAccess seeds."""
 
     CONFIG_TYPE = SASeedsDumperConfig
-    SHORT_HELP = "dump security access seeds"
+    SHORT_HELP = "dump SecurityAccess seeds"
 
     attempt_reset: bool = False
     is_key_length_determined: bool = False
@@ -151,6 +151,7 @@ class SASeedsDumper(UDSScanner):
         file = seeds_file.open("wb", buffering=0)
         duration = self.config.duration * 60
         start_time = time.time()
+        last_seed_req: float | None = None
         last_seed = b""
         requests_since_last_reset = 0
         print_speed = False
@@ -178,7 +179,8 @@ class SASeedsDumper(UDSScanner):
                 self.log_size(seeds_file, time.time() - start_time)
                 print_speed = False
 
-            if self.config.reset is not None:
+            # Do not reset in key-length-detection phase
+            if (self.config.reset is not None) and self.is_key_length_determined:
                 if (self.config.reset == 0 and self.attempt_reset) or (
                     self.config.reset > 0 and requests_since_last_reset == self.config.reset
                 ):
@@ -202,8 +204,19 @@ class SASeedsDumper(UDSScanner):
                     logger.error(f"ECU persistently lost session {g_repr(self.config.session)}")
                     sys.exit(1)
 
+            if (
+                (self.config.sleep is not None)
+                and (last_seed_req is not None)
+                and ((delta := self.config.sleep - (time.time() - last_seed_req)) > 0)
+            ):
+                logger.info(
+                    f"Sleeping for {delta:.2f} seconds to keep seed requests {self.config.sleep} seconds apart…"
+                )
+                await asyncio.sleep(delta)
+
             try:
                 seed = await self.request_seed(self.config.level, self.config.data_record)
+                last_seed_req = time.time()
                 if seed is None:
                     continue  # Errors are already logged in .request_seed()
             except TimeoutError:
@@ -239,10 +252,6 @@ class SASeedsDumper(UDSScanner):
                 except Exception as e:
                     logger.critical(f"Error while sending key: {g_repr(e)}")
                     sys.exit(1)
-
-            if self.config.sleep is not None:
-                logger.info(f"Sleeping for {self.config.sleep} seconds between seed requests…")
-                await asyncio.sleep(self.config.sleep)
 
         file.close()
         self.log_size(seeds_file, time.time() - start_time)
