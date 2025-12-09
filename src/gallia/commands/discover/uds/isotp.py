@@ -4,6 +4,7 @@
 
 import asyncio
 import sys
+from itertools import product
 
 assert sys.platform.startswith("linux"), "unsupported platform"
 
@@ -125,7 +126,7 @@ class IsotpDiscoverer(AsyncScript):
             )
         )
         await transport.connect()
-        found = []
+        found: list[TargetURI] = []
 
         sniff_time: int = self.config.sniff_time
         logger.result(f"Recording idle bus communication for {sniff_time}s")
@@ -135,14 +136,21 @@ class IsotpDiscoverer(AsyncScript):
         transport.set_filter(addr_idle, inv_filter=True)
 
         req = UDSRequest.parse_dynamic(self.config.pdu)
-        pdu = self.build_isotp_frame(req, padding=self.config.padding)
 
-        for ID in range(self.config.start, self.config.stop + 1):
+        # If not explicitly specified, attempt without and with 0xAA padding for each ID
+        if self.config.padding is None:
+            padding: list[None | int] = [None, 0xAA]
+        else:
+            padding = [self.config.padding]
+
+        for ID, padding_byte in product(range(self.config.start, self.config.stop + 1), padding):
             await asyncio.sleep(self.config.sleep)
 
             dst_addr = self.config.tester_addr if self.config.extended_addr else ID
-            if self.config.extended_addr:
-                pdu = self.build_isotp_frame(req, ID, padding=self.config.padding)
+            if self.config.extended_addr is True:
+                pdu = self.build_isotp_frame(req, ID, padding=padding_byte)
+            else:
+                pdu = self.build_isotp_frame(req, padding=padding_byte)
 
             logger.info(f"Testing ID {can_id_repr(ID)}")
             is_broadcast = False
@@ -171,10 +179,19 @@ class IsotpDiscoverer(AsyncScript):
                             f"seems like a large ISO-TP packet was received on CAN ID {can_id_repr(ID)}"
                         )
                 except TimeoutError:
+                    # This branch is reached if there is no other response after the first
                     if is_broadcast:
                         logger.result(
                             f"seems that broadcast was triggered on CAN ID {can_id_repr(ID)}, got answer from {can_id_repr(addr)}"
                         )
+                    # Check if ID is already in list of found IDs
+                    elif hex(ID) in [
+                        x.qs_flat["ext_address"]
+                        if "ext_address" in x.qs_flat
+                        else x.qs_flat["src_addr"]
+                        for x in found
+                    ]:
+                        logger.result(f"Found {ID:#05x} multiple times, ignoring!")
                     else:
                         logger.result(
                             f"found endpoint on CAN ID [src:dst]: {can_id_repr(ID)}:{can_id_repr(addr)}: {payload.hex()}"
@@ -194,10 +211,9 @@ class IsotpDiscoverer(AsyncScript):
                             target_args["src_addr"] = hex(ID)
                             target_args["dst_addr"] = hex(addr)
 
-                        if self.config.padding is not None:
-                            target_args["tx_padding"] = f"{self.config.padding}"
-                        if self.config.padding is not None:
-                            target_args["rx_padding"] = f"{self.config.padding}"
+                        if padding_byte is not None:
+                            target_args["tx_padding"] = hex(padding_byte)
+                            target_args["rx_padding"] = hex(padding_byte)
 
                         target = TargetURI.from_parts(
                             ISOTPTransport.SCHEME, self.config.iface, None, target_args
