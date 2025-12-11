@@ -15,7 +15,6 @@ from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse, UDSClient, UDSRequest
 from gallia.services.uds.core.utils import g_repr
 from gallia.transports import ISOTPTransport, RawCANTransport, TargetURI
-from gallia.utils import can_id_repr
 
 logger = get_logger(__name__)
 
@@ -152,14 +151,14 @@ class IsotpDiscoverer(AsyncScript):
             else:
                 pdu = self.build_isotp_frame(req, padding=padding_byte)
 
-            logger.info(f"Testing ID {can_id_repr(ID)}")
+            logger.info(f"Testing ID {hex(ID)}")
             is_broadcast = False
 
             await transport.sendto(pdu, timeout=0.1, arbitration_id=tx_id)
             try:
                 rx_id, payload = await transport.recvfrom(timeout=0.1)
                 if rx_id == ID:
-                    logger.info(f"The same CAN ID {can_id_repr(ID)} responded. Skipping…")
+                    logger.info(f"The same CAN ID {hex(ID)} responded. Skipping…")
                     continue
             except TimeoutError:
                 continue
@@ -172,17 +171,17 @@ class IsotpDiscoverer(AsyncScript):
                     if new_id != rx_id:
                         is_broadcast = True
                         logger.result(
-                            f"seems that broadcast was triggered on CAN ID {can_id_repr(ID)}, got response from {can_id_repr(new_id)}"
+                            f"seems that broadcast was triggered on CAN ID {hex(ID)}, got response from {hex(new_id)}"
                         )
                     else:
                         logger.info(
-                            f"seems like a large ISO-TP packet was received on CAN ID {can_id_repr(ID)}"
+                            f"seems like a large ISO-TP packet was received on CAN ID {hex(ID)}"
                         )
                 except TimeoutError:
                     # This branch is reached if there is no other response after the first
                     if is_broadcast:
                         logger.result(
-                            f"seems that broadcast was triggered on CAN ID {can_id_repr(ID)}, got response from {can_id_repr(rx_id)}"
+                            f"seems that broadcast was triggered on CAN ID {hex(ID)}, got response from {hex(rx_id)}"
                         )
                     # Check if ID is already in list of found IDs
                     elif hex(ID) in [
@@ -191,10 +190,10 @@ class IsotpDiscoverer(AsyncScript):
                         else x.qs_flat["tx_id"]
                         for x in found
                     ]:
-                        logger.result(f"Found {ID:#05x} multiple times, ignoring!")
+                        logger.result(f"Found {hex(ID)} multiple times, ignoring!")
                     else:
                         logger.result(
-                            f"Found endpoint for CAN IDs [tx:rx]: {can_id_repr(ID)}:{can_id_repr(rx_id)} | {payload.hex()}"
+                            f"Found endpoint for CAN IDs [tx:rx]: {hex(ID)}:{hex(rx_id)} | {payload.hex()}"
                         )
                         target_args = {}
                         if self.config.extended_addr is True:
