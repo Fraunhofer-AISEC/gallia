@@ -31,9 +31,9 @@ logger = get_logger(__name__)
 
 
 class ISOTPConfig(BaseModel):
-    src_addr: int
-    dst_addr: int
-    is_extended: bool = False
+    tx_id: int
+    rx_id: int
+    force_extended: bool = False
     is_fd: bool = False
     frame_txtime: int = 10
     ext_address: int | None = None
@@ -43,8 +43,8 @@ class ISOTPConfig(BaseModel):
     tx_dl: int = 64
 
     @field_validator(
-        "src_addr",
-        "dst_addr",
+        "tx_id",
+        "rx_id",
         "ext_address",
         "rx_ext_address",
         "tx_padding",
@@ -76,9 +76,6 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
         sock = s.socket(s.PF_CAN, s.SOCK_DGRAM, s.CAN_ISOTP)
         sock.setblocking(False)
 
-        src_addr = self._calc_flags(self.config.src_addr, self.config.is_extended)
-        dst_addr = self._calc_flags(self.config.dst_addr, self.config.is_extended)
-
         self._setsockopts(
             sock,
             frame_txtime=self.config.frame_txtime,
@@ -92,13 +89,19 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
         if self.config.is_fd:
             self._setsockllopts(sock, canfd=self.config.is_fd, tx_dl=self.config.tx_dl)
 
-        sock.bind((self.target.hostname, dst_addr, src_addr))
+        sock.bind(
+            (
+                self.target.hostname,
+                self._calc_flags(self.config.rx_id, self.config.force_extended),
+                self._calc_flags(self.config.tx_id, self.config.force_extended),
+            )
+        )
 
         self._sock = sock
 
     @staticmethod
-    def _calc_flags(can_id: int, extended: bool = False) -> int:
-        if extended:
+    def _calc_flags(can_id: int, force_extended: bool = False) -> int:
+        if can_id > s.CAN_SFF_MASK or force_extended is True:
             return (can_id & s.CAN_EFF_MASK) | s.CAN_EFF_FLAG
         return can_id & s.CAN_SFF_MASK
 
@@ -202,6 +205,6 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
     async def dumpcap_argument_list(self) -> list[str] | None:
         return dumpcap_argument_list_can(
             self.target.netloc,
-            auto_int(self.target.qs["src_addr"][0]) if "src_addr" in self.target.qs else None,
-            auto_int(self.target.qs["dst_addr"][0]) if "dst_addr" in self.target.qs else None,
+            self.config.tx_id,
+            self.config.rx_id,
         )
