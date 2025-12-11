@@ -42,20 +42,6 @@ def camel_to_dash(s: str) -> str:
     return camel_to_snake(s).replace("_", "-")
 
 
-def isotp_addr_repr(a: int) -> str:
-    """
-    Default string representation of a CAN id.
-    """
-    return f"{a:02x}"
-
-
-def can_id_repr(i: int) -> str:
-    """
-    Default string representation of a CAN id.
-    """
-    return f"{i:03x}"
-
-
 def unravel(listing: str) -> list[int]:
     """
     Parses a string representing a one-dimensional list of ranges into an equivalent python data structure.

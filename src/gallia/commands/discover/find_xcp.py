@@ -15,7 +15,6 @@ from gallia.command.config import AutoInt, Field, Ranges
 from gallia.log import get_logger
 from gallia.services.uds.core.utils import bytes_repr, g_repr
 from gallia.transports import RawCANTransport, TargetURI
-from gallia.utils import can_id_repr
 
 logger = get_logger(__name__)
 
@@ -98,7 +97,7 @@ class CanFindXCP(FindXCP):
         await transport.get_idle_traffic(2)
 
         for can_id in range(self.config.can_id_start, self.config.can_id_end + 1):
-            logger.info(f"Testing CAN ID: {can_id_repr(can_id)}")
+            logger.info(f"Testing CAN ID: {hex(can_id)}")
             pdu = bytes([0xFF, 0x00])
             await transport.sendto(pdu, can_id, timeout=0.1)
 
@@ -106,12 +105,12 @@ class CanFindXCP(FindXCP):
                 while True:
                     master, data = await transport.recvfrom(timeout=0.1)
                     if data[0] == 0xFF:
-                        msg = f"Found XCP endpoint [master:slave]: CAN: {can_id_repr(master)}:{can_id_repr(can_id)} data: {bytes_repr(data)}"
+                        msg = f"Found XCP endpoint [master:slave]: CAN: {hex(master)}:{hex(can_id)} data: {bytes_repr(data)}"
                         logger.result(msg)
                         endpoints.append((can_id, master))
                     else:
                         logger.info(
-                            f"Received non XCP answer for CAN-ID {can_id_repr(can_id)}: {can_id_repr(master)}:{bytes_repr(data)}"
+                            f"Received non XCP answer for CAN-ID {hex(can_id)}: {hex(master)}:{bytes_repr(data)}"
                         )
             except TimeoutError:
                 pass
