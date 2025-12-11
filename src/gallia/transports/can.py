@@ -257,4 +257,5 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
         return addr_idle
 
     async def dumpcap_argument_list(self) -> list[str] | None:
-        return dumpcap_argument_list_can(self.target.netloc, None, None)
+        # Listen on entire interface
+        return dumpcap_argument_list_can(self.target.netloc)

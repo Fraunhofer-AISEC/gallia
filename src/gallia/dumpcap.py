@@ -26,26 +26,26 @@ def _swap_bytes_16(x: int) -> int:
     return cast(int, struct.unpack(">H", struct.pack("<H", x))[0])
 
 
-def dumpcap_argument_list_can(
-    iface: str, src_addr: int | None, dst_addr: int | None
-) -> list[str] | None:
-    """If `src_addr` or `dst_addr` is None, all traffic on the interface is captured."""
+def dumpcap_argument_list_can(iface: str, arb_ids: list[int] | None = None) -> list[str] | None:
+    """If no `arb_ids` are provided, all traffic on the interface is captured."""
 
     args = ["-q", "-i", iface, "-w", "-"]
 
-    if not (src_addr is None or dst_addr is None):
-        # TODO: Support extended CAN IDs
-        if src_addr > 0x800 or dst_addr > 0x800:
-            logger.error("Extended CAN Ids are currently not supported!")
-            return None
+    if arb_ids is not None:
+        _filter: list[str] = []
 
-        # Debug this with `dumpcap -d` or `tshark -x` to inspect the captured buffer.
-        filter_ = (
-            f"link[0:2] == {_swap_bytes_16(src_addr):#x} "  # can_id is in little endian
-            f"|| link[0:2] == {_swap_bytes_16(dst_addr):#x}"
-        )
+        for arb_id in arb_ids:
+            # TODO: Support extended CAN IDs
+            if arb_id > 0x800:
+                logger.error(f"Dumpcap currently does not support extended CAN Ids: {hex(arb_id)}")
+                continue
 
-        args += ["-f", filter_]
+            # Debug this with `dumpcap -d` or `tshark -x` to inspect the captured buffer.
+            _filter.append(
+                f"link[0:2] == {_swap_bytes_16(arb_id):#x}"
+            )  # can_id is in little endian
+
+        args += ["-f", " || ".join(_filter)]
 
     return args
 

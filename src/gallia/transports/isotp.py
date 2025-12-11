@@ -205,6 +205,5 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
     async def dumpcap_argument_list(self) -> list[str] | None:
         return dumpcap_argument_list_can(
             self.target.netloc,
-            self.config.tx_id,
-            self.config.rx_id,
+            [self.config.tx_id, self.config.rx_id],
         )
