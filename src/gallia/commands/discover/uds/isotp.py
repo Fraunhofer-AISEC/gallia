@@ -146,7 +146,7 @@ class IsotpDiscoverer(AsyncScript):
         for ID, padding_byte in product(range(self.config.start, self.config.stop + 1), padding):
             await asyncio.sleep(self.config.sleep)
 
-            dst_addr = self.config.tester_addr if self.config.extended_addr else ID
+            tx_id = self.config.tester_addr if self.config.extended_addr else ID
             if self.config.extended_addr is True:
                 pdu = self.build_isotp_frame(req, ID, padding=padding_byte)
             else:
@@ -155,11 +155,11 @@ class IsotpDiscoverer(AsyncScript):
             logger.info(f"Testing ID {can_id_repr(ID)}")
             is_broadcast = False
 
-            await transport.sendto(pdu, timeout=0.1, dst=dst_addr)
+            await transport.sendto(pdu, timeout=0.1, dst=tx_id)
             try:
-                addr, payload = await transport.recvfrom(timeout=0.1)
-                if addr == ID:
-                    logger.info(f"The same CAN ID {can_id_repr(ID)} answered. Skipping…")
+                rx_id, payload = await transport.recvfrom(timeout=0.1)
+                if rx_id == ID:
+                    logger.info(f"The same CAN ID {can_id_repr(ID)} responded. Skipping…")
                     continue
             except TimeoutError:
                 continue
@@ -168,11 +168,11 @@ class IsotpDiscoverer(AsyncScript):
                 # The recv buffer needs to be flushed to avoid
                 # wrong results...
                 try:
-                    new_addr, _ = await transport.recvfrom(timeout=0.1)
-                    if new_addr != addr:
+                    new_id, _ = await transport.recvfrom(timeout=0.1)
+                    if new_id != rx_id:
                         is_broadcast = True
                         logger.result(
-                            f"seems that broadcast was triggered on CAN ID {can_id_repr(ID)}, got answer from {can_id_repr(new_addr)}"
+                            f"seems that broadcast was triggered on CAN ID {can_id_repr(ID)}, got response from {can_id_repr(new_id)}"
                         )
                     else:
                         logger.info(
@@ -182,34 +182,36 @@ class IsotpDiscoverer(AsyncScript):
                     # This branch is reached if there is no other response after the first
                     if is_broadcast:
                         logger.result(
-                            f"seems that broadcast was triggered on CAN ID {can_id_repr(ID)}, got answer from {can_id_repr(addr)}"
+                            f"seems that broadcast was triggered on CAN ID {can_id_repr(ID)}, got response from {can_id_repr(rx_id)}"
                         )
                     # Check if ID is already in list of found IDs
                     elif hex(ID) in [
                         x.qs_flat["ext_address"]
                         if "ext_address" in x.qs_flat
-                        else x.qs_flat["src_addr"]
+                        else x.qs_flat["tx_id"]
                         for x in found
                     ]:
                         logger.result(f"Found {ID:#05x} multiple times, ignoring!")
                     else:
                         logger.result(
-                            f"found endpoint on CAN ID [src:dst]: {can_id_repr(ID)}:{can_id_repr(addr)}: {payload.hex()}"
+                            f"Found endpoint for CAN IDs [tx:rx]: {can_id_repr(ID)}:{can_id_repr(rx_id)} | {payload.hex()}"
                         )
                         target_args = {}
-                        target_args["is_fd"] = str(transport.config.is_fd).lower()
-                        target_args["is_extended"] = (
-                            "true" if addr > 0x7FF or self.config.force_extended_ids else "false"
-                        )
-
-                        if self.config.extended_addr:
+                        if self.config.extended_addr is True:
                             target_args["ext_address"] = hex(ID)
                             target_args["rx_ext_address"] = hex(self.config.tester_addr & 0xFF)
-                            target_args["src_addr"] = hex(self.config.tester_addr)
-                            target_args["dst_addr"] = hex(addr)
+                            target_args["tx_id"] = hex(self.config.tester_addr)
+                            target_args["rx_id"] = hex(rx_id)
                         else:
-                            target_args["src_addr"] = hex(ID)
-                            target_args["dst_addr"] = hex(addr)
+                            target_args["tx_id"] = hex(tx_id)
+                            target_args["rx_id"] = hex(rx_id)
+
+                        # Only add the following if required, since "false"/None is ISOTP's default
+                        if self.config.is_fd is True:
+                            target_args["is_fd"] = "true"
+
+                        if self.config.force_extended_ids is True:
+                            target_args["force_extended"] = "true"
 
                         if padding_byte is not None:
                             target_args["tx_padding"] = hex(padding_byte)

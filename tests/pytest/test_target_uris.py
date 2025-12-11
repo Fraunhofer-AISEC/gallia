@@ -18,17 +18,17 @@ uris = [
     "doip://127.0.0.1:13400?src_addr=1&target_addr=1",
     "doip://127.0.0.1:13400?src_addr=0x1&target_addr=1",
     "doip://127.0.0.1:13400?src_addr=1&target_addr=0x1",
-    "isotp://can0?src_addr=1&dst_addr=1",
-    "isotp://can0?src_addr=0x01&dst_addr=1",
-    "isotp://can0?src_addr=1&dst_addr=0x01",
-    "isotp://can0?src_addr=1&dst_addr=0x01&ext_addr=1",
-    "isotp://can0?src_addr=1&dst_addr=0x01&ext_addr=0x01",
-    "isotp://can0?src_addr=1&dst_addr=0x01&ext_addr=0x01&rx_ext_address=1",
-    "isotp://can0?src_addr=1&dst_addr=0x01&ext_addr=0x01&rx_ext_address=0x01",
-    "isotp://can0?src_addr=1&dst_addr=0x01&ext_addr=0x01&rx_ext_address=0x01&frame_txtime=10&is_extended=true",
-    "isotp://can0?src_addr=1&dst_addr=0x01&ext_addr=0x01&rx_ext_address=0x01&frame_txtime=10&is_extended=true&tx_padding=0x01",
-    "isotp://can0?src_addr=1&dst_addr=0x01&ext_addr=0x01&rx_ext_address=0x01&frame_txtime=10&is_extended=true&tx_padding=0x01&rx_padding=0x01",
-    "isotp://can0?src_addr=1&dst_addr=0x01&ext_addr=0x01&rx_ext_address=0x01&frame_txtime=10&is_extended=true&tx_padding=0x01&rx_padding=0x01&tx_dl=1",
+    "isotp://can0?tx_id=1&rx_id=1",
+    "isotp://can0?tx_id=0x01&rx_id=1",
+    "isotp://can0?tx_id=1&rx_id=0x01",
+    "isotp://can0?tx_id=1&rx_id=0x01&ext_addr=1",
+    "isotp://can0?tx_id=1&rx_id=0x01&ext_addr=0x01",
+    "isotp://can0?tx_id=1&rx_id=0x01&ext_addr=0x01&rx_ext_address=1",
+    "isotp://can0?tx_id=1&rx_id=0x01&ext_addr=0x01&rx_ext_address=0x01",
+    "isotp://can0?tx_id=1&rx_id=0x01&ext_addr=0x01&rx_ext_address=0x01&frame_txtime=10&is_extended=true",
+    "isotp://can0?tx_id=1&rx_id=0x01&ext_addr=0x01&rx_ext_address=0x01&frame_txtime=10&is_extended=true&tx_padding=0x01",
+    "isotp://can0?tx_id=1&rx_id=0x01&ext_addr=0x01&rx_ext_address=0x01&frame_txtime=10&is_extended=true&tx_padding=0x01&rx_padding=0x01",
+    "isotp://can0?tx_id=1&rx_id=0x01&ext_addr=0x01&rx_ext_address=0x01&frame_txtime=10&is_extended=true&tx_padding=0x01&rx_padding=0x01&tx_dl=1",
 ]
 
 invalid_uris = [
@@ -39,6 +39,9 @@ invalid_uris = [
     "isotp://can0?src_addr=1",
     "isotp://can0?dst_addr=1",
     "isotp://can0?src_addr=1&dst_addr=0x01&ext_addr=0x01&rx_ext_address=0x01&frame_txtime=foo",
+    "isotp://can0?rx_id=1",
+    "isotp://can0?tx_id=1",
+    "isotp://can0?tx_id=1&resp_addr=0x01&ext_addr=0x01&rx_ext_address=0x01&frame_txtime=foo",
 ]
 
 
