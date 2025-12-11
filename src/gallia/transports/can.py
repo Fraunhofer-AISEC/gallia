@@ -12,7 +12,7 @@ from typing import Self
 
 assert sys.platform.startswith("linux"), "unsupported platform"
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel
 
 from gallia.dumpcap import dumpcap_argument_list_can
 from gallia.log import get_logger
@@ -34,7 +34,6 @@ from gallia.transports._can_constants import (
     SOL_CAN_RAW,
 )
 from gallia.transports.base import BaseTransport, TargetURI
-from gallia.utils import auto_int
 
 logger = get_logger(__name__)
 
@@ -126,15 +125,7 @@ class CANMessage:
 
 class RawCANConfig(BaseModel):
     is_fd: bool = False
-    dst_id: int | None = None
     force_extended_ids: bool = False
-
-    @field_validator(
-        "dst_id",
-        mode="before",
-    )
-    def auto_int(cls, v: str) -> int:
-        return auto_int(v)
 
 
 class RawCANTransport(BaseTransport, scheme="can-raw"):
@@ -191,7 +182,7 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> bytes:
-        raise RuntimeError("RawCANTransport is a special snowflake")
+        raise NotImplementedError("RawCANTransport does not implement read(), use recvfrom()")
 
     async def write(
         self,
@@ -199,14 +190,12 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> int:
-        if self.config.dst_id:
-            return await self.sendto(data, self.config.dst_id, timeout, tags)
-        raise ValueError("dst_id not set")
+        raise NotImplementedError("RawCANTransport does not implement write(), use sendto()")
 
     async def sendto(
         self,
         data: bytes,
-        dst: int,
+        arbitration_id: int,
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> int:
@@ -214,7 +203,7 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
             raise RuntimeError("Not connected, cannot write!")
 
         msg = CANMessage(
-            arbitration_id=dst,
+            arbitration_id=arbitration_id,
             force_extended_id=self.config.force_extended_ids,
             data=data,
             is_fd=self.config.is_fd,
@@ -268,8 +257,4 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
         return addr_idle
 
     async def dumpcap_argument_list(self) -> list[str] | None:
-        return dumpcap_argument_list_can(
-            self.target.netloc,
-            auto_int(self.target.qs["src_addr"][0]) if "src_addr" in self.target.qs else None,
-            auto_int(self.target.qs["dst_addr"][0]) if "dst_addr" in self.target.qs else None,
-        )
+        return dumpcap_argument_list_can(self.target.netloc, None, None)

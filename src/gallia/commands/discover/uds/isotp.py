@@ -155,7 +155,7 @@ class IsotpDiscoverer(AsyncScript):
             logger.info(f"Testing ID {can_id_repr(ID)}")
             is_broadcast = False
 
-            await transport.sendto(pdu, timeout=0.1, dst=tx_id)
+            await transport.sendto(pdu, timeout=0.1, arbitration_id=tx_id)
             try:
                 rx_id, payload = await transport.recvfrom(timeout=0.1)
                 if rx_id == ID:
