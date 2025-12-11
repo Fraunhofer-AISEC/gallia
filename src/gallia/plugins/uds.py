@@ -133,17 +133,12 @@ class UDSPlugin(Plugin):
         }
 
         if sys.platform.startswith("linux"):
-            from gallia.commands.discover.uds.isotp import IsotpDiscoverer
+            from gallia.commands.discover.isotp import IsotpDiscoverer
             from gallia.commands.fuzz.uds.pdu import PDUFuzzer
 
             tree["discover"].subtree.update(
                 {
-                    "uds": CommandTree(
-                        description="Universal Diagnostic Services",
-                        subtree={
-                            "isotp": IsotpDiscoverer,
-                        },
-                    ),
+                    "isotp": IsotpDiscoverer,
                 }
             )
 
