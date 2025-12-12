@@ -178,9 +178,3 @@ pre-release premode increment="": && print_debian_hint
     git push --follow-tags
 
     gh release create --prerelease "v$(uv version --short)"
-
-make-docs:
-    make -C docs html
-
-clean:
-    make -C docs clean
