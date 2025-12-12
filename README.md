@@ -18,7 +18,7 @@ Gallia is an extendable pentesting framework with the focus on the automotive do
 The scope of the toolchain is conducting penetration tests from a single ECU up to whole cars.
 Currently, the main focus lies on the [UDS](https://www.iso.org/standard/72439.html) interface.
 Acting as a generic interface, the logging functionality implements reproducible tests and enables post-processing tasks.
-The [rendered documentation](https://fraunhofer-aisec.github.io/gallia) is available via Github Pages.
+The documentation is available in the docs/ folder.
 
 Keep in mind that this project is intended for research and development usage only!
 Inappropriate usage might cause irreversible damage to the device under test.
