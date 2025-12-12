@@ -15,6 +15,8 @@ from pydantic import BaseModel, field_validator
 from gallia.dumpcap import dumpcap_argument_list_can
 from gallia.log import get_logger
 from gallia.transports._can_constants import (
+    CAN_EFF_FLAG,
+    CAN_EFF_MASK,
     CAN_ISOTP_EXTEND_ADDR,
     CAN_ISOTP_LL_OPTS,
     CAN_ISOTP_OPTS,
@@ -22,6 +24,7 @@ from gallia.transports._can_constants import (
     CAN_ISOTP_RX_EXT_ADDR,
     CAN_ISOTP_RX_PADDING,
     CAN_ISOTP_TX_PADDING,
+    CAN_SFF_MASK,
     SOL_CAN_ISOTP,
 )
 from gallia.transports.base import BaseTransport, TargetURI
@@ -101,9 +104,9 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
 
     @staticmethod
     def _calc_flags(can_id: int, force_extended: bool = False) -> int:
-        if can_id > s.CAN_SFF_MASK or force_extended is True:
-            return (can_id & s.CAN_EFF_MASK) | s.CAN_EFF_FLAG
-        return can_id & s.CAN_SFF_MASK
+        if can_id > CAN_SFF_MASK or force_extended is True:
+            return (can_id & CAN_EFF_MASK) | CAN_EFF_FLAG
+        return can_id & CAN_SFF_MASK
 
     @staticmethod
     def _setsockopts(
