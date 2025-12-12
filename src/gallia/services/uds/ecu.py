@@ -81,9 +81,8 @@ class GalliaJSONEncoder(JSONEncoder):
 
 class ECU(UDSClient):
     """ECU is a high level interface wrapping a UDSClient class. It provides
-    semantically correct higher level interfaces such as read_session()
-    or ping(). Vendor specific implementations can be derived from this
-    class. For the arguments of the constructor, please check uds.uds.UDS.
+    semantically correct higher level interfaces such as read_session().
+    Vendor specific implementations can be derived from this class.
     """
 
     OEM = "default"

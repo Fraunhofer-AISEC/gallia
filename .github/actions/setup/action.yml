@@ -1,0 +1,31 @@
+# SPDX-FileCopyrightText: AISEC Pentesting Team
+#
+# SPDX-License-Identifier: CC0-1.0
+
+name: setup
+description: Installs the project
+inputs:
+  python-version:
+    description: Python version that should be installed.
+    required: false
+
+runs:
+  using: composite
+  steps:
+    - name: Install uv and Python ${{ inputs.python-version }}
+      if: ${{ inputs.python-version != '' }}
+      uses: astral-sh/setup-uv@v7
+      with:
+        enable-cache: true
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install uv and Python default
+      if: ${{ inputs.python-version == '' }}
+      uses: astral-sh/setup-uv@v7
+      with:
+        enable-cache: true
+
+    - name: Install the project
+      shell: bash
+      run: |
+        uv sync --locked --all-extras --dev
