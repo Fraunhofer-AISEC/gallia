@@ -19,7 +19,6 @@ on:
 jobs:
   linters:
     strategy:
-      fail-fast: false
       matrix:
         python-version: ['3.11', '3.12', '3.13', '3.14']
 
@@ -46,7 +45,6 @@ jobs:
 
   linters-win32:
     strategy:
-      fail-fast: false
       matrix:
         python-version: ['3.11', '3.12', '3.13', '3.14']
 
@@ -65,7 +63,6 @@ jobs:
 
   type-checks:
     strategy:
-      fail-fast: false
       matrix:
         python-version: ['3.11', '3.12', '3.13', '3.14']
 
