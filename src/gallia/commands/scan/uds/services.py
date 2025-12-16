@@ -53,7 +53,9 @@ class ServicesScanner(UDSScanner):
 
     CONFIG_TYPE = ServicesScannerConfig
     SHORT_HELP = "service scan on an ECU"
-    EPILOG = "https://fraunhofer-aisec.github.io/gallia/uds/scan_modes.html#service-scan"
+    EPILOG = (
+        "https://github.com/Fraunhofer-AISEC/gallia/blob/master/docs/uds/scan_modes.md#service-scan"
+    )
 
     def __init__(self, config: ServicesScannerConfig):
         super().__init__(config)

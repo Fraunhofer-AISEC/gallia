@@ -6,7 +6,6 @@ SPDX-License-Identifier: CC0-1.0
 
 # Gallia
 
-[![docs](https://img.shields.io/badge/-docs-green)](https://fraunhofer-aisec.github.io/gallia)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/gallia)](https://pypi.python.org/pypi/gallia/)
 [![PyPI - License](https://img.shields.io/pypi/l/gallia)](https://www.apache.org/licenses/LICENSE-2.0.html)
 [![PyPI](https://img.shields.io/pypi/v/gallia)](https://pypi.python.org/pypi/gallia/)
@@ -32,9 +31,9 @@ Levent Çelik et al. in [Comparing Open-Source UDS Implementations Through Fuzz 
 
 ## Quickstart
 
-See the [setup instructions](https://fraunhofer-aisec.github.io/gallia/setup.html).
+See the [setup instructions](docs/setup.md).
 
-First create a config template with `--template`, store it to a file called [`gallia.toml`](https://fraunhofer-aisec.github.io/gallia/config.html), and adjust it to your needs.
+First create a config template with `--template`, store it to a file called [`gallia.toml`](docs/config.md), and adjust it to your needs.
 `gallia` reads this file to set the defaults of the command line flags.
 All options correspond to a command line flag; the only required option for scans is `gallia.scanner.target`, for instance `isotp://can0?src_addr=0x123&dst_addr=0x312&tx_padding=0xaa&rx_padding=0xaa`.
 
@@ -49,7 +48,7 @@ $ gallia primitive uds dtc read
 ```
 
 The target can also be specified by the `--target` option on the command line.
-For the format of the `--target` argument see the [transports documentation](https://fraunhofer-aisec.github.io/gallia/transports.html).
+For the format of the `--target` argument see the [transports documentation](docs/transports.md).
 
 ## Acknowledgments
 
