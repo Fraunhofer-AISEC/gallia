@@ -10,7 +10,7 @@ Just create an [issue](https://docs.github.com/en/issues) or a [pull request](ht
 
 ## Setup
 
-Please see the documentation for a [development setup](https://fraunhofer-aisec.github.io/gallia/setup.html).
+Please see the documentation for a [development setup](docs/setup.md).
 
 ## Quality Assurance
 

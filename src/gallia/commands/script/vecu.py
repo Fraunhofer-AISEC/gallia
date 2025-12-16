@@ -70,7 +70,7 @@ class RngVirtualECUConfig(
 class VirtualECU(AsyncScript, ABC):
     """Spawn a virtual ECU for testing purposes"""
 
-    EPILOG = "https://fraunhofer-aisec.github.io/gallia/uds/virtual_ecu.html"
+    EPILOG = "https://github.com/Fraunhofer-AISEC/gallia/blob/master/docs/uds/virtual_ecu.md"
 
     def __init__(self, config: VirtualECUConfig):
         super().__init__(config)

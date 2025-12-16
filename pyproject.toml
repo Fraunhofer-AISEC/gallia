@@ -70,7 +70,7 @@ dev = [
 ]
 
 [project.urls]
-Documentation = "https://fraunhofer-aisec.github.io/gallia"
+Documentation = "https://github.com/Fraunhofer-AISEC/gallia"
 Repository = "https://github.com/Fraunhofer-AISEC/gallia"
 "Bug Tracker" = "https://github.com/Fraunhofer-AISEC/gallia/issues"
 
