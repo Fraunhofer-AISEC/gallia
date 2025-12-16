@@ -153,7 +153,7 @@ print_debian_hint:
     @echo "  $ gh release upload v$(uv version --short) DEB_FILE"
 
 release increment: && print_debian_hint
-    uv version --bump --increment {{ increment }}
+    uv version --bump {{ increment }}
 
     git commit -a -m "$(uv version)"
     git tag -a -m "$(uv version)" v"$(uv version --short)"
