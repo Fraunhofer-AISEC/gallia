@@ -173,6 +173,15 @@ class ServicesScanner(UDSScanner):
                     )
                     return result, False
 
+            # Services are considered available if all following conditions are met for a single service id:
+            #   1. The ECU never responded with NRC 0x11 (serviceNotSupported) or NRC 0x7f (..inActiveSession)
+            #   2. At least a single, valid response was received (excluding timeouts and malformed responses)
+            #
+            # Depending on the exact implementation of the ECU, NRC 0x13 (invalidFormat) might mask NRCs
+            # 0x11 (serviceNotSupported) and 0x7f (...inActiveSession), mostly when a minimum length of the request PDU
+            # is not reached.
+            # Thus, we append 00s to match certain lengths in the hopes of triggering responses apart from NRC 0x13.
+            at_least_one_valid_response: None | UDSResponse = None
             for length_payload in [1, 2, 3, 5]:
                 pdu = bytes([sid]) + bytes(length_payload)
                 try:
@@ -192,13 +201,27 @@ class ServicesScanner(UDSScanner):
                     logger.info(f"{g_repr(sid)}: not supported [{resp}]")
                     break
 
-                if isinstance(resp, NegativeResponse) and resp.response_code in [
-                    UDSErrorCodes.incorrectMessageLengthOrInvalidFormat
-                ]:
+                at_least_one_valid_response = resp
+
+                if (
+                    isinstance(resp, NegativeResponse)
+                    and resp.response_code == UDSErrorCodes.incorrectMessageLengthOrInvalidFormat
+                ):
+                    # Keep trying with other lengths to hopefully de-mask this NRC
+                    logger.info(
+                        f"{g_repr(sid)}: received incorrectMessageLengthOrInvalidFormat, increasing PDU length... "
+                    )
                     continue
 
                 logger.result(f"{g_repr(sid)}: available in session {g_repr(session)}: {resp}")
                 result[sid] = resp
                 break
+
+            else:
+                if at_least_one_valid_response is not None:
+                    logger.result(
+                        f"{g_repr(sid)}: probably available in session {g_repr(session)}: {at_least_one_valid_response}"
+                    )
+                    result[sid] = at_least_one_valid_response
 
         return result, clean_returns
