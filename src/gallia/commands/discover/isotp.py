@@ -26,7 +26,7 @@ class IsotpDiscovererConfig(AsyncScriptConfig):
     force_extended_ids: bool = Field(
         False, description="Force extended CAN IDs bit also for IDs in range 0-0x7FF"
     )
-    is_fd: bool = Field(False, description="Enable CAN-FD")
+    send_can_fd: bool = Field(False, description="Send CAN-FD frames")
     padding: AutoInt | None = Field(None, description="set isotp padding")
     pdu: HexBytes = Field(bytes([0x3E, 0x00]), description="set pdu used for discovery")
     sleep: float = Field(0.01, description="set sleeptime between loop iterations")
@@ -84,6 +84,7 @@ class IsotpDiscoverer(AsyncScript):
         self, req: UDSRequest, ext_addr: int | None = None, padding: int | None = None
     ) -> bytes:
         pdu = req.pdu
+        # FIXME: Probably this is flawed for CAN-FD frames!
         max_pdu_len = 7 if ext_addr is None else 6
         if len(pdu) > max_pdu_len:
             raise ValueError("UDSRequest too large, ConsecutiveFrames not implemented")
@@ -120,7 +121,7 @@ class IsotpDiscoverer(AsyncScript):
                 None,
                 {
                     "force_extended_ids": "true" if self.config.force_extended_ids else "false",
-                    "is_fd": "true" if self.config.is_fd else "false",
+                    "is_fd": "true" if self.config.send_can_fd else "false",
                 },
             )
         )
@@ -129,7 +130,12 @@ class IsotpDiscoverer(AsyncScript):
 
         sniff_time: int = self.config.sniff_time
         logger.result(f"Recording idle bus communication for {sniff_time}s")
-        addr_idle = await transport.get_idle_traffic(sniff_time)
+        addr_idle, fd_frames_present = await transport.get_idle_traffic(sniff_time)
+
+        if fd_frames_present is True and self.config.send_can_fd is False:
+            logger.warning(
+                "FD frames were observed, but you are sending non-FD frames! Consider using --send-can-fd flag!"
+            )
 
         logger.result(f"Found {len(addr_idle)} CAN Addresses on idle Bus")
         transport.set_filter(addr_idle, inv_filter=True)
@@ -151,12 +157,19 @@ class IsotpDiscoverer(AsyncScript):
             else:
                 pdu = self.build_isotp_frame(req, padding=padding_byte)
 
-            logger.info(f"Testing ID {hex(ID)}")
+            logger.info(
+                f"Testing ID {hex(ID)}{' with padding' if padding_byte is not None else ''}"
+            )
             is_broadcast = False
 
             await transport.sendto(pdu, timeout=0.1, arbitration_id=tx_id)
             try:
-                rx_id, payload = await transport.recvfrom(timeout=0.1)
+                can_message = await transport.recv_can_message(timeout=0.1)
+                rx_id, payload = can_message.arbitration_id, can_message.data
+                if can_message.is_fd != self.config.send_can_fd:
+                    logger.warning(
+                        "Sent and received CAN frames have mismatching use of CAN-FD! (Re-)consider the use of --send-can-fd flag!"
+                    )
                 if rx_id == ID:
                     logger.info(f"The same CAN ID {hex(ID)} responded. Skipping…")
                     continue
@@ -206,7 +219,7 @@ class IsotpDiscoverer(AsyncScript):
                             target_args["rx_id"] = hex(rx_id)
 
                         # Only add the following if required, since "false"/None is ISOTP's default
-                        if self.config.is_fd is True:
+                        if self.config.send_can_fd is True:
                             target_args["is_fd"] = "true"
 
                         if self.config.force_extended_ids is True:
