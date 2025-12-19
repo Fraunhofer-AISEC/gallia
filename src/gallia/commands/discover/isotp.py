@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import asyncio
 import sys
 from itertools import product
 
@@ -32,7 +31,9 @@ class IsotpDiscovererConfig(AsyncScriptConfig):
         description="Send this ISOTP padding-byte. If not given, scans without padding and with padding byte 0xAA",
     )
     pdu: HexBytes = Field(bytes([0x3E, 0x00]), description="set pdu used for discovery")
-    sleep: float = Field(0.01, description="set sleeptime between loop iterations")
+    listen_time: float = Field(
+        0.1, description="Time to listen for a reply between loop iterations"
+    )
     extended_addressing: bool = Field(False, description="Use ISOTP extended addresses")
     tester_addr: AutoInt = Field(
         0x6F1, description="CAN TX_ID to use with ISOTP extended addressing (--extended-addr)"
@@ -156,8 +157,6 @@ class IsotpDiscoverer(AsyncScript):
             padding = [self.config.padding]
 
         for ID, padding_byte in product(range(self.config.start, self.config.stop + 1), padding):
-            await asyncio.sleep(self.config.sleep)
-
             if self.config.extended_addressing is True:
                 tx_id = self.config.tester_addr
                 pdu = self.build_isotp_frame(req, ext_addr=ID, padding=padding_byte)
@@ -172,7 +171,7 @@ class IsotpDiscoverer(AsyncScript):
 
             await transport.sendto(pdu, timeout=0.1, arbitration_id=tx_id)
             try:
-                can_message = await transport.recv_can_message(timeout=0.1)
+                can_message = await transport.recv_can_message(timeout=self.config.listen_time)
                 rx_id, payload = can_message.arbitration_id, can_message.data
                 if can_message.is_fd != self.config.send_can_fd:
                     logger.warning(
@@ -188,7 +187,7 @@ class IsotpDiscoverer(AsyncScript):
                 # The recv buffer needs to be flushed to avoid
                 # wrong results...
                 try:
-                    new_id, _ = await transport.recvfrom(timeout=0.1)
+                    new_id, _ = await transport.recvfrom(timeout=self.config.listen_time)
                     if new_id != rx_id:
                         is_broadcast = True
                         logger.result(
