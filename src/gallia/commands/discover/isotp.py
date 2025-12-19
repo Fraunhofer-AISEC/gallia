@@ -27,11 +27,16 @@ class IsotpDiscovererConfig(AsyncScriptConfig):
         False, description="Force extended CAN IDs bit also for IDs in range 0-0x7FF"
     )
     send_can_fd: bool = Field(False, description="Send CAN-FD frames")
-    padding: AutoInt | None = Field(None, description="set isotp padding")
+    padding: AutoInt | None = Field(
+        None,
+        description="Send this ISOTP padding-byte. If not given, scans without padding and with padding byte 0xAA",
+    )
     pdu: HexBytes = Field(bytes([0x3E, 0x00]), description="set pdu used for discovery")
     sleep: float = Field(0.01, description="set sleeptime between loop iterations")
-    extended_addr: bool = Field(False, description="use extended isotp addresses")
-    tester_addr: AutoInt = Field(0x6F1, description="tester address for --extended")
+    extended_addressing: bool = Field(False, description="Use ISOTP extended addresses")
+    tester_addr: AutoInt = Field(
+        0x6F1, description="CAN TX_ID to use with ISOTP extended addressing (--extended-addr)"
+    )
     query: bool = Field(False, description="query ECU description via RDBID")
     info_did: AutoInt = Field(0xF197, description="DID to query ECU description", metavar="DID")
     sniff_time: int = Field(
@@ -101,7 +106,9 @@ class IsotpDiscoverer(AsyncScript):
         return frame
 
     async def main(self) -> None:
-        if self.config.extended_addr and (self.config.start > 0xFF or self.config.stop > 0xFF):
+        if self.config.extended_addressing is True and (
+            self.config.start > 0xFF or self.config.stop > 0xFF
+        ):
             logger.warning(
                 "Capping maximum value of start/stop to 0xFF, because it is the maximum of ISOTP's extended addressing!"
             )
@@ -151,11 +158,12 @@ class IsotpDiscoverer(AsyncScript):
         for ID, padding_byte in product(range(self.config.start, self.config.stop + 1), padding):
             await asyncio.sleep(self.config.sleep)
 
-            tx_id = self.config.tester_addr if self.config.extended_addr else ID
-            if self.config.extended_addr is True:
-                pdu = self.build_isotp_frame(req, ID, padding=padding_byte)
+            if self.config.extended_addressing is True:
+                tx_id = self.config.tester_addr
+                pdu = self.build_isotp_frame(req, ext_addr=ID, padding=padding_byte)
             else:
-                pdu = self.build_isotp_frame(req, padding=padding_byte)
+                tx_id = ID
+                pdu = self.build_isotp_frame(req, ext_addr=None, padding=padding_byte)
 
             logger.info(
                 f"Testing ID {hex(ID)}{' with padding' if padding_byte is not None else ''}"
@@ -206,12 +214,12 @@ class IsotpDiscoverer(AsyncScript):
                         logger.result(f"Found {hex(ID)} multiple times, ignoring!")
                     else:
                         logger.result(
-                            f"Found endpoint for CAN IDs [tx:rx]: {hex(ID)}:{hex(rx_id)} | {payload.hex()}"
+                            f"Found endpoint for CAN IDs [tx:rx]: {hex(tx_id)}:{hex(rx_id)} | {payload.hex()}"
                         )
                         target_args = {}
-                        if self.config.extended_addr is True:
+                        if self.config.extended_addressing is True:
                             target_args["ext_address"] = hex(ID)
-                            target_args["rx_ext_address"] = hex(self.config.tester_addr & 0xFF)
+                            target_args["rx_ext_address"] = hex(payload[0])
                             target_args["tx_id"] = hex(self.config.tester_addr)
                             target_args["rx_id"] = hex(rx_id)
                         else:
