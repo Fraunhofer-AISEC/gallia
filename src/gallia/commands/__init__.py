@@ -101,30 +101,23 @@ __all__ = [
 
 
 if sys.platform.startswith("linux"):
-    from gallia.commands.discover.find_xcp import CanFindXCP, TcpFindXCP, UdpFindXCP
+    from gallia.commands.discover.find_xcp import CanFindXCP
     from gallia.commands.discover.isotp import IsotpDiscoverer
     from gallia.commands.fuzz.uds.pdu import PDUFuzzer
-    from gallia.commands.primitive.xcp import SimpleTestXCP
     from gallia.commands.script.vecu import DbVirtualECU, RngVirtualECU
 
     registry += [
         CanFindXCP,
-        UdpFindXCP,
-        TcpFindXCP,
         IsotpDiscoverer,
         PDUFuzzer,
-        SimpleTestXCP,
         DbVirtualECU,
         RngVirtualECU,
     ]
 
     __all__ += [
         "CanFindXCP",
-        "UdpFindXCP",
-        "TcpFindXCP",
         "IsotpDiscoverer",
         "PDUFuzzer",
-        "SimpleTestXCP",
         "DbVirtualECU",
         "RngVirtualECU",
     ]
