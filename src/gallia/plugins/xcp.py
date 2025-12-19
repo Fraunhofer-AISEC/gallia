@@ -23,29 +23,8 @@ class XCPPlugin(Plugin):
         tree: dict[str, CommandTree | type[AsyncScript]] = {}
 
         if sys.platform.startswith("linux"):
-            from gallia.commands.discover.find_xcp import CanFindXCP, TcpFindXCP, UdpFindXCP
-            from gallia.commands.primitive.xcp import SimpleTestXCP
+            from gallia.commands.discover.find_xcp import CanFindXCP
 
-            tree = {
-                "discover": CommandTree(
-                    description=None,
-                    subtree={
-                        "xcp": CommandTree(
-                            description="XCP enumeration scanner",
-                            subtree={
-                                "can": CanFindXCP,
-                                "tcp": TcpFindXCP,
-                                "udp": UdpFindXCP,
-                            },
-                        ),
-                    },
-                ),
-                "primitive": CommandTree(
-                    description=None,
-                    subtree={
-                        "xcp": SimpleTestXCP,
-                    },
-                ),
-            }
+            tree = {"discover": CommandTree(description=None, subtree={"xcp": CanFindXCP})}
 
         return tree
