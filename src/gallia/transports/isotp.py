@@ -89,8 +89,8 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
         )
         # If CAN-FD is used, jumbo frames are possible.
         # This fails for non-fd configurations.
-        if self.config.is_fd:
-            self._setsockllopts(sock, canfd=self.config.is_fd, tx_dl=self.config.tx_dl)
+        if self.config.is_fd is True:
+            self._setsockllopts(sock, tx_dl=self.config.tx_dl)
 
         sock.bind(
             (
@@ -160,8 +160,8 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
         sock.setsockopt(SOL_CAN_ISOTP, CAN_ISOTP_RECV_FC, data)
 
     @staticmethod
-    def _setsockllopts(sock: s.socket, canfd: bool, tx_dl: int) -> None:
-        canmtu = 72 if canfd else 16
+    def _setsockllopts(sock: s.socket, tx_dl: int) -> None:
+        canmtu = 72
         # The flags are set to 0, since the author marks this as obsolete.
         data = struct.pack("@BBB", canmtu, tx_dl, 0)
         sock.setsockopt(SOL_CAN_ISOTP, CAN_ISOTP_LL_OPTS, data)
