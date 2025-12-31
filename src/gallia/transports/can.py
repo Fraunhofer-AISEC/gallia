@@ -149,8 +149,11 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
         sock = s.socket(s.PF_CAN, s.SOCK_RAW, CAN_RAW)
         sock.bind((self.target.hostname,))
 
-        if self.config.is_fd is True:
+        try:
+            # Enable reception of CAN FD frames in addition to classical frames
             sock.setsockopt(SOL_CAN_RAW, CAN_RAW_FD_FRAMES, 1)
+        except OSError:
+            logger.warning(f"CAN-FD is not supported on interface {self.target.hostname}!")
 
         sock.setblocking(False)
 
@@ -209,7 +212,10 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
             is_fd=self.config.is_fd,
         )
         t = tags + ["write"] if tags is not None else ["write"]
-        logger.trace(f"{hex(msg.arbitration_id)}#{msg.data.hex()}", extra={"tags": t})
+        logger.trace(
+            f"{hex(msg.arbitration_id)}#{'#' if msg.is_fd else ''}{msg.data.hex()}",
+            extra={"tags": t},
+        )
 
         loop = asyncio.get_running_loop()
         await asyncio.wait_for(loop.sock_sendall(self._sock, msg.pack()), timeout)
@@ -220,16 +226,28 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> tuple[int, bytes]:
+        msg = await self.recv_can_message(timeout=timeout, tags=tags)
+        return msg.arbitration_id, msg.data
+
+    async def recv_can_message(
+        self,
+        timeout: float | None = None,
+        tags: list[str] | None = None,
+    ) -> CANMessage:
         if self._sock is None:
             raise RuntimeError("Not connected, cannot read!")
 
         loop = asyncio.get_running_loop()
         can_frame = await asyncio.wait_for(loop.sock_recv(self._sock, self.BUFSIZE), timeout)
-        msg = CANMessage.unpack(can_frame)
+        can_message = CANMessage.unpack(can_frame)
 
         t = tags + ["read"] if tags is not None else ["read"]
-        logger.trace(f"{hex(msg.arbitration_id)}#{msg.data.hex()}", extra={"tags": t})
-        return msg.arbitration_id, msg.data
+        logger.trace(
+            f"{hex(can_message.arbitration_id)}#{'#' if can_message.is_fd else ''}{can_message.data.hex()}",
+            extra={"tags": t},
+        )
+
+        return can_message
 
     async def close(self) -> None:
         if self._sock is None:
@@ -238,23 +256,29 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
         self._sock.close()
         self._sock = None
 
-    async def get_idle_traffic(self, sniff_time: float) -> list[int]:
-        """Listen to traffic on the bus and return list of IDs
-        which are seen in the specified period of time.
-        The output of this function can be used as input to set_filter.
+    async def get_idle_traffic(self, sniff_time: float) -> tuple[list[int], bool]:
+        """
+        Listen to traffic on the bus and return list of IDs which are seen in
+        the specified period of time. This list can be used as input to set_filter.
+
+        Additionally, this function returns whether FD frames where observed.
         """
         addr_idle: list[int] = []
+        fd_frames_present = False
         t1 = time.time()
         while time.time() - t1 < sniff_time:
             try:
-                addr, _ = await self.recvfrom(timeout=1)
-                if addr not in addr_idle:
-                    logger.info(f"Received a message from {addr:03x}")
-                    addr_idle.append(addr)
+                msg = await self.recv_can_message(timeout=1)
+                if msg.arbitration_id not in addr_idle:
+                    logger.info(
+                        f"Received CAN{'-FD' if msg.is_fd else ''} frame from {hex(msg.arbitration_id)}"
+                    )
+                    addr_idle.append(msg.arbitration_id)
+                fd_frames_present |= msg.is_fd
             except TimeoutError:
                 continue
         addr_idle.sort()
-        return addr_idle
+        return (addr_idle, fd_frames_present)
 
     async def dumpcap_argument_list(self) -> list[str] | None:
         # Listen on entire interface
