@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 from abc import ABC
+from importlib.metadata import version as meta_version
 from typing import Any, Literal, Self
 
 from pydantic import field_serializer, model_validator
@@ -109,8 +110,20 @@ class SetCLI(CLI):
                     await client.set_output(self.config.channel, strtobool(self.config.value))
 
 
+def version() -> None:
+    """
+    Prints the currently installed version of gallia.
+    """
+    print(f"gallia [netzteil] {meta_version('gallia')}")
+
+
 def main() -> None:
-    parse_and_run({"get": GetCLI, "set": SetCLI})
+    parse_and_run(
+        {"get": GetCLI, "set": SetCLI},
+        top_level_options={
+            "--version": (version, "show version and exit"),
+        },
+    )
 
 
 if __name__ == "__main__":

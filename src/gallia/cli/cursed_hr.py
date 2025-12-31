@@ -18,6 +18,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime
 from enum import IntEnum, unique
+from importlib.metadata import version
 from math import ceil
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, BinaryIO
@@ -1437,6 +1438,9 @@ def main() -> None:
     parser.add_argument("--filter", "-f", type=parse_filter, default=None)
     parser.add_argument("--prefix", action=BooleanOptionalAction, default=True)
     parser.add_argument("--relative-timings", action=BooleanOptionalAction, default=False)
+    parser.add_argument(
+        "--version", action="version", version=f"gallia [%(prog)s] {version('gallia')}"
+    )
     args = parser.parse_args()
     CursedHR(args.file, args.priority, args.filter, args.prefix, args.relative_timings)
 
