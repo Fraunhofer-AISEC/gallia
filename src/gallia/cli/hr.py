@@ -7,6 +7,7 @@ import json
 import os
 import signal
 import sys
+from importlib.metadata import version
 from itertools import islice
 from pathlib import Path
 from typing import cast
@@ -51,6 +52,7 @@ def parse_args() -> argparse.Namespace:
         default=100,
         help="print the last n lines",
     )
+    parser.add_argument("--version", action="version", version=f"%(prog)s {version('gallia')}")
     return parser.parse_args()
 
 
