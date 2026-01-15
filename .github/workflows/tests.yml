@@ -48,9 +48,9 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Install Dependencies
+    - name: Install Debian Dependencies
       run: |
-        apt-get update -y && apt-get install -y bats python3 python3-poetry jq zstd
+        apt-get update -y && apt-get install -y bats python3 jq zstd
 
     - name: Run bats
       run: |
