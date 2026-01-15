@@ -7,10 +7,10 @@ import shutil
 import subprocess
 from pathlib import Path
 
-import platformdirs
 import pytest
 
 from gallia.config import get_config_dirs, load_config_file
+from gallia.xdg import user_config_path
 
 
 def init_repository(path: Path) -> None:
@@ -75,7 +75,7 @@ def test_get_config_dirs() -> None:
     dirs = get_config_dirs()
     assert len(dirs) == 2
     assert dirs[0] == Path.cwd()
-    assert dirs[1] == platformdirs.user_config_path("gallia")
+    assert dirs[1] == user_config_path("gallia")
 
 
 def test_get_value(tmp_path: Path) -> None:

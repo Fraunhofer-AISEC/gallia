@@ -8,7 +8,7 @@ import tomllib
 from pathlib import Path
 from typing import Any
 
-from platformdirs import user_config_path
+from gallia.xdg import user_config_path
 
 
 class Config(dict[str, Any]):
