@@ -56,7 +56,7 @@ logger = get_logger(__name__)
 
 
 class AsyncScriptConfig(GalliaBaseModel, cli_group="generic", config_section="gallia"):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    model_config = ConfigDict(arbitrary_types_allowed=True, validate_default=True)
 
     verbose: int = Field(
         0,
