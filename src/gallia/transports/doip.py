@@ -973,7 +973,7 @@ class DoIPTransport(BaseTransport, scheme="doip"):
             # BrokenPipeError but instead ignore it here and let upper layers handle
             # missing responses
             logger.debug("DoIP message was ACKed with TargetUnreachable")
-            raise TimeoutError
+            raise TimeoutError from None
 
         return len(data)
 

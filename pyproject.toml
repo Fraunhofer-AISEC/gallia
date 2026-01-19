@@ -90,8 +90,7 @@ exclude = ["docs/"]
 
 [tool.ruff.lint]
 select = [
-    # TODO: Enable this
-    # "B",    # flake8-bugbear
+    "B",    # flake8-bugbear
     "A",    # flake8-builtins
     "ASYNC",# flake8-async
     "C4",   # flake8-comprehensions
