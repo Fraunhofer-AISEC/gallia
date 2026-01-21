@@ -49,8 +49,7 @@ dependencies = [
 "cursed-hr" = "gallia.cli.cursed_hr:main"
 "hr" = "gallia.cli.hr:main"
 
-# TODO: Change to dependency-groups once https://github.com/pypa/pip/issues/12963 is resolved
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
     "mypy >=1.0,<2.0",
     "pylsp-mypy >=0.6,<0.8",
