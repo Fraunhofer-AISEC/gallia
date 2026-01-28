@@ -470,3 +470,15 @@ class DBHandler:
 
         result: list[int] = json.loads(row[0])
         return result
+
+    async def lookup_target_names(self, target_name: str) -> list[str]:
+        assert self.connection is not None, "Not connected to the database"
+
+        query = """
+            SELECT url
+            FROM address
+            LEFT JOIN ecu ON address.ecu = ecu.id
+            WHERE name LIKE ?
+            """
+        resp = await self.connection.execute_fetchall(query, (f"%{target_name}%",))
+        return [x[0] for x in resp]
