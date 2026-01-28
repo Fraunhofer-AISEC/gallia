@@ -177,6 +177,18 @@ class UDSScanner(AsyncScript, ABC):
                     self.config.power_cycle_sleep, lambda: asyncio.sleep(2)
                 )
 
+        # Check and replace target string aliases (requires DB!)
+        if self.db_handler is not None and len(self.config.target.url.scheme) == 0:
+            logger.debug(
+                f"Target string {self.config.target.raw} has no scheme, checking if it is an alias"
+            )
+            urls = await self.db_handler.lookup_target_names(self.config.target.raw)
+            if len(urls) == 1:
+                logger.debug(f"Resolved target alias to {urls[0]}")
+                self.config.target = TargetURI(urls[0])
+            else:
+                logger.debug(f"Could not resolve target alias; found {len(urls)} matches")
+
         # Check whether `transport` was provided and use it over `target`
         if self.config.transport is None:
             logger.debug(f"No transport given, loading from target string: '{self.config.target}'")
