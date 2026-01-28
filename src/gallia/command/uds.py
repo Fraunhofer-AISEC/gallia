@@ -11,6 +11,7 @@ from pydantic import field_serializer, field_validator, model_validator
 
 from gallia.command.base import AsyncScript, AsyncScriptConfig, FileNames
 from gallia.command.config import Field, Idempotent
+from gallia.db.handler import DBHandler
 from gallia.log import get_logger
 from gallia.plugins.plugin import load_ecu, load_ecus, load_transport
 from gallia.power_supply import PowerSupply
@@ -103,6 +104,25 @@ class UDSScannerConfig(AsyncScriptConfig, cli_group="uds", config_section="galli
             raise ValueError("power-cycle needs power-supply")
 
         return self
+
+    @model_validator(mode="after")
+    def replace_target_alias(self) -> Self:
+        if len(self.target.url.scheme) == 0 and self.db is not None:
+            asyncio.run(self._replace_target_alias())
+        return self
+
+    async def _replace_target_alias(self) -> None:
+        if self.db is None:
+            return
+
+        async with DBHandler(self.db) as db:
+            urls = await db.lookup_target_names(self.target.raw)
+
+        if len(urls) == 1:
+            logger.debug(f"Resolved target alias to {urls[0]}")
+            self.target = TargetURI(urls[0])
+        else:
+            logger.debug(f"Could not resolve target alias; found {len(urls)} matches")
 
     @field_validator("oem")
     @classmethod

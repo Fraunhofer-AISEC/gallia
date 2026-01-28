@@ -6,7 +6,8 @@ import asyncio
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from types import TracebackType
+from typing import Any, Literal, Self
 
 import aiosqlite
 
@@ -145,6 +146,21 @@ class DBHandler:
         self.meta: int | None = None
         self._executor_task: asyncio.Task[None] | None = None
         self._execute_queue: asyncio.Queue[tuple[str, tuple[Any, ...]]] | None = None
+
+    async def __aenter__(self) -> Self:
+        logger.debug(f"Connecting to database at '{self.path}' with context manager")
+        await self.connect()
+        return self
+
+    async def __aexit__(
+        self,
+        exctype: BaseException | None,
+        excinst: BaseException | None,
+        exctb: TracebackType | None,
+    ) -> Literal[False]:
+        logger.debug(f"Disconnecting from database at '{self.path}' with context manager")
+        await self.disconnect()
+        return False  # Do not suppress exceptions
 
     async def connect(self) -> None:
         """It is important that `connect` and `disconnect` are called in the same event loop!"""
@@ -470,3 +486,15 @@ class DBHandler:
 
         result: list[int] = json.loads(row[0])
         return result
+
+    async def lookup_target_names(self, target_name: str) -> list[str]:
+        assert self.connection is not None, "Not connected to the database"
+
+        query = """
+            SELECT url
+            FROM address
+            LEFT JOIN ecu ON address.ecu = ecu.id
+            WHERE name LIKE ?
+            """
+        resp = await self.connection.execute_fetchall(query, (f"%{target_name}%",))
+        return [x[0] for x in resp]
