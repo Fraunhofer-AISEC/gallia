@@ -111,7 +111,7 @@ SELECT
   ru.id AS run,
   ecu.name AS ECU,
   rm.script,
-  rm.arguments,
+  rm.config,
   strftime('%Y-%m-%d %H:%M:%f', rm.start_time, 'unixepoch', 'localtime') AS start,
   strftime('%Y-%m-%d %H:%M:%f', rm.end_time, 'unixepoch', 'localtime') AS end,
   cast((CASE WHEN end_time IS NULL THEN strftime('%s','now') ELSE end_time END - start_time) / 86400 AS int) || ' ' ||
