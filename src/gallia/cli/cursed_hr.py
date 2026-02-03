@@ -18,11 +18,11 @@ from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime
 from enum import IntEnum, unique
-from math import ceil
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, BinaryIO
 
 import platformdirs
+from wcwidth import wrap
 
 if sys.version_info < (3, 14):
     import zstandard as zstd
@@ -525,11 +525,8 @@ class CursedHR:
         for line in user_defined_lines:
             if len(line) == 0:
                 terminal_width_defined_lines.append("")
-
-            for i in range(ceil(len(line) / residual_width)):
-                terminal_width_defined_lines.append(
-                    line[i * residual_width : (i + 1) * residual_width]
-                )
+            else:
+                terminal_width_defined_lines += wrap(line, residual_width)
 
         result = [
             DisplayEntry(
