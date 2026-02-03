@@ -1052,6 +1052,7 @@ class CursedHR:
                             entry_start = max(0, display_entries[0].penlog_entry_number - 1)
                             line_start = -1
                     else:
+                        entry_start = display_entries[0].penlog_entry_number
                         line_start = display_entries[0].entry_line_number - 1
 
                     if old_entry_start == entry_start and old_line_start == line_start:
