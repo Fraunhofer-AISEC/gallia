@@ -10,6 +10,7 @@ import mmap
 import shutil
 import sys
 import tempfile
+import textwrap
 import warnings
 from argparse import ArgumentParser, BooleanOptionalAction
 from array import array
@@ -22,7 +23,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, BinaryIO
 
 import platformdirs
-from wcwidth import wrap
+import wcwidth
 
 if sys.version_info < (3, 14):
     import zstandard as zstd
@@ -526,7 +527,14 @@ class CursedHR:
             if len(line) == 0:
                 terminal_width_defined_lines.append("")
             else:
-                terminal_width_defined_lines += wrap(line, residual_width)
+                try:
+                    # This is an optimization to only use wcwidth when necessary,
+                    # because it is much more expensive than the wrap function from textwrap
+                    # string.encode(), which is used to check if non-ascii chars appear, only has negligible costs
+                    line.encode("ascii")
+                    terminal_width_defined_lines = textwrap.wrap(line, residual_width)
+                except UnicodeEncodeError:
+                    terminal_width_defined_lines += wcwidth.wrap(line, residual_width)
 
         result = [
             DisplayEntry(
