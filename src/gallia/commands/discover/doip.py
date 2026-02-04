@@ -7,7 +7,7 @@ import socket
 import sys
 from collections.abc import Iterable
 from itertools import product
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlsplit
 
 from gallia.command import AsyncScript
 from gallia.command.base import AsyncScriptConfig
@@ -75,7 +75,7 @@ class DoIPDiscoverer(AsyncScript):
     async def main(self) -> None:
         logger.notice("[👋] Welcome to @realDoIP-Discovery powered by MoarMemes…")
 
-        target = urlparse(self.config.target) if self.config.target is not None else None
+        target = urlsplit(self.config.target) if self.config.target is not None else None
         if target is not None and target.scheme != "doip":
             logger.error("[🫣] --target must be doip://…")
             sys.exit(2)
@@ -170,7 +170,7 @@ class DoIPDiscoverer(AsyncScript):
             f"[🔍] Enumerating all TargetAddresses from {self.config.start:#x} to {self.config.stop:#x}"
         )
 
-        target = urlparse(targets[0])
+        target = urlsplit(targets[0])
         tgt_src = int(parse_qs(target.query)["src_addr"][0], 0)
         tgt_rat = int(parse_qs(target.query)["activation_type"][0], 0)
 
