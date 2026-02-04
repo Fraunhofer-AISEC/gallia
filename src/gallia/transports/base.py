@@ -13,7 +13,6 @@ from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 from gallia.dumpcap import Dumpcap
 from gallia.log import get_logger
 from gallia.net import join_host_port
-from gallia.transports.schemes import TransportScheme
 
 logger = get_logger(__name__)
 
@@ -48,9 +47,9 @@ class TargetURI:
         return cls(urlunparse((scheme, netloc, "", "", urlencode(args), "")))
 
     @property
-    def scheme(self) -> TransportScheme:
+    def scheme(self) -> str:
         """The URI scheme"""
-        return TransportScheme(self.url.scheme)
+        return self.url.scheme
 
     @property
     def hostname(self) -> str | None:

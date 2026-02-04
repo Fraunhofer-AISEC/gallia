@@ -178,7 +178,7 @@ class UDSScanner(AsyncScript, ABC):
                 )
 
         # Check and replace target string aliases (requires DB!)
-        if self.db_handler is not None and len(self.config.target.url.scheme) == 0:
+        if self.db_handler is not None and len(self.config.target.scheme) == 0:
             logger.debug(
                 f"Target string {self.config.target.raw} has no scheme, checking if it is an alias"
             )
