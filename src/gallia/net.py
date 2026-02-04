@@ -4,7 +4,7 @@
 
 import ipaddress
 import subprocess
-from urllib.parse import urlparse
+from urllib.parse import urlsplit
 
 import pydantic
 from pydantic.networks import IPvAnyAddress
@@ -35,8 +35,8 @@ def split_host_port(
 
     # Only parse if hostport is not a valid ip address.
     if host == "":
-        # urlparse() and urlsplit() insists on absolute URLs starting with "//".
-        url = urlparse(f"//{hostport}")
+        # urlsplit() insists on absolute URLs starting with "//".
+        url = urlsplit(f"//{hostport}")
         host = url.hostname or url.netloc
         port = url.port or default_port
     return host, port

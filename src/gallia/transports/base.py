@@ -8,7 +8,7 @@ import io
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Protocol, Self
-from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
+from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 
 from gallia.dumpcap import Dumpcap
 from gallia.log import get_logger
@@ -21,7 +21,7 @@ class TargetURI:
     """TargetURI represents a target to which gallia can connect.
     The target string must conform to a URI is specified by RFC3986.
 
-    Basically, this is a wrapper around Python's ``urlparse()`` and
+    Basically, this is a wrapper around Python's ``urlsplit()`` and
     ``parse_qs()`` methods. TargetURI provides frequently used properties
     for a more userfriendly usage. Instances are meant to be passed to
     :meth:`BaseTransport.connect()` of transport implementations.
@@ -29,7 +29,7 @@ class TargetURI:
 
     def __init__(self, raw: str) -> None:
         self.raw = raw
-        self.url = urlparse(raw)
+        self.url = urlsplit(raw)
         self.qs = parse_qs(self.url.query)
 
     @classmethod
@@ -44,7 +44,7 @@ class TargetURI:
         The ``args`` dict is used for the query string.
         """
         netloc = host if port is None else join_host_port(host, port)
-        return cls(urlunparse((scheme, netloc, "", "", urlencode(args), "")))
+        return cls(urlunsplit((scheme, netloc, "", "", urlencode(args), "")))
 
     @property
     def scheme(self) -> str:
