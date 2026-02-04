@@ -389,7 +389,7 @@ class DBHandler:
                 response_attributes["sub_function"] = response.sub_function
 
             for attr, value in response.__dict__.items():
-                if not attr.startswith("_") and attr not in ["trigger_request"]:
+                if not attr.startswith("_") and attr != "trigger_request":
                     response_attributes[attr] = value
 
                     if isinstance(value, bytes | bytearray):

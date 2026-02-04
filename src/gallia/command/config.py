@@ -65,7 +65,7 @@ Usage: x: HexInt = ....
 HexBytes = Annotated[
     bytes,
     BeforeValidator(lambda x: x if isinstance(x, bytes) else binascii.unhexlify(x)),
-    PlainSerializer(lambda x: binascii.hexlify(x)),
+    PlainSerializer(binascii.hexlify),
 ]
 """
 Special type for a field, which parses bytes from hex strings.
@@ -96,11 +96,13 @@ Usage: x: Ranges = ....
 Ranges2D = Annotated[
     dict[int, list[int] | None],
     BeforeValidator(
-        lambda x: x
-        if isinstance(x, dict)
-        else unravel_2d(" ".join(x))
-        if isinstance(x, list)
-        else unravel_2d(x)
+        lambda x: (
+            x
+            if isinstance(x, dict)
+            else unravel_2d(" ".join(x))
+            if isinstance(x, list)
+            else unravel_2d(x)
+        )
     ),
 ]
 """

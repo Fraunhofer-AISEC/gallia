@@ -54,7 +54,7 @@ async def dumpcap_argument_list_eth(host: str, port: int | None = None) -> list[
     if proxy := os.getenv("all_proxy"):
         url = urlparse(proxy)
         host = str(url.hostname) if url.hostname else "localhost"
-        port = url.port if url.port else 1080  # Default SOCKS port
+        port = url.port or 1080  # Default SOCKS port
 
     # Resolve host string to ip address
     loop = asyncio.get_running_loop()

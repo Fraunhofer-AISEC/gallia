@@ -351,7 +351,7 @@ class PositiveResponse(UDSResponse, ABC, service_id=None, minimal_length=0, maxi
         relevant_attributes = {}
 
         for attr, value in self.__dict__.items():
-            if not attr.startswith("_") and attr not in ["trigger_request"]:
+            if not attr.startswith("_") and attr != "trigger_request":
                 relevant_attributes[attr] = any_repr(value)
 
         attributes = ", ".join(f"{attr}={value}" for attr, value in relevant_attributes.items())
