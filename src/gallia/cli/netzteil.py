@@ -9,7 +9,7 @@ from pydantic import field_serializer, model_validator
 from gallia.cli.gallia import parse_and_run
 from gallia.command import AsyncScript
 from gallia.command.base import AsyncScriptConfig
-from gallia.command.config import Field, Idempotent
+from gallia.command.config import Field, InitializeIdempotent
 from gallia.command.uds import UDSScannerConfig
 from gallia.power_supply import power_supply_drivers
 from gallia.power_supply.base import BasePowerSupplyDriver
@@ -19,7 +19,7 @@ from gallia.utils import strtobool
 
 
 class CLIConfig(AsyncScriptConfig):
-    power_supply: Idempotent[PowerSupplyURI] = Field(
+    power_supply: InitializeIdempotent[PowerSupplyURI] = Field(
         description="URI specifying the location of the powersupply",
         metavar="URI",
         short="t",

@@ -12,7 +12,7 @@ from pydantic import field_serializer, model_validator
 
 from gallia.command import AsyncScript
 from gallia.command.base import AsyncScriptConfig
-from gallia.command.config import Field, Idempotent
+from gallia.command.config import Field, InitializeIdempotent
 from gallia.log import get_logger
 from gallia.services.uds.server import (
     DBUDSServer,
@@ -27,7 +27,7 @@ logger = get_logger(__name__)
 
 
 class VirtualECUConfig(AsyncScriptConfig):
-    target: Idempotent[TargetURI] = Field(positional=True)
+    target: InitializeIdempotent[TargetURI] = Field(positional=True)
 
     @field_serializer("target")
     def serialize_target_uri(self, target_uri: TargetURI | None) -> Any:
