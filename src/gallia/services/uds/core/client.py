@@ -122,7 +122,7 @@ class UDSClient:
             MAX_N_PENDING = 120
             n_timeout = 0
             waiting_time = 0.5
-            max_n_timeout = max(timeout if timeout else 0, 20) / waiting_time
+            max_n_timeout = max(timeout or 0, 20) / waiting_time
             while (
                 isinstance(resp, service.NegativeResponse)
                 and resp.response_code == UDSErrorCodes.requestCorrectlyReceivedResponsePending

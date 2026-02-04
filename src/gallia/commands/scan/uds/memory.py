@@ -88,7 +88,7 @@ class MemoryFunctionsScanner(UDSScanner):
                 pdu += bytes([0])
             pdu += bytes([addr_and_length_identifier])
             pdu += addr_bytes + mem_size_bytes
-            pdu += data if data else b""
+            pdu += data or b""
 
             if (
                 self.config.session is not None

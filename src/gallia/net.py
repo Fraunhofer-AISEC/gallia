@@ -37,8 +37,8 @@ def split_host_port(
     if host == "":
         # urlparse() and urlsplit() insists on absolute URLs starting with "//".
         url = urlparse(f"//{hostport}")
-        host = url.hostname if url.hostname else url.netloc
-        port = url.port if url.port else default_port
+        host = url.hostname or url.netloc
+        port = url.port or default_port
     return host, port
 
 
