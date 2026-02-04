@@ -10,7 +10,7 @@ from typing import Any, Self
 from pydantic import field_serializer, field_validator, model_validator
 
 from gallia.command.base import AsyncScript, AsyncScriptConfig, FileNames
-from gallia.command.config import Field, Idempotent
+from gallia.command.config import Field, InitializeIdempotent
 from gallia.log import get_logger
 from gallia.plugins.plugin import load_ecu, load_ecus, load_transport
 from gallia.power_supply import PowerSupply
@@ -68,10 +68,10 @@ class UDSScannerConfig(AsyncScriptConfig, cli_group="uds", config_section="galli
     dumpcap: bool = Field(
         sys.platform.startswith("linux"), description="Enable/Disable creating a pcap file"
     )
-    target: Idempotent[TargetURI] = Field(
+    target: InitializeIdempotent[TargetURI] = Field(
         description="URI that describes the target", metavar="TARGET"
     )
-    power_supply: Idempotent[PowerSupplyURI] | None = Field(
+    power_supply: InitializeIdempotent[PowerSupplyURI] | None = Field(
         None,
         description="URI specifying the location of the relevant opennetzteil server",
         metavar="URI",

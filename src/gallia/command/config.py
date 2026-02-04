@@ -133,7 +133,7 @@ def auto_enum(x: str, enum_type: type[EnumType]) -> EnumType:
 
 
 if TYPE_CHECKING:
-    Idempotent: TypeAlias = Annotated[T, ""]
+    InitializeIdempotent: TypeAlias = Annotated[T, ""]
     EnumArg: TypeAlias = Annotated[EnumType, ""]
     AutoLiteral: TypeAlias = Annotated[LiteralType, ""]
 else:
@@ -145,15 +145,15 @@ else:
         def __getitem__(self, cls: type[T]) -> type[T]:
             return self.function(cls)
 
-    Idempotent = _TrickType(
+    InitializeIdempotent = _TrickType(
         lambda cls: Annotated[cls, BeforeValidator(lambda x: x if isinstance(x, cls) else cls(x))]
     )
     """
-    Wrapper for fields of types which can be instantiated by a certain value, but not by an instance of its own type.
+    Wrapper for fields of arbitrary types which are not automatically instantiated by pydantic.
 
-    This way, it is possible to fill the corresponding parameter of the model with both the value as well as an already instantiated object of that class.
+    It is idempotent, such that it is possible to fill the corresponding parameter of the model with both any value as well as an already instantiated object of that class.
 
-    Usage: x: Idempotent[SomeClass] = ...
+    Usage: x: InitializeIdempotent[SomeClass] = ...
     """
 
     EnumArg = _TrickType(

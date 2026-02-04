@@ -9,7 +9,7 @@ from pydantic import field_serializer
 
 from gallia.command import AsyncScript
 from gallia.command.base import AsyncScriptConfig
-from gallia.command.config import Field, HexBytes, Idempotent
+from gallia.command.config import Field, HexBytes, InitializeIdempotent
 from gallia.command.uds import UDSScannerConfig
 from gallia.plugins.plugin import load_transport
 from gallia.transports.base import TargetURI
@@ -23,7 +23,7 @@ class GenericPDUPrimitiveConfig(AsyncScriptConfig):
         config_section=UDSScannerConfig._config_section,
     )
     pdu: HexBytes = Field(description="raw pdu to send", positional=True)
-    target: Idempotent[TargetURI] = Field(
+    target: InitializeIdempotent[TargetURI] = Field(
         description="URI that describes the target", metavar="TARGET"
     )
 
