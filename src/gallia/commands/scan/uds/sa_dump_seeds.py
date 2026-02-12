@@ -151,7 +151,6 @@ class SASeedsDumper(UDSScanner):
         file = seeds_file.open("wb", buffering=0)
         duration = self.config.duration * 60
         start_time = time.time()
-        last_seed_req: float | None = None
         last_seed = b""
         requests_since_last_reset = 0
         print_speed = False
@@ -167,6 +166,14 @@ class SASeedsDumper(UDSScanner):
             # Start with length 1 in automatic search
             self.key_length = 1
 
+            if self.config.reset is not None:
+                logger.notice(
+                    "You combined '--reset' with '--send-zero-key' without providing a key length. "
+                    "Automatically determining the key size expected by the ECU in this setting "
+                    "might be very slow. Consider running without '--reset' or set the key length "
+                    "explicitly if it is known."
+                )
+
         while duration <= 0 or time.time() - start_time < duration:
             # Print information about current dump speed every `interval` seconds.
             # As request/response times can jitter a few seconds, we 'arm' the print
@@ -174,13 +181,14 @@ class SASeedsDumper(UDSScanner):
             interval = 60
             i = int(time.time() - start_time) % interval
             if i >= interval // 2:
-                print_speed = True
+                # Print dump speed only when actually dumping seeds, not while determining the
+                # key size, as this will lead to confusing output.
+                print_speed = self.is_key_length_determined
             elif i < interval // 2 and print_speed is True:
                 self.log_size(seeds_file, time.time() - start_time)
                 print_speed = False
 
-            # Do not reset in key-length-detection phase
-            if (self.config.reset is not None) and self.is_key_length_determined:
+            if self.config.reset is not None:
                 if (self.config.reset == 0 and self.attempt_reset) or (
                     self.config.reset > 0 and requests_since_last_reset == self.config.reset
                 ):
@@ -204,19 +212,12 @@ class SASeedsDumper(UDSScanner):
                     logger.error(f"ECU persistently lost session {g_repr(self.config.session)}")
                     sys.exit(1)
 
-            if (
-                (self.config.sleep is not None)
-                and (last_seed_req is not None)
-                and ((delta := self.config.sleep - (time.time() - last_seed_req)) > 0)
-            ):
-                logger.info(
-                    f"Sleeping for {delta:.2f} seconds to keep seed requests {self.config.sleep} seconds apart…"
-                )
-                await asyncio.sleep(delta)
+            if self.config.sleep is not None:
+                logger.info(f"Sleeping for {self.config.sleep} seconds between seed requests…")
+                await asyncio.sleep(self.config.sleep)
 
             try:
                 seed = await self.request_seed(self.config.level, self.config.data_record)
-                last_seed_req = time.time()
                 if seed is None:
                     continue  # Errors are already logged in .request_seed()
             except TimeoutError:
