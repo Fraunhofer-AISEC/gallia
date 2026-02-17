@@ -180,6 +180,8 @@ else:
                 mapping[arg.name] = arg
             elif isinstance(arg, bytes):
                 mapping[binascii.hexlify(arg)] = arg
+            else:
+                mapping[arg] = arg
 
         def try_auto_literal(value: Any):
             if value in args:
