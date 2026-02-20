@@ -5,7 +5,6 @@
 import asyncio
 import random
 import sys
-from typing import Literal
 
 assert sys.platform.startswith("linux"), "unsupported platform"
 
@@ -26,11 +25,11 @@ logger = get_logger(__name__)
 
 class PDUFuzzerConfig(UDSScannerConfig):
     sessions: Ranges = Field([1], description="Set list of sessions to be tested; 0x01 if None")
-    service: AutoLiteral[
-        Literal[UDSIsoServices.WriteDataByIdentifier, UDSIsoServices.RoutineControl]
-    ] = Field(
-        UDSIsoServices.WriteDataByIdentifier,
-        description="Service ID to create payload for; defaults to 0x2e WriteDataByIdentifier;\ncurrently supported:\n0x2e WriteDataByIdentifier, 0x31 RoutineControl (startRoutine)\n",
+    service: AutoLiteral[UDSIsoServices.WriteDataByIdentifier, UDSIsoServices.RoutineControl] = (
+        Field(
+            UDSIsoServices.WriteDataByIdentifier,
+            description="Service ID to create payload for; defaults to 0x2e WriteDataByIdentifier;\ncurrently supported:\n0x2e WriteDataByIdentifier, 0x31 RoutineControl (startRoutine)\n",
+        )
     )
     max_length: AutoInt = Field(42, description="maximum length of the payload")
     min_length: AutoInt = Field(1, description="minimum length of the payload")

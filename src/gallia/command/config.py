@@ -5,6 +5,7 @@
 import binascii
 import os
 import tomllib
+import typing
 from abc import ABC
 from collections.abc import Callable
 from enum import Enum
@@ -116,7 +117,6 @@ Usage: x: Ranges2D = ....
 
 T = TypeVar("T")
 EnumType = TypeVar("EnumType", bound=Enum)
-LiteralType = TypeVar("LiteralType")
 
 
 def auto_enum(x: str, enum_type: type[EnumType]) -> EnumType:
@@ -137,7 +137,12 @@ def auto_enum(x: str, enum_type: type[EnumType]) -> EnumType:
 if TYPE_CHECKING:
     InitializeIdempotent: TypeAlias = Annotated[T, ""]
     EnumArg: TypeAlias = Annotated[EnumType, ""]
-    AutoLiteral: TypeAlias = Annotated[LiteralType, ""]
+
+    # For mypy to accept AutoLiteral as a direct alias to Literal, using TyeAliases seems to not work
+    # Exporting literal under a new name seems to be the only way this works
+    from typing import Literal as AutoLiteral
+
+    __all__ = ["AutoLiteral"]
 else:
 
     class _TrickType:
@@ -201,11 +206,14 @@ else:
 
         return Annotated[cls, BeforeValidator(try_auto_literal)]
 
-    AutoLiteral = _TrickType(auto_literal)
+    class AutoLiteral:
+        def __class_getitem__(cls, literals) -> type[T]:
+            return _TrickType(auto_literal)[typing.Literal[literals]]
+
     """
     Wrapper for Literal fields to provide automatic handling of enum, int and bytes parsing for values defined in Literals similar to EnumArg, AutoInt and HexBytes.
 
-    Usage: x: AutoLiteral[Literal[1, 2, 3]] = ...
+    Usage: x: AutoLiteral[1, 2, 3] = ...
     """
 
 

@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import sys
-from typing import Literal
 
 from gallia.command import UDSScanner
 from gallia.command.config import AutoInt, AutoLiteral, Field, HexBytes
@@ -24,12 +23,10 @@ class MemoryFunctionsScannerConfig(UDSScannerConfig):
         const=1,
     )
     service: AutoLiteral[
-        Literal[
-            Services.ReadMemoryByAddress,
-            Services.WriteMemoryByAddress,
-            Services.RequestDownload,
-            Services.RequestUpload,
-        ]
+        Services.ReadMemoryByAddress,
+        Services.WriteMemoryByAddress,
+        Services.RequestDownload,
+        Services.RequestUpload,
     ] = Field(
         description="Choose between 0x23 ReadMemoryByAddress 0x3d WriteMemoryByAddress, 0x34 RequestDownload and 0x35 RequestUpload"
     )
