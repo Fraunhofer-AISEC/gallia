@@ -4,19 +4,16 @@
 
 import argparse
 import asyncio
-import json
 import os
 import sys
 from collections.abc import Callable, Mapping, MutableMapping, Sequence
 from importlib.metadata import version as meta_version
 from pprint import pprint
-from textwrap import wrap
 from types import UnionType
 from typing import Any, Never
 
 import argcomplete
 from pydantic import Field, create_model
-from pydantic_core import PydanticUndefined
 
 from gallia import exitcodes
 from gallia.command import AsyncScript
@@ -282,45 +279,7 @@ def template() -> None:
     """
     Prints a template config with default according to the programmatic defaults.
     """
-    groups: dict[str, dict[str, tuple[str, Any]]] = {}
-
-    for key, value in GalliaBaseModel.registry().items():
-        tmp = key.split(".")
-        group = ".".join(tmp[:-1])
-        attribute = tmp[-1]
-
-        if group not in groups:
-            groups[group] = {}
-
-        groups[group][attribute] = value
-
-    output = ""
-
-    for group in sorted(groups):
-        if group != "":
-            output += f"[{group}]\n"
-
-        for attribute in sorted(groups[group]):
-            description, default_value = groups[group][attribute]
-
-            output += "\n".join(wrap(f"# {description}\n", subsequent_indent="# ")) + "\n"
-
-            # Heuristic TOML dump
-            if default_value is not None and default_value is not PydanticUndefined:
-                try:
-                    default_repr = json.dumps(default_value)
-                except TypeError:
-                    default_repr = json.dumps(str(default_value))
-
-                output += f"{attribute} = {default_repr}\n"
-            else:
-                output += f"# {attribute} = ...\n"
-
-            output += "\n"
-
-        output += "\n"
-
-    print(output.strip())
+    print(GalliaBaseModel.create_template() + "\n")
 
 
 def main() -> None:
@@ -331,7 +290,7 @@ def main() -> None:
             "--version": (version, "show version and exit"),
             "--show-plugins": (show_plugins, "show registered plugins"),
             "--show-config": (show_config, "show loaded config"),
-            "--template": (template, "generate a annotated config template"),
+            "--template": (template, "generate an annotated config template"),
         },
         show_help_on_zero_args=True,
     )
