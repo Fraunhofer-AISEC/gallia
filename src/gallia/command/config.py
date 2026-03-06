@@ -3,13 +3,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import binascii
-import os
+import json
 import tomllib
 import typing
 from abc import ABC
 from collections.abc import Callable
 from enum import Enum
 from pathlib import Path
+from textwrap import wrap
 from typing import (
     TYPE_CHECKING,
     Annotated,
@@ -372,9 +373,57 @@ class GalliaBaseModel(BaseCommand, ABC):
                         info.default,
                     )
 
-    @staticmethod
-    def registry() -> dict[str, tuple[str, Any]]:
-        return GalliaBaseModel.__config_registry
+    @classmethod
+    def create_template(cls, default_values: Config | None = None) -> str:
+        """
+        Returns a string which can be loaded as config file.
+        If `default_values` is given, defaults are not loaded from the field definitions, but from this object instead.
+        """
+        groups: dict[str, dict[str, tuple[str, Any]]] = {}
+
+        for key, value in cls.__config_registry.items():
+            # If given, load value from config instead
+            if default_values is not None and default_values.get_value(key) is not None:
+                final_value = (value[0], default_values.get_value(key))
+            else:
+                final_value = value
+
+            tmp = key.split(".")
+            group = ".".join(tmp[:-1])
+            attribute = tmp[-1]
+
+            if group not in groups:
+                groups[group] = {}
+
+            groups[group][attribute] = final_value
+
+        output = ""
+
+        for group in sorted(groups):
+            if group != "":
+                output += f"[{group}]\n"
+
+            for attribute in sorted(groups[group]):
+                description, value = groups[group][attribute]
+
+                output += "\n".join(wrap(f"# {description}\n", subsequent_indent="# ")) + "\n"
+
+                # Heuristic TOML dump
+                if value is not None and value is not PydanticUndefined:
+                    try:
+                        str_value = json.dumps(value)
+                    except TypeError:
+                        str_value = json.dumps(str(value))
+
+                    output += f"{attribute} = {str_value}\n"
+                else:
+                    output += f"# {attribute} = ...\n"
+
+                output += "\n"
+
+            output += "\n"
+
+        return output.strip()
 
     @classmethod
     def attributes_from_toml(cls, path: Path) -> dict[str, Any]:
