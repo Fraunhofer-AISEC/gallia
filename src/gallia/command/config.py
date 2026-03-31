@@ -445,17 +445,3 @@ class GalliaBaseModel(BaseCommand, ABC):
                         result[name] = (f"{source} ({info.config_section}:{name})", value)
 
         return result
-
-    @classmethod
-    def attributes_from_env(cls) -> dict[str, Any]:
-        result = {}
-
-        if (original_infos := cls._original_field_infos) is not None:
-            for name, info in original_infos.items():
-                if isinstance(info, ConfigArgFieldInfo):
-                    config_attribute = f"GALLIA_{name.upper()}"
-
-                    if (value := os.getenv(config_attribute)) is not None:
-                        result[name] = (f"environment variable ({config_attribute})", value)
-
-        return result
