@@ -382,6 +382,19 @@ class GalliaBaseModel(BaseCommand, ABC):
         return cls.attributes_from_config(Config(toml_config))
 
     @classmethod
+    def config_attribute_for_attribute(cls, name: str) -> str | None:
+        if (original_infos := cls._original_field_infos) is not None:
+            info = original_infos[name]
+
+            if isinstance(info, ConfigArgFieldInfo) and info.config_section is not None:
+                config_attribute = (
+                    f"{info.config_section}.{name}" if info.config_section != "" else name
+                )
+                return config_attribute
+
+        return None
+
+    @classmethod
     def attributes_from_config(cls, config: Config, source: str = "config file") -> dict[str, Any]:
         result = {}
 
@@ -398,6 +411,10 @@ class GalliaBaseModel(BaseCommand, ABC):
                         result[name] = (f"{source} ({info.config_section}:{name})", value)
 
         return result
+
+    @staticmethod
+    def env_name(name: str) -> str:
+        return f"GALLIA_{name.upper()}"
 
     @classmethod
     def attributes_from_env(cls) -> dict[str, Any]:

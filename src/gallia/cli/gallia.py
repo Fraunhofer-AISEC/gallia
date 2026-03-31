@@ -278,13 +278,17 @@ def show_config() -> None:
         sys.exit(exitcodes.CONFIG)
 
 
-def template() -> None:
+def print_template() -> None:
     """
     Prints a template config with default according to the programmatic defaults.
     """
+    print(create_template(GalliaBaseModel.registry()))
+
+
+def create_template(registry: dict[str, tuple[str, Any]]) -> str:
     groups: dict[str, dict[str, tuple[str, Any]]] = {}
 
-    for key, value in GalliaBaseModel.registry().items():
+    for key, value in registry.items():
         tmp = key.split(".")
         group = ".".join(tmp[:-1])
         attribute = tmp[-1]
@@ -320,7 +324,7 @@ def template() -> None:
 
         output += "\n"
 
-    print(output.strip())
+    return output.strip()
 
 
 def main() -> None:
@@ -331,7 +335,7 @@ def main() -> None:
             "--version": (version, "show version and exit"),
             "--show-plugins": (show_plugins, "show registered plugins"),
             "--show-config": (show_config, "show loaded config"),
-            "--template": (template, "generate a annotated config template"),
+            "--template": (print_template, "generate an annotated config template"),
         },
         show_help_on_zero_args=True,
     )
