@@ -33,8 +33,6 @@ def _create_parser_from_command(
     command: type[AsyncScript], config: Config, extra_defaults: defaults, model_counter: int = 0
 ) -> tuple[type[PydanticBaseCommand], defaults, int]:
     config_attributes = command.CONFIG_TYPE.attributes_from_config(config)
-    env_attributes = command.CONFIG_TYPE.attributes_from_env()
-    config_attributes.update(env_attributes)
 
     # it is necessary to create a submodel, because several commands can use the same config
     # (e.g. of their base class if no additional arguments are required)
