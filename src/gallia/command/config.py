@@ -374,7 +374,7 @@ class GalliaBaseModel(BaseCommand, ABC):
 
     @staticmethod
     def registry() -> dict[str, tuple[str, Any]]:
-        return GalliaBaseModel.__config_registry
+        return GalliaBaseModel.__config_registry.copy()
 
     @classmethod
     def attributes_from_toml(cls, path: Path) -> dict[str, Any]:
@@ -389,7 +389,9 @@ class GalliaBaseModel(BaseCommand, ABC):
             for name, info in original_infos.items():
                 if isinstance(info, ConfigArgFieldInfo):
                     config_attribute = (
-                        f"{info.config_section}.{name}" if info.config_section != "" else name
+                        f"{info.config_section}.{name}"
+                        if info.config_section not in ("", None)
+                        else name
                     )
 
                     if (value := config.get_value(config_attribute)) is not None:
@@ -403,10 +405,10 @@ class GalliaBaseModel(BaseCommand, ABC):
 
         if (original_infos := cls._original_field_infos) is not None:
             for name, info in original_infos.items():
-                if isinstance(info, ConfigArgFieldInfo):
-                    config_attribute = f"GALLIA_{name.upper()}"
+                if isinstance(info, ArgFieldInfo):
+                    env_attribute = GalliaBaseModel.env_name(name)
 
-                    if (value := os.getenv(config_attribute)) is not None:
-                        result[name] = (f"environment variable ({config_attribute})", value)
+                    if (value := os.getenv(env_attribute)) is not None:
+                        result[name] = (f"environment variable ({env_attribute})", value)
 
         return result
