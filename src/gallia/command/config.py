@@ -438,7 +438,7 @@ class GalliaBaseModel(BaseCommand, ABC):
             for name, info in original_infos.items():
                 if isinstance(info, ConfigArgFieldInfo):
                     config_attribute = (
-                        f"{info.config_section}.{name}" if info.config_section != "" else name
+                        f"{info.config_section}.{name}" if info.config_section else name
                     )
 
                     if (value := config.get_value(config_attribute)) is not None:
