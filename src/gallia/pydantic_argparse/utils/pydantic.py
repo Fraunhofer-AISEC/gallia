@@ -120,7 +120,7 @@ class PydanticField:
         origin = get_origin(annotation)
 
         if origin is Literal or isinstance(origin, type) and issubclass(origin, Container):
-            return origin
+            return cast(type, origin)  # Cast to type to cover returning Literal
         elif origin is Union or origin is UnionType:
             args = get_args(annotation)
             types = [arg for arg in args if arg is not NoneType]
