@@ -309,7 +309,7 @@ class CursedHR:
                     file = tempfile.TemporaryFile(dir=platformdirs.user_cache_dir())
 
                     copy_to_file(file)
-            except:
+            except Exception:
                 file.close()
                 raise
         else:
@@ -1084,7 +1084,7 @@ class CursedHR:
                         entry_start = min(len(self.entries) - 1, entry_start + 1)
                         line_start = 0
                     else:
-                        line_start += 1
+                        line_up()
                 case "KEY_PPAGE":
                     if cursor[0] > 0:
                         cursor = (0, cursor[1])
@@ -1267,7 +1267,7 @@ class CursedHR:
                 previous_line_start = line_start
                 entry_start = display_entries[0].penlog_entry_number
                 line_start = display_entries[0].entry_line_number
-                line_up()
+                page_up()
 
                 if display_help:
                     display_entries = self.help_message(line_start)
