@@ -220,10 +220,10 @@ class UDSServer(ABC):
             self.state.session = 1
 
     async def setup(self) -> None:
-        pass
+        return None
 
     async def teardown(self) -> None:
-        pass
+        return None
 
     async def respond_without_state_change(
         self, request: service.UDSRequest

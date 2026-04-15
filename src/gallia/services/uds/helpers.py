@@ -103,12 +103,12 @@ def parse_pdu(pdu: bytes, request: service.UDSRequest) -> service.UDSResponse:
             response = service.RawNegativeResponse(pdu)
             # RequestResponseMismatch takes priority over MalformedResponse
             if len(pdu) >= 3 and pdu[2] != request.service_id:
-                raise RequestResponseMismatch(request, response)
+                raise RequestResponseMismatch(request, response) from None
         else:
             response = service.RawPositiveResponse(pdu)
             # RequestResponseMismatch takes priority over MalformedResponse
             if response.service_id != request.service_id:
-                raise RequestResponseMismatch(request, response)
+                raise RequestResponseMismatch(request, response) from None
 
         raise MalformedResponse(request, response, str(e)) from e
 
