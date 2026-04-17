@@ -44,7 +44,7 @@ class TargetURI:
         The ``args`` dict is used for the query string.
         """
         netloc = host if port is None else join_host_port(host, port)
-        return cls(urlunsplit((scheme, netloc, "", "", urlencode(args), "")))
+        return cls(urlunsplit((scheme, netloc, "", urlencode(args), "")))
 
     @property
     def scheme(self) -> str:
