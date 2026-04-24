@@ -20,6 +20,7 @@ be compatible with an IDE, linter or type checker.
 
 import argparse
 import sys
+import textwrap
 from typing import Any, Generic, Never, NoReturn
 
 from pydantic import BaseModel, ValidationError
@@ -30,6 +31,21 @@ from gallia.pydantic_argparse.parsers import command
 from gallia.pydantic_argparse.utils.field import ArgFieldInfo
 from gallia.pydantic_argparse.utils.nesting import _NestedArgumentParser
 from gallia.pydantic_argparse.utils.pydantic import PydanticField, PydanticModelT
+
+
+class CustomFormatter(argparse.HelpFormatter):
+    """
+    Wraps lines according to both explicit newlines and implicitly due to line width limitations.
+    """
+
+    def _fill_text(self, text: str, width: int, indent: str) -> str:
+        return "\n".join(
+            textwrap.fill(line, width, initial_indent=indent, subsequent_indent=indent)
+            for line in text.splitlines()
+        )
+
+    def _split_lines(self, text: str, width: int) -> list[str]:
+        return [wrapped for line in text.splitlines() for wrapped in textwrap.wrap(line, width)]
 
 
 class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
@@ -89,7 +105,7 @@ class ArgumentParser(argparse.ArgumentParser, Generic[PydanticModelT]):
             exit_on_error=exit_on_error,
             add_help=False,  # Always disable the automatic help flag.
             argument_default=argparse.SUPPRESS,  # Allow `pydantic` to handle defaults.
-            formatter_class=argparse.RawTextHelpFormatter,
+            formatter_class=CustomFormatter,
             **kwargs,
         )
 
