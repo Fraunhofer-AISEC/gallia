@@ -532,7 +532,7 @@ class CursedHR:
                     # because it is much more expensive than the wrap function from textwrap
                     # string.encode(), which is used to check if non-ascii chars appear, only has negligible costs
                     line.encode("ascii")
-                    terminal_width_defined_lines = textwrap.wrap(line, residual_width)
+                    terminal_width_defined_lines += textwrap.wrap(line, residual_width)
                 except UnicodeEncodeError:
                     terminal_width_defined_lines += wcwidth.wrap(line, residual_width)
 
