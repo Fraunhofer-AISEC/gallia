@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: CC0-1.0
 
 [build-system]
-requires = ["uv_build>=0.9.11,<0.10.0"]
+requires = ["uv_build>=0.9.11,<0.12.0"]
 build-backend = "uv_build"
 
 [project]
@@ -12,13 +12,13 @@ version = "2.1.1"
 description = "Extendable Pentesting Framework"
 readme = "README.md"
 authors = [{name = "AISEC Pentesting Team"}]
+license = "Apache-2.0"
 maintainers = [
     { name = "Stefan Tatschner", email = "stefan.tatschner@aisec.fraunhofer.de" },
     { name = "Tobias Specht", email = "tobias.specht@aisec.fraunhofer.de" },
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
-    "License :: OSI Approved :: Apache Software License",
     "Topic :: Security",
     "Operating System :: Microsoft :: Windows",
     "Operating System :: POSIX :: Linux",
