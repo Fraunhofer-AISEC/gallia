@@ -39,12 +39,12 @@ def _create_parser_from_command(
     model_type = create_model(
         f"_dynamic_{command.CONFIG_TYPE}_{model_counter}", __base__=command.CONFIG_TYPE
     )
-    model_type._original_field_infos = command.CONFIG_TYPE._original_field_infos
+    model_type._original_field_infos = command.CONFIG_TYPE._original_field_infos  # type: ignore[attr-defined]
     extra_defaults[model_type] = config_attributes
 
     setattr(model_type, _CLASS_ATTR, command)
 
-    return model_type, extra_defaults, model_counter
+    return model_type, extra_defaults, model_counter  # type: ignore[return-value]
 
 
 def _create_parser_from_tree(
