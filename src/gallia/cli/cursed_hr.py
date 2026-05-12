@@ -22,7 +22,6 @@ from enum import IntEnum, unique
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, BinaryIO
 
-import platformdirs
 import wcwidth
 
 if sys.version_info < (3, 14):
@@ -32,6 +31,7 @@ else:
 
 from gallia.log import PenlogPriority, PenlogRecord
 from gallia.services.uds.core.service import NegativeResponse, UDSRequest, UDSResponse
+from gallia.xdg import user_cache_dir
 
 
 @unique
@@ -306,7 +306,7 @@ class CursedHR:
                     )
                     self.window.refresh()
 
-                    file = tempfile.TemporaryFile(dir=platformdirs.user_cache_dir())
+                    file = tempfile.TemporaryFile(dir=user_cache_dir("cursed-hr"))
 
                     copy_to_file(file)
             except:
