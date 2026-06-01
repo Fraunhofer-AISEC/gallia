@@ -75,6 +75,8 @@ Repository = "https://github.com/Fraunhofer-AISEC/gallia"
 
 [tool.mypy]
 strict = true
+native_parser = true
+num_workers = 4
 plugins = [
     "pydantic.mypy"
 ]
