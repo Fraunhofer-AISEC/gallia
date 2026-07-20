@@ -150,10 +150,9 @@ class ReadDTCPrimitive(UDSScanner):
             "7 = warningIndicatorRequested: existing warning indicators (e.g. lamp, display)",
         ]
 
-        for line in tabulate(
-            [[d] for d in bit_descriptions], headers=["bit descriptions"]
-        ).splitlines():
-            logger.result(line)
+        logger.result("bit descriptions:")
+        for line in bit_descriptions:
+            logger.result(f"  {line}")
 
     def show_summary(self, dtcs: list[list[str]]) -> None:
         dtcs.sort()
