@@ -5,7 +5,6 @@
 import asyncio
 import gzip
 import io
-import os
 import shutil
 import socket
 import struct
@@ -14,7 +13,6 @@ from asyncio import subprocess
 from datetime import datetime
 from pathlib import Path
 from typing import Self, cast
-from urllib.parse import urlsplit
 
 from gallia.log import get_logger
 from gallia.utils import handle_task_error, set_task_handler_ctx_variable
@@ -51,11 +49,6 @@ def dumpcap_argument_list_can(iface: str, arb_ids: list[int] | None = None) -> l
 
 
 async def dumpcap_argument_list_eth(host: str, default_port: int | None = None) -> list[str] | None:
-    if proxy := os.getenv("all_proxy"):
-        url = urlsplit(proxy)
-        host = str(url.hostname) if url.hostname else "localhost"
-        port = url.port or 1080  # Default SOCKS port
-
     # Resolve host string to ip address
     loop = asyncio.get_running_loop()
     res = await loop.getaddrinfo(
