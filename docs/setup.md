@@ -41,17 +41,6 @@ $ sudo apt install pipx
 $ pipx install gallia
 ```
 
-### Debian Package
-
-The goal is to bring gallia into the Debian package repository.
-The package scripts are available on [salsa.debian.org](https://salsa.debian.org/python-team/packages/gallia/).
-The [Github Releases](https://github.com/Fraunhofer-AISEC/gallia/releases) starting with version v2.0.0a4 contain a Debian package.
-
-``` shell-session
-$ wcurl URL_FROM_RELEASE_PAGE
-$ sudo apt install ./gallia_VERSION_all.deb
-```
-
 ### NixOS
 
 ``` shell-session
@@ -137,10 +126,3 @@ If you are using a distribution package, setting up shell completions is already
 $ mkdir -p ~/.config/fish/completions
 $ register-python-argcomplete --shell fish gallia > ~/.config/fish/completions/gallia.fish
 ```
-
-### IDE Integration
-
-Just use [LSP](https://microsoft.github.io/language-server-protocol/).
-Most editors (e.g. [neovim](https://neovim.io/)) support the [Language Server Protocol](https://microsoft.github.io/language-server-protocol/).
-The required tools are listed as development dependencies in `pyproject.toml` and are automatically managed by `uv`.
-Please refer to the documentation of your text editor of choice for configuring LSP support.
