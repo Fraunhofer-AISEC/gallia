@@ -29,10 +29,10 @@ lint-reuse:
 lint-ty:
     ty check
 
-lint: lint-mypy lint-ruff-check lint-ruff-format lint-ruff-format lint-shellcheck lint-reuse
+lint: lint-mypy lint-ruff-check lint-ruff-format lint-shellcheck lint-reuse
 
 win32-lint-mypy:
-    mypy --platform win32 --exclude "gallia\/log\.py" --exclude "hr" src tests
+    mypy --pretty --platform win32 --exclude "gallia\/log\.py" --exclude "hr" src tests
 
 fmt:
     ruff check --fix-only
