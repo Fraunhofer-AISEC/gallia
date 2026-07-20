@@ -50,7 +50,7 @@ def dumpcap_argument_list_can(iface: str, arb_ids: list[int] | None = None) -> l
     return args
 
 
-async def dumpcap_argument_list_eth(host: str, port: int | None = None) -> list[str] | None:
+async def dumpcap_argument_list_eth(host: str, default_port: int | None = None) -> list[str] | None:
     if proxy := os.getenv("all_proxy"):
         url = urlsplit(proxy)
         host = str(url.hostname) if url.hostname else "localhost"
@@ -60,7 +60,7 @@ async def dumpcap_argument_list_eth(host: str, port: int | None = None) -> list[
     loop = asyncio.get_running_loop()
     res = await loop.getaddrinfo(
         host,
-        port,
+        default_port,
         type=socket.SocketKind.SOCK_STREAM,
     )
 
@@ -70,7 +70,10 @@ async def dumpcap_argument_list_eth(host: str, port: int | None = None) -> list[
     # but it's documented in the python docs:
     # https://docs.python.org/3/library/socket.html
     addr_tuple = res[0]
-    ip, port = addr_tuple[4][0], addr_tuple[4][1]
+    ip = addr_tuple[4][0]
+
+    assert isinstance(addr_tuple[4][1], int)
+    port = addr_tuple[4][1]
 
     return [
         "-q",
