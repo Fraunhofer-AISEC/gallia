@@ -80,7 +80,7 @@ class _NestedArgumentParser(Generic[PydanticModelT]):
         # relying on the submodel defaults
         # -> thus, the submodel name/key needs to be kept in
         # the schema
-        return remap(schema, visit=lambda p, k, v: v is not None)  # type: ignore[no-untyped-call]
+        return remap(schema, visit=lambda p, k, v: v is not None)
 
     def validate(self) -> tuple[PydanticModelT, BaseModel]:
         """Return the root of the model, as well as the sub-model for the bottom subcommand"""
