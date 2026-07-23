@@ -218,7 +218,6 @@ dependencies = [
     { name = "more-itertools", marker = "python_full_version < '3.12' and sys_platform == 'win32'" },
     { name = "platformdirs" },
     { name = "pydantic" },
-    { name = "tabulate" },
     { name = "wcwidth" },
     { name = "zstandard", marker = "python_full_version < '3.14'" },
 ]
@@ -234,7 +233,6 @@ dev = [
     { name = "rust-just" },
     { name = "ty" },
     { name = "types-boltons" },
-    { name = "types-tabulate" },
 ]
 
 [package.metadata]
@@ -252,10 +250,8 @@ requires-dist = [
     { name = "reuse", marker = "extra == 'dev'", specifier = ">=4.0,<7.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.9.0" },
     { name = "rust-just", marker = "extra == 'dev'", specifier = ">=1.38.0" },
-    { name = "tabulate", specifier = ">=0.9" },
     { name = "ty", marker = "extra == 'dev'", specifier = ">=0.0.1a29" },
     { name = "types-boltons", marker = "extra == 'dev'", specifier = ">=25.0.0.20250919" },
-    { name = "types-tabulate", marker = "extra == 'dev'", specifier = ">=0.9,<0.11" },
     { name = "wcwidth", specifier = ">=0.3.0" },
     { name = "zstandard", marker = "python_full_version < '3.14'", specifier = ">=0.19" },
 ]
@@ -801,15 +797,6 @@ wheels = [
 ]
 
 [[package]]
-name = "tabulate"
-version = "0.10.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/46/58/8c37dea7bbf769b20d58e7ace7e5edfe65b849442b00ffcdd56be88697c6/tabulate-0.10.0.tar.gz", hash = "sha256:e2cfde8f79420f6deeffdeda9aaec3b6bc5abce947655d17ac662b126e48a60d", size = 91754, upload-time = "2026-03-04T18:55:34.402Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/99/55/db07de81b5c630da5cbf5c7df646580ca26dfaefa593667fc6f2fe016d2e/tabulate-0.10.0-py3-none-any.whl", hash = "sha256:f0b0622e567335c8fabaaa659f1b33bcb6ddfe2e496071b743aa113f8774f2d3", size = 39814, upload-time = "2026-03-04T18:55:31.284Z" },
-]
-
-[[package]]
 name = "tomli"
 version = "2.4.1"
 source = { registry = "https://pypi.org/simple" }
@@ -904,15 +891,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/52/93/2bf0fb36a9a414b2355358800c189e06e7aa373abb1731dea774acd33d04/types_boltons-26.1.0.20260722.tar.gz", hash = "sha256:9cb5d0497343361a6a834fff91498d607b34ce6f3fe5c8cdc59ba6b78d9c5538", size = 22249, upload-time = "2026-07-22T04:55:57.374Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/0d/0c/b6e4252b5ed8e130f15ccb22c58b5c9dbe32933120acca7b3ba9aa4704b9/types_boltons-26.1.0.20260722-py3-none-any.whl", hash = "sha256:4f129f96dd7f96a670e12ae22d93968151f6c7e9d530e598fd9683a22df02423", size = 28723, upload-time = "2026-07-22T04:55:56.407Z" },
-]
-
-[[package]]
-name = "types-tabulate"
-version = "0.10.0.20260508"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/11/af/c100d86897d3fdb010d8f813569fa80355b5cb553f51080e37d4f3c451bb/types_tabulate-0.10.0.20260508.tar.gz", hash = "sha256:8e51f159e8b24976849706ae2ed1dc9adba8ebbd080b17e494ebb66a8cc92c74", size = 8395, upload-time = "2026-05-08T04:47:58.921Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/a0/36/443b700f54a585cf8ed4e76d8ad08b12df6914f8782a2788ecd0d8491519/types_tabulate-0.10.0.20260508-py3-none-any.whl", hash = "sha256:b1e1a2d0456fbd655a71690b09a7aaeffdf2978d32049184ea436492aa51d20a", size = 8137, upload-time = "2026-05-08T04:47:57.872Z" },
 ]
 
 [[package]]
