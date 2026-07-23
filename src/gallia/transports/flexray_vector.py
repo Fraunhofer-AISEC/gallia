@@ -5,14 +5,8 @@
 import asyncio
 import sys
 from enum import IntEnum, unique
-from typing import ClassVar, Self, TypeAlias
-
-if sys.version_info < (3, 12):
-    # NOTE: mypy's detection of these magic sys.foo checks is buggy
-    #       and for some reason does not work here.
-    from more_itertools import chunked as batched  # type: ignore[import-not-found]
-else:
-    from itertools import batched
+from itertools import batched
+from typing import ClassVar, Self
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
@@ -287,7 +281,7 @@ class FlexRayTPFlowControlFrame(BaseModel):
         )
 
 
-FlexRayTPFrame: TypeAlias = (
+type FlexRayTPFrame = (
     FlexRayTPSingleFrame
     | FlexRayTPFirstFrame
     | FlexRayTPConsecutiveFrame
