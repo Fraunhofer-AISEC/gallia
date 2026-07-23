@@ -120,7 +120,7 @@ T = TypeVar("T")
 EnumType = TypeVar("EnumType", bound=Enum)
 
 
-def auto_enum(x: str, enum_type: type[EnumType]) -> EnumType:
+def auto_enum[EnumType: Enum](x: str, enum_type: type[EnumType]) -> EnumType:
     try:
         return enum_type[x]
     except KeyError:
@@ -175,7 +175,7 @@ else:
     Usage: x: EnumArg[SomeEnum] = ...
     """
 
-    def auto_literal(cls: type[T]):
+    def auto_literal[T](cls: type[T]):
         args = get_args(cls)
 
         mapping = {}
