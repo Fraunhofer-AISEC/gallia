@@ -1238,7 +1238,7 @@ class ReadDataByIdentifierResponse(
         pdu = pack("!B", self.RESPONSE_SERVICE_ID)
 
         for data_identifier, data_record in zip(
-            self.data_identifiers, self.data_records, strict=False
+            self.data_identifiers, self.data_records, strict=True
         ):
             pdu = pdu + to_bytes(data_identifier, 2) + data_record
 
@@ -1270,7 +1270,7 @@ class ReadDataByIdentifierResponse(
             return all(
                 req_id == resp_id
                 for req_id, resp_id in zip(
-                    request.data_identifiers, self.data_identifiers, strict=False
+                    request.data_identifiers, self.data_identifiers, strict=True
                 )
             )
 
@@ -1635,7 +1635,7 @@ class DefineByIdentifierRequest(
             self.source_data_identifiers,
             self.positions_in_source_data_record,
             self.memory_sizes,
-            strict=False,
+            strict=True,
         ):
             pdu = (
                 pdu
@@ -1737,7 +1737,7 @@ class DefineByMemoryAddressRequest(
 
         # In case the address_and_length_format_identifier is None, this calculates it based on the longest address and size
         # Otherwise it checks for all addresses and size if they can be represented with its length constraints.
-        for address, size in zip(self.memory_addresses, self.memory_sizes, strict=False):
+        for address, size in zip(self.memory_addresses, self.memory_sizes, strict=True):
             computed_address_and_length_format_identifier, _, _ = uds_memory_parameters(
                 address, size, address_and_length_format_identifier
             )
@@ -1782,7 +1782,7 @@ class DefineByMemoryAddressRequest(
         )
 
         for memory_address, memory_size in zip(
-            self.memory_addresses, self.memory_sizes, strict=False
+            self.memory_addresses, self.memory_sizes, strict=True
         ):
             _, address, size = uds_memory_parameters(
                 memory_address, memory_size, self.address_and_length_format_identifier
