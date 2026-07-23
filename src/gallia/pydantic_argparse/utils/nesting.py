@@ -5,14 +5,14 @@
 """Utilities to help with parsing arbitrarily nested `pydantic` models."""
 
 from argparse import Namespace
-from typing import Any, Generic, TypeAlias
+from typing import Any
 
 from pydantic import BaseModel
 
 from .namespaces import to_dict
-from .pydantic import PydanticField, PydanticModelT
+from .pydantic import PydanticField
 
-ModelT: TypeAlias = BaseModel | type[BaseModel]
+type ModelT = BaseModel | type[BaseModel]
 
 
 def _get_path(root: Any, path: tuple[str, ...], default: Any = None) -> Any:
@@ -45,12 +45,12 @@ def _remove_none_values(value: Any) -> Any:
     return value
 
 
-class _NestedArgumentParser(Generic[PydanticModelT]):
+class _NestedArgumentParser[T: BaseModel]:
     """Parses arbitrarily nested `pydantic` models and inserts values passed at the command line."""
 
     def __init__(
         self,
-        model: PydanticModelT | type[PydanticModelT],
+        model: T | type[T],
         namespace: Namespace,
     ) -> None:
         self.model = model
@@ -111,7 +111,7 @@ class _NestedArgumentParser(Generic[PydanticModelT]):
         # the schema
         return _remove_none_values(schema)
 
-    def validate(self) -> tuple[PydanticModelT, BaseModel]:
+    def validate(self) -> tuple[T, BaseModel]:
         """Return the root of the model, as well as the sub-model for the bottom subcommand"""
         model = self.model.model_validate(self.schema)
         subcommand = model

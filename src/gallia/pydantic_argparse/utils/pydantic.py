@@ -35,7 +35,6 @@ from .types import all_types
 
 # Constants
 T = TypeVar("T")
-PydanticModelT = TypeVar("PydanticModelT", bound=BaseModel)
 PydanticValidator = classmethod
 NoneType = type(None)
 

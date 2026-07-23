@@ -22,20 +22,18 @@ classifiers = [
     "Topic :: Security",
     "Operating System :: Microsoft :: Windows",
     "Operating System :: POSIX :: Linux",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: 3.15",
 ]
-requires-python = ">=3.11,<3.16"
+requires-python = ">=3.12,<3.16"
 dependencies = [
     "aiosqlite >=0.18",
     "argcomplete >=2,<4",
     "platformdirs >=2.6,<5.0",
     "pydantic >=2.12,<3.0",
     "zstandard >=0.19; python_version < '3.14'",
-    "more-itertools >=10.3.0,<11.0.0; sys_platform == 'win32' and python_version < '3.12'",
     "wcwidth>=0.3.0",
 ]
 
@@ -82,7 +80,7 @@ init_typed = true
 warn_required_dynamic_aliases = true
 
 [tool.ruff]
-target-version = "py311"
+target-version = "py312"
 line-length = 100
 exclude = ["docs/"]
 
@@ -134,11 +132,6 @@ ignore = [
 [[tool.ty.overrides]]
 include = ["src/gallia/pydantic_argparse/utils/field.py"]
 rules = { subclass-of-final-class = "ignore" }
-
-# more-itertools is only installed on windows with Python 3.11.
-[[tool.ty.overrides]]
-include = ["src/gallia/transports/flexray_vector.py"]
-rules = { unresolved-import = "ignore" }
 
 [tool.pytest.ini_options]
 testpaths = ["tests/pytest"]

@@ -10,14 +10,14 @@ SPDX-License-Identifier: CC0-1.0
 This project has the following system level dependencies:
 
 * [Linux](https://kernel.org) >= 5.10
-* [Python](https://python.org) >= 3.11 (roughly aligns with the current version in Debian stable)
+* [Python](https://python.org) >= 3.12
 * [uv](https://docs.astral.sh/uv/) (optional, for development)
 * [dumpcap](https://www.wireshark.org/docs/man-pages/dumpcap.html) (optional for recording network traces, part of [wireshark](https://www.wireshark.org/))
 * [git](https://git-scm.com/) (optional, used to detect config file)
 * [iproute2](https://git.kernel.org/pub/scm/network/iproute2/iproute2.git) (optional, used to query network settings in some scanners)
 
-The Python version is roughly aligned with the Debian release and Ubuntu cycles.
-It is guaranteed, that gallia is compatible with the current Debian stable and Ubuntu LTS releases.
+gallia supports the latest Ubuntu LTS release and Debian stable.
+The minimum Python version follows the system interpreters of these two distributions; older Python versions are dropped once neither of them ships them anymore.
 Python dependencies are listed in `pyproject.toml`.
 
 ## Install
@@ -83,10 +83,10 @@ $ pipx install uv
 $ uv sync
 ```
 
-If you want to use a different Python version from the one defined in `.python-version`, the flags `--python-preference only-system` or `--python` for `uv sync` might be helpful; e.g. to use your system provided Python 3.11:
+If you want to use a different Python version from the one defined in `.python-version`, the flags `--python-preference only-system` or `--python` for `uv sync` might be helpful; e.g. to use your system provided Python 3.12:
 
 ```shell-session
-$ uv sync --python-preference only-system --python 3.11
+$ uv sync --python-preference only-system --python 3.12
 ```
 
 #### shell
