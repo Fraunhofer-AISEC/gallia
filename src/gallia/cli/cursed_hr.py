@@ -1038,12 +1038,12 @@ class CursedHR:
             max_lines, max_columns = self.window.getmaxyx()
             max_lines -= 1
 
-            def page_up() -> None:
+            def page_up(max_lines: int = max_lines) -> None:
                 nonlocal entry_start
                 nonlocal line_start
                 nonlocal display_entries
 
-                for _ in range(max_lines - 1):  # noqa: B023
+                for _ in range(max_lines - 1):
                     old_entry_start = entry_start
                     old_line_start = line_start
 
@@ -1060,11 +1060,11 @@ class CursedHR:
 
                     display_entries = self.calculate_display_entries(entry_start, line_start)
 
-            def line_up() -> None:
+            def line_up(display_entries: list[DisplayEntry] = display_entries) -> None:
                 nonlocal entry_start
                 nonlocal line_start
 
-                if display_entries[0].entry_line_number == 0:  # noqa: B023
+                if display_entries[0].entry_line_number == 0:
                     if entry_start > 0:
                         entry_start = max(0, entry_start - 1)
                         line_start = -1
