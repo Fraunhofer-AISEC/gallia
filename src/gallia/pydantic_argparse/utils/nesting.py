@@ -7,13 +7,42 @@
 from argparse import Namespace
 from typing import Any, Generic, TypeAlias
 
-from boltons.iterutils import get_path, remap
 from pydantic import BaseModel
 
 from .namespaces import to_dict
 from .pydantic import PydanticField, PydanticModelT
 
 ModelT: TypeAlias = PydanticModelT | type[PydanticModelT] | BaseModel | type[BaseModel]
+
+
+def _get_path(root: Any, path: tuple[str, ...], default: Any = None) -> Any:
+    """Look up a value in a nested mapping via a sequence of keys.
+
+    Returns ``default`` if any key along the path is missing.
+    """
+    cur = root
+
+    for seg in path:
+        try:
+            cur = cur[seg]
+        except (KeyError, IndexError, TypeError):
+            return default
+
+    return cur
+
+
+def _remove_none_values(value: Any) -> Any:
+    """Recursively drop ``None`` entries from nested dicts/lists/tuples/sets."""
+    if isinstance(value, dict):
+        return {k: _remove_none_values(v) for k, v in value.items() if v is not None}
+    if isinstance(value, list):
+        return [_remove_none_values(v) for v in value if v is not None]
+    if isinstance(value, tuple):
+        return tuple(_remove_none_values(v) for v in value if v is not None)
+    if isinstance(value, set):
+        return {_remove_none_values(v) for v in value if v is not None}
+
+    return value
 
 
 class _NestedArgumentParser(Generic[PydanticModelT]):
@@ -66,7 +95,7 @@ class _NestedArgumentParser(Generic[PydanticModelT]):
 
                 if len(self.subcommand_path) > 0:
                     path = (*self.subcommand_path, key)
-                    value = get_path(self.args, path, value)  # type: ignore[no-untyped-call]
+                    value = _get_path(self.args, path, value)
 
                 model_fields[key] = value
 
@@ -80,7 +109,7 @@ class _NestedArgumentParser(Generic[PydanticModelT]):
         # relying on the submodel defaults
         # -> thus, the submodel name/key needs to be kept in
         # the schema
-        return remap(schema, visit=lambda p, k, v: v is not None)
+        return _remove_none_values(schema)
 
     def validate(self) -> tuple[PydanticModelT, BaseModel]:
         """Return the root of the model, as well as the sub-model for the bottom subcommand"""
