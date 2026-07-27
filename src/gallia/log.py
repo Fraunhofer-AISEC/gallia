@@ -183,23 +183,25 @@ class PenlogPriority(IntEnum):
 
     def to_level(self) -> Loglevel:
         """Converts an instance of PenlogPriority to :class:`Loglevel`."""
-        match self:
-            case self.TRACE:
-                return Loglevel.TRACE
-            case self.DEBUG:
-                return Loglevel.DEBUG
-            case self.INFO:
-                return Loglevel.INFO
-            case self.NOTICE:
-                return Loglevel.NOTICE
-            case self.WARNING:
-                return Loglevel.WARNING
-            case self.ERROR:
-                return Loglevel.ERROR
-            case self.CRITICAL:
-                return Loglevel.CRITICAL
-            case _:
-                raise ValueError("invalid value")
+        try:
+            return _PRIORITY_TO_LEVEL[self]
+        except KeyError:
+            raise ValueError("invalid value") from None
+
+
+# Lookup tables used on hot paths (e.g. hr reading large penlog files) to
+# avoid the overhead of IntEnum's match-based to_level() and Enum's
+# value-lookup machinery in PenlogRecord.parse_json().
+_PRIORITY_TO_LEVEL: dict[PenlogPriority, Loglevel] = {
+    PenlogPriority.TRACE: Loglevel.TRACE,
+    PenlogPriority.DEBUG: Loglevel.DEBUG,
+    PenlogPriority.INFO: Loglevel.INFO,
+    PenlogPriority.NOTICE: Loglevel.NOTICE,
+    PenlogPriority.WARNING: Loglevel.WARNING,
+    PenlogPriority.ERROR: Loglevel.ERROR,
+    PenlogPriority.CRITICAL: Loglevel.CRITICAL,
+}
+_PRIORITY_BY_VALUE: dict[int, PenlogPriority] = {p.value: p for p in PenlogPriority}
 
 
 def setup_logging(
@@ -377,6 +379,33 @@ def _format_record_for_syslog(
     return msg
 
 
+_MONTH_ABBREVIATIONS = (
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+)
+
+
+def _format_timestamp(dt: datetime.datetime) -> str:
+    # Equivalent to dt.strftime("%b %d %H:%M:%S.%f")[:-3], but avoids the
+    # locale-aware strftime() call, which is significantly slower and is
+    # exercised once per record when e.g. hr formats a large penlog file.
+    # Always renders the month in English, regardless of the system locale.
+    return (
+        f"{_MONTH_ABBREVIATIONS[dt.month - 1]} {dt.day:02d} "
+        f"{dt.hour:02d}:{dt.minute:02d}:{dt.second:02d}.{dt.microsecond // 1000:03d}"
+    )
+
+
 def _format_record(
     dt: datetime.datetime,
     name: str,
@@ -391,7 +420,7 @@ def _format_record(
     if volatile_info:
         msg += "\33[2K"  # Clean current line
     extra_len = 4
-    msg += dt.strftime("%b %d %H:%M:%S.%f")[:-3]
+    msg += _format_timestamp(dt)
     msg += " "
     msg += name
     msg += _format_tags(tags)
@@ -465,22 +494,25 @@ class PenlogRecord:
         if (v := record["version"]) != 2:
             raise json.JSONDecodeError(f"invalid log record version {v}", data.decode(), 0)
 
+        priority_value = record["priority"]
+
+        try:
+            priority = _PRIORITY_BY_VALUE[priority_value]
+        except KeyError:
+            raise ValueError(f"{priority_value!r} is not a valid PenlogPriority") from None
+
         return cls(
             module=record["module"],
             host=record["host"],
             data=record["data"],
             datetime=datetime.datetime.fromisoformat(record["datetime"]),
-            priority=PenlogPriority(record["priority"]),
-            tags=record["tags"] if "tags" in record else None,
-            line=record["line"] if "line" in record else None,
-            stacktrace=record["stacktrace"] if "stacktrace" in record else None,
-            _python_level_no=record["_python_level_no"] if "_python_level_no" in record else None,
-            _python_level_name=record["_python_level_name"]
-            if "_python_level_name" in record
-            else None,
-            _python_func_name=record["_python_func_name"]
-            if "_python_func_name" in record
-            else None,
+            priority=priority,
+            tags=record.get("tags"),
+            line=record.get("line"),
+            stacktrace=record.get("stacktrace"),
+            _python_level_no=record.get("_python_level_no"),
+            _python_level_name=record.get("_python_level_name"),
+            _python_func_name=record.get("_python_func_name"),
         )
 
     def to_log_record(self) -> logging.LogRecord:
