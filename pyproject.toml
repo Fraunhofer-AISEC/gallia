@@ -89,29 +89,16 @@ line-length = 100
 exclude = ["docs/"]
 
 [tool.ruff.lint]
-select = [
-    "B",    # flake8-bugbear
+# extend-select adds to ruff's own (already fairly broad) default rule set,
+# instead of replacing it like `select` would - so only list rules here that
+# the default doesn't already cover.
+extend-select = [
     "A",    # flake8-builtins
-    "ASYNC",# flake8-async
-    "C4",   # flake8-comprehensions
-    "E",    # pycodestlye
-    "F",    # pyflakes
-    "FA",   # flake8-future-annotations
-    "FLY",  # flynt
-    "FURB", # refurb
-    "I",    # isort
     "IC",   # flake8-import-conventions
-    "LOG",  # flake8-logging
-    "PGH",  # pygrep-hooks
-    "PIE",  # flake8-pie
-    "PL",   # pylint
-    "PTH",  # flake8-use-pathlib
     "Q",    # flake8-quotes
     "RSE",  # flake8-raise
-    "RUF100",  # unused-noqa
     "TD",   # flake8-todos
     "TID",  # flake8-tidy-imports
-    "UP",   # pyupgrade
 ]
 ignore = [
     "ASYNC109", # Async function definition with a timeout parameter
