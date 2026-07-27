@@ -19,6 +19,7 @@ import sys
 import tempfile
 import time
 import traceback
+from array import array
 from collections.abc import Iterator
 from enum import Enum, IntEnum, unique
 from logging.handlers import QueueHandler, QueueListener
@@ -519,7 +520,7 @@ class PenlogReader:
         self._current_record: PenlogRecord | None = None
         self._current_record_index = 0
         self._parsed = False
-        self._record_offsets: list[int] = []
+        self._record_offsets = array("Q")
 
     def _test_mmap(self, path: Path) -> bool:
         with path.open("rb") as f:
@@ -554,6 +555,7 @@ class PenlogReader:
 
     def _parse_file_structure(self) -> None:
         old_offset = self.file_mmap.tell()
+        self.file_mmap.seek(0)
 
         while True:
             self._record_offsets.append(self.file_mmap.tell())
@@ -615,9 +617,20 @@ class PenlogReader:
     def records(
         self,
         priority: PenlogPriority = PenlogPriority.TRACE,
-        offset: int = 0,
+        offset: int | None = None,
         reverse: bool = False,
     ) -> Iterator[PenlogRecord]:
+        if offset is None:
+            if reverse:
+                # Default to the last record; unlike forward iteration,
+                # reverse iteration has no useful meaning for starting at
+                # record 0.
+                if len(self) == 0:
+                    return
+                offset = -1
+            else:
+                offset = 0
+
         self.seek_to_record(offset)
         if reverse is False:
             while True:
