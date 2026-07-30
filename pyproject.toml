@@ -122,6 +122,7 @@ ignore = [
     "PLR0912",  # too many branches
     "PLR0913",  # too many arguments to function call
     "PLR0915",  # too many statements
+    "PLR0917",  # too many positional arguments
     "PLC1901",  # empty string is falsey
     "TD001",    # Invalid TODO tag: {tag}
     "TD002",    # Missing author in TODO; try: # TODO(<author_name>): ... or # TODO @<author_name>: ...
