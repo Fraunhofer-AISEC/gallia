@@ -168,7 +168,7 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
         data = b""
         for can_id in can_ids:
             if inv_filter:
-                can_id |= CAN_INV_FILTER  # noqa: PLW2901
+                can_id |= CAN_INV_FILTER
             data += struct.pack(
                 "@II",
                 can_id,

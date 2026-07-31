@@ -41,7 +41,7 @@ def err_int(x: str, base: int) -> int:
             base_suffix = f" with base {base}"
 
         raise ValueError(
-            f"{repr(x)} is not a valid representation for an integer{base_suffix}"
+            f"{x!r} is not a valid representation for an integer{base_suffix}"
         ) from None
 
 

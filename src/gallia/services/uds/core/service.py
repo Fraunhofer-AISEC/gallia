@@ -75,7 +75,7 @@ class UDSRequest(ABC):
         pass
 
     @classmethod
-    def from_pdu(cls: type[T_UDSRequest], pdu: bytes) -> T_UDSRequest:
+    def from_pdu(cls, pdu: bytes) -> Self:
         cls._check_pdu(pdu)
         result = cls._from_pdu(pdu)
 
@@ -136,9 +136,7 @@ class UDSRequest(ABC):
 
             raise ValueError("Request cannot be parsed")
         except Exception as e:
-            logger.trace(
-                f" - Falling back to RawRequest because of the following problem: {repr(e)}"
-            )
+            logger.trace(f" - Falling back to RawRequest because of the following problem: {e!r}")
             return RawRequest(pdu)
 
 
@@ -175,7 +173,7 @@ class UDSResponse(ABC):
         pass
 
     @classmethod
-    def from_pdu(cls: type[T_UDSResponse], pdu: bytes) -> T_UDSResponse:
+    def from_pdu(cls, pdu: bytes) -> Self:
         cls._check_pdu(pdu)
         return cls._from_pdu(pdu)
 
@@ -236,7 +234,7 @@ class UDSResponse(ABC):
             try:
                 response_sub_function = response_service._sub_function_type(pdu)
             except ValueError as e:
-                logger.trace(f" - Falling back to raw response because {str(e)}")
+                logger.trace(f" - Falling back to raw response because {e!s}")
                 return RawPositiveResponse(pdu)
 
             logger.trace(f" - Inferred subFunction {response_sub_function.__name__}")
@@ -260,7 +258,7 @@ class RawResponse(UDSResponse, ABC, service_id=None, minimal_length=1, maximal_l
         self._pdu = pdu
 
     @classmethod
-    def _from_pdu(cls: type[T_RawResponse], pdu: bytes) -> T_RawResponse:
+    def _from_pdu(cls, pdu: bytes) -> Self:
         return cls(pdu)
 
     @property
@@ -358,9 +356,7 @@ class PositiveResponse(UDSResponse, ABC, service_id=None, minimal_length=0, maxi
         return f"{title}({attributes})"
 
     @classmethod
-    def parse_static(
-        cls: type[T_PositiveResponse], response_pdu: bytes
-    ) -> NegativeResponse | T_PositiveResponse:
+    def parse_static(cls, response_pdu: bytes) -> NegativeResponse | Self:
         if response_pdu[0] == 0x7F:
             negative_response = NegativeResponse.from_pdu(response_pdu)
             return negative_response
@@ -1489,9 +1485,7 @@ class _DynamicallyDefineDataIdentifierResponse(
             )
 
     @classmethod
-    def _from_pdu(
-        cls: type[T_DynamicallyDefineDataIdentifierResponse], pdu: bytes
-    ) -> T_DynamicallyDefineDataIdentifierResponse:
+    def _from_pdu(cls, pdu: bytes) -> Self:
         dynamically_defined_data_identifier: int | None = None
 
         if len(pdu) > 2:
@@ -2237,7 +2231,7 @@ class _ReadDTCType0Response(
         )
 
     @classmethod
-    def _from_pdu(cls: type[T_ReadDTCType0Response], pdu: bytes) -> T_ReadDTCType0Response:
+    def _from_pdu(cls, pdu: bytes) -> Self:
         dtc_status_availability_mask = pdu[2]
         dtc_format_identifier = DTCFormatIdentifier(pdu[3])
         dtc_count = from_bytes(pdu[4:])
@@ -2302,7 +2296,7 @@ class _ReadDTCType1Response(
         )
 
     @classmethod
-    def _from_pdu(cls: type[T_ReadDTCType1Response], pdu: bytes) -> T_ReadDTCType1Response:
+    def _from_pdu(cls, pdu: bytes) -> Self:
         dtc_status_availability_mask = pdu[2]
         dtc_and_status_record = pdu[3:]
         return cls(dtc_status_availability_mask, dtc_and_status_record)
@@ -2337,7 +2331,7 @@ class _ReadDTCType0Request(
         )
 
     @classmethod
-    def _from_pdu(cls: type[T_ReadDTCType0Request], pdu: bytes) -> T_ReadDTCType0Request:
+    def _from_pdu(cls, pdu: bytes) -> Self:
         dtc_status_mask = pdu[2]
         return cls(dtc_status_mask, cls.suppress_response_set(pdu))
 
@@ -2362,7 +2356,7 @@ class _ReadDTCType6Request(
         return pack("!BBB", self.SERVICE_ID, self.sub_function_with_suppress_response_bit)
 
     @classmethod
-    def _from_pdu(cls: type[T_ReadDTCType6Request], pdu: bytes) -> T_ReadDTCType6Request:
+    def _from_pdu(cls, pdu: bytes) -> Self:
         return cls(cls.suppress_response_set(pdu))
 
 
@@ -3270,7 +3264,7 @@ class RoutineControlResponse(
         )
 
     @classmethod
-    def _from_pdu(cls: type[T_RoutineControlResponse], pdu: bytes) -> T_RoutineControlResponse:
+    def _from_pdu(cls, pdu: bytes) -> Self:
         routine_identifier = from_bytes(pdu[2:4])
         routine_status_record = pdu[4:]
 
@@ -3329,7 +3323,7 @@ class RoutineControlRequest(
         )
 
     @classmethod
-    def _from_pdu(cls: type[T_RoutineControlRequest], pdu: bytes) -> T_RoutineControlRequest:
+    def _from_pdu(cls, pdu: bytes) -> Self:
         routine_identifier = from_bytes(pdu[2:4])
         routine_control_option_record = pdu[4:]
 
@@ -3508,9 +3502,7 @@ class _RequestUpOrDownloadResponse(
         )
 
     @classmethod
-    def _from_pdu(
-        cls: type[T_RequestUpOrDownloadResponse], pdu: bytes
-    ) -> T_RequestUpOrDownloadResponse:
+    def _from_pdu(cls, pdu: bytes) -> Self:
         length_format_identifier = pdu[1]
         max_number_of_block_length = from_bytes(pdu[2:])
         return cls(max_number_of_block_length, length_format_identifier)
@@ -3576,9 +3568,7 @@ class _RequestUpOrDownloadRequest(
         return pdu
 
     @classmethod
-    def _from_pdu(
-        cls: type[T_RequestUpOrDownloadRequest], pdu: bytes
-    ) -> T_RequestUpOrDownloadRequest:
+    def _from_pdu(cls, pdu: bytes) -> Self:
         data_format_identifier = pdu[1]
         address_and_length_format_identifier = pdu[2]
         address_length, size_length = address_and_size_length(address_and_length_format_identifier)

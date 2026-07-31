@@ -18,7 +18,7 @@ assert sys.platform == "win32", "unsupported platform"
 # Configures the behaviour of ctypes.util.find_library().
 if "GALLIA_VXLAPI_PATH" in os.environ:
     gallia_setting = os.environ["GALLIA_VXLAPI_PATH"]
-    os.environ["PATH"] = os.path.dirname(gallia_setting) + os.pathsep + os.environ["PATH"]  # noqa: PTH120
+    os.environ["PATH"] = os.path.dirname(gallia_setting) + os.pathsep + os.environ["PATH"]
 
 
 DLL_NAME = "vxlapi64" if platform.architecture()[0] == "64bit" else "vxlapi"
