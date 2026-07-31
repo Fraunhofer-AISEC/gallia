@@ -116,6 +116,10 @@ ignore = [
     "UP040",    # Type alias uses `TypeAlias` annotation instead of the `type` keyword
     "A005",     # Module `types` shadows a Python standard-library module
     "PLC0415",  # `import` should be at the top-level of a file
+    "BLE001",   # Do not catch blind exception
+    "S110",     # `try`-`except`-`pass` detected, consider logging the exception
+    "RUF012",   # Mutable default value for class attribute
+    "SIM102",   # Use a single `if` statement instead of nested `if` statements
 ]
 
 [tool.ty.environment]
