@@ -15,7 +15,6 @@ from typing import (
     TYPE_CHECKING,
     Annotated,
     Any,
-    TypeAlias,
     TypeVar,
     Unpack,
     get_args,
@@ -120,7 +119,7 @@ T = TypeVar("T")
 EnumType = TypeVar("EnumType", bound=Enum)
 
 
-def auto_enum(x: str, enum_type: type[EnumType]) -> EnumType:
+def auto_enum[EnumType: Enum](x: str, enum_type: type[EnumType]) -> EnumType:
     try:
         return enum_type[x]
     except KeyError:
@@ -136,8 +135,8 @@ def auto_enum(x: str, enum_type: type[EnumType]) -> EnumType:
 
 
 if TYPE_CHECKING:
-    InitializeIdempotent: TypeAlias = Annotated[T, ""]
-    EnumArg: TypeAlias = Annotated[EnumType, ""]
+    type InitializeIdempotent[T] = Annotated[T, ""]
+    type EnumArg[EnumType: Enum] = Annotated[EnumType, ""]
 
     # For mypy to accept AutoLiteral as a direct alias to Literal, using TyeAliases seems to not work
     # Exporting literal under a new name seems to be the only way this works
@@ -175,7 +174,7 @@ else:
     Usage: x: EnumArg[SomeEnum] = ...
     """
 
-    def auto_literal(cls: type[T]):
+    def auto_literal[T](cls: type[T]):
         args = get_args(cls)
 
         mapping = {}
