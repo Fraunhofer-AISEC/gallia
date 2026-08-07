@@ -4,8 +4,6 @@
 
 import sys
 
-from tabulate import tabulate
-
 from gallia.command import UDSScanner
 from gallia.command.config import AutoInt, Field, HexInt
 from gallia.command.uds import UDSScannerConfig
@@ -150,18 +148,20 @@ class ReadDTCPrimitive(UDSScanner):
             "7 = warningIndicatorRequested: existing warning indicators (e.g. lamp, display)",
         ]
 
-        for line in tabulate(
-            [[d] for d in bit_descriptions], headers=["bit descriptions"]
-        ).splitlines():
-            logger.result(line)
+        logger.result("bit descriptions:")
+        for line in bit_descriptions:
+            logger.result(f"  {line}")
 
     def show_summary(self, dtcs: list[list[str]]) -> None:
         dtcs.sort()
 
         header = ["DTC", "error state", "0", "1", "2", "3", "4", "5", "6", "7"]
+        widths = [max(len(row[i]) for row in [header, *dtcs]) for i in range(len(header))]
 
-        for line in tabulate(dtcs, headers=header, tablefmt="fancy_grid").splitlines():
-            logger.result(line)
+        for row in [header, *dtcs]:
+            logger.result(
+                "  ".join(cell.ljust(width) for cell, width in zip(row, widths, strict=True))
+            )
 
 
 class ClearDTCPrimitive(UDSScanner):
