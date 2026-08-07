@@ -169,7 +169,7 @@ class ECU(UDSClient):
                     f"Read current session not supported: {e.RESPONSE_CODE.name}, skipping check_session"
                 )
                 return True
-            raise e
+            raise
         except TimeoutError:
             logger.warning("Reading current session timed out, skipping check_session")
             return True
@@ -204,7 +204,7 @@ class ECU(UDSClient):
                         f"Read current session not supported: {e.RESPONSE_CODE.name}, skipping check_session"
                     )
                     return True
-                raise e
+                raise
             except TimeoutError:
                 logger.warning("Reading current session timed out, skipping check_session")
                 return True
@@ -321,9 +321,7 @@ class ECU(UDSClient):
             block_length = max_block_length
         # block_length includes the service identifier and block counter; payload must be smaller
         payload_size = block_length - 2
-        counter = 0
-        for i in range(0, len(data), payload_size):
-            counter += 1
+        for counter, i in enumerate(range(0, len(data), payload_size), start=1):
             payload = data[i : i + payload_size]
             logger.debug(
                 f"Transferring block {g_repr(counter)} with payload size {g_repr(len(payload))}"

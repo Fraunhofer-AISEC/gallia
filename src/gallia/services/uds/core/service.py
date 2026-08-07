@@ -130,7 +130,8 @@ class UDSRequest(ABC):
                 logger.trace(" - Trying to infer subFunction")
                 request_sub_function = request_service._sub_function_type(pdu)
                 logger.trace(f" - Inferred subFunction {request_sub_function.__name__}")
-                assert (request_type := request_sub_function.Request) is not None
+                request_type = request_sub_function.Request
+                assert request_type is not None
                 logger.trace(f" - Trying {request_type.__name__}")
                 return request_type.from_pdu(pdu)
 
@@ -238,7 +239,8 @@ class UDSResponse(ABC):
                 return RawPositiveResponse(pdu)
 
             logger.trace(f" - Inferred subFunction {response_sub_function.__name__}")
-            assert (response_type_ := response_sub_function.Response) is not None
+            response_type_ = response_sub_function.Response
+            assert response_type_ is not None
             response_type = response_type_
         else:
             logger.trace(" - Falling back to raw response because the response cannot be parsed")
@@ -2744,7 +2746,7 @@ class ReportDTCExtDataRecordByDTCNumberResponse(
 
             self.dtc_and_status_record = dtc_and_status_record
 
-        for dtc_ext_data_record_number, _dtc_ext_data_record in dtc_ext_data_records.items():
+        for dtc_ext_data_record_number in dtc_ext_data_records:
             check_range(dtc_ext_data_record_number, "dtc_ext_data_record_number", 0, 0xFD)
 
         self.dtc_ext_data_records = dtc_ext_data_records
