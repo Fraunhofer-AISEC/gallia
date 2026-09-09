@@ -12,7 +12,7 @@ from gallia.command.uds import UDSScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds.core.client import UDSRequestConfig
 from gallia.services.uds.core.constants import RoutineControlSubFuncs, UDSErrorCodes, UDSIsoServices
-from gallia.services.uds.core.exception import IllegalResponse
+from gallia.services.uds.core.exception import IllegalResponse, MissingResponse
 from gallia.services.uds.core.service import NegativeResponse, UDSResponse
 from gallia.services.uds.core.utils import g_repr, service_repr
 from gallia.services.uds.helpers import suggests_service_not_supported
@@ -102,7 +102,11 @@ class ScanIdentifiers(UDSScanner):
 
                 logger.result(f"Scan in session {g_repr(session)} is complete!")
                 logger.info(f"Leaving session {g_repr(session)} via hook")
-                await self.ecu.leave_session(session, sleep=self.config.power_cycle_sleep)
+
+                try:
+                    await self.ecu.leave_session(session, sleep=self.config.power_cycle_sleep)
+                except (TimeoutError, MissingResponse) as e:
+                    logger.warning(f"Error when leaving session: {e!r}")
 
             if not clean_returns:
                 sys.exit(1)
