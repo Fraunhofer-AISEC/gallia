@@ -151,7 +151,7 @@ class ECU(UDSClient):
     async def check_and_set_session(
         self,
         expected_session: int,
-        retries: int = 3,
+        retries: int = 2,
     ) -> bool:
         """check_and_set_session() reads the current session and (re)tries to set
         the session to the expected session if they do not match.
@@ -184,7 +184,7 @@ class ECU(UDSClient):
             )
 
             logger.info(
-                f"Switching to session {g_repr(expected_session)}; attempt {i + 1} of {retries}"
+                f"Switching to session {g_repr(expected_session)}; attempt {i + 1} of {1 + retries}"
             )
             resp = await self.set_session(expected_session)
 
@@ -210,7 +210,7 @@ class ECU(UDSClient):
                 return True
 
         logger.warning(
-            f"Failed to switch to session {g_repr(expected_session)} after {retries} attempts"
+            f"Failed to switch to session {g_repr(expected_session)} after {1 + retries} attempts"
         )
         return False
 

@@ -145,7 +145,7 @@ class ScanIdentifiers(UDSScanner):
                 and (DID % self.config.check_session == 0)
             ):
                 # Check session and try to recover from wrong session (max 3 times), else skip session
-                if not await self.ecu.check_and_set_session(session, retries=3):
+                if not await self.ecu.check_and_set_session(session):
                     logger.error(
                         f"Aborting scan on session {g_repr(session)}; current DID was {g_repr(DID)}"
                     )
