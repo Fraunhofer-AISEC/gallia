@@ -53,4 +53,4 @@ class RMBAPrimitive(UDSScanner):
             logger.result("Positive response:")
 
             logger.result(f"hex: {resp.data_record.hex()}")
-            logger.result(f"raw: {repr(resp.data_record)}")
+            logger.result(f"raw: {resp.data_record!r}")

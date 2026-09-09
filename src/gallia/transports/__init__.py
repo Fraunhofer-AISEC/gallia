@@ -54,4 +54,4 @@ if sys.platform == "win32":
     registry.append(RawFlexRayTransport)
     registry.append(FlexRayTPLegacyTransport)
 
-    __all__ += ["FlexRayTPTransport", "FlexRayTPLegacyTransport"]
+    __all__ += ["FlexRayTPLegacyTransport", "FlexRayTPTransport"]

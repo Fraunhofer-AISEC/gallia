@@ -368,7 +368,7 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="fr-tp-legacy"):
         # … then a flow control comes.
         fc_frame = await self.read_tp_frame()
         if not isinstance(fc_frame, FlexRayTPFlowControlFrame):
-            raise RuntimeError(f"unexpected frame received: {fc_frame}")
+            raise TypeError(f"unexpected frame received: {fc_frame}")
 
         # Best effort, just send the data.
         # TODO: Not implemented: block size handling.
@@ -419,7 +419,7 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="fr-tp-legacy"):
 
     async def read_tp_frame(self) -> FlexRayTPFrame:
         data = await self.read_bytes()
-        dst_address, src_address = self._parse_address(data)
+        # dst_address, src_address = self._parse_address(data)
         # logger.trace("got frame for addresses: %x %x", dst_address, src_address)
         frame = parse_frame(data[4:])
         logger.trace("read FlexRayTPFrame %s", repr(frame))
@@ -457,9 +457,9 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="fr-tp-legacy"):
                 frame = await self.read_tp_frame()
 
             if not isinstance(frame, FlexRayTPConsecutiveFrame):
-                raise RuntimeError(f"expected consecutive frame, got: {frame}")
+                raise TypeError(f"expected consecutive frame, got: {frame}")
             if frame.counter != (counter & 0x0F):
-                raise RuntimeError(f"got unexpected consecutive counter: {frame.counter}")
+                raise TypeError(f"got unexpected consecutive counter: {frame.counter}")
 
             # Header size needs to be respected here.
             read_bytes += len(frame.data)
@@ -484,7 +484,7 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="fr-tp-legacy"):
                     logger.debug("read data: %s", data.hex())
                     return data
                 case _:
-                    raise RuntimeError(f"got unexpected tp frame: {frame}")
+                    raise TypeError(f"got unexpected tp frame: {frame}")
 
     async def read(
         self,

@@ -204,7 +204,7 @@ class AsyncScript(ABC):
         else:
             command_dir = self.config.artifacts_base.joinpath(self.id)
 
-            _run_dir = f"run-{datetime.now().strftime('%Y%m%d-%H%M%S.%f')}"
+            _run_dir = f"run-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S.%f')}"
             artifacts_dir = command_dir.joinpath(_run_dir).absolute()
             artifacts_dir.mkdir(parents=True)
 

@@ -17,7 +17,7 @@ from array import array
 from binascii import unhexlify
 from copy import deepcopy
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import IntEnum, unique
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, BinaryIO
@@ -148,7 +148,7 @@ class EntryCache:
                     data=line.decode("utf-8"),
                     host="",
                     module="JSON",
-                    datetime=datetime.fromtimestamp(0),
+                    datetime=datetime.fromtimestamp(0, UTC),
                     tags=["ERROR"],
                     priority=PenlogPriority.ERROR,
                 )
@@ -292,7 +292,7 @@ class CursedHR:
             self.window.addstr(f"Loading contents from {self.in_file}: Decompressing file ...")
             self.window.refresh()
 
-            file = tempfile.TemporaryFile()
+            file = tempfile.TemporaryFile()  # noqa: SIM115
 
             try:
                 try:
@@ -306,7 +306,7 @@ class CursedHR:
                     )
                     self.window.refresh()
 
-                    file = tempfile.TemporaryFile(dir=platformdirs.user_cache_dir())
+                    file = tempfile.TemporaryFile(dir=platformdirs.user_cache_dir())  # noqa: SIM115
 
                     copy_to_file(file)
             except:
@@ -1317,7 +1317,7 @@ class CursedHR:
 
             entry = PenlogEntry(
                 data=message,
-                datetime=datetime.now(),
+                datetime=datetime.now(UTC),
                 host="",
                 module="",
                 priority=PenlogPriority.INFO,
@@ -1419,7 +1419,7 @@ def parse_filter(text: str) -> list[str]:
         data="data",
         host="host",
         priority=PenlogPriority.INFO,
-        datetime=datetime.fromtimestamp(0),
+        datetime=datetime.fromtimestamp(0, UTC),
         tags=[],
     )
 
