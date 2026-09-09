@@ -119,7 +119,7 @@ class ECU(UDSClient):
             raise as_exception(resp)
         return from_bytes(resp.data_record)
 
-    async def set_session_pre(self, session: int, config: UDSRequestConfig | None = None) -> bool:
+    async def set_session_pre(self, session: int, config: UDSRequestConfig | None = None) -> None:
         """set_session_pre() is called before the diagnostic session control
         pdu is written on the wire. Implement this if there are special
         preconditions for a particular session, such as disabling error
@@ -130,11 +130,13 @@ class ECU(UDSClient):
                  calls this function with `self` as the first argument.
             session: The desired session identifier.
         Returns:
-            True on success, False on error.
+            None.
+        Raises:
+            Any exception in case of error.
         """
-        return True
+        return None
 
-    async def set_session_post(self, session: int, config: UDSRequestConfig | None = None) -> bool:
+    async def set_session_post(self, session: int, config: UDSRequestConfig | None = None) -> None:
         """set_session_post() is called after the diagnostic session control
         pdu was written on the wire. Implement this if there are special
         cleanup routines or sleeping until a certain moment is required.
@@ -144,9 +146,11 @@ class ECU(UDSClient):
                  calls this function with `self` as the first argument.
             session: The desired session identifier.
         Returns:
-            True on success, False on error.
+            None.
+        Raises:
+            Any exception in case of error.
         """
-        return True
+        return None
 
     async def check_and_set_session(
         self,
