@@ -20,7 +20,7 @@ jobs:
   linters:
     strategy:
       matrix:
-        python-version: ['3.11', '3.12', '3.13', '3.14']
+        python-version: ['3.11', '3.12', '3.13', '3.14', '3.15']
 
     runs-on: ubuntu-latest
 
@@ -64,7 +64,7 @@ jobs:
   type-checks:
     strategy:
       matrix:
-        python-version: ['3.11', '3.12', '3.13', '3.14']
+        python-version: ['3.11', '3.12', '3.13', '3.14', '3.15']
 
     runs-on: ubuntu-latest
 

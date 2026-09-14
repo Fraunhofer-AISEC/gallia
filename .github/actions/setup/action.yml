@@ -19,6 +19,11 @@ runs:
         enable-cache: true
         python-version: ${{ inputs.python-version }}
 
+    # If no wheel for rust dependencies is available,
+    # uv builds it automatically with the rust toolchain.
+    - name: Install rust toolchain
+      uses: actions-rust-lang/setup-rust-toolchain@v2
+
     - name: Install uv and Python default
       if: ${{ inputs.python-version == '' }}
       uses: astral-sh/setup-uv@v7

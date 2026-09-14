@@ -46,7 +46,7 @@ run-test-matrix:
 
     set -eu
 
-    matrix=("3.11" "3.12" "3.13" "3.14")
+    matrix=("3.11" "3.12" "3.13" "3.14" "3.14t" "3.15" "3.15t")
     for version in "${matrix[@]}"; do
         echo "running tests with python version: $version"
         uv sync --all-extras -p "$version"
