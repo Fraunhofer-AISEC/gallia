@@ -10,6 +10,7 @@ from gallia.command.uds import UDSScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse, UDSErrorCodes, UDSRequestConfig
 from gallia.services.uds import UDSIsoServices as Services
+from gallia.services.uds.core.exception import MissingResponse
 from gallia.services.uds.core.utils import g_repr, uds_memory_parameters
 
 logger = get_logger(__name__)
@@ -64,7 +65,12 @@ class MemoryFunctionsScanner(UDSScanner):
 
         if self.config.session is not None:
             logger.info(f"Leaving session {g_repr(self.config.session)} via hook")
-            await self.ecu.leave_session(self.config.session, sleep=self.config.power_cycle_sleep)
+            try:
+                await self.ecu.leave_session(
+                    self.config.session, sleep=self.config.power_cycle_sleep
+                )
+            except MissingResponse as e:
+                logger.warning(f"Error when leaving session: {e!r}")
 
     async def scan_memory_address(self, addr_offset: int = 0) -> None:
         sid = self.config.service.value
