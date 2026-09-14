@@ -63,6 +63,10 @@ class CANMessage:
 
     def _compose_arbitration_id(self) -> int:
         can_id = self.arbitration_id
+        if can_id > CAN_EFF_MASK:
+            raise ValueError(
+                f"CAN id {hex(can_id)} above largest extended address {hex(CAN_EFF_MASK)}"
+            )
         if can_id > CAN_SFF_MASK or self.force_extended_id:
             can_id |= CAN_EFF_FLAG
         if self.is_remote_frame:
