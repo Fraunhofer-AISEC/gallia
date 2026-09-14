@@ -34,7 +34,9 @@ class IsotpDiscovererConfig(AsyncScriptConfig):
     listen_time: float = Field(
         0.1, description="Time to listen for a reply between loop iterations"
     )
-    extended_addressing: bool = Field(False, description="Use ISOTP extended addresses")
+    extended_addressing: bool = Field(
+        False, description="Use ISOTP extended addresses (disables 'multiplier' and 'offset')"
+    )
     tester_addr: AutoInt = Field(
         0x6F1, description="CAN TX_ID to use with ISOTP extended addressing (--extended-addr)"
     )
@@ -42,6 +44,14 @@ class IsotpDiscovererConfig(AsyncScriptConfig):
     info_did: AutoInt = Field(0xF197, description="DID to query ECU description", metavar="DID")
     sniff_time: int = Field(
         5, description="Time in seconds to sniff on bus for current traffic", metavar="SECONDS"
+    )
+    multiplier: AutoInt = Field(
+        1,
+        description="Multipy the address by this value (useful if you want to scan e.g. 0x100, 0x200, 0x300, ...)",
+    )
+    offset: AutoInt = Field(
+        0,
+        description="Add this value to the address (combine with multiplier, e.g. to scan 0x1ab, 0x2ab, 0x3ab, ...)",
     )
 
 
@@ -156,11 +166,13 @@ class IsotpDiscoverer(AsyncScript):
         else:
             padding = [self.config.padding]
 
-        for ID, padding_byte in product(range(self.config.start, self.config.stop + 1), padding):
+        for _id, padding_byte in product(range(self.config.start, self.config.stop + 1), padding):
             if self.config.extended_addressing is True:
+                ID = _id
                 tx_id = self.config.tester_addr
                 pdu = self.build_isotp_frame(req, ext_addr=ID, padding=padding_byte)
             else:
+                ID = _id * self.config.multiplier + self.config.offset
                 tx_id = ID
                 pdu = self.build_isotp_frame(req, ext_addr=None, padding=padding_byte)
 
