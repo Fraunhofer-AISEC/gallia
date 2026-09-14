@@ -11,7 +11,11 @@ from gallia.command.config import Field, Ranges, Ranges2D
 from gallia.command.uds import UDSScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse, UDSRequestConfig, UDSResponse
-from gallia.services.uds.core.exception import IllegalResponse, UnexpectedNegativeResponse
+from gallia.services.uds.core.exception import (
+    IllegalResponse,
+    MissingResponse,
+    UnexpectedNegativeResponse,
+)
 from gallia.services.uds.core.utils import g_repr
 from gallia.services.uds.helpers import suggests_sub_function_not_supported
 
@@ -66,7 +70,10 @@ class ResetScanner(UDSScanner):
                 logger.result(f"Scanning in session: {g_repr(session)}")
                 clean_returns = clean_returns and await self.perform_scan(session)
 
-                await self.ecu.leave_session(session, sleep=self.config.power_cycle_sleep)
+                try:
+                    await self.ecu.leave_session(session, sleep=self.config.power_cycle_sleep)
+                except MissingResponse as e:
+                    logger.warning(f"Error when leaving session: {e!r}")
 
             if not clean_returns:
                 sys.exit(1)

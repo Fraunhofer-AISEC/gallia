@@ -12,6 +12,7 @@ from gallia.command.config import AutoInt, Field, HexBytes
 from gallia.command.uds import UDSScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse, UDSErrorCodes, UDSRequestConfig
+from gallia.services.uds.core.exception import MissingResponse
 from gallia.services.uds.core.utils import g_repr
 
 logger = get_logger(__name__)
@@ -260,4 +261,7 @@ class SASeedsDumper(UDSScanner):
 
         file.close()
         self.log_size(seeds_file, time.time() - start_time)
-        await self.ecu.leave_session(session, sleep=self.config.power_cycle_sleep)
+        try:
+            await self.ecu.leave_session(session, sleep=self.config.power_cycle_sleep)
+        except MissingResponse as e:
+            logger.warning(f"Error when leaving session: {e!r}")
