@@ -29,6 +29,10 @@ Levent Çelik et al. in [Comparing Open-Source UDS Implementations Through Fuzz 
 
 > Among the implementations we've identified, Gallia stands out as the most robust and dependable by a significant margin.
 
+Shahzeb Aslam and Hung Nguyenin in [ICSim++: A CAN/CAN FD simulator for modern vehicle networks with LLM-assisted workflows](https://doi.org/10.1016/j.softx.2026.102722):
+
+> Gallia focuses on automotive penetration testing rather than vehicle simulation, with particular support for UDS-oriented workflows, automation, and reproducible test artifacts.
+
 ## Quickstart
 
 See the [setup instructions](docs/setup.md).
