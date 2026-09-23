@@ -66,6 +66,8 @@ def _add_logging_level(level_name: str, level_num: int) -> None:
     # http://stackoverflow.com/a/13638084/2988730
     def for_level(self, message, *args, **kwargs):  # type: ignore[no-untyped-def]
         if self.isEnabledFor(level_num):
+            # Report the caller of this method, not this method.
+            kwargs["stacklevel"] = kwargs.get("stacklevel", 1) + 1
             self._log(
                 level_num,
                 message,
@@ -1229,6 +1231,8 @@ class Logger(logging.Logger):
                 exc_info=exc_info,
                 extra=extra,
                 stack_info=stack_info,
+                # Report the caller of this method, not this method.
+                stacklevel=kwargs.pop("stacklevel", 1) + 1,
                 **kwargs,
             )
 
@@ -1249,6 +1253,8 @@ class Logger(logging.Logger):
                 exc_info=exc_info,
                 extra=extra,
                 stack_info=stack_info,
+                # Report the caller of this method, not this method.
+                stacklevel=kwargs.pop("stacklevel", 1) + 1,
                 **kwargs,
             )
 
@@ -1271,6 +1277,8 @@ class Logger(logging.Logger):
                 exc_info=exc_info,
                 extra=extra,
                 stack_info=stack_info,
+                # Report the caller of this method, not this method.
+                stacklevel=kwargs.pop("stacklevel", 1) + 1,
                 **kwargs,
             )
 

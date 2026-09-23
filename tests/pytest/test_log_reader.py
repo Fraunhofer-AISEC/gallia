@@ -12,9 +12,13 @@ from pathlib import Path
 import pytest
 
 from gallia.log import (
+    Loglevel,
     PenlogPriority,
     PenlogReader,
     PenlogRecord,
+    add_zst_log_handler,
+    get_logger,
+    remove_zst_log_handler,
     stream_raw_records,
     stream_records,
 )
@@ -238,3 +242,18 @@ def test_zst_multiple_frames(tmp_path: Path) -> None:
         assert len(reader) == 1500
         assert reader.error is None
         assert reader[-1].data == "record 1499"
+
+
+def test_logger_reports_the_callers_line(tmp_path: Path) -> None:
+    path = tmp_path / "log.json.zst"
+    handler = add_zst_log_handler("test_line", path, Loglevel.TRACE)
+    logger = get_logger("test_line")
+    logger.setLevel(Loglevel.TRACE)
+    line = sys._getframe().f_lineno + 2
+    for log in (logger.trace, logger.debug, logger.notice, logger.result):
+        log("message")
+    remove_zst_log_handler("test_line", handler)
+
+    for record in stream_records(path):
+        assert record.line == f"{__file__}:{line}", record.data
+        assert record._python_func_name == "test_logger_reports_the_callers_line"
