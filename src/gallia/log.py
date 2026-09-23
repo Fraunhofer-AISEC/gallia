@@ -399,7 +399,8 @@ _MONTH_ABBREVIATIONS = (
 )
 
 
-def _format_timestamp(dt: datetime.datetime) -> str:
+def format_timestamp(dt: datetime.datetime) -> str:
+    """Formats a timestamp as displayed in the console log."""
     # Equivalent to dt.strftime("%b %d %H:%M:%S.%f")[:-3], but avoids the
     # locale-aware strftime() call, which is significantly slower and is
     # exercised once per record when e.g. hr formats a large penlog file.
@@ -424,7 +425,7 @@ def _format_record(
     if volatile_info:
         msg += "\33[2K"  # Clean current line
     extra_len = 4
-    msg += _format_timestamp(dt)
+    msg += format_timestamp(dt)
     msg += " "
     msg += name
     msg += _format_tags(tags)
@@ -884,7 +885,7 @@ class PenlogReader:
     def priority(self, index: int) -> PenlogPriority:
         """Returns the priority of the record at ``index`` without parsing it."""
         self._ensure_indexed(index)
-        return PenlogPriority(self._priorities[index])
+        return _PRIORITY_BY_VALUE[self._priorities[index]]
 
     def _mask(self, priority: int) -> bytearray:
         if (mask := self._masks.get(priority)) is None:

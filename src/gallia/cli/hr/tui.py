@@ -29,7 +29,7 @@ from typing import Any
 import wcwidth
 
 from gallia.cli.hr.filters import FILTER_SYNTAX, FilterError, RecordFilter
-from gallia.log import PenlogPriority, PenlogReader, PenlogRecord
+from gallia.log import PenlogPriority, PenlogReader, PenlogRecord, format_timestamp
 
 PRIORITY_KEYS = {
     "m": PenlogPriority.EMERGENCY,
@@ -425,7 +425,7 @@ class Viewer:
                 f"{ms // 60_000 % 60:02}:{ms // 1000 % 60:02}.{ms % 1000:03}"
             ).rjust(18)
         else:
-            timestamp = record.datetime.strftime("%b %d %H:%M:%S.%f")[:-3]
+            timestamp = format_timestamp(record.datetime)
         tags = f" [{', '.join(record.tags)}]" if record.tags else ""
         return f"{timestamp} {record.module}{tags}: "
 
