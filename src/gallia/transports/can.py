@@ -55,6 +55,11 @@ class CANMessage:
     bitrate_switch: bool = False
     error_state_indicator: bool = False
 
+    def __str__(self) -> str:
+        """The frame like in the logs: the ID and the data in hex,
+        separated by "#" ("##" for CAN FD)."""
+        return f"{hex(self.arbitration_id)}#{'#' if self.is_fd else ''}{self.data.hex()}"
+
     # TODO: Is this semantically correct? Check this.
     def __len__(self) -> int:
         if self.dlc is None:
@@ -133,6 +138,9 @@ class RawCANConfig(BaseModel):
 
 
 class RawCANTransport(BaseTransport, scheme="can-raw"):
+    # The logged messages are CAN frames, see CANMessage.__str__().
+    payload_proto = "can"
+
     def __init__(self, target: TargetURI) -> None:
         super().__init__(target)
 
@@ -215,11 +223,7 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
             data=data,
             is_fd=self.config.is_fd,
         )
-        t = tags + ["write"] if tags is not None else ["write"]
-        logger.trace(
-            f"{hex(msg.arbitration_id)}#{'#' if msg.is_fd else ''}{msg.data.hex()}",
-            extra={"tags": t},
-        )
+        self.log_io(logger, "write", str(msg), tags)
 
         loop = asyncio.get_running_loop()
         await asyncio.wait_for(loop.sock_sendall(self._sock, msg.pack()), timeout)
@@ -245,11 +249,7 @@ class RawCANTransport(BaseTransport, scheme="can-raw"):
         can_frame = await asyncio.wait_for(loop.sock_recv(self._sock, self.BUFSIZE), timeout)
         can_message = CANMessage.unpack(can_frame)
 
-        t = tags + ["read"] if tags is not None else ["read"]
-        logger.trace(
-            f"{hex(can_message.arbitration_id)}#{'#' if can_message.is_fd else ''}{can_message.data.hex()}",
-            extra={"tags": t},
-        )
+        self.log_io(logger, "read", str(can_message), tags)
 
         return can_message
 

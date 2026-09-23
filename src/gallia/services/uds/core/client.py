@@ -39,6 +39,8 @@ class UDSClient:
         max_retry: int = 0,
     ):
         self.transport = transport
+        # The transport carries UDS; this is logged for dissecting the messages.
+        self.transport.payload_proto = "uds"
         self.timeout = timeout
         self.max_retry = max_retry
         self.retry_wait = 0.2

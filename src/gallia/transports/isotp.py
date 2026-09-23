@@ -175,8 +175,7 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
         if self._sock is None:
             raise RuntimeError("Not connected, cannot write!")
 
-        t = tags + ["write"] if tags is not None else ["write"]
-        logger.trace(data.hex(), extra={"tags": t})
+        self.log_io(logger, "write", data.hex(), tags)
 
         loop = asyncio.get_running_loop()
         await asyncio.wait_for(loop.sock_sendall(self._sock, data), timeout)
@@ -195,7 +194,7 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
             if e.errno == errno.EILSEQ:
                 raise BrokenPipeError(f"invalid consecutive frame numbers: {e}") from e
             raise e
-        logger.trace(data.hex(), extra={"tags": tags})
+        self.log_io(logger, "read", data.hex(), tags)
         return data
 
     async def close(self) -> None:

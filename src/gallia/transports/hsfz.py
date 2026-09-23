@@ -367,7 +367,9 @@ class HSFZTransport(BaseTransport, scheme="hsfz"):
         if self._conn is None:
             raise RuntimeError("Not connected, cannot read!")
 
-        return await asyncio.wait_for(self._conn.read_diag_request(), timeout)
+        data = await asyncio.wait_for(self._conn.read_diag_request(), timeout)
+        self.log_io(logger, "read", data.hex(), tags)
+        return data
 
     async def write(
         self,
@@ -378,6 +380,7 @@ class HSFZTransport(BaseTransport, scheme="hsfz"):
         if self._conn is None:
             raise RuntimeError("Not connected, cannot write!")
 
+        self.log_io(logger, "write", data.hex(), tags)
         await asyncio.wait_for(self._conn.write_diag_request(data), timeout)
         return len(data)
 

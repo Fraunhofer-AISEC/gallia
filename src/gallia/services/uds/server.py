@@ -897,6 +897,7 @@ if sys.platform.startswith("linux"):
     class ISOTPUDSServerTransport(UDSServerTransport):
         async def run(self) -> None:
             transport = ISOTPTransport(self.target)
+            transport.payload_proto = "uds"
             await transport.connect()
 
             while True:
