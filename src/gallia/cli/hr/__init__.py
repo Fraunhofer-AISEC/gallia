@@ -48,6 +48,12 @@ def parse_args() -> argparse.Namespace:
         help="only show matching records, e.g. 'module=scanner tag=result !timeout'; "
         "see the filter syntax below",
     )
+    parser.add_argument(
+        "-c",
+        "--cursed",
+        action="store_true",
+        help="open the file in an interactive curses based viewer",
+    )
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
         "-t",
@@ -74,7 +80,31 @@ def parse_args() -> argparse.Namespace:
         help="number of lines for --head and --tail",
     )
 
-    return parser.parse_args()
+    cursed = parser.add_argument_group("cursed options")
+    cursed.add_argument(
+        "--prefix",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="show timestamp, module and tags",
+    )
+    cursed.add_argument(
+        "--relative-timings",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="show timestamps relative to the first record",
+    )
+    cursed.add_argument(
+        "--terminal-progress",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="show the loading progress in the terminal's native progress bar (OSC 9;4); "
+        "default: auto",
+    )
+
+    args = parser.parse_args()
+    if args.cursed and len(args.FILE) > 1:
+        parser.error("--cursed supports only a single FILE")
+    return args
 
 
 def _select_records(path: Path, args: argparse.Namespace) -> Iterator[PenlogRecord]:
@@ -116,6 +146,19 @@ def _main() -> int:
         if not (path.is_file() or path.is_fifo() or str(path) == "-"):
             print(f"not a regular file: {path}", file=sys.stderr)
             return 1
+
+    if args.cursed:
+        from gallia.cli.hr.tui import run
+
+        run(
+            args.FILE[0],
+            priority=args.priority,
+            record_filter=args.filter,
+            prefix=args.prefix,
+            relative_timings=args.relative_timings,
+            terminal_progress=args.terminal_progress,
+        )
+        return 0
 
     colors = guess_color_setting_for_stream(sys.stdout)
 

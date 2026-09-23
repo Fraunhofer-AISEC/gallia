@@ -73,3 +73,7 @@
 
 	[[ "$tail" == "$reverse" ]]
 }
+
+@test "cursed supports a single file only" {
+	run -2 hr --cursed "$BATS_TEST_DIRNAME/testfiles/log-01.json.zst" "$BATS_TEST_DIRNAME/testfiles/log-01.json.zst"
+}

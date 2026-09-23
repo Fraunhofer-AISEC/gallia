@@ -47,7 +47,6 @@ dependencies = [
 [project.scripts]
 "gallia" = "gallia.cli.gallia:main"
 "netzteil" = "gallia.cli.netzteil:main"
-"cursed-hr" = "gallia.cli.cursed_hr:main"
 "hr" = "gallia.cli.hr:main"
 
 # TODO: Change to dependency-groups once https://github.com/pypa/pip/issues/12963 is resolved

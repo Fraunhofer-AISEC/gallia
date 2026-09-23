@@ -12,8 +12,10 @@ SPDX-License-Identifier: CC0-1.0
 Each scanner creates a `artifacts_dir` under `artifacts_base`, which contains a zstd compressed logfile `log.json.zst`.
 The logfile is created with loglevel `DEBUG`; for debugging purposes loglevel `TRACE` can be enabled with the setting `trace_log`.
 Logfiles can be displayed with the `hr` tool which is included in `gallia`.
+`hr --cursed` opens an interactive viewer, which supports changing the priority for sections of the logfile, filtering, and interpreting UDS messages; press `?` for help.
+Only a compact index of the logfile is kept in memory, so large logfiles can be viewed as well; the index is built in the background.
 
-It supports filtering with `-f/--filter`, e.g. `hr -f 'module=scanner tag=result !timeout' log.json.zst`.
+Both modes support filtering with `-f/--filter`, e.g. `hr -f 'module=scanner tag=result !timeout' log.json.zst`.
 Terms are separated by spaces and must all match:
 `word` (data contains word, case insensitive), `!word`, `field=a,b`, `field!=a,b`, `field~regex`, and `field!~regex`.
 The fields are `module`, `host`, `data`, `tag`, and `line`.
