@@ -222,3 +222,19 @@ def test_index_progress(tmp_path: Path) -> None:
     assert progress[0] == 0.0
     assert progress[-1] == 1.0
     assert len(set(progress)) > 3
+
+
+def test_zst_multiple_frames(tmp_path: Path) -> None:
+    # E.g. concatenated logfiles; all frames are read.
+    frames = [
+        "".join(make_line(n, 6, False) for n in range(start, start + 500)).encode()
+        for start in (0, 500, 1000)
+    ]
+    path = tmp_path / "log.json.zst"
+    path.write_bytes(b"".join(zstd.compress(frame) for frame in frames))
+
+    assert [r.data for r in stream_records(path)] == data(list(range(1500)))
+    with PenlogReader(path) as reader:
+        assert len(reader) == 1500
+        assert reader.error is None
+        assert reader[-1].data == "record 1499"

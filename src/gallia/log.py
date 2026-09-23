@@ -582,10 +582,68 @@ def _is_blank(data: bytes | bytearray | mmap.mmap, start: int, end: int) -> bool
     return end <= start or (data[start] in b" \t\r\n" and data[start:end].isspace())
 
 
+if sys.version_info < (3, 14):
+
+    class _ZstdReader(io.BufferedIOBase):
+        """Decompresses zstd data with python-zstandard. Unlike zstandard.open(),
+        it raises EOFError for truncated data like compression.zstd does."""
+
+        def __init__(self, raw: io.BufferedIOBase) -> None:
+            self._raw = raw
+            self._dctx = zstd.ZstdDecompressor()
+            self._dobj = self._dctx.decompressobj()
+            self._buffer = b""
+            self._pos = 0
+            self._in_frame = False
+            self._eof = False
+
+        def readable(self) -> bool:
+            return True
+
+        def _feed(self, data: bytes) -> None:
+            # Only called when the buffer has been consumed.
+            output: list[bytes] = []
+            while data:
+                if self._dobj.eof:
+                    # The next frame of a file with several frames.
+                    self._dobj = self._dctx.decompressobj()
+                output.append(self._dobj.decompress(data))
+                data = self._dobj.unused_data if self._dobj.eof else b""
+            self._buffer = b"".join(output)
+            self._pos = 0
+            self._in_frame = not self._dobj.eof
+
+        def read1(self, size: int | None = -1) -> bytes:
+            while self._pos >= len(self._buffer) and not self._eof:
+                if chunk := self._raw.read(1 << 17):
+                    self._feed(chunk)
+                elif self._in_frame:
+                    raise EOFError(
+                        "Compressed file ended before the end-of-stream marker was reached"
+                    )
+                else:
+                    self._eof = True
+            end = len(self._buffer) if size is None or size < 0 else self._pos + size
+            data = self._buffer[self._pos : end]
+            self._pos += len(data)
+            return data
+
+        def read(self, size: int | None = -1) -> bytes:
+            if size is not None and size >= 0:
+                return self.read1(size)
+            return b"".join(iter(self.read1, b""))
+
+        def close(self) -> None:
+            self._raw.close()
+            super().close()
+
+
 def _open_source(path: Path, raw: io.BufferedIOBase) -> io.BufferedIOBase:
     """Returns a stream of the decompressed data of ``raw``."""
     match path.suffix:
         case ".zst":
+            if sys.version_info < (3, 14):
+                return _ZstdReader(raw)
             return cast(io.BufferedIOBase, zstd.open(raw, "rb"))
         case ".gz":
             return gzip.open(raw, "rb")
