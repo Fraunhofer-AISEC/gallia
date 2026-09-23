@@ -334,6 +334,50 @@ def test_colors_like_hr(screen: Screen, tmp_path: Path) -> None:
         ]
 
 
+def test_dissection(screen: Screen, tmp_path: Path) -> None:
+    path = tmp_path / "log.json"
+    lines = []
+    for data, proto in [("22f190", "uds"), ("0x7e8#30000000", "iso15765"), ("7f2231", None)]:
+        record = {
+            "module": "m",
+            "host": "h",
+            "data": data,
+            "datetime": "2020-01-01T00:00:00",
+            "priority": PenlogPriority.INFO,
+            "version": 2,
+            "_proto": proto,
+        }
+        lines.append(json.dumps(record) + "\n")
+    path.write_text("".join(lines))
+
+    with PenlogReader(path) as reader:
+        view = View(zones=((0, PenlogPriority.TRACE),), filter=RecordFilter())
+        viewer = Viewer(screen, reader, view, RecordFormatter(prefix=False), False)
+        viewer.focus(0, 0)
+        driver = Driver(viewer, screen)
+        try:
+            assert "  # " not in screen.text()
+            driver.keys("d")
+            text = screen.text()
+            assert "22f190  # ReadDataByIdentifierRequest" in text
+            assert "0x7e8#30000000  # flow control: continue to send" in text
+            # Without protocol, e.g. in older logfiles: UDS.
+            assert "7f2231\n# NegativeResponse(response_code=requestOutOfRange" in text
+            assert "dissect" in text.splitlines()[-1]
+
+            driver.keys("\n")
+            text = screen.text()
+            assert "── uds" in text
+            driver.keys("n")
+            assert "── iso15765" in screen.text()
+            driver.keys("n")
+            assert "── uds" in screen.text()
+            driver.keys("q", "u")
+            assert "  # " not in screen.text()
+        finally:
+            driver.close()
+
+
 def click(y: int) -> MouseEvent:
     return MouseEvent(0, y, curses.BUTTON1_CLICKED)
 

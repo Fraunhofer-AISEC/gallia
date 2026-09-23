@@ -29,13 +29,9 @@ from typing import Any
 import wcwidth
 
 from gallia.cli.hr.filters import FILTER_SYNTAX, FilterError, RecordFilter
-from gallia.cli.hr.formatting import (
-    INTERPRETATION_COLORS,
-    Interpretation,
-    RecordFormatter,
-    interpret_uds,
-)
+from gallia.cli.hr.formatting import DISSECTION_COLORS, RecordFormatter, dissect_record
 from gallia.cli.hr.terminal import detect_background
+from gallia.dissect import Dissection
 from gallia.log import (
     ConsoleColor,
     Loglevel,
@@ -73,11 +69,11 @@ Actions
   Enter               inspect the record under the cursor (decoded JSON,
                       raw record; n/N for the next/previous record)
   f                   edit the filter (see below); Up/Down browse the history
-  i                   toggle interpretation of UDS messages
+  d                   toggle dissection of protocol messages, e.g. UDS
   x                   toggle the prefix (timestamp, module, tags)
   t                   toggle absolute/relative timestamps
   z                   set the reference time for relative timestamps
-  u / r               undo/redo priority, filter and interpretation changes
+  u / r               undo/redo priority, filter and dissection changes
   ?                   show this help
   q                   quit
 
@@ -177,7 +173,7 @@ class View:
     # Sorted (start, priority) pairs; a zone lasts until the next one starts.
     zones: tuple[tuple[int, PenlogPriority], ...]
     filter: RecordFilter
-    interpret: bool = False
+    dissect: bool = False
 
     def zone_index(self, entry: int) -> int:
         return bisect_right(self.zones, entry, key=lambda z: z[0]) - 1
@@ -254,7 +250,7 @@ def cells(text: str) -> int:
 
 
 class Colors:
-    """The curses attributes; the colors of the records and interpretations
+    """The curses attributes; the colors of the records and dissections
     are the same as for hr without --cursed, see level_style()."""
 
     def __init__(self, theme: str = "dark") -> None:
@@ -282,9 +278,7 @@ class Colors:
         self.levels: dict[int, int] = {
             level: self.console(*level_style(level)) for level in Loglevel
         }
-        self.interpretations = {
-            kind: self.console(color) for kind, color in INTERPRETATION_COLORS.items()
-        }
+        self.dissections = {kind: self.console(color) for kind, color in DISSECTION_COLORS.items()}
         self.invalid = self.console(ConsoleColor.YELLOW)
         self.heading = curses.A_BOLD
         self.json_key = self.console(ConsoleColor.CYAN)
@@ -391,12 +385,12 @@ class Viewer:
         self.history_index = 0
         self.filter_history = [view.filter.text] if view.filter else []
 
-        # The interpretation setting is part of the view (for undo/redo).
+        # The dissection setting is part of the view (for undo/redo).
         self.formatter = formatter
 
         # Only the entries around the visible part of the file are cached.
         self.record = functools.lru_cache(maxsize=2048)(self._load_record)
-        self.interpretation = functools.lru_cache(maxsize=2048)(self._interpret)
+        self.dissection = functools.lru_cache(maxsize=2048)(self._dissect)
         self._render = functools.lru_cache(maxsize=2048)(self._render_uncached)
         # Searching visible entries might be slow with sparse filters; the
         # same searches are repeated a lot while drawing and scrolling.
@@ -442,8 +436,15 @@ class Viewer:
                 tags=["invalid"],
             )
 
-    def _interpret(self, entry: int) -> Interpretation | None:
-        return interpret_uds(self.record(entry).data)
+    def _dissect(self, entry: int) -> Dissection | None:
+        return dissect_record(self.record(entry))
+
+    def protocol(self, entry: int) -> str | None:
+        """The protocol of an entry; UDS for entries without protocol, e.g.
+        of older logfiles, if they can be dissected as UDS."""
+        if (proto := self.record(entry).proto) is not None:
+            return proto
+        return "uds" if self.dissection(entry) is not None else None
 
     def matches_filter(self, entry: int) -> bool:
         record_filter = self.view.filter
@@ -562,7 +563,7 @@ class Viewer:
             self.formatter.prefix,
             self.formatter.relative_timings,
             self.formatter.reference_time,
-            self.view.interpret,
+            self.view.dissect,
         )
         return self._render(entry, settings)
 
@@ -580,9 +581,9 @@ class Viewer:
             for i, text in enumerate(texts)
         ]
 
-        if self.view.interpret and (interpretation := self.interpretation(entry)) is not None:
-            comment = f"  # {interpretation.text}"
-            comment_attr = self.colors.interpretations[interpretation.kind]
+        if self.view.dissect and (dissection := self.dissection(entry)) is not None:
+            comment = f"  # {dissection.text}"
+            comment_attr = self.colors.dissections[dissection.kind]
             if cells(texts[-1]) + cells(comment) <= text_width:
                 rows[-1].append((comment, comment_attr))
             else:
@@ -711,8 +712,8 @@ class Viewer:
             flags.append(self.record_info(entry))
         if view.filter:
             flags.append(f"filter: {view.filter.text}")
-        if view.interpret:
-            flags.append("UDS")
+        if view.dissect:
+            flags.append("dissect")
         if self.mark is not None:
             flags.append("MARK")
         if self.reader.error is not None:
@@ -1060,10 +1061,10 @@ class Viewer:
                 value = record.get(key)
                 if isinstance(value, str) and ("\n" in value or len(value) > width // 2):
                     section(key, [[(line, curses.A_NORMAL)] for line in wrap(value, width)])
-            data = record.get("data")
-            if isinstance(data, str) and (interpretation := interpret_uds(data)) is not None:
-                attr = colors.interpretations[interpretation.kind]
-                section("UDS", [[(line, attr)] for line in wrap(interpretation.text, width)])
+        proto = self.protocol(entry)
+        if (dissection := self.dissection(entry)) is not None:
+            attr = colors.dissections[dissection.kind]
+            section(proto or "", [[(line, attr)] for line in wrap(dissection.text, width)])
         return rows
 
     async def show_record(self) -> None:
@@ -1174,8 +1175,8 @@ class Viewer:
                         self.message = f"records {start + 1}-{end}: {priority.name}"
             case "f":
                 await self.edit_filter()
-            case "i":
-                self.push_view(replace(self.view, interpret=not self.view.interpret))
+            case "d":
+                self.push_view(replace(self.view, dissect=not self.view.dissect))
             case "u" | "r":
                 index = self.history_index + (-1 if key == "u" else 1)
                 if 0 <= index < len(self.history):
@@ -1291,6 +1292,6 @@ def run(
         view = View(
             zones=((0, priority),),
             filter=record_filter or RecordFilter(),
-            interpret=formatter.interpret,
+            dissect=formatter.dissect,
         )
         curses.wrapper(_curses_main, reader, view, formatter, terminal_progress, theme, mouse)

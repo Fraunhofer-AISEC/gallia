@@ -8,11 +8,16 @@ import json
 import pytest
 
 from gallia.cli.hr.filters import FilterError, RecordFilter
-from gallia.cli.hr.formatting import InterpretationKind, RecordFormatter, interpret_uds
+from gallia.cli.hr.formatting import RecordFormatter
 from gallia.log import PenlogPriority, PenlogRecord
 
 
-def make_record(data: str, module: str = "scanner", tags: list[str] | None = None) -> PenlogRecord:
+def make_record(
+    data: str,
+    module: str = "scanner",
+    tags: list[str] | None = None,
+    proto: str | None = None,
+) -> PenlogRecord:
     return PenlogRecord(
         module=module,
         host="host",
@@ -20,6 +25,7 @@ def make_record(data: str, module: str = "scanner", tags: list[str] | None = Non
         datetime=datetime.datetime(2020, 1, 1),
         priority=PenlogPriority.INFO,
         tags=tags,
+        _proto=proto,
     )
 
 
@@ -160,29 +166,40 @@ def test_formatter_no_prefix() -> None:
 
 
 @pytest.mark.parametrize(
-    ("data", "kind", "text"),
+    ("data", "proto", "text", "color"),
     [
-        ("22f190", InterpretationKind.UDS_REQUEST, "ReadDataByIdentifierRequest"),
-        ("62f19041", InterpretationKind.UDS_POSITIVE_RESPONSE, "ReadDataByIdentifierResponse"),
-        ("7f2231", InterpretationKind.UDS_NEGATIVE_RESPONSE, "NegativeResponse"),
-        ("no hex", None, None),
-        ("00", None, None),
-        ("", None, None),
+        ("22f190", "uds", "ReadDataByIdentifierRequest", "\033[36m"),
+        # Records without protocol, e.g. of older logfiles, are dissected as UDS.
+        ("7f2231", None, "NegativeResponse", "\033[38;5;208m"),
+        ("0x7e8#30000000", "iso15765", "flow control", "\033[34m"),
+        ("0x7e8#30000000", "can", None, None),
+        ("no hex", None, None, None),
     ],
 )
-def test_interpret(data: str, kind: InterpretationKind | None, text: str | None) -> None:
-    interpretation = interpret_uds(data)
-    if kind is None:
-        assert interpretation is None
-        return
-    assert interpretation is not None
-    assert interpretation.kind is kind
-    assert text is not None and text in interpretation.text
+def test_formatter_dissect(
+    data: str, proto: str | None, text: str | None, color: str | None
+) -> None:
+    record = make_record(data, proto=proto)
+    line = RecordFormatter(prefix=False, dissect=True).format(record)
+    if text is None:
+        assert line == f"{data}\n"
+    else:
+        assert line.startswith(f"{data}  # ") and text in line
+    # Without --dissect, nothing is added.
+    assert RecordFormatter(prefix=False).format(record) == f"{data}\n"
 
-    line = RecordFormatter(prefix=False, interpret=True).format(make_record(data))
-    assert line == f"{data}  # {interpretation.text}\n"
-    # Without --interpret, nothing is added.
-    assert RecordFormatter(prefix=False).format(make_record(data)) == f"{data}\n"
+    record.colors = True
+    line = RecordFormatter(prefix=False, dissect=True).format(record)
+    assert (f"{color}  # " in line) if color is not None else "  # " not in line
+
+
+def test_filter_proto() -> None:
+    assert RecordFilter("proto=uds")(make_record("22f190", proto="uds"))
+    assert not RecordFilter("proto=uds")(make_record("22f190"))
+    assert RecordFilter("proto=")(make_record("22f190"))
+    raw = b'{"data": "22f190", "_proto": "uds"}'
+    assert RecordFilter("proto=uds").may_match(raw)
+    assert not RecordFilter("proto=can").may_match(raw)
 
 
 GRAY = "\033[0;38;5;245m"

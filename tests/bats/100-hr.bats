@@ -82,7 +82,7 @@
 	local line
 	line='{"module": "uds", "data": "22f190", "host": "kronos", "datetime":"2020-04-23T15:21:50.620310", "priority": 6, "version": 2}'
 
-	run -0 hr --no-prefix --interpret - <<<"$line"
+	run -0 hr --no-prefix --dissect - <<<"$line"
 	[[ "$output" == "22f190  # ReadDataByIdentifierRequest"* ]]
 
 	run -0 hr --relative-timings - <<<"$line"

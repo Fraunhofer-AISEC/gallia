@@ -95,10 +95,12 @@ def parse_args() -> argparse.Namespace:
         help="show timestamps relative to the first displayed record",
     )
     output.add_argument(
-        "--interpret",
+        "-d",
+        "--dissect",
         action=argparse.BooleanOptionalAction,
         default=False,
-        help="interpret UDS messages; they appear as comments next to the original message",
+        help="dissect protocol messages, e.g. UDS; they appear as comments next to the "
+        "original message",
     )
 
     cursed = parser.add_argument_group("cursed options")
@@ -173,7 +175,7 @@ def _main() -> int:
     formatter = RecordFormatter(
         prefix=args.prefix,
         relative_timings=args.relative_timings,
-        interpret=args.interpret,
+        dissect=args.dissect,
     )
 
     if args.cursed:

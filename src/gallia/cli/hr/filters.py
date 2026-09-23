@@ -10,7 +10,7 @@ from collections.abc import Callable
 
 from gallia.log import PenlogRecord
 
-FILTER_FIELDS = ("module", "host", "data", "tag", "line")
+FILTER_FIELDS = ("module", "host", "data", "tag", "line", "proto")
 
 FILTER_SYNTAX = """\
 Terms are separated by spaces; a record matches if all terms match.
@@ -37,8 +37,8 @@ def _values(record: PenlogRecord, field: str) -> list[str]:
     match field:
         case "tag":
             return record.tags or []
-        case "line":
-            return [record.line or ""]
+        case "line" | "proto":
+            return [getattr(record, field) or ""]
         case _:
             return [getattr(record, field)]
 

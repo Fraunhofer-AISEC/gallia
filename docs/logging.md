@@ -12,16 +12,23 @@ SPDX-License-Identifier: CC0-1.0
 Each scanner creates a `artifacts_dir` under `artifacts_base`, which contains a zstd compressed logfile `log.json.zst`.
 The logfile is created with loglevel `DEBUG`; for debugging purposes loglevel `TRACE` can be enabled with the setting `trace_log`.
 Logfiles can be displayed with the `hr` tool which is included in `gallia`.
-`hr --cursed` opens an interactive viewer, which supports changing the priority for sections of the logfile, filtering, and interpreting UDS messages; press `?` for help.
+`hr --cursed` opens an interactive viewer, which supports changing the priority for sections of the logfile, filtering, and dissecting protocol messages; press `?` for help.
 For debugging, `Enter` shows the record under the cursor as decoded JSON or as raw record.
 Only a compact index of the logfile is kept in memory, so large logfiles can be viewed as well; the index is built in the background.
 
 Both modes support filtering with `-f/--filter`, e.g. `hr -f 'module=scanner tag=result !timeout' log.json.zst`.
 Terms are separated by spaces and must all match:
 `word` (data contains word, case insensitive), `!word`, `field=a,b`, `field!=a,b`, `field~regex`, and `field!~regex`.
-The fields are `module`, `host`, `data`, `tag`, and `line`.
+The fields are `module`, `host`, `data`, `tag`, `line`, and `proto`.
 
-The output can be adjusted in both modes: `--no-prefix` hides timestamp, module, and tags, `--relative-timings` shows timestamps relative to the first displayed record, and `--interpret` shows UDS messages decoded as comments.
+The output can be adjusted in both modes: `--no-prefix` hides timestamp, module, and tags, `--relative-timings` shows timestamps relative to the first displayed record, and `-d/--dissect` shows protocol messages, e.g. UDS, dissected as comments.
+
+### Dissection
+
+Transports log the messages which they read or write on the `TRACE` level, with the tag `read` or `write`.
+The unstable field `_proto` contains the protocol of the message, named like the dissector in Wireshark, e.g. `uds` for UDS messages in hex or `iso15765` for CAN frames with ISO-TP; only the user of a transport knows it and sets {attr}`gallia.transports.BaseTransport.payload_proto`, e.g. the UDS client.
+`hr` dissects the messages with the dissectors of {mod}`gallia.dissect`; further dissectors can be registered there with {func}`gallia.dissect.dissector`.
+Messages without protocol, e.g. of older logfiles, are dissected as UDS, if possible.
 
 The generic interface which represents a logrecord is {class}`gallia.log.PenlogRecord`.
 The generic interface which is used to read a logfile {class}`gallia.log.PenlogReader`.
