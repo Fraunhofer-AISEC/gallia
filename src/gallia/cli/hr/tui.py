@@ -19,7 +19,6 @@ import signal
 import sys
 import textwrap
 import time
-from binascii import unhexlify
 from bisect import bisect_right
 from collections.abc import Callable
 from dataclasses import dataclass, replace
@@ -29,7 +28,20 @@ from typing import Any
 import wcwidth
 
 from gallia.cli.hr.filters import FILTER_SYNTAX, FilterError, RecordFilter
-from gallia.log import PenlogPriority, PenlogReader, PenlogRecord, format_timestamp
+from gallia.cli.hr.formatting import (
+    INTERPRETATION_COLORS,
+    Interpretation,
+    RecordFormatter,
+    interpret_uds,
+)
+from gallia.log import (
+    ConsoleColor,
+    Loglevel,
+    PenlogPriority,
+    PenlogReader,
+    PenlogRecord,
+    level_style,
+)
 
 PRIORITY_KEYS = {
     "m": PenlogPriority.EMERGENCY,
@@ -127,40 +139,54 @@ def cells(text: str) -> int:
 
 
 class Colors:
+    """The curses attributes; the colors of the records and interpretations
+    are the same as for hr without --cursed, see level_style()."""
+
     def __init__(self) -> None:
-        self._next_pair = 1
-        has_colors = curses.has_colors()
-        if has_colors:
+        self._pairs: dict[int, int] = {}
+        self._has_colors = curses.has_colors()
+        if self._has_colors:
             curses.use_default_colors()
-        many = has_colors and curses.COLORS >= 256
-        gray = 245 if many else curses.COLOR_WHITE
-        orange = 208 if many else curses.COLOR_RED
-
-        def pair(fg: int, attr: int = 0) -> int:
-            if not has_colors:
-                return attr
-            curses.init_pair(self._next_pair, fg, -1)
-            self._next_pair += 1
-            return curses.color_pair(self._next_pair - 1) | attr
-
-        red = pair(curses.COLOR_RED, curses.A_BOLD)
-        self.priorities = {
-            PenlogPriority.EMERGENCY: red,
-            PenlogPriority.ALERT: red,
-            PenlogPriority.CRITICAL: red,
-            PenlogPriority.ERROR: red,
-            PenlogPriority.WARNING: pair(curses.COLOR_YELLOW, curses.A_BOLD),
-            PenlogPriority.NOTICE: curses.A_BOLD,
-            PenlogPriority.INFO: curses.A_NORMAL,
-            PenlogPriority.DEBUG: pair(gray),
-            PenlogPriority.TRACE: pair(curses.COLOR_BLUE),
+        many = self._has_colors and curses.COLORS >= 256
+        self._console_colors = {
+            ConsoleColor.RED: curses.COLOR_RED,
+            ConsoleColor.GREEN: curses.COLOR_GREEN,
+            ConsoleColor.YELLOW: curses.COLOR_YELLOW,
+            ConsoleColor.BLUE: curses.COLOR_BLUE,
+            ConsoleColor.PURPLE: curses.COLOR_MAGENTA,
+            ConsoleColor.CYAN: curses.COLOR_CYAN,
+            ConsoleColor.WHITE: curses.COLOR_WHITE,
+            ConsoleColor.GRAY: 245 if many else curses.COLOR_WHITE,
+            ConsoleColor.ORANGE: 208 if many else curses.COLOR_RED,
         }
-        self.prefix = pair(gray)
-        self.uds_request = pair(curses.COLOR_CYAN)
-        self.uds_positive_response = pair(curses.COLOR_GREEN)
-        self.uds_negative_response = pair(orange)
-        self.invalid = pair(curses.COLOR_YELLOW)
+
+        self.levels: dict[int, int] = {
+            level: self.console(*level_style(level)) for level in Loglevel
+        }
+        self.interpretations = {
+            kind: self.console(color) for kind, color in INTERPRETATION_COLORS.items()
+        }
+        self.invalid = self.console(ConsoleColor.YELLOW)
         self.status = curses.A_REVERSE
+
+    def _pair(self, fg: int) -> int:
+        if (pair := self._pairs.get(fg)) is None:
+            number = len(self._pairs) + 1
+            curses.init_pair(number, fg, -1)
+            pair = self._pairs[fg] = int(curses.color_pair(number))
+        return pair
+
+    def console(self, color: ConsoleColor, bold: bool = False) -> int:
+        """Returns the curses attribute for a console color."""
+        attr = curses.A_BOLD if bold else curses.A_NORMAL
+        if self._has_colors and (fg := self._console_colors.get(color)) is not None:
+            attr |= self._pair(fg)
+        return attr
+
+    def level(self, levelno: int) -> int:
+        if (attr := self.levels.get(levelno)) is None:
+            attr = self.console(*level_style(levelno))
+        return attr
 
 
 class TerminalProgress:
@@ -214,8 +240,7 @@ class Viewer:
         screen: Any,
         reader: PenlogReader,
         view: View,
-        prefix: bool,
-        relative_timings: bool,
+        formatter: RecordFormatter,
         terminal_progress: bool,
     ) -> None:
         self.screen = screen
@@ -230,8 +255,8 @@ class Viewer:
         self.history_index = 0
         self.filter_history = [view.filter.text] if view.filter else []
 
-        self.prefix = prefix
-        self.relative_timings = relative_timings
+        # The interpretation setting is part of the view (for undo/redo).
+        self.formatter = formatter
 
         # Only the entries around the visible part of the file are cached.
         self.record = functools.lru_cache(maxsize=2048)(self._load_record)
@@ -248,9 +273,6 @@ class Viewer:
         # Read the first page; the rest is indexed in the background.
         while reader.indexed < self.height and not reader.update_index(self.height):
             pass
-        self.reference_time = (
-            self.record(0).datetime if self.n_entries > 0 else datetime.datetime.now()
-        )
 
         # Screen position: first entry, and its first shown row.
         self.top: tuple[int, int] | None = None
@@ -284,26 +306,8 @@ class Viewer:
                 tags=["invalid"],
             )
 
-    def _interpret(self, entry: int) -> tuple[str, int] | None:
-        # Imported lazily; this takes a while and is not needed for startup.
-        from gallia.services.uds.core.service import NegativeResponse, UDSRequest, UDSResponse
-
-        try:
-            data = unhexlify(self.record(entry).data)
-        except ValueError:
-            return None
-        if len(data) == 0 or data[0] == 0:
-            return None
-
-        try:
-            if data[0] & 0x40:
-                response = UDSResponse.parse_dynamic(data)
-                if isinstance(response, NegativeResponse):
-                    return repr(response), self.colors.uds_negative_response
-                return repr(response), self.colors.uds_positive_response
-            return repr(UDSRequest.parse_dynamic(data)), self.colors.uds_request
-        except Exception:
-            return None
+    def _interpret(self, entry: int) -> Interpretation | None:
+        return interpret_uds(self.record(entry).data)
 
     def matches_filter(self, entry: int) -> bool:
         record_filter = self.view.filter
@@ -415,27 +419,13 @@ class Viewer:
         columns: int = self.screen.getmaxyx()[1]
         return columns
 
-    def format_prefix(self, record: PenlogRecord) -> str:
-        if self.relative_timings:
-            ms = int((record.datetime - self.reference_time).total_seconds() * 1000)
-            sign = "-" if ms < 0 else "+"
-            ms = abs(ms)
-            timestamp = (
-                f"{sign}{ms // 86_400_000}d {ms // 3_600_000 % 24:02}:"
-                f"{ms // 60_000 % 60:02}:{ms // 1000 % 60:02}.{ms % 1000:03}"
-            ).rjust(18)
-        else:
-            timestamp = format_timestamp(record.datetime)
-        tags = f" [{', '.join(record.tags)}]" if record.tags else ""
-        return f"{timestamp} {record.module}{tags}: "
-
     def render(self, entry: int) -> list[Row]:
         """Returns the screen rows of an entry."""
         settings = (
             self.width,
-            self.prefix,
-            self.relative_timings,
-            self.reference_time,
+            self.formatter.prefix,
+            self.formatter.relative_timings,
+            self.formatter.reference_time,
             self.view.interpret,
         )
         return self._render(entry, settings)
@@ -443,27 +433,31 @@ class Viewer:
     def _render_uncached(self, entry: int, settings: tuple[Any, ...]) -> list[Row]:
         del settings  # Only part of the cache key.
         record = self.record(entry)
-        prefix = self.format_prefix(record) if self.prefix else ""
+        prefix = self.formatter.format_prefix(record)
         text_width = max(self.width - 1 - cells(prefix), 20)
-        attr = self.colors.priorities[record.priority]
+        attr = self.colors.level(record.level)
 
         texts = wrap(record.data, text_width)
-        if record.stacktrace is not None:
-            texts += wrap(record.stacktrace, text_width)
-
         indent = " " * len(prefix)
         rows: list[Row] = [
-            [(prefix if i == 0 else indent, self.colors.prefix), (text, attr)]
+            [(prefix if i == 0 else indent, curses.A_NORMAL), (text, attr)]
             for i, text in enumerate(texts)
         ]
 
         if self.view.interpret and (interpretation := self.interpretation(entry)) is not None:
-            comment, comment_attr = f"  # {interpretation[0]}", interpretation[1]
+            comment = f"  # {interpretation.text}"
+            comment_attr = self.colors.interpretations[interpretation.kind]
             if cells(texts[-1]) + cells(comment) <= text_width:
                 rows[-1].append((comment, comment_attr))
             else:
                 for line in wrap(comment.strip(), text_width):
-                    rows.append([(indent, 0), (line, comment_attr)])
+                    rows.append([(indent, curses.A_NORMAL), (line, comment_attr)])
+
+        if record.stacktrace is not None:
+            # Like hr without --cursed: after an empty line, not colored.
+            rows.append([(indent, curses.A_NORMAL)])
+            for line in wrap(record.stacktrace, text_width):
+                rows.append([(indent, curses.A_NORMAL), (line, curses.A_NORMAL)])
 
         return rows
 
@@ -854,14 +848,14 @@ class Viewer:
             case "x" | "t":
                 anchor = self.cursor_entry()
                 if key == "x":
-                    self.prefix = not self.prefix
+                    self.formatter.prefix = not self.formatter.prefix
                 else:
-                    self.relative_timings = not self.relative_timings
+                    self.formatter.relative_timings = not self.formatter.relative_timings
                 self.focus(anchor)
             case "z":
                 if self.n_entries > 0:
-                    self.reference_time = self.record(self.cursor_entry()).datetime
-                    self.relative_timings = True
+                    self.formatter.reference_time = self.record(self.cursor_entry()).datetime
+                    self.formatter.relative_timings = True
                     self.focus(self.cursor_entry())
             case "?":
                 await self.show_help()
@@ -900,12 +894,11 @@ def _curses_main(
     screen: Any,
     reader: PenlogReader,
     view: View,
-    prefix: bool,
-    relative_timings: bool,
+    formatter: RecordFormatter,
     terminal_progress: bool,
 ) -> None:
     curses.set_escdelay(25)
-    viewer = Viewer(screen, reader, view, prefix, relative_timings, terminal_progress)
+    viewer = Viewer(screen, reader, view, formatter, terminal_progress)
     asyncio.run(viewer.run())
 
 
@@ -913,11 +906,11 @@ def run(
     path: Path,
     priority: PenlogPriority = PenlogPriority.INFO,
     record_filter: RecordFilter | None = None,
-    prefix: bool = True,
-    relative_timings: bool = False,
+    formatter: RecordFormatter | None = None,
     terminal_progress: bool | None = None,
 ) -> None:
     """Runs the viewer; ``terminal_progress`` defaults to auto detection."""
+    formatter = formatter or RecordFormatter()
     if terminal_progress is None:
         terminal_progress = TerminalProgress.supported()
     with PenlogReader(path) as reader:
@@ -927,5 +920,9 @@ def run(
             os.dup2(tty, sys.stdin.fileno())
             os.close(tty)
 
-        view = View(zones=((0, priority),), filter=record_filter or RecordFilter())
-        curses.wrapper(_curses_main, reader, view, prefix, relative_timings, terminal_progress)
+        view = View(
+            zones=((0, priority),),
+            filter=record_filter or RecordFilter(),
+            interpret=formatter.interpret,
+        )
+        curses.wrapper(_curses_main, reader, view, formatter, terminal_progress)

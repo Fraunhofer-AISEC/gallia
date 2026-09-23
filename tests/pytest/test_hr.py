@@ -8,6 +8,7 @@ import json
 import pytest
 
 from gallia.cli.hr.filters import FilterError, RecordFilter
+from gallia.cli.hr.formatting import InterpretationKind, RecordFormatter, interpret_uds
 from gallia.log import PenlogPriority, PenlogRecord
 
 
@@ -112,3 +113,80 @@ def test_view_zones() -> None:
     assert view.with_priority(0, 100, error, 100).zones == ((0, error),)
     # Up to the end of the file.
     assert view.with_priority(15, 100, error, 100).zones == ((0, info), (10, debug), (15, error))
+
+
+def test_formatter_default_is_console_format() -> None:
+    record = make_record("hello", tags=["a", "b"])
+    record.stacktrace = "Traceback: ..."
+    assert RecordFormatter().format(record) == str(record)
+
+
+def test_formatter_relative_timings() -> None:
+    start = datetime.datetime(2020, 1, 1)
+    records = [make_record(str(n)) for n in range(3)]
+    records[1].datetime = start + datetime.timedelta(days=1, hours=2, minutes=3, seconds=4.567)
+    records[2].datetime = start - datetime.timedelta(seconds=1)
+
+    formatter = RecordFormatter(relative_timings=True)
+    # Relative to the first formatted record.
+    assert [formatter.format_timestamp(r.datetime).strip() for r in records] == [
+        "+0d 00:00:00.000",
+        "+1d 02:03:04.567",
+        "-0d 00:00:01.000",
+    ]
+    assert formatter.format(records[1]).startswith("  +1d 02:03:04.567 scanner: 1")
+
+
+def test_formatter_no_prefix() -> None:
+    assert RecordFormatter(prefix=False).format(make_record("hello")) == "hello\n"
+
+
+@pytest.mark.parametrize(
+    ("data", "kind", "text"),
+    [
+        ("22f190", InterpretationKind.UDS_REQUEST, "ReadDataByIdentifierRequest"),
+        ("62f19041", InterpretationKind.UDS_POSITIVE_RESPONSE, "ReadDataByIdentifierResponse"),
+        ("7f2231", InterpretationKind.UDS_NEGATIVE_RESPONSE, "NegativeResponse"),
+        ("no hex", None, None),
+        ("00", None, None),
+        ("", None, None),
+    ],
+)
+def test_interpret(data: str, kind: InterpretationKind | None, text: str | None) -> None:
+    interpretation = interpret_uds(data)
+    if kind is None:
+        assert interpretation is None
+        return
+    assert interpretation is not None
+    assert interpretation.kind is kind
+    assert text is not None and text in interpretation.text
+
+    line = RecordFormatter(prefix=False, interpret=True).format(make_record(data))
+    assert line == f"{data}  # {interpretation.text}\n"
+    # Without --interpret, nothing is added.
+    assert RecordFormatter(prefix=False).format(make_record(data)) == f"{data}\n"
+
+
+GRAY = "\033[0;38;5;245m"
+
+
+@pytest.mark.parametrize(
+    ("priority", "style"),
+    [
+        (PenlogPriority.EMERGENCY, "\033[31m\033[1m"),
+        (PenlogPriority.ALERT, "\033[31m\033[1m"),
+        (PenlogPriority.CRITICAL, "\033[31m\033[1m"),
+        (PenlogPriority.ERROR, "\033[31m"),
+        (PenlogPriority.WARNING, "\033[33m"),
+        (PenlogPriority.NOTICE, "\033[1m"),
+        (PenlogPriority.INFO, ""),
+        (PenlogPriority.DEBUG, GRAY),
+        (PenlogPriority.TRACE, GRAY),
+    ],
+)
+def test_console_colors(priority: PenlogPriority, style: str) -> None:
+    record = make_record("hello")
+    record.priority = priority
+    record.colors = True
+    # Only the data is colored; this is the same in hr --cursed.
+    assert RecordFormatter().format(record) == f"Jan 01 00:00:00.000 scanner: {style}hello\033[0m\n"

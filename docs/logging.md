@@ -20,6 +20,8 @@ Terms are separated by spaces and must all match:
 `word` (data contains word, case insensitive), `!word`, `field=a,b`, `field!=a,b`, `field~regex`, and `field!~regex`.
 The fields are `module`, `host`, `data`, `tag`, and `line`.
 
+The output can be adjusted in both modes: `--no-prefix` hides timestamp, module, and tags, `--relative-timings` shows timestamps relative to the first displayed record, and `--interpret` shows UDS messages decoded as comments.
+
 The generic interface which represents a logrecord is {class}`gallia.log.PenlogRecord`.
 The generic interface which is used to read a logfile {class}`gallia.log.PenlogReader`.
 

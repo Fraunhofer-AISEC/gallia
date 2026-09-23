@@ -333,34 +333,28 @@ class _PenlogRecordV2:
 _PenlogRecord: TypeAlias = _PenlogRecordV2
 
 
-def _colorize_msg(data: str, levelno: int) -> tuple[str, int]:
-    if sys.platform == "win32" or not sys.stderr.isatty():
-        return data, 0
-
-    out = ""
+def level_style(levelno: int) -> tuple[ConsoleColor, bool]:
+    """Returns the console color of a log level and whether it is bold.
+    This is used by the console log and hr."""
     match levelno:
-        case Loglevel.TRACE:
-            style = _Color.GRAY.value
-        case Loglevel.DEBUG:
-            style = _Color.GRAY.value
-        case Loglevel.INFO:
-            style = _Color.NOP.value
+        case Loglevel.TRACE | Loglevel.DEBUG:
+            return ConsoleColor.GRAY, False
         case Loglevel.NOTICE:
-            style = _Color.BOLD.value
+            return ConsoleColor.NOP, True
         case Loglevel.WARNING:
-            style = _Color.YELLOW.value
+            return ConsoleColor.YELLOW, False
         case Loglevel.ERROR:
-            style = _Color.RED.value
+            return ConsoleColor.RED, False
         case Loglevel.CRITICAL:
-            style = _Color.RED.value + _Color.BOLD.value
+            return ConsoleColor.RED, True
         case _:
-            style = _Color.NOP.value
+            return ConsoleColor.NOP, False
 
-    out += style
-    out += data
-    out += _Color.RESET.value
 
-    return out, len(style)
+def _colorize_msg(data: str, levelno: int) -> tuple[str, int]:
+    color, bold = level_style(levelno)
+    style = color.value + (ConsoleColor.BOLD.value if bold else "")
+    return style + data + ConsoleColor.RESET.value, len(style)
 
 
 def _format_tags(tags: list[str] | None) -> str:
@@ -411,6 +405,11 @@ def format_timestamp(dt: datetime.datetime) -> str:
     )
 
 
+def format_prefix(timestamp: str, name: str, tags: list[str] | None) -> str:
+    """Formats the prefix of a console log line: timestamp, name, and tags."""
+    return f"{timestamp} {name}{_format_tags(tags)}: "
+
+
 def _format_record(
     dt: datetime.datetime,
     name: str,
@@ -420,16 +419,14 @@ def _format_record(
     stacktrace: str | None,
     colors: bool = False,
     volatile_info: bool = False,
+    prefix: str | None = None,
+    suffix: str = "",
 ) -> str:
     msg = ""
     if volatile_info:
         msg += "\33[2K"  # Clean current line
     extra_len = 4
-    msg += format_timestamp(dt)
-    msg += " "
-    msg += name
-    msg += _format_tags(tags)
-    msg += ": "
+    msg += format_prefix(format_timestamp(dt), name, tags) if prefix is None else prefix
 
     if colors:
         tmp_msg, extra_len_tmp = _colorize_msg(data, levelno)
@@ -437,11 +434,12 @@ def _format_record(
         extra_len += extra_len_tmp
     else:
         msg += data
+    msg += suffix
 
     if volatile_info and levelno <= Loglevel.INFO:
         terminal_width, _ = shutil.get_terminal_size()
         msg = msg[: terminal_width + extra_len - 1]  # Adapt length to invisible ANSI colors
-        msg += _Color.RESET.value
+        msg += ConsoleColor.RESET.value
         msg += "\r"
     else:
         msg += "\n"
@@ -469,17 +467,31 @@ class PenlogRecord:
     _python_level_name: str | None = None
     _python_func_name: str | None = None
 
+    @property
+    def level(self) -> int:
+        """The Python log level of the record. EMERGENCY and ALERT, which
+        Python does not know, are CRITICAL."""
+        if self._python_level_no is not None:
+            return self._python_level_no
+        return _PRIORITY_TO_LEVEL.get(self.priority, Loglevel.CRITICAL)
+
     def __str__(self) -> str:
+        return self.format()
+
+    def format(self, prefix: str | None = None, suffix: str = "") -> str:
+        """Formats the record like the console log. ``prefix`` replaces the
+        default prefix (see :func:`format_prefix`); ``suffix`` is appended
+        to the data."""
         return _format_record(
             dt=self.datetime,
             name=self.module,
             data=self.data,
-            levelno=self._python_level_no
-            if self._python_level_no is not None
-            else self.priority.to_level(),
+            levelno=self.level,
             tags=self.tags,
             stacktrace=self.stacktrace,
             colors=self.colors,
+            prefix=prefix,
+            suffix=suffix,
         )
 
     @classmethod
@@ -1081,7 +1093,7 @@ class PenlogReader:
 
 
 @unique
-class _Color(Enum):
+class ConsoleColor(Enum):
     NOP = ""
     RESET = "\033[0m"
     BOLD = "\033[1m"
@@ -1093,6 +1105,7 @@ class _Color(Enum):
     CYAN = "\033[36m"
     WHITE = "\033[37m"
     GRAY = "\033[0;38;5;245m"
+    ORANGE = "\033[38;5;208m"
 
 
 class _JSONFormatter(logging.Formatter):
@@ -1161,7 +1174,7 @@ class _ConsoleFormatter(logging.Formatter):
             levelno=levelno,
             tags=tags,
             stacktrace=stacktrace,
-            colors=self.colors,
+            colors=self.colors and sys.platform != "win32" and sys.stderr.isatty(),
             volatile_info=self.volatile_info,
         )
 

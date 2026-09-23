@@ -77,3 +77,14 @@
 @test "cursed supports a single file only" {
 	run -2 hr --cursed "$BATS_TEST_DIRNAME/testfiles/log-01.json.zst" "$BATS_TEST_DIRNAME/testfiles/log-01.json.zst"
 }
+
+@test "output options" {
+	local line
+	line='{"module": "uds", "data": "22f190", "host": "kronos", "datetime":"2020-04-23T15:21:50.620310", "priority": 6, "version": 2}'
+
+	run -0 hr --no-prefix --interpret - <<<"$line"
+	[[ "$output" == "22f190  # ReadDataByIdentifierRequest"* ]]
+
+	run -0 hr --relative-timings - <<<"$line"
+	[[ "$output" == *"+0d 00:00:00.000 uds: 22f190"* ]]
+}

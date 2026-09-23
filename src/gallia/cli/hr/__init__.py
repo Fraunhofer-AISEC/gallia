@@ -15,6 +15,7 @@ from pathlib import Path
 
 from gallia import exitcodes
 from gallia.cli.hr.filters import FILTER_SYNTAX, RecordFilter
+from gallia.cli.hr.formatting import RecordFormatter
 from gallia.log import (
     PenlogPriority,
     PenlogReader,
@@ -80,19 +81,27 @@ def parse_args() -> argparse.Namespace:
         help="number of lines for --head and --tail",
     )
 
-    cursed = parser.add_argument_group("cursed options")
-    cursed.add_argument(
+    output = parser.add_argument_group("output options")
+    output.add_argument(
         "--prefix",
         action=argparse.BooleanOptionalAction,
         default=True,
         help="show timestamp, module and tags",
     )
-    cursed.add_argument(
+    output.add_argument(
         "--relative-timings",
         action=argparse.BooleanOptionalAction,
         default=False,
-        help="show timestamps relative to the first record",
+        help="show timestamps relative to the first displayed record",
     )
+    output.add_argument(
+        "--interpret",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="interpret UDS messages; they appear as comments next to the original message",
+    )
+
+    cursed = parser.add_argument_group("cursed options")
     cursed.add_argument(
         "--terminal-progress",
         action=argparse.BooleanOptionalAction,
@@ -147,6 +156,12 @@ def _main() -> int:
             print(f"not a regular file: {path}", file=sys.stderr)
             return 1
 
+    formatter = RecordFormatter(
+        prefix=args.prefix,
+        relative_timings=args.relative_timings,
+        interpret=args.interpret,
+    )
+
     if args.cursed:
         from gallia.cli.hr.tui import run
 
@@ -154,8 +169,7 @@ def _main() -> int:
             args.FILE[0],
             priority=args.priority,
             record_filter=args.filter,
-            prefix=args.prefix,
-            relative_timings=args.relative_timings,
+            formatter=formatter,
             terminal_progress=args.terminal_progress,
         )
         return 0
@@ -165,7 +179,7 @@ def _main() -> int:
     for path in args.FILE:
         for record in _select_records(path, args):
             record.colors = colors
-            print(record, end="")
+            print(formatter.format(record), end="")
 
     return 0
 
