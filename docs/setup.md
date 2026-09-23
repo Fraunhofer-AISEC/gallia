@@ -13,6 +13,7 @@ This project has the following system level dependencies:
 * [Python](https://python.org) >= 3.11 (roughly aligns with the current version in Debian stable)
 * [uv](https://docs.astral.sh/uv/) (optional, for development)
 * [dumpcap](https://www.wireshark.org/docs/man-pages/dumpcap.html) (optional for recording network traces, part of [wireshark](https://www.wireshark.org/))
+* [tshark](https://www.wireshark.org/docs/man-pages/tshark.html) (optional for dissecting messages in `hr --cursed`, part of [wireshark](https://www.wireshark.org/))
 * [git](https://git-scm.com/) (optional, used to detect config file)
 * [iproute2](https://git.kernel.org/pub/scm/network/iproute2/iproute2.git) (optional, used to query network settings in some scanners)
 

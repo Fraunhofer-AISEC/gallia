@@ -28,6 +28,7 @@ from typing import Any
 
 import wcwidth
 
+from gallia.cli.hr import wireshark
 from gallia.cli.hr.filters import FILTER_SYNTAX, FilterError, RecordFilter
 from gallia.cli.hr.formatting import DISSECTION_COLORS, RecordFormatter, dissect_record
 from gallia.cli.hr.terminal import detect_background
@@ -391,6 +392,9 @@ class Viewer:
         # Only the entries around the visible part of the file are cached.
         self.record = functools.lru_cache(maxsize=2048)(self._load_record)
         self.dissection = functools.lru_cache(maxsize=2048)(self._dissect)
+        # Running tshark takes a while; only for the record view.
+        self.wireshark = functools.lru_cache(maxsize=64)(self._wireshark)
+        self.has_wireshark = wireshark.available()
         self._render = functools.lru_cache(maxsize=2048)(self._render_uncached)
         # Searching visible entries might be slow with sparse filters; the
         # same searches are repeated a lot while drawing and scrolling.
@@ -445,6 +449,11 @@ class Viewer:
         if (proto := self.record(entry).proto) is not None:
             return proto
         return "uds" if self.dissection(entry) is not None else None
+
+    def _wireshark(self, entry: int) -> list[str] | None:
+        if not self.has_wireshark or (proto := self.protocol(entry)) is None:
+            return None
+        return wireshark.dissect(proto, self.record(entry).data)
 
     def matches_filter(self, entry: int) -> bool:
         record_filter = self.view.filter
@@ -1065,6 +1074,12 @@ class Viewer:
         if (dissection := self.dissection(entry)) is not None:
             attr = colors.dissections[dissection.kind]
             section(proto or "", [[(line, attr)] for line in wrap(dissection.text, width)])
+        if (tree := self.wireshark(entry)) is not None:
+            tree_rows: list[Row] = []
+            for line in tree:
+                indent = len(line) - len(line.lstrip()) + 2
+                tree_rows += wrap_row([(line, curses.A_NORMAL)], width, min(indent, width // 2))
+            section(f"Wireshark ({proto})", tree_rows)
         return rows
 
     async def show_record(self) -> None:

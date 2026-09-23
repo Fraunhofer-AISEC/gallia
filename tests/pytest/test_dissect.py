@@ -4,6 +4,7 @@
 
 import pytest
 
+from gallia.cli.hr import wireshark
 from gallia.dissect import DISSECTORS, Dissection, DissectionKind, dissect, dissector
 
 
@@ -60,3 +61,33 @@ def test_register_dissector(monkeypatch: pytest.MonkeyPatch) -> None:
     assert dissect("test", "hello") == Dissection("HELLO", DissectionKind.INFO)
     # Exceptions of dissectors do not break hr.
     assert dissect("test", "broken") is None
+
+
+def test_wireshark_pcap() -> None:
+    # As created by text2pcap -F pcap -P uds.
+    pcap = wireshark._pcap(252, wireshark._exported_pdu("uds", bytes.fromhex("22f190")))
+    record_header = "00000000 00000000 0e000000 0e000000"
+    assert pcap[24:] == bytes.fromhex(f"{record_header} 000c0003 756473 00000000 22f190")
+
+
+@pytest.mark.skipif(not wireshark.available(), reason="tshark is not installed")
+@pytest.mark.parametrize(
+    ("proto", "data", "expected"),
+    [
+        ("uds", "22f190", "Data Identifier: 0xf190"),
+        ("iso15765", "0x7e0#0322f190aaaaaaaa", "Data Identifier: 0xf190"),
+        ("iso15765", "0x7e8#30000000", "Flow status: Continue to Send"),
+        ("can", "0x18daf110#0210", "Extended Flag: True"),
+    ],
+)
+def test_wireshark(proto: str, data: str, expected: str) -> None:
+    tree = wireshark.dissect(proto, data)
+    assert tree is not None
+    assert any(expected in line for line in tree)
+    # The layers which only wrap the message are omitted.
+    assert not any(line.startswith(("Frame ", "EXPORTED_PDU")) for line in tree)
+
+
+def test_wireshark_invalid() -> None:
+    assert wireshark.dissect("uds", "no hex") is None
+    assert wireshark.dissect("can", "no frame") is None

@@ -13,7 +13,7 @@ import pytest
 
 curses = pytest.importorskip("curses")
 
-from gallia.cli.hr import tui
+from gallia.cli.hr import tui, wireshark
 from gallia.cli.hr.filters import RecordFilter
 from gallia.cli.hr.formatting import RecordFormatter
 from gallia.cli.hr.terminal import parse_background, parse_colorfgbg
@@ -334,7 +334,10 @@ def test_colors_like_hr(screen: Screen, tmp_path: Path) -> None:
         ]
 
 
-def test_dissection(screen: Screen, tmp_path: Path) -> None:
+@pytest.mark.parametrize("has_wireshark", [False, True])
+def test_dissection(screen: Screen, tmp_path: Path, has_wireshark: bool) -> None:
+    if has_wireshark and not wireshark.available():
+        pytest.skip("tshark is not installed")
     path = tmp_path / "log.json"
     lines = []
     for data, proto in [("22f190", "uds"), ("0x7e8#30000000", "iso15765"), ("7f2231", None)]:
@@ -353,6 +356,7 @@ def test_dissection(screen: Screen, tmp_path: Path) -> None:
     with PenlogReader(path) as reader:
         view = View(zones=((0, PenlogPriority.TRACE),), filter=RecordFilter())
         viewer = Viewer(screen, reader, view, RecordFormatter(prefix=False), False)
+        viewer.has_wireshark = has_wireshark
         viewer.focus(0, 0)
         driver = Driver(viewer, screen)
         try:
@@ -368,6 +372,11 @@ def test_dissection(screen: Screen, tmp_path: Path) -> None:
             driver.keys("\n")
             text = screen.text()
             assert "── uds" in text
+            # Below the visible part of the box.
+            rows = viewer.record_details(0, False, 76)
+            details = "\n".join("".join(text for text, _ in row) for row in rows)
+            assert ("── Wireshark (uds)" in details) is has_wireshark
+            assert ("Data Identifier: 0xf190" in details) is has_wireshark
             driver.keys("n")
             assert "── iso15765" in screen.text()
             driver.keys("n")
