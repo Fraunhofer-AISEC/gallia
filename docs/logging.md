@@ -35,12 +35,14 @@ logger.info("hello world")
 logger.debug("hello debug")
 ```
 
-If processing of a logfile is needed, here is a minimal example; for custom functionality see {class}`gallia.log.PenlogReader` and {meth}`gallia.log.PenlogReader.records`.
+If processing of a logfile is needed, here is a minimal example; {func}`gallia.log.stream_records` reads the logfile once from start to end with constant memory usage.
 
 ``` python
-from gallia.log import PenlogReader
+from gallia.log import stream_records
 
-reader = PenlogReader("/path/to/logfile")
-for record in reader.records()
+for record in stream_records("/path/to/logfile.json.zst"):
     print(record)
 ```
+
+For random access, e.g. reading the logfile backwards or searching it, see {class}`gallia.log.PenlogReader`.
+Compressed logfiles are decompressed to a temporary file in the background for this.
