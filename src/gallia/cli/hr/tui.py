@@ -62,8 +62,9 @@ Navigation
   Home/End, g/G       jump to the start/end of the file
 
 Actions
-  p <prio>            set the priority of the marked range (or of the gap
-                      around the entry under the cursor)
+  p <prio>            set the priority of the marked range; without a
+                      marked range, showing more affects the hidden records
+                      around the cursor, showing less the cursor's zone
   P <prio>            set the priority of the entire file
   v                   start/stop marking a range; ESC cancels
   f                   edit the filter (see below); Up/Down browse the history
@@ -484,13 +485,17 @@ class Viewer:
             return self.top[0] if self.top is not None else 0
         return frame[min(self.cursor, len(frame) - 1)][0]
 
-    def selection(self) -> tuple[int, int]:
-        """Returns the marked range of entries ``[start, end)``.
-        Without a marked range, the hidden entries around the cursor are
-        selected, since this is where changing the priority has an effect."""
+    def selection(self, priority: PenlogPriority) -> tuple[int, int]:
+        """Returns the entries ``[start, end)`` for changing the priority
+        to ``priority``: the marked range, if any. Otherwise, for showing
+        more, the hidden entries around the cursor; for showing less, the
+        zone of the cursor. This is where the change has an effect."""
         entry = self.cursor_entry()
         if self.mark is not None and self.mark != entry:
             return min(self.mark, entry), max(self.mark, entry) + 1
+        start, end, current = self.view.zone_bounds(self.view.zone_index(entry), self.n_entries)
+        if priority <= current:
+            return start, end
         prev = self.prev_visible(entry - 1)
         next_ = self.next_visible(entry + 1)
         return (
@@ -538,7 +543,9 @@ class Viewer:
 
         view = self.view
         entry = self.cursor_entry()
-        flags = []
+        # The message is the most recent information; it goes first, since
+        # the status line is cut off at the end on narrow terminals.
+        flags = [self.message] if self.message else []
         if self.n_entries > 0:
             zone = view.zone_index(entry)
             flags.append(f"{view.zones[zone][1].name} (zone {zone + 1}/{len(view.zones)})")
@@ -548,8 +555,6 @@ class Viewer:
             flags.append("UDS")
         if self.mark is not None:
             flags.append("MARK")
-        if self.message:
-            flags.append(self.message)
         if self.reader.error is not None:
             flags.append(str(self.reader.error))
 
@@ -753,6 +758,55 @@ class Viewer:
             if (key := await self.event()) is not None:
                 return PRIORITY_KEYS.get(key) if isinstance(key, str) else None
 
+    def draw_box(self, title: str, rows: list[Row], offset: int, footer: str, width: int) -> int:
+        """Draws a scrollable box on top of the log; returns the number of
+        rows which fit into it."""
+        self.draw(refresh=False)
+        screen_height, screen_width = self.height + 1, self.width
+        width = min(width, screen_width)
+        height = min(len(rows) + 2, screen_height - 1)
+        inner = max(height - 2, 1)
+
+        try:
+            box = curses.newwin(
+                height, width, (screen_height - 1 - height) // 2, (screen_width - width) // 2
+            )
+            box.erase()
+            box.box()
+            box.addnstr(0, 2, f" {title} ", width - 4, curses.A_BOLD)
+            box.addnstr(height - 1, max(width - len(footer) - 3, 1), f" {footer} ", width - 2)
+            for y, row in enumerate(rows[offset : offset + inner]):
+                x = 2
+                for text, attr in row:
+                    if x < width - 2:
+                        box.addnstr(y + 1, x, text, width - 2 - x, attr)
+                    x += cells(text)
+            self.screen.noutrefresh()
+            box.noutrefresh()
+            curses.doupdate()
+        except curses.error:
+            # The terminal is too small; show whatever fits.
+            self.screen.refresh()
+        return inner
+
+    @staticmethod
+    def scroll(key: str | int, offset: int, page: int, n_rows: int) -> int:
+        """Returns the new offset of a scrollable box after a key press."""
+        match key:
+            case curses.KEY_UP | "k":
+                offset -= 1
+            case curses.KEY_DOWN | "j":
+                offset += 1
+            case curses.KEY_PPAGE:
+                offset -= page
+            case curses.KEY_NPAGE | " ":
+                offset += page
+            case curses.KEY_HOME | "g":
+                offset = 0
+            case curses.KEY_END | "G":
+                offset = n_rows
+        return max(0, min(offset, n_rows - page))
+
     async def show_help(self) -> None:
         """Shows the help in a box on top of the log."""
         text = HELP.format(
@@ -761,46 +815,17 @@ class Viewer:
             ),
             filter="\n".join(f"  {line}" for line in FILTER_SYNTAX.splitlines()),
         )
-        lines = text.splitlines()
+        rows: list[Row] = [[(line, curses.A_NORMAL)] for line in text.splitlines()]
+        width = max(cells(line) for line in text.splitlines()) + 4
         offset = 0
 
         while True:
-            self.draw(refresh=False)
-            screen_height, screen_width = self.screen.getmaxyx()
-            width = min(max(cells(line) for line in lines) + 4, screen_width)
-            height = min(len(lines) + 2, screen_height - 1)
-            inner = max(height - 2, 1)
-            offset = max(0, min(offset, len(lines) - inner))
-
-            try:
-                box = curses.newwin(
-                    height, width, (screen_height - 1 - height) // 2, (screen_width - width) // 2
-                )
-                box.erase()
-                box.box()
-                box.addnstr(0, 2, " Help ", width - 4, curses.A_BOLD)
-                footer = " q/ESC close · ↑↓ PgUp/PgDn scroll "
-                box.addnstr(height - 1, max(width - len(footer) - 2, 1), footer, width - 2)
-                for y, line in enumerate(lines[offset : offset + inner]):
-                    box.addnstr(y + 1, 2, line, width - 4)
-                self.screen.noutrefresh()
-                box.noutrefresh()
-                curses.doupdate()
-            except curses.error:
-                # The terminal is too small; show whatever fits.
-                self.screen.refresh()
-
-            match await self.event():
+            page = self.draw_box("Help", rows, offset, "q/ESC close · ↑↓ PgUp/PgDn scroll", width)
+            match key := await self.event():
                 case "q" | "?" | "\x1b":
                     return
-                case curses.KEY_UP | "k":
-                    offset -= 1
-                case curses.KEY_DOWN | "j":
-                    offset += 1
-                case curses.KEY_PPAGE:
-                    offset -= inner
-                case curses.KEY_NPAGE | " ":
-                    offset += inner
+                case str() | int():
+                    offset = self.scroll(key, offset, page, len(rows))
 
     async def handle(self, key: str | int) -> bool:
         """Handles a key press; returns False to quit."""
@@ -830,9 +855,14 @@ class Viewer:
                 self.mark = None if self.mark is not None else self.cursor_entry()
             case "p" | "P":
                 if (priority := await self.select_priority()) is not None:
-                    start, end = self.selection() if key == "p" else (0, self.n_entries)
+                    start, end = self.selection(priority) if key == "p" else (0, self.n_entries)
                     self.mark = None
-                    self.push_view(self.view.with_priority(start, end, priority, self.n_entries))
+                    view = self.view.with_priority(start, end, priority, self.n_entries)
+                    if view.zones == self.view.zones:
+                        self.message = f"records {start + 1}-{end} are already {priority.name}"
+                    else:
+                        self.push_view(view)
+                        self.message = f"records {start + 1}-{end}: {priority.name}"
             case "f":
                 await self.edit_filter()
             case "i":
