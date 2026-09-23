@@ -945,6 +945,12 @@ class PenlogReader:
         """The size of the (decompressed) data available so far."""
         return len(self._data)
 
+    def offset(self, index: int) -> int:
+        """Returns the position of the record at ``index`` in the
+        (decompressed) data."""
+        self._ensure_indexed(index)
+        return self._offsets[index]
+
     def raw(self, index: int) -> bytes:
         """Returns the raw bytes of the record at ``index``."""
         self._ensure_indexed(index)

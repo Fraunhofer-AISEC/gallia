@@ -13,6 +13,7 @@ import asyncio
 import curses
 import datetime
 import functools
+import json
 import os
 import re
 import signal
@@ -67,6 +68,8 @@ Actions
                       around the cursor, showing less the cursor's zone
   P <prio>            set the priority of the entire file
   v                   start/stop marking a range; ESC cancels
+  Enter               inspect the record under the cursor (decoded JSON,
+                      raw record; n/N for the next/previous record)
   f                   edit the filter (see below); Up/Down browse the history
   i                   toggle interpretation of UDS messages
   x                   toggle the prefix (timestamp, module, tags)
@@ -134,6 +137,39 @@ def wrap(text: str, width: int) -> list[str]:
     return rows
 
 
+_JSON_TOKEN = re.compile(
+    r'(?P<key>"(?:[^"\\]|\\.)*")(?=\s*:)'
+    r'|(?P<string>"(?:[^"\\]|\\.)*")'
+    r"|(?P<number>-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)"
+    r"|(?P<literal>\b(?:true|false|null)\b)"
+)
+
+
+def chunks(text: str, width: int) -> list[str]:
+    """Splits text into rows of ``width`` characters; unlike wrap(), the
+    text is preserved exactly (apart from control characters)."""
+    text = text.translate(_CONTROL_CHARS)
+    return [text[i : i + width] for i in range(0, len(text), width)] or [""]
+
+
+def wrap_row(row: Row, width: int, indent: int = 0) -> list[Row]:
+    """Wraps a row of formatted text at ``width`` characters; continuation
+    rows are indented by ``indent`` characters."""
+    rows: list[Row] = [[]]
+    used = 0
+    for text, attr in row:
+        pos = 0
+        while pos < len(text):
+            if used >= width:
+                rows.append([(" " * indent, 0)])
+                used = indent
+            part = text[pos : pos + width - used]
+            rows[-1].append((part, attr))
+            used += len(part)
+            pos += len(part)
+    return rows
+
+
 def cells(text: str) -> int:
     """Returns the number of terminal cells needed for ``text``."""
     return n if (n := wcwidth.wcswidth(text)) >= 0 else len(text)
@@ -168,6 +204,11 @@ class Colors:
             kind: self.console(color) for kind, color in INTERPRETATION_COLORS.items()
         }
         self.invalid = self.console(ConsoleColor.YELLOW)
+        self.heading = curses.A_BOLD
+        self.json_key = self.console(ConsoleColor.CYAN)
+        self.json_string = self.console(ConsoleColor.GREEN)
+        self.json_number = self.console(ConsoleColor.PURPLE)
+        self.json_literal = self.console(ConsoleColor.YELLOW)
         self.status = curses.A_REVERSE
 
     def _pair(self, fg: int) -> int:
@@ -807,6 +848,112 @@ class Viewer:
                 offset = n_rows
         return max(0, min(offset, n_rows - page))
 
+    def _highlight_json(self, line: str) -> Row:
+        attrs = {
+            "key": self.colors.json_key,
+            "string": self.colors.json_string,
+            "number": self.colors.json_number,
+            "literal": self.colors.json_literal,
+        }
+        row: Row = []
+        pos = 0
+        for m in _JSON_TOKEN.finditer(line):
+            if m.start() > pos:
+                row.append((line[pos : m.start()], curses.A_NORMAL))
+            assert m.lastgroup is not None
+            row.append((m.group(), attrs[m.lastgroup]))
+            pos = m.end()
+        if pos < len(line):
+            row.append((line[pos:], curses.A_NORMAL))
+        return row
+
+    def record_details(self, entry: int, raw_mode: bool, width: int) -> list[Row]:
+        """Returns the rows of the record view of an entry."""
+        colors = self.colors
+        raw = self.reader.raw(entry).decode(errors="replace")
+        rows: list[Row] = []
+
+        def field(name: str, value: str) -> None:
+            rows.append([(f"{name:<10}", colors.heading), (value, curses.A_NORMAL)])
+
+        def section(title: str, text_rows: list[Row]) -> None:
+            rows.append([])
+            rows.append([(f"── {title} ", colors.heading)])
+            rows.extend(text_rows)
+
+        more = "" if self.reader.index_complete else "+"
+        field("record", f"{entry + 1} of {self.n_entries}{more}")
+        field("offset", f"{self.reader.offset(entry)} (in the decompressed data)")
+        field("size", f"{len(raw)} bytes")
+        field("priority", self.reader.priority(entry).name)
+
+        if raw_mode:
+            section("raw", [[(line, curses.A_NORMAL)] for line in chunks(raw, width)])
+            return rows
+
+        body = raw
+        if (m := re.match(r"<\d>", raw)) is not None:
+            field("prefix", m.group())
+            body = raw[m.end() :]
+        try:
+            record = json.loads(body)
+        except ValueError as e:
+            section("invalid JSON", [[(str(e), colors.invalid)]])
+            section("raw", [[(line, curses.A_NORMAL)] for line in chunks(raw, width)])
+            return rows
+
+        json_rows: list[Row] = []
+        for line in json.dumps(record, indent=2, ensure_ascii=False).splitlines():
+            indent = len(line) - len(line.lstrip()) + 2
+            json_rows += wrap_row(self._highlight_json(line), width, min(indent, width // 2))
+        section("JSON", json_rows)
+
+        if isinstance(record, dict):
+            # Long or multiline texts are hard to read in JSON.
+            for key in ("data", "stacktrace"):
+                value = record.get(key)
+                if isinstance(value, str) and ("\n" in value or len(value) > width // 2):
+                    section(key, [[(line, curses.A_NORMAL)] for line in wrap(value, width)])
+            data = record.get("data")
+            if isinstance(data, str) and (interpretation := interpret_uds(data)) is not None:
+                attr = colors.interpretations[interpretation.kind]
+                section("UDS", [[(line, attr)] for line in wrap(interpretation.text, width)])
+        return rows
+
+    async def show_record(self) -> None:
+        """Shows the record under the cursor in detail, e.g. for debugging."""
+        if self.top is None:
+            return
+        entry = self.cursor_entry()
+        raw_mode = False
+        offset = 0
+
+        while True:
+            width = max(self.width - 4, 24)
+            rows = self.record_details(entry, raw_mode, width - 4)
+            mode = "raw" if raw_mode else "decoded"
+            footer = "q close · n/N next/prev · r raw/decoded · ↑↓ scroll"
+            page = self.draw_box(f"Record {entry + 1} ({mode})", rows, offset, footer, width)
+
+            match key := await self.event():
+                case "q" | "\x1b" | "\n" | "\r" | curses.KEY_ENTER:
+                    return
+                case "n" | "N" | curses.KEY_RIGHT | curses.KEY_LEFT:
+                    forward = key in ("n", curses.KEY_RIGHT)
+                    other = (
+                        self.next_visible(entry + 1) if forward else self.prev_visible(entry - 1)
+                    )
+                    if other is not None:
+                        entry = other
+                        offset = 0
+                        # The log behind the box follows.
+                        self.focus(entry)
+                case "r":
+                    raw_mode = not raw_mode
+                    offset = 0
+                case str() | int():
+                    offset = self.scroll(key, offset, page, len(rows))
+
     async def show_help(self) -> None:
         """Shows the help in a box on top of the log."""
         text = HELP.format(
@@ -889,6 +1036,8 @@ class Viewer:
                     self.focus(self.cursor_entry())
             case "?":
                 await self.show_help()
+            case "\n" | "\r" | curses.KEY_ENTER:
+                await self.show_record()
         return True
 
     async def run(self) -> None:

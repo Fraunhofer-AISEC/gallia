@@ -262,6 +262,37 @@ def test_filter(driver: Driver) -> None:
     assert 20 in driver.visible()
 
 
+def test_record_view(driver: Driver) -> None:
+    driver.move_to(12)
+    driver.keys("\n")
+    text = driver.screen.text()
+    assert "Record 13 (decoded)" in text
+    assert '"data": "n=12 ERROR"' in text
+    assert '"priority": 3' in text
+
+    # Next visible record; the log behind the box follows.
+    driver.keys("n")
+    assert "Record 19 (decoded)" in driver.screen.text()
+    driver.keys("N", "N")
+    assert "Record 12 (decoded)" in driver.screen.text()
+
+    driver.keys("r")
+    assert "Record 12 (raw)" in driver.screen.text()
+    assert '{"module": "m"' in driver.screen.text()
+
+    driver.keys("q")
+    assert "Record" not in driver.screen.text()
+    assert driver.cursor == 11
+
+
+def test_record_view_invalid_json(driver: Driver) -> None:
+    driver.keys("G", "\n")
+    text = driver.screen.text()
+    assert "Record 61 (decoded)" in text
+    assert "invalid JSON" in text
+    assert "this is { not json" in text
+
+
 def test_colors_like_hr(screen: Screen, tmp_path: Path) -> None:
     path = tmp_path / "log.json"
     record = {

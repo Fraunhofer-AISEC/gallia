@@ -13,6 +13,7 @@ Each scanner creates a `artifacts_dir` under `artifacts_base`, which contains a 
 The logfile is created with loglevel `DEBUG`; for debugging purposes loglevel `TRACE` can be enabled with the setting `trace_log`.
 Logfiles can be displayed with the `hr` tool which is included in `gallia`.
 `hr --cursed` opens an interactive viewer, which supports changing the priority for sections of the logfile, filtering, and interpreting UDS messages; press `?` for help.
+For debugging, `Enter` shows the record under the cursor as decoded JSON or as raw record.
 Only a compact index of the logfile is kept in memory, so large logfiles can be viewed as well; the index is built in the background.
 
 Both modes support filtering with `-f/--filter`, e.g. `hr -f 'module=scanner tag=result !timeout' log.json.zst`.
