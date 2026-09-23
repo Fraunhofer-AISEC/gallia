@@ -18,6 +18,7 @@ import shutil
 import socket
 import sys
 import tempfile
+import textwrap
 import time
 import traceback
 from array import array
@@ -423,12 +424,23 @@ def _format_record(
     volatile_info: bool = False,
     prefix: str | None = None,
     suffix: str = "",
+    align: bool = False,
 ) -> str:
     msg = ""
     if volatile_info:
         msg += "\33[2K"  # Clean current line
     extra_len = 4
-    msg += format_prefix(format_timestamp(dt), name, tags) if prefix is None else prefix
+    if prefix is None:
+        prefix = format_prefix(format_timestamp(dt), name, tags)
+    msg += prefix
+
+    if align:
+        # Continuation lines start below the first one, after the prefix.
+        indent = " " * len(prefix)
+        first, newline, rest = data.partition("\n")
+        data = first + newline + textwrap.indent(rest, indent)
+        if stacktrace is not None:
+            stacktrace = textwrap.indent(stacktrace, indent)
 
     if colors:
         tmp_msg, extra_len_tmp = _colorize_msg(data, levelno)
@@ -449,6 +461,10 @@ def _format_record(
     if stacktrace is not None:
         msg += "\n"
         msg += stacktrace
+        # Stacktraces of records usually lack the final newline; otherwise,
+        # the next record would continue its last line.
+        if not stacktrace.endswith("\n"):
+            msg += "\n"
 
     return msg
 
@@ -480,10 +496,11 @@ class PenlogRecord:
     def __str__(self) -> str:
         return self.format()
 
-    def format(self, prefix: str | None = None, suffix: str = "") -> str:
+    def format(self, prefix: str | None = None, suffix: str = "", align: bool = False) -> str:
         """Formats the record like the console log. ``prefix`` replaces the
         default prefix (see :func:`format_prefix`); ``suffix`` is appended
-        to the data."""
+        to the data. With ``align``, continuation lines of the data and the
+        stacktrace are indented to start below the first line of the data."""
         return _format_record(
             dt=self.datetime,
             name=self.module,
@@ -494,6 +511,7 @@ class PenlogRecord:
             colors=self.colors,
             prefix=prefix,
             suffix=suffix,
+            align=align,
         )
 
     @classmethod

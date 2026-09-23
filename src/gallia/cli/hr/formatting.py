@@ -88,11 +88,12 @@ class RecordFormatter:
         return interpret_uds(record.data) if self.interpret else None
 
     def format(self, record: PenlogRecord) -> str:
-        """Formats a record as a console log line, see :meth:`PenlogRecord.format`."""
+        """Formats a record as a console log line, see :meth:`PenlogRecord.format`.
+        Like in the viewer, continuation lines are aligned with the first line."""
         suffix = ""
         if (interpretation := self.interpretation(record)) is not None:
             suffix = f"  # {interpretation.text}"
             if record.colors:
                 color = INTERPRETATION_COLORS[interpretation.kind]
                 suffix = f"{color.value}{suffix}{ConsoleColor.RESET.value}"
-        return record.format(prefix=self.format_prefix(record), suffix=suffix)
+        return record.format(prefix=self.format_prefix(record), suffix=suffix, align=True)

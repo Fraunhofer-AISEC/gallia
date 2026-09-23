@@ -117,8 +117,26 @@ def test_view_zones() -> None:
 
 def test_formatter_default_is_console_format() -> None:
     record = make_record("hello", tags=["a", "b"])
-    record.stacktrace = "Traceback: ..."
     assert RecordFormatter().format(record) == str(record)
+
+
+def test_formatter_aligns_continuation_lines() -> None:
+    record = make_record("first\nsecond\n\nfourth")
+    record.stacktrace = "Traceback:\n  line 1"
+    indent = " " * len("Jan 01 00:00:00.000 scanner: ")
+    assert RecordFormatter().format(record) == (
+        "Jan 01 00:00:00.000 scanner: first\n"
+        f"{indent}second\n"
+        "\n"
+        f"{indent}fourth\n"
+        "\n"
+        f"{indent}Traceback:\n"
+        f"{indent}  line 1\n"
+    )
+    # Without the prefix, nothing is indented.
+    assert RecordFormatter(prefix=False).format(record) == (
+        "first\nsecond\n\nfourth\n\nTraceback:\n  line 1\n"
+    )
 
 
 def test_formatter_relative_timings() -> None:
