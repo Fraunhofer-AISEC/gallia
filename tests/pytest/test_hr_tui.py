@@ -13,9 +13,11 @@ import pytest
 
 curses = pytest.importorskip("curses")
 
+from gallia.cli.hr import tui
 from gallia.cli.hr.filters import RecordFilter
 from gallia.cli.hr.formatting import RecordFormatter
-from gallia.cli.hr.tui import View, Viewer
+from gallia.cli.hr.terminal import parse_background, parse_colorfgbg
+from gallia.cli.hr.tui import Event, MouseEvent, View, Viewer, key_name
 from gallia.log import Loglevel, PenlogPriority, PenlogReader, level_style
 
 PRIORITY_NAMES = [p.name for p in PenlogPriority]
@@ -30,16 +32,20 @@ class Screen:
         self.y = y
         self.x = x
         self.rows = [" " * columns for _ in range(lines)]
+        # The attributes of the drawn texts per row.
+        self.attrs: list[list[tuple[str, int]]] = [[] for _ in range(lines)]
 
     def getmaxyx(self) -> tuple[int, int]:
         return self.lines, self.columns
 
     def erase(self) -> None:
         self.rows = [" " * self.columns for _ in range(self.lines)]
+        self.attrs = [[] for _ in range(self.lines)]
 
     def addnstr(self, y: int, x: int, text: str, n: int, attr: int = 0) -> None:
         text = text[: max(n, 0)][: self.columns - x]
         self.rows[y] = self.rows[y][:x] + text + self.rows[y][x + len(text) :]
+        self.attrs[y].append((text, attr))
 
     def box(self) -> None:
         pass
@@ -117,7 +123,7 @@ class Driver:
             if not await self.viewer.handle(key):
                 return
 
-    def keys(self, *keys: str | int) -> None:
+    def keys(self, *keys: Event) -> None:
         """Presses keys; dialogs (e.g. the record view) stay open until
         they are closed by later keys."""
 
@@ -177,7 +183,10 @@ def with_priority(priority: int, entries: range) -> list[int]:
 def test_initial_priority(driver: Driver) -> None:
     assert driver.visible() == with_priority(PenlogPriority.ERROR, range(60))[:19]
     assert "n=00 EMERGENCY" in driver.screen.text()
-    assert "ERROR (zone 1/1)" in driver.screen.text()
+    # Information on the record under the cursor; the priority is aligned.
+    assert "EMERGENCY  Jan 01 00:00:00.000  m" in driver.screen.text()
+    driver.keys("j", "j", "j")
+    assert " ERROR      Jan 01 00:00:03.000  m" in driver.screen.text()
 
 
 def test_priority_of_the_whole_file(driver: Driver) -> None:
@@ -323,3 +332,97 @@ def test_colors_like_hr(screen: Screen, tmp_path: Path) -> None:
             [indent, ("Traceback:", curses.A_NORMAL)],
             [indent, ("  line 1", curses.A_NORMAL)],
         ]
+
+
+def click(y: int) -> MouseEvent:
+    return MouseEvent(0, y, curses.BUTTON1_CLICKED)
+
+
+def test_mouse_click(driver: Driver) -> None:
+    driver.keys(click(5))
+    assert driver.cursor == driver.visible()[5]
+    # Clicks below the log are ignored.
+    driver.keys(click(19))
+    assert driver.cursor == driver.visible()[5]
+
+
+def test_mouse_double_click(driver: Driver) -> None:
+    driver.keys(MouseEvent(0, 4, curses.BUTTON1_DOUBLE_CLICKED))
+    assert f"Record {driver.visible()[4] + 1} (decoded)" in driver.screen.text()
+    driver.keys("q")
+    assert "Record" not in driver.screen.text()
+
+
+def test_mouse_wheel(driver: Driver) -> None:
+    driver.keys("P", "t")
+    driver.move_to(0)
+    wheel_down = MouseEvent(0, 0, tui.BUTTON5_PRESSED)
+    wheel_up = MouseEvent(0, 0, curses.BUTTON4_PRESSED)
+    driver.keys(wheel_down)
+    # The log scrolls; the cursor stays on its row.
+    assert driver.visible()[0] == 3
+    assert driver.cursor == 3
+    driver.keys(wheel_up, wheel_up)
+    assert driver.visible()[0] == 0
+
+    # The wheel scrolls boxes, too.
+    driver.keys("\n", wheel_down)
+    assert driver.screen.text().count("Record 1 (decoded)") == 1
+
+
+def test_status_shows_the_last_key(driver: Driver) -> None:
+    driver.keys("j")
+    assert "j   2/61   3%" in driver.screen.text()
+    driver.keys(curses.KEY_DOWN)
+    assert "↓   3/61   5%" in driver.screen.text()
+    driver.keys(click(1))
+    assert "click   2/61   3%" in driver.screen.text()
+
+
+def test_cursor_line_is_highlighted(driver: Driver) -> None:
+    driver.keys("j", "j")
+    highlighted = [
+        y
+        for y, attrs in enumerate(driver.screen.attrs[:19])
+        if attrs and all(attr & curses.A_UNDERLINE for _, attr in attrs)
+    ]
+    # Without colors (e.g. in these tests), the cursor line is underlined.
+    assert highlighted == [2]
+
+
+@pytest.mark.parametrize(
+    ("key", "name"),
+    [
+        ("j", "j"),
+        ("\n", "Enter"),
+        ("\x1b", "Esc"),
+        ("\x01", "^A"),
+        (" ", "Space"),
+        (curses.KEY_NPAGE, "PgDn"),
+        (MouseEvent(0, 0, curses.BUTTON4_PRESSED), "wheel ↑"),
+    ],
+)
+def test_key_name(key: Event, name: str) -> None:
+    assert key_name(key) == name
+
+
+@pytest.mark.parametrize(
+    ("response", "background"),
+    [
+        (b"\x1b]11;rgb:0000/0000/0000\x1b\\\x1b[?62;22c", "dark"),
+        (b"\x1b]11;rgb:ffff/ffff/ffff\x07\x1b[?1;2c", "light"),
+        (b"\x1b]11;rgb:28/2c/34\x1b\\", "dark"),
+        (b"\x1b]11;rgb:fdf6/e3e3/c9c9\x1b\\", "light"),
+        # The terminal does not support OSC 11, only DA1.
+        (b"\x1b[?62;22c", None),
+    ],
+)
+def test_parse_background(response: bytes, background: str | None) -> None:
+    assert parse_background(response) == background
+
+
+def test_parse_colorfgbg() -> None:
+    assert parse_colorfgbg("15;0") == "dark"
+    assert parse_colorfgbg("0;15") == "light"
+    assert parse_colorfgbg("0;default;7") == "light"
+    assert parse_colorfgbg("") is None

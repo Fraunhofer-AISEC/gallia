@@ -103,6 +103,20 @@ def parse_args() -> argparse.Namespace:
 
     cursed = parser.add_argument_group("cursed options")
     cursed.add_argument(
+        "--theme",
+        choices=["auto", "dark", "light"],
+        default="auto",
+        help="the background of the terminal, for highlighting the cursor line; "
+        "auto asks the terminal (default: %(default)s)",
+    )
+    cursed.add_argument(
+        "--no-mouse",
+        dest="mouse",
+        action="store_false",
+        help="disable the mouse (clicking and scrolling), e.g. for selecting text "
+        "without holding Shift",
+    )
+    cursed.add_argument(
         "--terminal-progress",
         action=argparse.BooleanOptionalAction,
         default=None,
@@ -171,6 +185,8 @@ def _main() -> int:
             record_filter=args.filter,
             formatter=formatter,
             terminal_progress=args.terminal_progress,
+            theme=args.theme,
+            mouse=args.mouse,
         )
         return 0
 

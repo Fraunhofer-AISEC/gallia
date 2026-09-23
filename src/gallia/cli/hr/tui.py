@@ -35,12 +35,14 @@ from gallia.cli.hr.formatting import (
     RecordFormatter,
     interpret_uds,
 )
+from gallia.cli.hr.terminal import detect_background
 from gallia.log import (
     ConsoleColor,
     Loglevel,
     PenlogPriority,
     PenlogReader,
     PenlogRecord,
+    format_timestamp,
     level_style,
 )
 
@@ -79,6 +81,11 @@ Actions
   ?                   show this help
   q                   quit
 
+Mouse
+  click               move the cursor; a double click inspects the record
+  wheel               scroll
+  Shift + drag        select text (handled by the terminal)
+
 Priority keys
 {priorities}
 
@@ -87,6 +94,77 @@ Filter
 
 Segment = tuple[str, int]  # text and curses attributes
 Row = list[Segment]
+
+# Not available in all builds of curses.
+BUTTON5_PRESSED: int = getattr(curses, "BUTTON5_PRESSED", 0)
+
+
+@dataclass(frozen=True)
+class MouseEvent:
+    x: int
+    y: int
+    state: int
+
+    @property
+    def wheel(self) -> int:
+        """-1 for scrolling up, 1 for scrolling down, 0 otherwise."""
+        if self.state & curses.BUTTON4_PRESSED:
+            return -1
+        if self.state & BUTTON5_PRESSED:
+            return 1
+        return 0
+
+    @property
+    def clicked(self) -> bool:
+        return bool(self.state & (curses.BUTTON1_PRESSED | curses.BUTTON1_CLICKED))
+
+    @property
+    def double_clicked(self) -> bool:
+        return bool(self.state & curses.BUTTON1_DOUBLE_CLICKED)
+
+
+_PRIORITY_WIDTH = max(len(p.name) for p in PenlogPriority)
+
+# Keys (characters or curses key codes) and mouse events.
+Event = str | int | MouseEvent
+
+_KEY_NAMES: dict[str | int, str] = {
+    curses.KEY_UP: "↑",
+    curses.KEY_DOWN: "↓",
+    curses.KEY_LEFT: "←",
+    curses.KEY_RIGHT: "→",
+    curses.KEY_PPAGE: "PgUp",
+    curses.KEY_NPAGE: "PgDn",
+    curses.KEY_HOME: "Home",
+    curses.KEY_END: "End",
+    curses.KEY_ENTER: "Enter",
+    curses.KEY_BACKSPACE: "Backspace",
+    curses.KEY_DC: "Del",
+    curses.KEY_RESIZE: "resize",
+    "\n": "Enter",
+    "\r": "Enter",
+    "\x1b": "Esc",
+    " ": "Space",
+    "\x7f": "Backspace",
+}
+
+
+def key_name(event: Event) -> str:
+    """Returns a short, readable name of a key or mouse event."""
+    if isinstance(event, MouseEvent):
+        if event.double_clicked:
+            return "double click"
+        return {-1: "wheel ↑", 1: "wheel ↓"}.get(event.wheel, "click" if event.clicked else "mouse")
+    if (name := _KEY_NAMES.get(event)) is not None:
+        return name
+    if isinstance(event, str):
+        # Control characters in caret notation, e.g. "\x01" is ^A.
+        return f"^{chr(ord(event) + ord('@'))}" if event < " " else event
+    try:
+        return curses.keyname(event).decode()
+    except (curses.error, ValueError):
+        return str(event)
+
 
 _CONTROL_CHARS = {i: "�" for i in [*range(0x20), 0x7F] if i != ord("\t")}
 
@@ -179,12 +257,16 @@ class Colors:
     """The curses attributes; the colors of the records and interpretations
     are the same as for hr without --cursed, see level_style()."""
 
-    def __init__(self) -> None:
-        self._pairs: dict[int, int] = {}
+    def __init__(self, theme: str = "dark") -> None:
+        self._pairs: dict[tuple[int, int], int] = {}
+        self._foregrounds: dict[int, int] = {}
         self._has_colors = curses.has_colors()
         if self._has_colors:
             curses.use_default_colors()
         many = self._has_colors and curses.COLORS >= 256
+        # The background of the cursor line: a subtle gray, which depends
+        # on the background of the terminal (see terminal.py).
+        self._highlight = (236 if theme == "dark" else 254) if many else None
         self._console_colors = {
             ConsoleColor.RED: curses.COLOR_RED,
             ConsoleColor.GREEN: curses.COLOR_GREEN,
@@ -211,12 +293,20 @@ class Colors:
         self.json_literal = self.console(ConsoleColor.YELLOW)
         self.status = curses.A_REVERSE
 
-    def _pair(self, fg: int) -> int:
-        if (pair := self._pairs.get(fg)) is None:
+    def _pair(self, fg: int, bg: int = -1) -> int:
+        if (pair := self._pairs.get((fg, bg))) is None:
             number = len(self._pairs) + 1
-            curses.init_pair(number, fg, -1)
-            pair = self._pairs[fg] = int(curses.color_pair(number))
+            curses.init_pair(number, fg, bg)
+            pair = self._pairs[(fg, bg)] = int(curses.color_pair(number))
+            self._foregrounds[pair] = fg
         return pair
+
+    def highlight(self, attr: int) -> int:
+        """Returns ``attr`` with the background of the cursor line."""
+        if self._highlight is None:
+            return attr | curses.A_UNDERLINE
+        fg = self._foregrounds.get(attr & curses.A_COLOR, -1)
+        return (attr & ~curses.A_COLOR) | self._pair(fg, self._highlight)
 
     def console(self, color: ConsoleColor, bold: bool = False) -> int:
         """Returns the curses attribute for a console color."""
@@ -284,14 +374,18 @@ class Viewer:
         view: View,
         formatter: RecordFormatter,
         terminal_progress: bool,
+        theme: str = "dark",
     ) -> None:
         self.screen = screen
         self.terminal_progress = TerminalProgress(terminal_progress)
         self.reader = reader
-        self.colors = Colors()
+        self.colors = Colors(theme)
         # Keys, or None if only a redraw is needed, e.g. on indexing progress.
-        self.events: asyncio.Queue[str | int | None] = asyncio.Queue()
+        self.events: asyncio.Queue[Event | None] = asyncio.Queue()
         self._redraw_pending = False
+        # The last key is shown in the status line; busy while handling it.
+        self.last_key = ""
+        self.busy = False
 
         self.history = [view]
         self.history_index = 0
@@ -520,8 +614,10 @@ class Viewer:
             entry = self.next_visible(entry + 1)
         return rows
 
-    def cursor_entry(self) -> int:
-        frame = self.frame()
+    def cursor_entry(self, frame: list[tuple[int, Row]] | None = None) -> int:
+        """Returns the entry under the cursor; ``frame`` avoids recomputing it."""
+        if frame is None:
+            frame = self.frame()
         if len(frame) == 0:
             return self.top[0] if self.top is not None else 0
         return frame[min(self.cursor, len(frame) - 1)][0]
@@ -544,6 +640,21 @@ class Viewer:
             next_ if next_ is not None else self.n_entries,
         )
 
+    def record_info(self, entry: int) -> str:
+        """Returns information on a record for the status line."""
+        record = self.record(entry)
+        # Fixed widths first, so that the status line does not jump around.
+        parts = [
+            f"{record.priority.name:<{_PRIORITY_WIDTH}}",
+            format_timestamp(record.datetime),
+            record.module,
+        ]
+        if record.line:
+            parts.append(Path(record.line).name)
+        if record.tags:
+            parts.append(f"[{', '.join(record.tags)}]")
+        return "  ".join(parts)
+
     def addstr(self, y: int, x: int, text: str, attr: int) -> int:
         """Draws text clipped to the screen width and returns the new x."""
         if x < self.width - 1:
@@ -564,17 +675,27 @@ class Viewer:
     def draw(self, refresh: bool = True) -> None:
         self.screen.erase()
         frame = self.frame()
+        entry = self.cursor_entry(frame)
 
         marked = (-1, -1)
         if self.mark is not None:
-            entry = self.cursor_entry()
             marked = (min(self.mark, entry), max(self.mark, entry))
 
-        for y, (entry, row) in enumerate(frame):
-            extra = curses.A_REVERSE if marked[0] <= entry <= marked[1] else 0
+        for y, (row_entry, row) in enumerate(frame):
+            is_marked = marked[0] <= row_entry <= marked[1]
+            # All rows of the record under the cursor are highlighted.
+            is_current = row_entry == entry and not is_marked
             x = 0
             for text, attr in row:
-                x = self.addstr(y, x, text, attr | extra)
+                if is_marked:
+                    shown = attr | curses.A_REVERSE
+                elif is_current:
+                    shown = self.colors.highlight(attr)
+                else:
+                    shown = attr
+                x = self.addstr(y, x, text, shown)
+            if is_current and x < self.width - 1:
+                self.addstr(y, x, " " * (self.width - 1 - x), self.colors.highlight(0))
 
         if len(frame) == 0:
             hint = "change the priority with P, the filter with f, or undo with u."
@@ -583,13 +704,11 @@ class Viewer:
             self.addstr(0, 0, f"No entries match; {hint}", 0)
 
         view = self.view
-        entry = self.cursor_entry()
         # The message is the most recent information; it goes first, since
         # the status line is cut off at the end on narrow terminals.
         flags = [self.message] if self.message else []
-        if self.n_entries > 0:
-            zone = view.zone_index(entry)
-            flags.append(f"{view.zones[zone][1].name} (zone {zone + 1}/{len(view.zones)})")
+        if len(frame) > 0:
+            flags.append(self.record_info(entry))
         if view.filter:
             flags.append(f"filter: {view.filter.text}")
         if view.interpret:
@@ -601,12 +720,16 @@ class Viewer:
 
         current = entry + 1 if self.n_entries > 0 else 0
         if self.reader.index_complete:
-            position = f"{current}/{self.n_entries} ({current / max(self.n_entries, 1):.0%})"
+            # Fixed widths, so that the status line does not jump around.
+            digits = len(str(self.n_entries))
+            percent = current / max(self.n_entries, 1)
+            position = f"{current:>{digits}}/{self.n_entries} {percent:>4.0%}"
         else:
             progress = self.reader.index_progress
             state = f"indexing {progress:.0%}" if progress is not None else "loading"
             position = f"{current}/{self.n_entries}+ ({state})"
-        self.draw_status(" " + " | ".join(flags), f"{position}  ? help ")
+        key = f"{self.last_key}{' …' if self.busy else ''}"
+        self.draw_status(" " + " | ".join(flags), f"{key}  {position}  ? help ")
 
         self.screen.move(min(self.cursor, max(len(frame) - 1, 0)), 0)
         if refresh:
@@ -686,11 +809,13 @@ class Viewer:
     # Input
     # ------------------------------------------------------------------
 
-    async def event(self) -> str | int | None:
+    async def event(self) -> Event | None:
         """Waits for the next key; None means that only a redraw is needed."""
         event = await self.events.get()
         if event is None:
             self._redraw_pending = False
+        else:
+            self.last_key = key_name(event)
         return event
 
     def request_redraw(self) -> None:
@@ -705,7 +830,14 @@ class Viewer:
                 key = self.screen.get_wch()
             except curses.error:
                 return
-            self.events.put_nowait(key)
+            if key == curses.KEY_MOUSE:
+                try:
+                    _, x, y, _, state = curses.getmouse()
+                except curses.error:
+                    continue
+                self.events.put_nowait(MouseEvent(x, y, state))
+            else:
+                self.events.put_nowait(key)
 
     def _on_resize(self) -> None:
         size = os.get_terminal_size(sys.stdout.fileno())
@@ -730,7 +862,19 @@ class Viewer:
         """A single line editor in the status bar; returns None on ESC.
         ``validate`` returns an error message for invalid input."""
         entries = [*history, text]
-        index = len(entries) - 1
+        show_cursor(True)
+        try:
+            return await self._prompt(label, entries, len(entries) - 1, validate)
+        finally:
+            show_cursor(False)
+
+    async def _prompt(
+        self,
+        label: str,
+        entries: list[str],
+        index: int,
+        validate: Callable[[str], str | None],
+    ) -> str | None:
         text = entries[index]
         pos = len(text)
 
@@ -831,8 +975,10 @@ class Viewer:
         return inner
 
     @staticmethod
-    def scroll(key: str | int, offset: int, page: int, n_rows: int) -> int:
+    def scroll(key: Event, offset: int, page: int, n_rows: int) -> int:
         """Returns the new offset of a scrollable box after a key press."""
+        if isinstance(key, MouseEvent):
+            offset += 3 * key.wheel
         match key:
             case curses.KEY_UP | "k":
                 offset -= 1
@@ -951,7 +1097,7 @@ class Viewer:
                 case "r":
                     raw_mode = not raw_mode
                     offset = 0
-                case str() | int():
+                case MouseEvent() | str() | int():
                     offset = self.scroll(key, offset, page, len(rows))
 
     async def show_help(self) -> None:
@@ -971,10 +1117,26 @@ class Viewer:
             match key := await self.event():
                 case "q" | "?" | "\x1b":
                     return
-                case str() | int():
+                case MouseEvent() | str() | int():
                     offset = self.scroll(key, offset, page, len(rows))
 
-    async def handle(self, key: str | int) -> bool:
+    async def handle_mouse(self, mouse: MouseEvent) -> None:
+        if mouse.wheel != 0:
+            # Scroll the log; the cursor stays on its row.
+            scroll = self.scroll_down if mouse.wheel > 0 else self.scroll_up
+            for _ in range(3):
+                if not scroll():
+                    break
+            self.cursor = min(self.cursor, max(len(self.frame()) - 1, 0))
+            return
+        if not (mouse.clicked or mouse.double_clicked):
+            return
+        if 0 <= mouse.y < len(self.frame()):
+            self.cursor = mouse.y
+            if mouse.double_clicked:
+                await self.show_record()
+
+    async def handle(self, key: Event) -> bool:
         """Handles a key press; returns False to quit."""
         match key:
             case "q":
@@ -1038,6 +1200,8 @@ class Viewer:
                 await self.show_help()
             case "\n" | "\r" | curses.KEY_ENTER:
                 await self.show_record()
+            case MouseEvent() as mouse:
+                await self.handle_mouse(mouse)
         return True
 
     async def run(self) -> None:
@@ -1060,8 +1224,14 @@ class Viewer:
                         self.fill()
                     continue
                 self.message = ""
-                if not await self.handle(key):
-                    return
+                # Show the key while it is handled; slow actions are visible.
+                self.busy = True
+                self.draw()
+                try:
+                    if not await self.handle(key):
+                        return
+                finally:
+                    self.busy = False
         finally:
             indexer.cancel()
             self.terminal_progress.set(TerminalProgress.REMOVE)
@@ -1075,10 +1245,24 @@ def _curses_main(
     view: View,
     formatter: RecordFormatter,
     terminal_progress: bool,
+    theme: str,
+    mouse: bool,
 ) -> None:
     curses.set_escdelay(25)
-    viewer = Viewer(screen, reader, view, formatter, terminal_progress)
+    show_cursor(False)
+    if mouse:
+        # Note: curses.mouseinterval(0) would report presses immediately, but
+        # then, ncurses delivers the last mouse event only with the next input.
+        curses.mousemask(curses.ALL_MOUSE_EVENTS)
+    viewer = Viewer(screen, reader, view, formatter, terminal_progress, theme)
     asyncio.run(viewer.run())
+
+
+def show_cursor(visible: bool) -> None:
+    try:
+        curses.curs_set(1 if visible else 0)
+    except curses.error:
+        pass
 
 
 def run(
@@ -1087,8 +1271,11 @@ def run(
     record_filter: RecordFilter | None = None,
     formatter: RecordFormatter | None = None,
     terminal_progress: bool | None = None,
+    theme: str = "auto",
+    mouse: bool = True,
 ) -> None:
-    """Runs the viewer; ``terminal_progress`` defaults to auto detection."""
+    """Runs the viewer; ``terminal_progress`` defaults to auto detection,
+    ``theme`` ("dark", "light", or "auto") to the terminal's background."""
     formatter = formatter or RecordFormatter()
     if terminal_progress is None:
         terminal_progress = TerminalProgress.supported()
@@ -1098,10 +1285,12 @@ def run(
             tty = os.open("/dev/tty", os.O_RDONLY)
             os.dup2(tty, sys.stdin.fileno())
             os.close(tty)
+        if theme == "auto":
+            theme = detect_background()
 
         view = View(
             zones=((0, priority),),
             filter=record_filter or RecordFilter(),
             interpret=formatter.interpret,
         )
-        curses.wrapper(_curses_main, reader, view, formatter, terminal_progress)
+        curses.wrapper(_curses_main, reader, view, formatter, terminal_progress, theme, mouse)
