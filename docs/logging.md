@@ -13,6 +13,11 @@ Each scanner creates a `artifacts_dir` under `artifacts_base`, which contains a 
 The logfile is created with loglevel `DEBUG`; for debugging purposes loglevel `TRACE` can be enabled with the setting `trace_log`.
 Logfiles can be displayed with the `hr` tool which is included in `gallia`.
 
+It supports filtering with `-f/--filter`, e.g. `hr -f 'module=scanner tag=result !timeout' log.json.zst`.
+Terms are separated by spaces and must all match:
+`word` (data contains word, case insensitive), `!word`, `field=a,b`, `field!=a,b`, `field~regex`, and `field!~regex`.
+The fields are `module`, `host`, `data`, `tag`, and `line`.
+
 The generic interface which represents a logrecord is {class}`gallia.log.PenlogRecord`.
 The generic interface which is used to read a logfile {class}`gallia.log.PenlogReader`.
 

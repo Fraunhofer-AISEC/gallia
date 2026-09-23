@@ -52,3 +52,24 @@
 
 	[[ "$output" =~ "I am the line!" ]]
 }
+
+@test "filter expression" {
+	run -0 hr -p trace -f 'tag=preamble' "$BATS_TEST_DIRNAME/testfiles/log-01.json.zst"
+
+	[[ "$output" =~ "2iE42E?GBxV}qqtwOyzJvj:QN" ]]
+	[[ ! "$output" =~ "Ffz" ]]
+}
+
+@test "invalid filter expression" {
+	run -2 hr -f 'foo=bar' "$BATS_TEST_DIRNAME/testfiles/log-01.json.zst"
+	run -2 hr -f 'data~(' "$BATS_TEST_DIRNAME/testfiles/log-01.json.zst"
+}
+
+@test "tail and reverse" {
+	local tail
+	local reverse
+	tail="$(hr -p trace --tail -n 3 "$BATS_TEST_DIRNAME/testfiles/log-01.json.zst")"
+	reverse="$(hr -p trace --reverse "$BATS_TEST_DIRNAME/testfiles/log-01.json.zst" | head -n 3 | tac)"
+
+	[[ "$tail" == "$reverse" ]]
+}

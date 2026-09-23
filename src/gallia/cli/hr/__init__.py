@@ -7,16 +7,29 @@ import json
 import os
 import signal
 import sys
+import textwrap
+from collections import deque
+from collections.abc import Iterator
 from itertools import islice
 from pathlib import Path
-from typing import cast
 
 from gallia import exitcodes
-from gallia.log import PenlogPriority, PenlogReader, guess_color_setting_for_stream
+from gallia.cli.hr.filters import FILTER_SYNTAX, RecordFilter
+from gallia.log import (
+    PenlogPriority,
+    PenlogReader,
+    PenlogRecord,
+    guess_color_setting_for_stream,
+    stream_raw_records,
+)
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description="Display penlog files in a human readable format",
+        epilog="filter syntax:\n" + textwrap.indent(FILTER_SYNTAX, "  "),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     parser.add_argument("FILE", nargs="+", type=Path)
     parser.add_argument(
         "-p",
@@ -26,12 +39,21 @@ def parse_args() -> argparse.Namespace:
         default=PenlogPriority.INFO,
         help="maximal message priority",
     )
+    parser.add_argument(
+        "-f",
+        "--filter",
+        metavar="EXPR",
+        type=RecordFilter.parse,
+        default=RecordFilter(),
+        help="only show matching records, e.g. 'module=scanner tag=result !timeout'; "
+        "see the filter syntax below",
+    )
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
         "-t",
         "--tail",
         action="store_true",
-        help="jump to tail while parsing max. -n/--lines lines",
+        help="only print last -n/--lines lines",
     )
     group.add_argument(
         "--head",
@@ -49,32 +71,58 @@ def parse_args() -> argparse.Namespace:
         "--lines",
         type=int,
         default=100,
-        help="print the last n lines",
+        help="number of lines for --head and --tail",
     )
+
     return parser.parse_args()
+
+
+def _select_records(path: Path, args: argparse.Namespace) -> Iterator[PenlogRecord]:
+    record_filter: RecordFilter = args.filter
+
+    if args.reverse:
+        # Needs random access; the only case which needs a temporary file
+        # for compressed files.
+        with PenlogReader(path) as reader:
+            reverse = reader.records(args.priority, reverse=True)
+            yield from filter(record_filter, reverse) if record_filter else reverse
+            if reader.error is not None:
+                raise reader.error
+        return
+
+    # Everything else streams the file with constant memory usage.
+    lines = stream_raw_records(path, args.priority)
+    if record_filter:
+        # The fast check on the raw record avoids parsing most records.
+        lines = filter(record_filter.may_match, lines)
+    if args.tail and not record_filter:
+        # Only parse the last records.
+        lines = iter(deque(lines, maxlen=args.lines))
+
+    records: Iterator[PenlogRecord] = map(PenlogRecord.parse_json, lines)
+    if record_filter:
+        records = filter(record_filter, records)
+    if args.head:
+        records = islice(records, args.lines)
+    elif args.tail and record_filter:
+        records = iter(deque(records, maxlen=args.lines))
+    yield from records
 
 
 def _main() -> int:
     args = parse_args()
 
-    for file in args.FILE:
-        path = cast(Path, file)
+    for path in args.FILE:
         if not (path.is_file() or path.is_fifo() or str(path) == "-"):
             print(f"not a regular file: {path}", file=sys.stderr)
             return 1
 
-        colors = guess_color_setting_for_stream(sys.stdout)
+    colors = guess_color_setting_for_stream(sys.stdout)
 
-        with PenlogReader(path) as reader:
-            record_generator = reader.records(args.priority, reverse=args.reverse)
-            if args.head:
-                record_generator = islice(record_generator, args.lines)
-            elif args.tail:
-                record_generator = reader.records(args.priority, offset=-args.lines)
-
-            for record in record_generator:
-                record.colors = colors
-                print(record, end="")
+    for path in args.FILE:
+        for record in _select_records(path, args):
+            record.colors = colors
+            print(record, end="")
 
     return 0
 
@@ -96,6 +144,10 @@ def main() -> None:
         sys.exit(exitcodes.OK)
     except KeyboardInterrupt:
         sys.exit(128 + signal.SIGINT)
+    # After BrokenPipeError, which is an OSError as well.
+    except OSError as e:
+        print(f"hr: {e}", file=sys.stderr)
+        sys.exit(exitcodes.IOERR)
 
 
 if __name__ == "__main__":
