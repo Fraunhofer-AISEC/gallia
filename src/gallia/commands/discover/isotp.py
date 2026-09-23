@@ -157,6 +157,10 @@ class IsotpDiscoverer(AsyncScript):
 
         logger.result(f"Found {len(addr_idle)} CAN Addresses on idle Bus")
         transport.set_filter(addr_idle, inv_filter=True)
+        if not self.config.extended_addressing:
+            # From now on, the frames carry ISO-TP (the idle traffic did not).
+            # The dissector supports normal addressing only.
+            transport.payload_proto = "iso15765"
 
         req = UDSRequest.parse_dynamic(self.config.pdu)
 

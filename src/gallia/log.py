@@ -331,6 +331,8 @@ class _PenlogRecordV2:
     _python_level_no: int | None = None
     _python_level_name: str | None = None
     _python_func_name: str | None = None
+    # Unstable: the protocol of the data, see PenlogRecord.proto.
+    _proto: str | None = None
 
 
 _PenlogRecord: TypeAlias = _PenlogRecordV2
@@ -484,6 +486,14 @@ class PenlogRecord:
     _python_level_no: int | None = None
     _python_level_name: str | None = None
     _python_func_name: str | None = None
+    _proto: str | None = None
+
+    @property
+    def proto(self) -> str | None:
+        """The protocol of the data, e.g. ``uds``, for logged messages; it
+        names the dissector (see :mod:`gallia.dissect`), which are named like
+        in Wireshark. Unstable: it is stored in the ``_proto`` field."""
+        return self._proto
 
     @property
     def level(self) -> int:
@@ -550,6 +560,7 @@ class PenlogRecord:
             _python_level_no=record.get("_python_level_no"),
             _python_level_name=record.get("_python_level_name"),
             _python_func_name=record.get("_python_func_name"),
+            _proto=record.get("_proto"),
         )
 
     def to_log_record(self) -> logging.LogRecord:
@@ -1155,6 +1166,7 @@ class _JSONFormatter(logging.Formatter):
             _python_level_no=record.levelno,
             _python_level_name=record.levelname,
             _python_func_name=record.funcName,
+            _proto=record.__dict__.get("proto"),
             version=2,
         )
         return json.dumps(dataclasses.asdict(penlog_record))
