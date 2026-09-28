@@ -76,6 +76,7 @@ num_workers = 4
 plugins = [
     "pydantic.mypy"
 ]
+files = ["src", "tests"]
 
 [tool.pydantic-mypy]
 init_forbid_extra = true
@@ -135,6 +136,7 @@ ignore = [
 python-version = "3.11"
 
 [tool.pytest.ini_options]
+testpaths = ["tests/pytest"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 filterwarnings = [

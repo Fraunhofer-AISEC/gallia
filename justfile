@@ -7,7 +7,7 @@ default:
 
 [private]
 lint-mypy:
-    mypy --pretty src tests
+    mypy --pretty
 
 [private]
 lint-ruff-check:
@@ -54,7 +54,7 @@ run-test-matrix:
     done
 
 run-test-pytest:
-    python -m pytest -v --cov={{ justfile_directory() }} --cov-report html tests/pytest
+    python -m pytest -v --cov={{ justfile_directory() }} --cov-report html
 
 run-test-bats:
     ./tests/bats/run_bats.sh
