@@ -127,24 +127,7 @@ gen-constants: && fmt
         f.write(TEMPLATE)
 
 
-[private]
-print_debian_hint:
-    @echo "-----------------------------------------------------------------------"
-    @echo "Next, please update and build the Debian package from this repository:"
-    @echo ""
-    @echo "  https://salsa.debian.org/rumpelsepp/gallia"
-    @echo ""
-    @echo "with the following command:"
-    @echo ""
-    @echo "  $ gbp buildpackage --git-upstream-tag=$(uv version --short)"
-    @echo ""
-    @echo "Note that this will change once gallia is accepted in Debian."
-    @echo ""
-    @echo "Upload the package to the release with:"
-    @echo ""
-    @echo "  $ gh release upload v$(uv version --short) DEB_FILE"
-
-release increment: && print_debian_hint
+release increment:
     uv version --bump {{ increment }}
 
     git commit -a -m "$(uv version)"
@@ -153,7 +136,7 @@ release increment: && print_debian_hint
 
     gh release create "v$(uv version --short)"
 
-pre-release premode increment="": && print_debian_hint
+pre-release premode increment="":
     #!/usr/bin/env bash
 
     increment="{{ increment }}"
