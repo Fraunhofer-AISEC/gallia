@@ -7,11 +7,11 @@ import binascii
 import io
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Protocol, Self
+from typing import Any, Literal, Protocol, Self
 from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 
 from gallia.dumpcap import Dumpcap
-from gallia.log import get_logger
+from gallia.log import Logger, get_logger
 from gallia.net import join_host_port
 
 logger = get_logger(__name__)
@@ -99,6 +99,16 @@ class TransportProtocol(Protocol):
     mutex: asyncio.Lock
     target: TargetURI
     is_closed: bool
+    payload_proto: str | None
+
+    def log_io(
+        self,
+        logger: Logger,
+        direction: Literal["read", "write"],
+        data: str,
+        tags: list[str] | None,
+    ) -> None:
+        raise NotImplementedError
 
     def get_writer(self) -> asyncio.StreamWriter:
         raise NotImplementedError
@@ -129,6 +139,10 @@ class BaseTransport(ABC):
     #: The buffersize of the transport. Might be used in read() calls.
     #: Defaults to :const:`io.DEFAULT_BUFFER_SIZE`.
     BUFSIZE: int = io.DEFAULT_BUFFER_SIZE
+    #: The protocol of the payload, e.g. "uds"; it is logged with each
+    #: message, see :meth:`log_io`. Only the user of the transport knows
+    #: it; e.g. the UDS client sets it.
+    payload_proto: str | None = None
 
     def __init__(self, target: TargetURI) -> None:
         self.check_scheme(target)
@@ -216,6 +230,23 @@ class BaseTransport(ABC):
     ) -> int:
         """Writes one message and return the number of written bytes."""
 
+    def log_io(
+        self,
+        logger: Logger,
+        direction: Literal["read", "write"],
+        data: str,
+        tags: list[str] | None,
+    ) -> None:
+        """Logs a message which has been read or written. The record contains
+        the protocol of the payload for dissecting it, see
+        :attr:`gallia.log.PenlogRecord.proto`."""
+        logger.trace(
+            data,
+            extra={"tags": [*(tags or []), direction], "proto": self.payload_proto},
+            # Report the caller, i.e. read() or write().
+            stacklevel=2,
+        )
+
     async def request(
         self,
         data: bytes,
@@ -281,9 +312,7 @@ class LinesTransportMixin:
         timeout: float | None = None,
         tags: list[str] | None = None,
     ) -> int:
-        t = tags + ["write"] if tags is not None else ["write"]
-
-        logger.trace(data.hex() + "0a", extra={"tags": t})
+        self.log_io(logger, "write", data.hex(), tags)
 
         writer = self.get_writer()
         writer.write(binascii.hexlify(data) + b"\n")
@@ -296,9 +325,7 @@ class LinesTransportMixin:
         tags: list[str] | None = None,
     ) -> bytes:
         data = await asyncio.wait_for(self.get_reader().readline(), timeout)
-        d = data.decode().strip()
-
-        t = tags + ["read"] if tags is not None else ["read"]
-        logger.trace(d + "0a", extra={"tags": t})
-
-        return binascii.unhexlify(d)
+        # The line is the payload in hex; it is logged even if it is invalid.
+        line = data.decode().strip()
+        self.log_io(logger, "read", line, tags)
+        return binascii.unhexlify(line)

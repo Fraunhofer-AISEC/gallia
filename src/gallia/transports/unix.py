@@ -52,8 +52,7 @@ class UnixTransport(BaseTransport, scheme="unix"):
         if self.writer is None:
             raise RuntimeError("Writer not connected, cannot write!")
 
-        t = tags + ["write"] if tags is not None else ["write"]
-        logger.trace(data.hex(), extra={"tags": t})
+        self.log_io(logger, "write", data.hex(), tags)
         self.writer.write(data)
         await asyncio.wait_for(self.writer.drain(), timeout)
 
@@ -68,8 +67,7 @@ class UnixTransport(BaseTransport, scheme="unix"):
             raise RuntimeError("Reader not connected, cannot read!")
 
         data = await self.reader.read()
-        t = tags + ["read"] if tags is not None else ["read"]
-        logger.trace(data.hex(), extra={"tags": t})
+        self.log_io(logger, "read", data.hex(), tags)
         return data
 
     async def dumpcap_argument_list(self) -> list[str] | None:
