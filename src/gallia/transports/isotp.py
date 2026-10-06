@@ -194,7 +194,7 @@ class ISOTPTransport(BaseTransport, scheme="isotp"):
                 raise BrokenPipeError(f"isotp flow control frame missing: {e}") from e
             if e.errno == errno.EILSEQ:
                 raise BrokenPipeError(f"invalid consecutive frame numbers: {e}") from e
-            raise e
+            raise
         logger.trace(data.hex(), extra={"tags": tags})
         return data
 

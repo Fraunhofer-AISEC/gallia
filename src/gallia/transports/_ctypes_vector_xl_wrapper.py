@@ -223,7 +223,7 @@ class FlexRayCtypesBackend:
                 break
             except _ctypes_vector_xl.VectorQueueIsFullError:
                 logger.error("receive queue is full, gallia is too slow")
-                logger.warn("flushing queue, packages will be dropped")
+                logger.warning("flushing queue, packages will be dropped")
                 _ctypes_vector_xl.xlFlushReceiveQueue(
                     _ctypes_vector_xl.XLportHandle(self.port_handle),
                 )
@@ -269,9 +269,8 @@ class FlexRayCtypesBackend:
                 event = await self.queue.get()
                 received_slot_id = event.slotID
 
-                if slot_id is not None:
-                    if received_slot_id != slot_id:
-                        continue
+                if slot_id is not None and received_slot_id != slot_id:
+                    continue
                 return event
 
     async def transmit(self, slot_id: int, data: bytes) -> None:

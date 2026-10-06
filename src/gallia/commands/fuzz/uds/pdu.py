@@ -132,7 +132,7 @@ class PDUFuzzer(UDSScanner):
                         logger.warning(f"0x{did:0x}: Retries exceeded")
                         timeout_DIDs += 1
                     except IllegalResponse as e:
-                        logger.warning(f"{repr(e)}")
+                        logger.warning(f"{e!r}")
                         illegal_resp += 1
                     # Temporary patch: Exception handler is deleted when it goes productive
                     except ConnectionError:

@@ -50,5 +50,5 @@ class ReadByIdentifierPrimitive(UDSScanner):
             logger.result("Positive response:")
             data = resp.data_record
             logger.result(f"hex: {data.hex()}")
-            logger.result(f"raw: {repr(data)}")
+            logger.result(f"raw: {data!r}")
             self.result = data

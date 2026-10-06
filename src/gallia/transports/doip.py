@@ -39,7 +39,7 @@ class _IntEnumWithMissing(IntEnum):
     @classmethod
     def _missing_(cls, value: Any) -> Self:
         if not isinstance(value, int):
-            raise ValueError(f"{value!r} is not a valid {cls.__name__}")
+            raise TypeError(f"{value!r} is not a valid {cls.__name__}")
 
         pseudo = int.__new__(cls, value)
         pseudo._name_ = cls.missing_name(value)
@@ -607,7 +607,7 @@ class DoIPConnection:
                     logger.trace(f"Read DiagnosticMessage from [{data.SourceAddress:#x}]: {data}")
 
                     if self.isolated_target_queues:
-                        if data.SourceAddress not in self._diagnostic_message_queues.keys():
+                        if data.SourceAddress not in self._diagnostic_message_queues:
                             self._diagnostic_message_queues[data.SourceAddress] = asyncio.Queue()
 
                         await self._diagnostic_message_queues[data.SourceAddress].put((hdr, data))
@@ -654,7 +654,7 @@ class DoIPConnection:
         """
 
         if self.isolated_target_queues:
-            while target_address not in self._diagnostic_message_queues.keys():
+            while target_address not in self._diagnostic_message_queues:
                 logger.warning(f"[{target_address:#x}] Queue does not exist, waiting for 100ms")
                 await asyncio.sleep(0.1)
                 continue
@@ -968,7 +968,7 @@ class DoIPTransport(BaseTransport, scheme="doip"):
             )
         except DiagnosticMessageNegativeAckError as e:
             if e.nack_code != DiagnosticMessageNegativeAckCodes.TargetUnreachable:
-                raise e
+                raise
             # TargetUnreachable can be just a temporary issue. Thus, we do not raise
             # BrokenPipeError but instead ignore it here and let upper layers handle
             # missing responses
