@@ -326,9 +326,6 @@ class _PenlogRecordV2:
     _python_func_name: str | None = None
 
 
-type _PenlogRecord = _PenlogRecordV2
-
-
 def _colorize_msg(data: str, levelno: int) -> tuple[str, int]:
     if sys.platform == "win32" or not sys.stderr.isatty():
         return data, 0
@@ -473,16 +470,12 @@ class PenlogRecord:
             data=record["data"],
             datetime=datetime.datetime.fromisoformat(record["datetime"]),
             priority=PenlogPriority(record["priority"]),
-            tags=record["tags"] if "tags" in record else None,
-            line=record["line"] if "line" in record else None,
-            stacktrace=record["stacktrace"] if "stacktrace" in record else None,
-            _python_level_no=record["_python_level_no"] if "_python_level_no" in record else None,
-            _python_level_name=record["_python_level_name"]
-            if "_python_level_name" in record
-            else None,
-            _python_func_name=record["_python_func_name"]
-            if "_python_func_name" in record
-            else None,
+            tags=record.get("tags", None),
+            line=record.get("line", None),
+            stacktrace=record.get("stacktrace", None),
+            _python_level_no=record.get("_python_level_no", None),
+            _python_level_name=record.get("_python_level_name", None),
+            _python_func_name=record.get("_python_func_name", None),
         )
 
     def to_log_record(self) -> logging.LogRecord:
@@ -534,7 +527,7 @@ class PenlogReader:
 
     def _prepare_for_mmap(self, path: Path) -> BinaryIO:
         if path.is_file() and path.suffix in [".zst", ".gz"]:
-            tmpfile = tempfile.TemporaryFile()
+            tmpfile = tempfile.TemporaryFile()  # noqa: SIM115
             match path.suffix:
                 case ".zst":
                     with zstd.open(self.path, "rb") as f:
@@ -547,7 +540,7 @@ class PenlogReader:
             return cast(BinaryIO, tmpfile)
 
         if path.is_fifo() or self._test_mmap(path) is False:
-            tmpfile = tempfile.TemporaryFile()
+            tmpfile = tempfile.TemporaryFile()  # noqa: SIM115
             with path.open("rb") as f:
                 shutil.copyfileobj(f, tmpfile)
             tmpfile.flush()
@@ -685,7 +678,7 @@ class _JSONFormatter(logging.Formatter):
         self.hostname = socket.gethostname()
 
     def format(self, record: logging.LogRecord) -> str:
-        tags = record.__dict__["tags"] if "tags" in record.__dict__ else None
+        tags = record.__dict__.get("tags", None)
         stacktrace = self.formatException(record.exc_info) if record.exc_info else None
 
         penlog_record = _PenlogRecordV2(
@@ -728,7 +721,7 @@ class _ConsoleFormatter(logging.Formatter):
         name = record.name
         data = record.getMessage()
         levelno = record.levelno
-        tags = record.__dict__["tags"] if "tags" in record.__dict__ else None
+        tags = record.__dict__.get("tags", None)
 
         if self.syslog_format is True:
             return _format_record_for_syslog(
