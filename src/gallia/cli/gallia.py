@@ -9,7 +9,6 @@ import sys
 from collections.abc import Callable, Mapping, MutableMapping, Sequence
 from importlib.metadata import version as meta_version
 from pprint import pprint
-from types import UnionType
 from typing import Any, Never
 
 import argcomplete
@@ -51,7 +50,7 @@ def _create_parser_from_tree(
     command_tree: CommandTree, config: Config, extra_defaults: defaults, model_counter: int = 0
 ) -> tuple[type[PydanticBaseCommand], defaults, int]:
     model_name = f"_dynamic_gallia_hierarchy_model_{model_counter}"
-    args: MutableMapping[str, tuple[type | UnionType, Any]] = {}
+    args: dict[str, Any] = {}
 
     for key, value in command_tree.subtree.items():
         model_counter += 1
@@ -70,7 +69,7 @@ def _create_parser_from_tree(
         args[key] = (model_type | None, Field(None, description=description))
 
     return (
-        create_model(model_name, __base__=PydanticBaseCommand, **args),  # type: ignore[call-overload]
+        create_model(model_name, __base__=PydanticBaseCommand, **args),
         extra_defaults,
         model_counter,
     )
@@ -92,7 +91,7 @@ def create_parser(
 
     config, _ = load_config_file()
 
-    if isinstance(commands, Mapping):
+    if isinstance(commands, MutableMapping):
         command_tree = CommandTree("", subtree=commands)
         model, extra_defaults, _ = _create_parser_from_tree(command_tree, config, {})
     else:
