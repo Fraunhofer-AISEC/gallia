@@ -6,8 +6,8 @@ default:
     @just --list
 
 [private]
-lint-mypy:
-    mypy --pretty
+lint-mypy platform="linux":
+    mypy --pretty --platform {{ platform }}
 
 [private]
 lint-ruff-check:
@@ -25,14 +25,19 @@ lint-shellcheck:
 lint-reuse:
     reuse lint
 
+# ty defaults to the lower bound of requires-python; the linters
+# are supposed to check against the running interpreter instead.
 [private]
-lint-ty:
-    ty check --python-version "$(python -c 'import sys; print("%d.%d" % sys.version_info[:2])')"
+lint-ty platform="linux":
+    ty check --python-platform {{ platform }} --python-version "$(python -c 'import sys; print("%d.%d" % sys.version_info[:2])')"
 
 lint: lint-mypy lint-ty lint-ruff-check lint-ruff-format lint-shellcheck lint-reuse
 
-win32-lint-mypy:
-    mypy --pretty --platform win32 --exclude "gallia\/log\.py" --exclude "hr" src tests
+win32-lint-mypy: (lint-mypy "win32")
+
+win32-lint-ty: (lint-ty "win32")
+
+win32-lint: win32-lint-mypy win32-lint-ty
 
 fmt:
     ruff check --fix-only
