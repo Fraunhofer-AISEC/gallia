@@ -62,8 +62,7 @@ def load_transports() -> list[type[BaseTransport]]:
     transports = []
 
     for plugin in load_plugins():
-        for transport in plugin.transports():
-            transports.append(transport)
+        transports.extend(plugin.transports())
 
     return transports
 
@@ -85,8 +84,7 @@ def load_ecus() -> list[type[ECU]]:
     ecus = []
 
     for plugin in load_plugins():
-        for ecu in plugin.ecus():
-            ecus.append(ecu)
+        ecus.extend(plugin.ecus())
 
     return ecus
 

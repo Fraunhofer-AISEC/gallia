@@ -419,7 +419,7 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="fr-tp-legacy"):
 
     async def read_tp_frame(self) -> FlexRayTPFrame:
         data = await self.read_bytes()
-        dst_address, src_address = self._parse_address(data)
+        # dst_address, src_address = self._parse_address(data)
         # logger.trace("got frame for addresses: %x %x", dst_address, src_address)
         frame = parse_frame(data[4:])
         logger.trace("read FlexRayTPFrame %s", repr(frame))
