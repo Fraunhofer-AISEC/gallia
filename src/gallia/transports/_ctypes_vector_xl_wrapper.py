@@ -4,7 +4,6 @@
 
 import asyncio
 import ctypes
-import math
 import sys
 from collections.abc import Callable
 from typing import Self, cast
@@ -103,7 +102,7 @@ class FlexRayCtypesBackend:
 
     @staticmethod
     def _open_flexray_port(user_name: str, channel_mask: int, rx_queue_size: int) -> int:
-        if not math.log2(rx_queue_size).is_integer():
+        if rx_queue_size.bit_count() != 1:
             raise ValueError("rx_queue_size must be a power of 2")
         if not (rx_queue_size >= 8192 and rx_queue_size <= 1048576):
             raise ValueError("rx_queue_size must be within 8192…1048576 bytes (1 MB)")
@@ -223,7 +222,7 @@ class FlexRayCtypesBackend:
                 break
             except _ctypes_vector_xl.VectorQueueIsFullError:
                 logger.error("receive queue is full, gallia is too slow")
-                logger.warn("flushing queue, packages will be dropped")
+                logger.warning("flushing queue, packages will be dropped")
                 _ctypes_vector_xl.xlFlushReceiveQueue(
                     _ctypes_vector_xl.XLportHandle(self.port_handle),
                 )
