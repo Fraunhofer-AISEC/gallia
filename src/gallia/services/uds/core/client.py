@@ -88,7 +88,7 @@ class UDSClient:
                 if raw_resp == b"":
                     raise BrokenPipeError("connection to target lost")
             except TimeoutError as e:
-                logger.debug(f"{request} failed with: {repr(e)}")
+                logger.debug(f"{request} failed with: {e!r}")
                 last_exception = MissingResponse(request, str(e))
                 if i < max_retry:
                     logger.debug(f"Sleeping for {wait_time}s")

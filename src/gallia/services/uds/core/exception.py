@@ -33,7 +33,7 @@ class UDSException(Exception):
         return message
 
     def __repr__(self) -> str:
-        return f"{type(self).__name__}({repr(str(self))})"
+        return f"{type(self).__name__}({str(self)!r})"
 
 
 class MissingResponse(UDSException, asyncio.TimeoutError):
@@ -57,7 +57,7 @@ class IllegalResponse(ResponseException):
 
 class RequestResponseMismatch(IllegalResponse):
     def _message_core(self) -> str:
-        return f"{repr(self.response)} to {self.request}"
+        return f"{self.response!r} to {self.request}"
 
 
 class MalformedResponse(IllegalResponse):

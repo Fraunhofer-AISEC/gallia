@@ -99,4 +99,4 @@ class IOCBIPrimitive(UDSScanner):
                 else resp.control_status_record
             )
             logger.result(f"hex: {data.hex()}")
-            logger.result(f"raw: {repr(data)}")
+            logger.result(f"raw: {data!r}")

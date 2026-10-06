@@ -134,7 +134,6 @@ class ECU(UDSClient):
         Raises:
             Any exception in case of error.
         """
-        return None
 
     async def set_session_post(self, session: int, config: UDSRequestConfig | None = None) -> None:
         """set_session_post() is called after the diagnostic session control
@@ -150,7 +149,6 @@ class ECU(UDSClient):
         Raises:
             Any exception in case of error.
         """
-        return None
 
     async def check_and_set_session(
         self,

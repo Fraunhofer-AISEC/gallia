@@ -116,7 +116,7 @@ def _merge_commands(
             try:
                 _merge_command_trees(cmd, value)
             except ValueError as e:
-                raise ValueError(f"{key} {str(e)}") from e
+                raise ValueError(f"{key} {e!s}") from e
         else:
             raise ValueError(f"{key} ]: There already exists a leaf command")
 
@@ -141,7 +141,7 @@ def load_commands() -> MutableMapping[str, CommandTree | type[AsyncScript]]:
             _merge_commands(commands, plugin.commands())
         except ValueError as e:
             raise ValueError(
-                f'Plugin "{plugin.name()}" conflicts with other plugins on command [ {str(e)}'
+                f'Plugin "{plugin.name()}" conflicts with other plugins on command [ {e!s}'
             ) from None
 
     return commands
