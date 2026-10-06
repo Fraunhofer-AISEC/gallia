@@ -5,9 +5,17 @@
 import asyncio
 import binascii
 from collections.abc import AsyncIterator, Callable
+from pathlib import Path
 
 import pytest
 
+from gallia.log import (
+    Loglevel,
+    add_zst_log_handler,
+    get_logger,
+    remove_zst_log_handler,
+    stream_records,
+)
 from gallia.transports import BaseTransport, TargetURI, TCPLinesTransport, TCPTransport
 
 listen_target = TargetURI("tcp://127.0.0.1:1234")
@@ -138,3 +146,35 @@ async def test_tcp_timeout(tcp_server: TCPServer) -> None:
 
         with pytest.raises(asyncio.TimeoutError):
             await client.request(b"hello", timeout=0.5)
+
+
+@pytest.mark.asyncio
+async def test_log_io(tcp_server: TCPServer, tmp_path: Path) -> None:
+    path = tmp_path / "log.json.zst"
+    logger = get_logger("gallia.transports")
+    level = logger.level
+    logger.setLevel(Loglevel.TRACE)
+    handler = add_zst_log_handler("gallia.transports", path, Loglevel.TRACE)
+    try:
+        client = TCPLinesTransport(TargetURI("tcp-lines://127.0.0.1:1234"))
+        client.payload_proto = "uds"
+        await client.connect()
+        server = await tcp_server.accept()
+        await server.write(b"62f190\n")
+        await client.request(bytes.fromhex("22f190"), tags=["foo"])
+        await server.read()
+    finally:
+        remove_zst_log_handler("gallia.transports", handler)
+        logger.setLevel(level)
+
+    records = [
+        (r.module, r.data, r.tags, r.proto, r._python_func_name) for r in stream_records(path)
+    ]
+    assert records == [
+        ("gallia.transports.tcp", b"62f190\n".hex(), ["write"], None, "write"),
+        # The payload of the lines transport, not the line; the function
+        # which has logged it, not log_io().
+        ("gallia.transports.base", "22f190", ["foo", "write"], "uds", "write"),
+        ("gallia.transports.base", "62f190", ["foo", "read"], "uds", "read"),
+        ("gallia.transports.tcp", b"22f190\n".hex(), ["read"], None, "read"),
+    ]

@@ -33,6 +33,6 @@ load "helpers"
 	netzteil -h
 }
 
-@test "invoke cursed-hr -h" {
-	cursed-hr -h
+@test "invoke hr --cursed -h" {
+	hr --cursed -h
 }

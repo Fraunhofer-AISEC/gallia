@@ -945,8 +945,7 @@ class DoIPTransport(BaseTransport, scheme="doip"):
         )
 
         addresses = f"{self._conn.src_addr:#x}:{self.config.target_addr:#x}"
-        t = tags + ["read", addresses] if tags is not None else ["read", addresses]
-        logger.trace(data.hex(), extra={"tags": t})
+        self.log_io(logger, "read", data.hex(), [*(tags or []), addresses])
         return data
 
     async def write(
@@ -959,8 +958,7 @@ class DoIPTransport(BaseTransport, scheme="doip"):
             raise RuntimeError("Not connected, cannot write!")
 
         addresses = f"{self._conn.src_addr:#x}:{self.config.target_addr:#x}"
-        t = tags + ["write", addresses] if tags is not None else ["write", addresses]
-        logger.trace(data.hex(), extra={"tags": t})
+        self.log_io(logger, "write", data.hex(), [*(tags or []), addresses])
 
         try:
             await asyncio.wait_for(
