@@ -140,7 +140,7 @@ class EntryCache:
                     data=line.decode("utf-8"),
                     host="",
                     module="JSON",
-                    datetime=datetime.fromtimestamp(0),
+                    datetime=datetime.fromtimestamp(0).astimezone(),
                     tags=["ERROR"],
                     priority=PenlogPriority.ERROR,
                 )
@@ -1309,7 +1309,7 @@ class CursedHR:
 
             entry = PenlogEntry(
                 data=message,
-                datetime=datetime.now(),
+                datetime=datetime.now().astimezone(),
                 host="",
                 module="",
                 priority=PenlogPriority.INFO,
@@ -1411,7 +1411,7 @@ def parse_filter(text: str) -> list[str]:
         data="data",
         host="host",
         priority=PenlogPriority.INFO,
-        datetime=datetime.fromtimestamp(0),
+        datetime=datetime.fromtimestamp(0).astimezone(),
         tags=[],
     )
 

@@ -128,7 +128,10 @@ if sys.platform.startswith("linux") or sys.platform == "darwin":
             logger.info("Started 'dumpcap'")
 
             return cls(
-                proc, save_dir.joinpath(f"dumpcap-{int(datetime.now().timestamp())}.pcap.gz")
+                proc,
+                save_dir.joinpath(
+                    f"dumpcap-{int(datetime.now().astimezone().timestamp())}.pcap.gz"
+                ),
             )
 
         async def sync(self, timeout: float = 1) -> None:
