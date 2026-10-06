@@ -27,9 +27,9 @@ lint-reuse:
 
 [private]
 lint-ty:
-    ty check
+    ty check --python-version "$(python -c 'import sys; print("%d.%d" % sys.version_info[:2])')"
 
-lint: lint-mypy lint-ruff-check lint-ruff-format lint-shellcheck lint-reuse
+lint: lint-mypy lint-ty lint-ruff-check lint-ruff-format lint-shellcheck lint-reuse
 
 win32-lint-mypy:
     mypy --pretty --platform win32 --exclude "gallia\/log\.py" --exclude "hr" src tests

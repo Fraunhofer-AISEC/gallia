@@ -78,8 +78,7 @@ jobs:
     - name: Run mypy
       run: |
         uv run just lint-mypy
-        
-    - name: Run ty typechecker [experimental]
-      continue-on-error: true
+
+    - name: Run ty
       run: |
         uv run just lint-ty
