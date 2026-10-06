@@ -213,7 +213,7 @@ class SessionsScanner(UDSScanner):
                         continue
                     except Exception as e:
                         logger.warning(
-                            f"Mamma mia: {repr(e)} for session {session:#04x} from stack {stack}"
+                            f"Mamma mia: {e!r} for session {session:#04x} from stack {stack}"
                         )
 
                     # If the loop is not `continue`d early, recover stack, e.g. on successful session change
