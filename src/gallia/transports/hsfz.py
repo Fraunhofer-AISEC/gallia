@@ -39,7 +39,7 @@ class HSFZStatus(IntEnum):
     @classmethod
     def _missing_(cls, value: Any) -> Self:
         if not isinstance(value, int):
-            raise ValueError(f"{value!r} is not a valid {cls.__name__}")
+            raise TypeError(f"{value!r} is not a valid {cls.__name__}")
 
         pseudo = int.__new__(cls, value)
         pseudo._name_ = "UNDEFINED"

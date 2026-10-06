@@ -368,7 +368,7 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="fr-tp-legacy"):
         # … then a flow control comes.
         fc_frame = await self.read_tp_frame()
         if not isinstance(fc_frame, FlexRayTPFlowControlFrame):
-            raise RuntimeError(f"unexpected frame received: {fc_frame}")
+            raise TypeError(f"unexpected frame received: {fc_frame}")
 
         # Best effort, just send the data.
         # TODO: Not implemented: block size handling.
@@ -457,7 +457,7 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="fr-tp-legacy"):
                 frame = await self.read_tp_frame()
 
             if not isinstance(frame, FlexRayTPConsecutiveFrame):
-                raise RuntimeError(f"expected consecutive frame, got: {frame}")
+                raise TypeError(f"expected consecutive frame, got: {frame}")
             if frame.counter != (counter & 0x0F):
                 raise RuntimeError(f"got unexpected consecutive counter: {frame.counter}")
 

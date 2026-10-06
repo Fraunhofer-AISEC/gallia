@@ -49,7 +49,7 @@ def load_plugins() -> list[type[Plugin]]:
         plugin = plugin_ep.load()
 
         if not issubclass(plugin, Plugin):
-            raise ValueError(
+            raise TypeError(
                 f"{plugin.__name__} from {plugin_ep.name} is not derived from {Plugin.__name__}"
             )
 
