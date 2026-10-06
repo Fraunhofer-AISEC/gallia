@@ -223,7 +223,7 @@ class FlexRayCtypesBackend:
                 break
             except _ctypes_vector_xl.VectorQueueIsFullError:
                 logger.error("receive queue is full, gallia is too slow")
-                logger.warn("flushing queue, packages will be dropped")
+                logger.warning("flushing queue, packages will be dropped")
                 _ctypes_vector_xl.xlFlushReceiveQueue(
                     _ctypes_vector_xl.XLportHandle(self.port_handle),
                 )

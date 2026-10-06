@@ -66,6 +66,8 @@ registry: list[type[AsyncScript]] = [
 
 # TODO: Investigate why linters didn't catch faulty strings in here.
 __all__ = [
+    "ClearDTCPrimitive",
+    "ControlDTCPrimitive",
     "DoIPDiscoverer",
     "ECUResetPrimitive",
     "GenericPDUPrimitive",
@@ -76,21 +78,10 @@ __all__ = [
     "RMBAPrimitive",
     "RTCLPrimitive",
     "ReadByIdentifierPrimitive",
+    "ReadDTCPrimitive",
     "ResetScanner",
     "SASeedsDumper",
     "ScanIdentifiers",
-    "SessionsScanner",
-    "ServicesScanner",
-    "ClearDTCPrimitive",
-    "ControlDTCPrimitive",
-    "ReadDTCPrimitive",
-    "ECUResetPrimitive",
-    "VINPrimitive",
-    "IOCBIPrimitive",
-    "PingPrimitive",
-    "RMBAPrimitive",
-    "RTCLPrimitive",
-    "GenericPDUPrimitive",
     "SendPDUPrimitive",
     "ServicesScanner",
     "SessionsScanner",
@@ -116,9 +107,9 @@ if sys.platform.startswith("linux"):
 
     __all__ += [
         "CanFindXCP",
+        "DbVirtualECU",
         "IsotpDiscoverer",
         "PDUFuzzer",
-        "DbVirtualECU",
         "RngVirtualECU",
     ]
 
@@ -127,4 +118,4 @@ if sys.platform == "win32":
     from gallia.commands.script.flexray import FRConfigDump, FRDump
 
     registry += [FRDump, FRConfigDump]
-    __all__ += ["FRDump", "FRConfigDump"]
+    __all__ += ["FRConfigDump", "FRDump"]
