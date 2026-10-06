@@ -7,7 +7,7 @@ import struct
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from struct import pack
-from typing import Any, Self, TypeVar
+from typing import Any, Self
 
 from gallia.log import get_logger
 from gallia.services.uds.core.constants import (
@@ -42,9 +42,6 @@ logger = get_logger(__name__)
 # ****************
 # * Base classes *
 # ****************
-
-
-T_UDSRequest = TypeVar("T_UDSRequest", bound="UDSRequest")
 
 
 class UDSRequest(ABC):
@@ -85,7 +82,7 @@ class UDSRequest(ABC):
 
     @classmethod
     @abstractmethod
-    def _from_pdu(cls: type[T_UDSRequest], pdu: bytes) -> T_UDSRequest:
+    def _from_pdu(cls, pdu: bytes) -> Self:
         pass
 
     @classmethod
@@ -140,9 +137,6 @@ class UDSRequest(ABC):
             return RawRequest(pdu)
 
 
-T_UDSResponse = TypeVar("T_UDSResponse", bound="UDSResponse")
-
-
 class UDSResponse(ABC):
     SERVICE_ID: int | None
     RESPONSE_SERVICE_ID: int | None
@@ -179,7 +173,7 @@ class UDSResponse(ABC):
 
     @classmethod
     @abstractmethod
-    def _from_pdu(cls: type[T_UDSResponse], pdu: bytes) -> T_UDSResponse:
+    def _from_pdu(cls, pdu: bytes) -> Self:
         pass
 
     @classmethod
@@ -246,9 +240,6 @@ class UDSResponse(ABC):
 
         logger.trace(f" - Trying {response_type.__name__}")
         return response_type.from_pdu(pdu)
-
-
-T_RawResponse = TypeVar("T_RawResponse", bound="RawResponse")
 
 
 class RawResponse(UDSResponse, ABC, service_id=None, minimal_length=1, maximal_length=None):
@@ -334,9 +325,6 @@ class NegativeResponse(
             f"{type(self).__name__}(response_code={self.response_code.name}, "
             f"request_service={service_repr(self.request_service_id)})"
         )
-
-
-T_PositiveResponse = TypeVar("T_PositiveResponse", bound="PositiveResponse")
 
 
 class PositiveResponse(UDSResponse, ABC, service_id=None, minimal_length=0, maximal_length=None):
@@ -1451,11 +1439,6 @@ class ReadMemoryByAddress(UDSService, service_id=UDSIsoServices.ReadMemoryByAddr
 # **************************************
 
 
-T_DynamicallyDefineDataIdentifierResponse = TypeVar(
-    "T_DynamicallyDefineDataIdentifierResponse", bound="_DynamicallyDefineDataIdentifierResponse"
-)
-
-
 class _DynamicallyDefineDataIdentifierResponse(
     SpecializedSubFunctionResponse,
     ABC,
@@ -2193,9 +2176,6 @@ class _ReadDTCRequest(
     pass
 
 
-T_ReadDTCType0Response = TypeVar("T_ReadDTCType0Response", bound="_ReadDTCType0Response")
-
-
 class _ReadDTCType0Response(
     _ReadDTCResponse,
     ABC,
@@ -2236,9 +2216,6 @@ class _ReadDTCType0Response(
         dtc_format_identifier = DTCFormatIdentifier(pdu[3])
         dtc_count = from_bytes(pdu[4:])
         return cls(dtc_status_availability_mask, dtc_format_identifier, dtc_count)
-
-
-T_ReadDTCType1Response = TypeVar("T_ReadDTCType1Response", bound="_ReadDTCType1Response")
 
 
 class _ReadDTCType1Response(
@@ -2302,9 +2279,6 @@ class _ReadDTCType1Response(
         return cls(dtc_status_availability_mask, dtc_and_status_record)
 
 
-T_ReadDTCType0Request = TypeVar("T_ReadDTCType0Request", bound="_ReadDTCType0Request")
-
-
 class _ReadDTCType0Request(
     _ReadDTCRequest,
     ABC,
@@ -2334,9 +2308,6 @@ class _ReadDTCType0Request(
     def _from_pdu(cls, pdu: bytes) -> Self:
         dtc_status_mask = pdu[2]
         return cls(dtc_status_mask, cls.suppress_response_set(pdu))
-
-
-T_ReadDTCType6Request = TypeVar("T_ReadDTCType6Request", bound="_ReadDTCType6Request")
 
 
 class _ReadDTCType6Request(
@@ -3240,9 +3211,6 @@ class InputOutputControlByIdentifier(
 # *******************
 
 
-T_RoutineControlResponse = TypeVar("T_RoutineControlResponse", bound="RoutineControlResponse")
-
-
 class RoutineControlResponse(
     SpecializedSubFunctionResponse,
     ABC,
@@ -3283,9 +3251,6 @@ class RoutineControlResponse(
             and self.routine_control_type == request.routine_control_type
             and self.routine_identifier == request.routine_identifier
         )
-
-
-T_RoutineControlRequest = TypeVar("T_RoutineControlRequest", bound="RoutineControlRequest")
 
 
 class RoutineControlRequest(
@@ -3463,11 +3428,6 @@ class RoutineControl(SpecializedSubFunctionService, service_id=UDSIsoServices.Ro
 # ********************
 
 
-T_RequestUpOrDownloadResponse = TypeVar(
-    "T_RequestUpOrDownloadResponse", bound="_RequestUpOrDownloadResponse"
-)
-
-
 class _RequestUpOrDownloadResponse(
     PositiveResponse, service_id=None, minimal_length=3, maximal_length=None
 ):
@@ -3512,11 +3472,6 @@ class _RequestUpOrDownloadResponse(
             isinstance(request, _RequestUpOrDownloadRequest)
             and request.SERVICE_ID == self.SERVICE_ID
         )
-
-
-T_RequestUpOrDownloadRequest = TypeVar(
-    "T_RequestUpOrDownloadRequest", bound="_RequestUpOrDownloadRequest"
-)
 
 
 class _RequestUpOrDownloadRequest(
