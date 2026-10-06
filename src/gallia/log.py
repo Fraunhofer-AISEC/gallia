@@ -736,7 +736,7 @@ class _ConsoleFormatter(logging.Formatter):
                 stacktrace=stacktrace,
             )
         return _format_record(
-            dt=datetime.datetime.fromtimestamp(record.created),
+            dt=datetime.datetime.fromtimestamp(record.created, tz=tz),
             name=name,
             data=data,
             levelno=levelno,
