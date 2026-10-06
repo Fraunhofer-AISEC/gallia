@@ -2977,6 +2977,8 @@ class InputOutputControlByIdentifierRequest(
     minimal_length=4,
     maximal_length=None,
 ):
+    RESPONSE_TYPE: type[InputOutputControlByIdentifierResponse]
+
     def __init__(
         self,
         data_identifier: int,
@@ -3303,6 +3305,8 @@ class RoutineControlRequest(
     minimal_length=4,
     maximal_length=None,
 ):
+    RESPONSE_TYPE: type[RoutineControlResponse]
+
     def __init__(
         self,
         routine_identifier: int,

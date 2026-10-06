@@ -4,7 +4,7 @@
 
 """Argument parser utilities."""
 
-from argparse import Action, FileType
+from argparse import Action
 from collections.abc import Callable, Iterable
 from typing import Any, Protocol, TypeVar
 
@@ -21,7 +21,7 @@ class SupportsAddArgument(Protocol):
         nargs: int | str = ...,
         const: Any = ...,
         default: Any = ...,
-        type: Callable[[str], T] | FileType = ...,  # noqa: A002
+        type: Callable[[str], T] = ...,  # noqa: A002
         choices: Iterable[T] | None = ...,
         required: bool = ...,
         help: str | None = ...,  # noqa: A002
