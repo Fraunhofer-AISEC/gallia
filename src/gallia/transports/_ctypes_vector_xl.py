@@ -10,7 +10,6 @@ import os
 import platform
 import sys
 from enum import IntEnum, IntFlag
-from typing import Any, Protocol
 
 assert sys.platform == "win32", "unsupported platform"
 
@@ -377,15 +376,11 @@ class XL_BusCapabilities(IntFlag):
 # structure for xlFrSetConfiguration
 
 
-class CtypeLike(Protocol):
-    @property
-    def _fields_(self) -> list[tuple[str, Any]]: ...
-
-
 class IntrospectMixin:
-    def __repr__(self: CtypeLike) -> str:
+    def __repr__(self) -> str:
         fields = []
-        for name, _ in self._fields_:
+        # _fields_ is provided by the ctypes class this mixin is combined with.
+        for name, *_ in getattr(self, "_fields_", ()):
             fields.append(f"{name}: {getattr(self, name)}")
 
         fields_str = ", ".join(fields)
