@@ -284,7 +284,7 @@ class CursedHR:
             self.window.addstr(f"Loading contents from {self.in_file}: Decompressing file ...")
             self.window.refresh()
 
-            file: IO[bytes] = tempfile.TemporaryFile()
+            file: IO[bytes] = tempfile.TemporaryFile()  # noqa: SIM115
 
             try:
                 try:
@@ -298,7 +298,7 @@ class CursedHR:
                     )
                     self.window.refresh()
 
-                    file = tempfile.TemporaryFile(dir=platformdirs.user_cache_dir())
+                    file = tempfile.TemporaryFile(dir=platformdirs.user_cache_dir())  # noqa: SIM115
 
                     copy_to_file(file)
             except:
