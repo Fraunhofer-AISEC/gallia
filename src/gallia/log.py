@@ -77,8 +77,11 @@ def _add_logging_level(level_name: str, level_num: int) -> None:
     setattr(logging, method_name, to_root)
 
 
-_add_logging_level("TRACE", 5)
-_add_logging_level("NOTICE", 25)
+_TRACE = 5
+_NOTICE = 25
+
+_add_logging_level("TRACE", _TRACE)
+_add_logging_level("NOTICE", _NOTICE)
 
 
 @unique
@@ -98,10 +101,10 @@ class Loglevel(IntEnum):
     CRITICAL = logging.CRITICAL
     ERROR = logging.ERROR
     WARNING = logging.WARNING
-    NOTICE = logging.NOTICE  # type: ignore[attr-defined]
+    NOTICE = _NOTICE
     INFO = logging.INFO
     DEBUG = logging.DEBUG
-    TRACE = logging.TRACE  # type: ignore[attr-defined]
+    TRACE = _TRACE
 
 
 @unique

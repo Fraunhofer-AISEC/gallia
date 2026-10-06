@@ -198,7 +198,7 @@ class PydanticField:
                 is_type
                 or t in types
                 or (is_valid and isinstance(t, types))
-                or (is_valid and issubclass(t, types))  # type: ignore[arg-type]
+                or (is_valid and isinstance(t, type) and issubclass(t, types))
             )
 
         return is_type
@@ -235,22 +235,13 @@ class PydanticField:
             bool: if the pydantic model is a subcommand. In all other cases, including when this field is not a
                 pydantic model, returns False.
         """
-        default = False
         try:
             model = self.model_type
-            value = model.model_config["json_schema_extra"].get("subcommand", default)  # type: ignore[union-attr]
-            return cast(bool, value)
-        except (KeyError, AttributeError, TypeError):
-            # KeyError if:
-            #   - subcommand key not in json_schema_extra
+        except TypeError:
+            # The field is not a pydantic BaseModel or it can't be found.
+            return False
 
-            # AttributeError if:
-            #   - json_schema_extra not in the model_config, ie if using BaseModel
-            # just default to not being a subcommand
-
-            # TypeError if
-            #   - field is not a pydantic BaseModel or it can't be found
-            return default
+        return is_subcommand(model)
 
     def arg_names(self, invert: bool = False) -> tuple[str, str] | tuple[str]:
         """Standardises argument name when printing to command line.
@@ -375,14 +366,9 @@ def is_subcommand(model: BaseModel | type[BaseModel]) -> bool:
     Returns:
         bool: if the pydantic model is a subcommand
     """
-    default = False
-    try:
-        value = model.model_config["json_schema_extra"].get("subcommand", default)  # type: ignore[union-attr]
-        return cast(bool, value)
-    except (KeyError, AttributeError):
-        # KeyError if:
-        #   - subcommand key not in json_schema_extra
-        # AttributeError if:
-        #   - json_schema_extra not in the model_config, ie if using BaseModel
-        # just default to not being a subcommand
-        return default
+    # json_schema_extra is absent for a plain BaseModel and it might be a callable;
+    # just default to not being a subcommand in these cases.
+    extra = model.model_config.get("json_schema_extra")
+    if isinstance(extra, dict):
+        return bool(extra.get("subcommand", False))
+    return False
