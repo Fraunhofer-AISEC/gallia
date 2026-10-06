@@ -146,7 +146,7 @@ class BooleanOptionalAction(argparse.Action):  # pragma: no cover
         option_strings: Sequence[str],
         dest: str,
         default: T | str | None = None,
-        type_: Callable[[str], T] | argparse.FileType | None = None,
+        type_: Callable[[str], T] | None = None,
         choices: Iterable[T] | None = None,
         required: bool = False,
         help: str | None = None,  # noqa: A002
@@ -162,8 +162,7 @@ class BooleanOptionalAction(argparse.Action):  # pragma: no cover
             option_strings (Sequence[str]): Option strings.
             dest (str): Destination variable to save the value to.
             default (Optional[Union[T, str]]): Default value of the option.
-            type (Optional[Union[Callable[[str], T], argparse.FileType]]): Type
-                to cast the option to.
+            type (Optional[Callable[[str], T]]): Type to cast the option to.
             choices (Optional[Iterable[T]]): Allowed values for the option.
             required (bool): Whether the option is required.
             help (Optional[str]): Help string for the option.
@@ -215,10 +214,10 @@ class BooleanOptionalAction(argparse.Action):  # pragma: no cover
             option_string (Optional[str]): Optional option string.
         """
         # Check if the passed in option string matches our option strings
-        if option_string in self.option_strings:
+        if option_string is not None and option_string in self.option_strings:
             # Set a boolean value on the namespace
             # If the option string starts with "--no-", then negate the value
-            setattr(namespace, self.dest, not option_string.startswith("--no-"))  # type: ignore[union-attr]
+            setattr(namespace, self.dest, not option_string.startswith("--no-"))
 
     def format_usage(self) -> str:
         """Formats the usage string.

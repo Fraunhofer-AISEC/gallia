@@ -168,6 +168,9 @@ T = TypeVar("T")
 
 def supports_platform(*platform: str) -> Callable[[Callable[P, T]], Callable[P, T]]:
     def decorator(function: Callable[P, T]) -> Callable[P, T]:
+        # Not every callable has a name, e.g. functools.partial objects.
+        name = getattr(function, "__name__", repr(function))
+
         @wraps(function)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
             supported = False
@@ -176,9 +179,7 @@ def supports_platform(*platform: str) -> Callable[[Callable[P, T]], Callable[P, 
                     supported = True
                     break
             if supported is False:
-                raise NotImplementedError(
-                    f'`{function.__name__}()` is not supported on: "{sys.platform}"'
-                )
+                raise NotImplementedError(f'`{name}()` is not supported on: "{sys.platform}"')
 
             return function(*args, **kwargs)
 

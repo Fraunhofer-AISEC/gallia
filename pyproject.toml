@@ -132,8 +132,15 @@ ignore = [
     "PLC0415",  # `import` should be at the top-level of a file
 ]
 
-[tool.ty.environment]
-python-version = "3.11"
+# pydantic declares FieldInfo as final; ArgFieldInfo extends it on purpose.
+[[tool.ty.overrides]]
+include = ["src/gallia/pydantic_argparse/utils/field.py"]
+rules = { subclass-of-final-class = "ignore" }
+
+# more-itertools is only installed on windows with Python 3.11.
+[[tool.ty.overrides]]
+include = ["src/gallia/transports/flexray_vector.py"]
+rules = { unresolved-import = "ignore" }
 
 [tool.pytest.ini_options]
 testpaths = ["tests/pytest"]

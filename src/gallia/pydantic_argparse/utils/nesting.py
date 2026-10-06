@@ -12,7 +12,7 @@ from pydantic import BaseModel
 from .namespaces import to_dict
 from .pydantic import PydanticField, PydanticModelT
 
-ModelT: TypeAlias = PydanticModelT | type[PydanticModelT] | BaseModel | type[BaseModel]
+ModelT: TypeAlias = BaseModel | type[BaseModel]
 
 
 def _get_path(root: Any, path: tuple[str, ...], default: Any = None) -> Any:
@@ -59,7 +59,7 @@ class _NestedArgumentParser(Generic[PydanticModelT]):
         self.schema: dict[str, Any] = self._get_nested_model_fields(self.model, namespace)
         self.schema = self._remove_null_leaves(self.schema)
 
-    def _get_nested_model_fields(self, model: ModelT[Any], namespace: Namespace) -> dict[str, Any]:
+    def _get_nested_model_fields(self, model: ModelT, namespace: Namespace) -> dict[str, Any]:
         def contains_subcommand(ns: Namespace, subcommand_path: tuple[str, ...]) -> bool:
             for step in subcommand_path:
                 tmp = getattr(ns, step, None)

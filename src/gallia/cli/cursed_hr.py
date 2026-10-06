@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import IntEnum, unique
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, BinaryIO
+from typing import IO, TYPE_CHECKING, Any
 
 import platformdirs
 import wcwidth
@@ -110,7 +110,7 @@ class EntryCache:
 
     def __init__(
         self,
-        file: BinaryIO | mmap.mmap,
+        file: IO[bytes] | mmap.mmap,
         entry_positions: IntArray,
         cache_size: int = 20_000,
     ):
@@ -264,7 +264,7 @@ class CursedHR:
 
         return {prio: color[0] for prio, color in prio_colors.items()}
 
-    def uncompressed_file(self) -> BinaryIO:
+    def uncompressed_file(self) -> IO[bytes]:
         """
         Returns an uncompressed version of the input file as referenced by self.in_file.
 
@@ -292,7 +292,7 @@ class CursedHR:
             self.window.addstr(f"Loading contents from {self.in_file}: Decompressing file ...")
             self.window.refresh()
 
-            file = tempfile.TemporaryFile()
+            file: IO[bytes] = tempfile.TemporaryFile()
 
             try:
                 try:
@@ -313,11 +313,11 @@ class CursedHR:
                 file.close()
                 raise
         else:
-            file = self.in_file.open("rb")  # type: ignore[assignment]
+            file = self.in_file.open("rb")
 
         return file
 
-    def parse_structure(self, file: BinaryIO | mmap.mmap) -> None:
+    def parse_structure(self, file: IO[bytes] | mmap.mmap) -> None:
         """
         Parses an (already uncompressed) penlog file to a skeleton containing structural information but no data.
 

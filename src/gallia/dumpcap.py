@@ -7,12 +7,11 @@ import gzip
 import io
 import shutil
 import socket
-import struct
 import sys
 from asyncio import subprocess
 from datetime import datetime
 from pathlib import Path
-from typing import Self, cast
+from typing import Self
 
 from gallia.log import get_logger
 from gallia.utils import handle_task_error, set_task_handler_ctx_variable
@@ -21,7 +20,7 @@ logger = get_logger(__name__)
 
 
 def _swap_bytes_16(x: int) -> int:
-    return cast(int, struct.unpack(">H", struct.pack("<H", x))[0])
+    return int.from_bytes(x.to_bytes(2, "little"), "big")
 
 
 def dumpcap_argument_list_can(iface: str, arb_ids: list[int] | None = None) -> list[str] | None:
@@ -148,7 +147,7 @@ if sys.platform.startswith("linux") or sys.platform == "darwin":
         async def _compressor(self) -> None:
             ready = False
             assert self.proc.stdout
-            with await asyncio.to_thread(gzip.open, self.outfile, "wb") as f:
+            with await asyncio.to_thread(gzip.GzipFile, self.outfile, "wb") as f:
                 while True:
                     chunk = await self.proc.stdout.read(self.BUFSIZE)
                     if chunk == b"":

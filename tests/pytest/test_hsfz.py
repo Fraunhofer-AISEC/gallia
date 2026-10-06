@@ -9,7 +9,7 @@ import pytest
 
 from gallia.services.uds.core.client import UDSClient
 from gallia.services.uds.core.exception import MissingResponse
-from gallia.services.uds.core.service import PositiveResponse
+from gallia.services.uds.core.service import NegativeResponse
 from gallia.transports.base import BaseTransport, TargetURI
 from gallia.transports.hsfz import HSFZConnection, HSFZTransport
 from gallia.transports.tcp import TCPTransport
@@ -137,7 +137,7 @@ async def test_hsfz_diagnose_request(transports: tuple[BaseTransport, BaseTransp
         )
     )
     resp = await task
-    assert isinstance(resp, PositiveResponse)
+    assert not isinstance(resp, NegativeResponse)
     assert resp.data_record == bytes([0xCA, 0xFF, 0xEE])
 
 
@@ -215,11 +215,11 @@ async def test_request_pdu_mutex(transports: tuple[BaseTransport, BaseTransport]
             )
 
     resp = await task1
-    assert isinstance(resp, PositiveResponse)
+    assert not isinstance(resp, NegativeResponse)
     assert resp.data_record == bytes([0xCA, 0xFF, 0xEE])
 
     resp = await task2
-    assert isinstance(resp, PositiveResponse)
+    assert not isinstance(resp, NegativeResponse)
     assert resp.data_record == bytes([0xCA, 0xEE, 0xFF])
 
 
@@ -276,7 +276,7 @@ async def test_unexpected_messages(transports: tuple[BaseTransport, BaseTranspor
         )
     )
     resp = await task
-    assert isinstance(resp, PositiveResponse)
+    assert not isinstance(resp, NegativeResponse)
     assert resp.data_record == bytes([0xCA, 0xEE, 0xFF])
 
 
