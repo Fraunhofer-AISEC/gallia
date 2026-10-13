@@ -369,7 +369,7 @@ class FlexRayTPLegacyTransport(BaseTransport, scheme="fr-tp-legacy"):
         # Maybe a further flow control comes after block size number of frames.
 
         counter = 1
-        for batch in batched(data[6:], 7):
+        for batch in batched(data[6:], 7, strict=False):
             cf_frame = FlexRayTPConsecutiveFrame(
                 counter=counter,
                 data=bytes(batch),

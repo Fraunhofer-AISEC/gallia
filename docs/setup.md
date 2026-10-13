@@ -10,7 +10,7 @@ SPDX-License-Identifier: CC0-1.0
 This project has the following system level dependencies:
 
 * [Linux](https://kernel.org) >= 5.10
-* [Python](https://python.org) >= 3.12
+* [Python](https://python.org) >= 3.13
 * [uv](https://docs.astral.sh/uv/) (optional, for development)
 * [dumpcap](https://www.wireshark.org/docs/man-pages/dumpcap.html) (optional for recording network traces, part of [wireshark](https://www.wireshark.org/))
 * [git](https://git-scm.com/) (optional, used to detect config file)
@@ -83,10 +83,10 @@ $ pipx install uv
 $ uv sync
 ```
 
-If you want to use a different Python version from the one defined in `.python-version`, the flags `--python-preference only-system` or `--python` for `uv sync` might be helpful; e.g. to use your system provided Python 3.12:
+If you want to use a different Python version from the one defined in `.python-version`, the flags `--python-preference only-system` or `--python` for `uv sync` might be helpful; e.g. to use your system provided Python 3.13:
 
 ```shell-session
-$ uv sync --python-preference only-system --python 3.12
+$ uv sync --python-preference only-system --python 3.13
 ```
 
 #### shell
