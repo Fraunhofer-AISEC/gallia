@@ -32,7 +32,7 @@ dependencies = [
     "aiosqlite >=0.18",
     "argcomplete >=2,<4",
     "platformdirs >=2.6,<5.0",
-    "pydantic >=2.12,<3.0",
+    "pydantic >=2.14,<3.0",
     "zstandard >=0.19; python_version < '3.14'",
     "wcwidth>=0.3.0",
 ]

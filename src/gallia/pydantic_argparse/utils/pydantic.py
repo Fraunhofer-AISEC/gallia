@@ -113,7 +113,8 @@ class PydanticField:
 
             yield cls(name, info, original_info)
 
-    def _get_type(self, annotation: type | None) -> type | tuple[type | None, ...] | None:
+    # Annotations are type forms (e.g. `int | None`, `Annotated[...]`), not only classes.
+    def _get_type(self, annotation: Any) -> type | tuple[type | None, ...] | None:
         origin = get_origin(annotation)
 
         if origin is Literal or isinstance(origin, type) and issubclass(origin, Container):
