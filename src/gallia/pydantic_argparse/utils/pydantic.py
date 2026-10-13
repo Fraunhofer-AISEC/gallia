@@ -18,7 +18,6 @@ from typing import (
     Annotated,
     Any,
     Literal,
-    TypeVar,
     Union,
     cast,
     get_args,
@@ -34,7 +33,6 @@ from gallia.pydantic_argparse.utils.field import ArgFieldInfo
 from .types import all_types
 
 # Constants
-T = TypeVar("T")
 PydanticValidator = classmethod
 NoneType = type(None)
 

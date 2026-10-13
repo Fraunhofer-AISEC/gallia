@@ -8,7 +8,7 @@ import re
 import sys
 from collections.abc import Callable
 from functools import wraps
-from typing import Any, ParamSpec, TypeVar
+from typing import Any
 
 from gallia.log import get_logger
 
@@ -162,11 +162,7 @@ def handle_task_error(fut: asyncio.Future[Any]) -> None:
         logger.debug(f"{task_name} ended with error: {e!r}")
 
 
-P = ParamSpec("P")
-T = TypeVar("T")
-
-
-def supports_platform(*platform: str) -> Callable[[Callable[P, T]], Callable[P, T]]:
+def supports_platform[**P, T](*platform: str) -> Callable[[Callable[P, T]], Callable[P, T]]:
     def decorator(function: Callable[P, T]) -> Callable[P, T]:
         # Not every callable has a name, e.g. functools.partial objects.
         name = getattr(function, "__name__", repr(function))

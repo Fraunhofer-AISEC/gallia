@@ -15,7 +15,6 @@ from typing import (
     TYPE_CHECKING,
     Annotated,
     Any,
-    TypeVar,
     Unpack,
     get_args,
 )
@@ -115,10 +114,6 @@ Usage: x: Ranges2D = ....
 """
 
 
-T = TypeVar("T")
-EnumType = TypeVar("EnumType", bound=Enum)
-
-
 def auto_enum[EnumType: Enum](x: str, enum_type: type[EnumType]) -> EnumType:
     try:
         return enum_type[x]
@@ -146,10 +141,10 @@ if TYPE_CHECKING:
 else:
 
     class _TrickType:
-        def __init__(self, function: Callable[[type[T]], type[T]]):
+        def __init__[T](self, function: Callable[[type[T]], type[T]]):
             self.function = function
 
-        def __getitem__(self, cls: type[T]) -> type[T]:
+        def __getitem__[T](self, cls: type[T]) -> type[T]:
             return self.function(cls)
 
     InitializeIdempotent = _TrickType(
@@ -207,7 +202,7 @@ else:
         return Annotated[cls, BeforeValidator(try_auto_literal)]
 
     class AutoLiteral:
-        def __class_getitem__(cls, literals) -> type[T]:
+        def __class_getitem__[T](cls, literals) -> type[T]:
             return _TrickType(auto_literal)[typing.Literal[literals]]
 
     """
