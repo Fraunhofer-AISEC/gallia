@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import atexit
 import dataclasses
-import datetime
+import datetime as dt
 import gzip
 import io
 import json
@@ -33,7 +33,7 @@ else:
     from compression import zstd
 
 gmt_offset = time.localtime().tm_gmtoff
-tz = datetime.timezone(datetime.timedelta(seconds=gmt_offset))
+tz = dt.timezone(dt.timedelta(seconds=gmt_offset))
 
 
 def guess_color_setting_for_stream(stream: TextIO) -> bool:
@@ -377,7 +377,7 @@ def _format_record_for_syslog(
 
 
 def _format_record(
-    dt: datetime.datetime,
+    timestamp: dt.datetime,
     name: str,
     data: str,
     levelno: int,
@@ -390,7 +390,7 @@ def _format_record(
     if volatile_info:
         msg += "\33[2K"  # Clean current line
     extra_len = 4
-    msg += dt.strftime("%b %d %H:%M:%S.%f")[:-3]
+    msg += timestamp.strftime("%b %d %H:%M:%S.%f")[:-3]
     msg += " "
     msg += name
     msg += _format_tags(tags)
@@ -423,7 +423,7 @@ class PenlogRecord:
     module: str
     host: str
     data: str
-    datetime: datetime.datetime
+    datetime: dt.datetime
     # FIXME: Enums are slow.
     priority: PenlogPriority
     tags: list[str] | None = None
@@ -436,7 +436,7 @@ class PenlogRecord:
 
     def __str__(self) -> str:
         return _format_record(
-            dt=self.datetime,
+            timestamp=self.datetime,
             name=self.module,
             data=self.data,
             levelno=self._python_level_no
@@ -468,7 +468,7 @@ class PenlogRecord:
             module=record["module"],
             host=record["host"],
             data=record["data"],
-            datetime=datetime.datetime.fromisoformat(record["datetime"]),
+            datetime=dt.datetime.fromisoformat(record["datetime"]),
             priority=PenlogPriority(record["priority"]),
             tags=record.get("tags", None),
             line=record.get("line", None),
@@ -686,7 +686,7 @@ class _JSONFormatter(logging.Formatter):
             host=self.hostname,
             data=record.getMessage(),
             priority=PenlogPriority.from_level(record.levelno).value,
-            datetime=datetime.datetime.fromtimestamp(record.created, tz=tz).isoformat(),
+            datetime=dt.datetime.fromtimestamp(record.created, tz=tz).isoformat(),
             line=f"{record.pathname}:{record.lineno}",
             stacktrace=stacktrace,
             tags=tags,
@@ -732,7 +732,7 @@ class _ConsoleFormatter(logging.Formatter):
                 stacktrace=stacktrace,
             )
         return _format_record(
-            dt=datetime.datetime.fromtimestamp(record.created, tz=tz),
+            timestamp=dt.datetime.fromtimestamp(record.created, tz=tz),
             name=name,
             data=data,
             levelno=levelno,

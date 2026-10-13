@@ -55,7 +55,7 @@ dev = [
     "pytest-asyncio>=0.20,<1.5",
     "pytest-cov>=4,<8",
     "reuse>=4.0,<7.0",
-    "ruff >=0.16.0",
+    "ruff >=0.17.0",
     "rust-just>=1.38.0",
     "ty>=0.0.1a29",
 ]
