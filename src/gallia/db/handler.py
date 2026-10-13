@@ -196,6 +196,8 @@ class DBHandler:
                     # Inform the the queue that the query was fully processed to track progress
                     self._execute_queue.task_done()
 
+        except asyncio.QueueShutDown:
+            logger.debug("Database worker shut down")
         except asyncio.CancelledError:
             logger.debug("Database worker cancelled")
         except asyncio.IncompleteReadError as e:
@@ -212,11 +214,12 @@ class DBHandler:
 
         logger.info("Syncing database…")
         try:
-            # Wait for all queries in the queue to be written to the database and cancel task afterwards.
+            # Wait for all queries in the queue to be written to the database and shut the queue down
+            # afterwards; the worker terminates on its own as soon as the queue is shut down.
             # TODO: this could block infinitely if there are OperationalErrors writing to the database in
             # the `_executor_func()`
             await self._execute_queue.join()
-            self._executor_task.cancel()
+            self._execute_queue.shutdown()
             await self._executor_task
         except Exception as e:
             logger.error(f"Could not properly clean up the database task: {e!r}")
