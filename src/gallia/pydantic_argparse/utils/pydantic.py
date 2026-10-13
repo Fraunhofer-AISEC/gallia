@@ -27,6 +27,7 @@ from typing import (
 from pydantic import BaseModel, ConfigDict
 from pydantic.fields import FieldInfo
 from pydantic_core import PydanticUndefined
+from typing_extensions import TypeForm
 
 from gallia.pydantic_argparse.utils.field import ArgFieldInfo
 
@@ -113,7 +114,7 @@ class PydanticField:
 
             yield cls(name, info, original_info)
 
-    def _get_type(self, annotation: type | None) -> type | tuple[type | None, ...] | None:
+    def _get_type(self, annotation: TypeForm[Any] | None) -> type | tuple[type | None, ...] | None:
         origin = get_origin(annotation)
 
         if origin is Literal or isinstance(origin, type) and issubclass(origin, Container):
