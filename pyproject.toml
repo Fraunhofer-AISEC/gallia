@@ -57,7 +57,7 @@ dev = [
     "reuse>=4.0,<7.0",
     "ruff >=0.17.0",
     "rust-just>=1.38.0",
-    "ty>=0.0.1a29",
+    "ty>=0.0.86",
 ]
 
 [project.urls]
