@@ -16,7 +16,7 @@ from gallia.services.uds.core.exception import IllegalResponse, MissingResponse
 from gallia.services.uds.core.service import NegativeResponse, UDSResponse
 from gallia.services.uds.core.utils import g_repr, service_repr
 from gallia.services.uds.helpers import suggests_service_not_supported
-from gallia.utils import HEX_U8, HEX_U16
+from gallia.utils import HEX_U8, HEX_U16, hex_join
 
 logger = get_logger(__name__)
 
@@ -84,7 +84,7 @@ class ScanIdentifiers(UDSScanner):
                 for s in self.config.sessions
                 if s not in self.config.skip or self.config.skip[s] is not None
             ]
-            logger.info(f"testing sessions {g_repr(sessions)}")
+            logger.info(f"testing sessions [{hex_join(sessions, HEX_U8)}]")
             clean_returns = True
 
             # TODO: Unified shortened output necessary here

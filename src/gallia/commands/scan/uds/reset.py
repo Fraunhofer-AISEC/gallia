@@ -18,7 +18,7 @@ from gallia.services.uds.core.exception import (
 )
 from gallia.services.uds.core.utils import g_repr
 from gallia.services.uds.helpers import suggests_sub_function_not_supported
-from gallia.utils import HEX_U8
+from gallia.utils import HEX_U8, hex_join
 
 logger = get_logger(__name__)
 
@@ -55,7 +55,7 @@ class ResetScanner(UDSScanner):
                 sys.exit(1)
         else:
             sessions = self.config.sessions
-            logger.info(f"testing sessions {g_repr(sessions)}")
+            logger.info(f"testing sessions [{hex_join(sessions, HEX_U8)}]")
             clean_returns = True
 
             # TODO: Unified shortened output necessary here

@@ -13,7 +13,6 @@ from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse, UDSErrorCodes, UDSRequestConfig
 from gallia.services.uds.core.constants import DiagnosticSessionControlSubFuncs, EcuResetSubFuncs
 from gallia.services.uds.core.service import DiagnosticSessionControlResponse
-from gallia.services.uds.core.utils import g_repr
 from gallia.utils import HEX_U8, hex_join
 
 logger = get_logger(__name__)
@@ -191,7 +190,7 @@ class SessionsScanner(UDSScanner):
                             continue
 
                         logger.notice(
-                            f"Found session: {session:{HEX_U8}} via stack: {g_repr(stack)}; {resp}"
+                            f"Found session: {session:{HEX_U8}} via stack: [{hex_join(stack, HEX_U8)}]; {resp}"
                         )
 
                         if isinstance(resp, NegativeResponse):

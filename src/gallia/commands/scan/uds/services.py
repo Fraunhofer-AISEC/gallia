@@ -23,7 +23,7 @@ from gallia.services.uds.core.exception import (
     UDSException,
 )
 from gallia.services.uds.core.utils import g_repr
-from gallia.utils import HEX_U8
+from gallia.utils import HEX_U8, hex_join
 
 logger = get_logger(__name__)
 
@@ -91,7 +91,7 @@ class ServicesScanner(UDSScanner):
                 for s in self.config.sessions
                 if s not in self.config.skip or self.config.skip[s] is not None
             ]
-            logger.info(f"testing sessions {g_repr(sessions)}")
+            logger.info(f"testing sessions [{hex_join(sessions, HEX_U8)}]")
 
             # TODO: Unified shortened output necessary here
             logger.info(f"skipping identifiers {reprlib.repr(self.config.skip)}")
