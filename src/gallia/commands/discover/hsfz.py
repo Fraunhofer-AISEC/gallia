@@ -90,7 +90,7 @@ class HSFZDiscoverer(AsyncScript):
                 {
                     "src_addr": f"{src_addr:#02x}",
                     "dst_addr": f"{dst_addr:#02x}",
-                    "ack_timeout": int(ack_timeout) * 1000,
+                    "ack_timeout": int(ack_timeout * 1000),
                 },
             )
         return None
