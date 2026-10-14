@@ -3,9 +3,29 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from abc import ABC, abstractmethod
-from typing import Any, Self
+from dataclasses import dataclass
+from typing import Self
 
 from gallia.transports import TargetURI
+
+
+@dataclass
+class ChannelStatus:
+    voltage: float
+    current: float
+    measured_voltage: float
+    measured_current: float
+    measured_power: float
+    output: bool
+    ocp: bool
+    ovp: bool
+
+
+@dataclass
+class PowerSupplyStatus:
+    ident: str
+    master: bool
+    channels: dict[int, ChannelStatus]
 
 
 class BasePowerSupplyDriver(ABC):
@@ -32,7 +52,8 @@ class BasePowerSupplyDriver(ABC):
         self.ident = await self.get_ident()
 
     @abstractmethod
-    async def status(self) -> dict[str, Any]: ...
+    async def status(self) -> PowerSupplyStatus:
+        """Reads the settings and measurements of all channels at once."""
 
     @abstractmethod
     async def get_ident(self) -> str:
@@ -65,6 +86,18 @@ class BasePowerSupplyDriver(ABC):
     @abstractmethod
     async def set_voltage(self, channel: int, value: float) -> None:
         """Sets the max. voltage value."""
+
+    @abstractmethod
+    async def measure_voltage(self, channel: int) -> float:
+        """Returns the measured voltage value."""
+
+    @abstractmethod
+    async def measure_current(self, channel: int) -> float:
+        """Returns the measured current value."""
+
+    @abstractmethod
+    async def measure_power(self, channel: int) -> float:
+        """Returns the measured power value."""
 
     @abstractmethod
     async def get_output(self, channel: int) -> bool:
