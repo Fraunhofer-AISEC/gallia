@@ -16,6 +16,7 @@ from gallia.services.uds.core.exception import IllegalResponse, MissingResponse
 from gallia.services.uds.core.service import NegativeResponse, UDSResponse
 from gallia.services.uds.core.utils import g_repr, service_repr
 from gallia.services.uds.helpers import suggests_service_not_supported
+from gallia.utils import HEX_U8
 
 logger = get_logger(__name__)
 
@@ -90,18 +91,18 @@ class ScanIdentifiers(UDSScanner):
             logger.info(f"skipping identifiers {reprlib.repr(self.config.skip)}")
 
             for session in sessions:
-                logger.notice(f"Switching to session {g_repr(session)}")
+                logger.notice(f"Switching to session {session:{HEX_U8}}")
                 resp: UDSResponse = await self.ecu.set_session(session)
                 if isinstance(resp, NegativeResponse):
-                    logger.warning(f"Switching to session {g_repr(session)} failed: {resp}")
+                    logger.warning(f"Switching to session {session:{HEX_U8}} failed: {resp}")
                     continue
 
-                logger.result(f"Starting scan in session: {g_repr(session)}")
+                logger.result(f"Starting scan in session: {session:{HEX_U8}}")
 
                 clean_returns = clean_returns and await self.perform_scan(session)
 
-                logger.result(f"Scan in session {g_repr(session)} is complete!")
-                logger.info(f"Leaving session {g_repr(session)} via hook")
+                logger.result(f"Scan in session {session:{HEX_U8}} is complete!")
+                logger.info(f"Leaving session {session:{HEX_U8}} via hook")
 
                 try:
                     await self.ecu.leave_session(session, sleep=self.config.power_cycle_sleep)
@@ -151,7 +152,7 @@ class ScanIdentifiers(UDSScanner):
                 # Check session and try to recover from wrong session (max 3 times), else skip session
                 if not await self.ecu.check_and_set_session(session):
                     logger.error(
-                        f"Aborting scan on session {g_repr(session)}; current DID was {g_repr(DID)}"
+                        f"Aborting scan on session {session:{HEX_U8}}; current DID was {g_repr(DID)}"
                     )
                     return False
 

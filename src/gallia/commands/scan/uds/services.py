@@ -23,6 +23,7 @@ from gallia.services.uds.core.exception import (
     UDSException,
 )
 from gallia.services.uds.core.utils import g_repr
+from gallia.utils import HEX_U8
 
 logger = get_logger(__name__)
 
@@ -96,25 +97,25 @@ class ServicesScanner(UDSScanner):
             logger.info(f"skipping identifiers {reprlib.repr(self.config.skip)}")
 
             for session in sessions:
-                logger.info(f"Changing to session {g_repr(session)}")
+                logger.info(f"Changing to session {session:{HEX_U8}}")
                 try:
                     resp: UDSResponse = await self.ecu.set_session(
                         session, UDSRequestConfig(tags=["preparation"])
                     )
                 except (UDSException, RuntimeError) as e:  # FIXME: why catch RuntimeError?
                     logger.warning(
-                        f"Could not complete session change to {g_repr(session)}: {g_repr(e)}; skipping session"
+                        f"Could not complete session change to {session:{HEX_U8}}: {g_repr(e)}; skipping session"
                     )
                     clean_returns = False
                     continue
                 if isinstance(resp, NegativeResponse):
                     logger.warning(
-                        f"Could not complete session change to {g_repr(session)}: {resp}; skipping session"
+                        f"Could not complete session change to {session:{HEX_U8}}: {resp}; skipping session"
                     )
                     clean_returns = False
                     continue
 
-                logger.result(f"scanning in session {g_repr(session)}")
+                logger.result(f"scanning in session {session:{HEX_U8}}")
 
                 found[session], ret = await self.perform_scan(session)
                 clean_returns = clean_returns and ret
@@ -142,9 +143,9 @@ class ServicesScanner(UDSScanner):
             for sid, data in value.items():
                 self.result.append((key, sid))
                 try:
-                    logger.result(f"  [{g_repr(sid)}] {UDSIsoServices(sid).name}: {data}")
+                    logger.result(f"  [{sid:{HEX_U8}}] {UDSIsoServices(sid).name}: {data}")
                 except Exception:
-                    logger.result(f"  [{g_repr(sid)}] vendor specific sid: {data}")
+                    logger.result(f"  [{sid:{HEX_U8}}] vendor specific sid: {data}")
 
         if not clean_returns:
             sys.exit(1)
@@ -163,13 +164,13 @@ class ServicesScanner(UDSScanner):
             if session in self.config.skip and (
                 (session_skip := self.config.skip[session]) is None or sid in session_skip
             ):
-                logger.info(f"{g_repr(sid)}: skipped")
+                logger.info(f"{sid:{HEX_U8}}: skipped")
                 continue
 
             if session is not None and self.config.check_session:
                 if not await self.ecu.check_and_set_session(session):
                     logger.error(
-                        f"Aborting scan on session {g_repr(session)}; current SID was {g_repr(sid)}"
+                        f"Aborting scan on session {session:{HEX_U8}}; current SID was {sid:{HEX_U8}}"
                     )
                     return result, False
 
@@ -187,10 +188,12 @@ class ServicesScanner(UDSScanner):
                 try:
                     resp = await self.ecu.send_raw(pdu, config=UDSRequestConfig(tags=["ANALYZE"]))
                 except TimeoutError:
-                    logger.info(f"{g_repr(sid)}: timeout")
+                    logger.info(f"{sid:{HEX_U8}}: timeout")
                     continue
                 except (MalformedResponse, RequestResponseMismatch) as e:
-                    logger.warning(f"{g_repr(sid)}: {e!r} occurred, this needs to be investigated!")
+                    logger.warning(
+                        f"{sid:{HEX_U8}}: {e!r} occurred, this needs to be investigated!"
+                    )
                     clean_returns = False
                     continue
 
@@ -198,7 +201,7 @@ class ServicesScanner(UDSScanner):
                     UDSErrorCodes.serviceNotSupported,
                     UDSErrorCodes.serviceNotSupportedInActiveSession,
                 ]:
-                    logger.info(f"{g_repr(sid)}: not supported [{resp}]")
+                    logger.info(f"{sid:{HEX_U8}}: not supported [{resp}]")
                     break
 
                 at_least_one_valid_response = resp
@@ -209,18 +212,18 @@ class ServicesScanner(UDSScanner):
                 ):
                     # Keep trying with other lengths to hopefully de-mask this NRC
                     logger.info(
-                        f"{g_repr(sid)}: received incorrectMessageLengthOrInvalidFormat, increasing PDU length... "
+                        f"{sid:{HEX_U8}}: received incorrectMessageLengthOrInvalidFormat, increasing PDU length... "
                     )
                     continue
 
-                logger.result(f"{g_repr(sid)}: available in session {g_repr(session)}: {resp}")
+                logger.result(f"{sid:{HEX_U8}}: available in session {g_repr(session)}: {resp}")
                 result[sid] = resp
                 break
 
             else:
                 if at_least_one_valid_response is not None:
                     logger.result(
-                        f"{g_repr(sid)}: probably available in session {g_repr(session)}: {at_least_one_valid_response}"
+                        f"{sid:{HEX_U8}}: probably available in session {g_repr(session)}: {at_least_one_valid_response}"
                     )
                     result[sid] = at_least_one_valid_response
 

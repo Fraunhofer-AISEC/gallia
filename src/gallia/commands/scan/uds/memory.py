@@ -11,8 +11,8 @@ from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse, UDSErrorCodes, UDSRequestConfig
 from gallia.services.uds import UDSIsoServices as Services
 from gallia.services.uds.core.exception import MissingResponse
-from gallia.services.uds.core.utils import g_repr, uds_memory_parameters
-from gallia.utils import HEX
+from gallia.services.uds.core.utils import uds_memory_parameters
+from gallia.utils import HEX, HEX_U8
 
 logger = get_logger(__name__)
 
@@ -65,7 +65,7 @@ class MemoryFunctionsScanner(UDSScanner):
         logger.info("Memory scan complete!")
 
         if self.config.session is not None:
-            logger.info(f"Leaving session {g_repr(self.config.session)} via hook")
+            logger.info(f"Leaving session {self.config.session:{HEX_U8}} via hook")
             try:
                 await self.ecu.leave_session(
                     self.config.session, sleep=self.config.power_cycle_sleep
@@ -102,7 +102,7 @@ class MemoryFunctionsScanner(UDSScanner):
                 # Check session and try to recover from wrong session (max 3 times), else skip session
                 if not await self.ecu.check_and_set_session(self.config.session):
                     logger.error(
-                        f"Aborting scan on session {g_repr(self.config.session)}; "
+                        f"Aborting scan on session {self.config.session:{HEX_U8}}; "
                         + f"current memory address was {addr:{HEX}}"
                     )
                     sys.exit(1)

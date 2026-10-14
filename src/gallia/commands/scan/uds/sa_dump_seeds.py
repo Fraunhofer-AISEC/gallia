@@ -14,6 +14,7 @@ from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse, UDSErrorCodes, UDSRequestConfig
 from gallia.services.uds.core.exception import MissingResponse
 from gallia.services.uds.core.utils import g_repr
+from gallia.utils import HEX_U8
 
 logger = get_logger(__name__)
 
@@ -102,7 +103,7 @@ class SASeedsDumper(UDSScanner):
         )
         if not isinstance(resp, NegativeResponse):
             logger.result(
-                f"That's unexpected: Unlocked SA level {g_repr(level)} with all-zero key of length {self.key_length}."
+                f"That's unexpected: Unlocked SA level {level:{HEX_U8}} with all-zero key of length {self.key_length}."
             )
             return True
 
@@ -137,7 +138,7 @@ class SASeedsDumper(UDSScanner):
 
     async def main(self) -> None:
         session = self.config.session
-        logger.info(f"scanning in session: {g_repr(session)}")
+        logger.info(f"scanning in session: {session:{HEX_U8}}")
 
         resp = await self.ecu.set_session(session)
         if isinstance(resp, NegativeResponse):
@@ -218,7 +219,7 @@ class SASeedsDumper(UDSScanner):
 
             if self.config.check_session:
                 if not await self.ecu.check_and_set_session(self.config.session):
-                    logger.error(f"ECU persistently lost session {g_repr(self.config.session)}")
+                    logger.error(f"ECU persistently lost session {self.config.session:{HEX_U8}}")
                     sys.exit(1)
 
             try:
