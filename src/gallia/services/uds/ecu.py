@@ -30,7 +30,7 @@ from gallia.services.uds.helpers import (
     suggests_identifier_not_supported,
 )
 from gallia.transports.base import BaseTransport
-from gallia.utils import HEX_U8, handle_task_error, set_task_handler_ctx_variable
+from gallia.utils import HEX, HEX_U8, handle_task_error, set_task_handler_ctx_variable
 
 if TYPE_CHECKING:
     from gallia.db.handler import DBHandler
@@ -319,19 +319,19 @@ class ECU(UDSClient):
         """transmit_data splits the data to be sent in several blocks of size block_length,
         transfers all of them and concludes the transmission with RequestTransferExit"""
         if block_length > max_block_length:
-            logger.warning(f"Limiting block size to {g_repr(max_block_length)}")
+            logger.warning(f"Limiting block size to {max_block_length:{HEX}}")
             block_length = max_block_length
         # block_length includes the service identifier and block counter; payload must be smaller
         payload_size = block_length - 2
         for counter, i in enumerate(range(0, len(data), payload_size), start=1):
             payload = data[i : i + payload_size]
             logger.debug(
-                f"Transferring block {g_repr(counter)} with payload size {g_repr(len(payload))}"
+                f"Transferring block {counter:{HEX}} with payload size {len(payload):{HEX}}"
             )
             resp: service.UDSResponse = await self.transfer_data(
                 counter & 0xFF, payload, config=config
             )
-            raise_for_error(resp, f"Transmitting data failed at index {g_repr(i)}")
+            raise_for_error(resp, f"Transmitting data failed at index {i:{HEX}}")
         resp = await self.request_transfer_exit(config=config)
         raise_for_error(resp)
 
