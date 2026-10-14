@@ -16,7 +16,6 @@ from gallia.services.uds.core.exception import (
     MissingResponse,
     UnexpectedNegativeResponse,
 )
-from gallia.services.uds.core.utils import g_repr
 from gallia.services.uds.helpers import suggests_sub_function_not_supported
 from gallia.utils import HEX_U8, hex_join
 
@@ -80,6 +79,7 @@ class ResetScanner(UDSScanner):
                 sys.exit(1)
 
     async def perform_scan(self, session: None | int = None) -> bool:
+        session_desc = "current session" if session is None else f"session {session:{HEX_U8}}"
         l_ok: list[int] = []
         l_timeout: list[int] = []
         l_error: list[Any] = []
@@ -148,7 +148,7 @@ class ResetScanner(UDSScanner):
                     logger.error(f"Failed to recover ECU: {e!r}; exit")
                     sys.exit(1)
             except ConnectionError:
-                msg = f"{sub_func:{HEX_U8}}: lost connection to ECU (post), current session: {g_repr(session)}"
+                msg = f"{sub_func:{HEX_U8}}: lost connection to ECU (post) in {session_desc}"
                 logger.warning(msg)
                 await self.ecu.reconnect()
                 continue

@@ -14,7 +14,7 @@ from gallia.services.uds.core.client import UDSRequestConfig
 from gallia.services.uds.core.constants import RoutineControlSubFuncs, UDSErrorCodes, UDSIsoServices
 from gallia.services.uds.core.exception import IllegalResponse, MissingResponse
 from gallia.services.uds.core.service import NegativeResponse, UDSResponse
-from gallia.services.uds.core.utils import g_repr, service_repr
+from gallia.services.uds.core.utils import service_repr
 from gallia.services.uds.helpers import suggests_service_not_supported
 from gallia.utils import HEX_U8, HEX_U16, hex_join
 
@@ -113,6 +113,7 @@ class ScanIdentifiers(UDSScanner):
                 sys.exit(1)
 
     async def perform_scan(self, session: None | int = None) -> bool:
+        session_desc = "current session" if session is None else f"session {session:{HEX_U8}}"
         positive_DIDs = 0
         abnormal_DIDs = 0
         timeout_DIDs = 0
@@ -185,7 +186,7 @@ class ScanIdentifiers(UDSScanner):
             if isinstance(resp, NegativeResponse):
                 if suggests_service_not_supported(resp):
                     logger.info(
-                        f"{DID:{HEX_U16}}: {resp}; does session {g_repr(session)} support service {service_repr(self.config.service)}?"
+                        f"{DID:{HEX_U16}}: {resp}; does {session_desc} support service {service_repr(self.config.service)}?"
                     )
 
                     if self.config.skip_not_supported:

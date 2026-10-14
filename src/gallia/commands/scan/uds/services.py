@@ -22,7 +22,6 @@ from gallia.services.uds.core.exception import (
     RequestResponseMismatch,
     UDSException,
 )
-from gallia.services.uds.core.utils import g_repr
 from gallia.utils import HEX_U8, hex_join
 
 logger = get_logger(__name__)
@@ -151,6 +150,7 @@ class ServicesScanner(UDSScanner):
             sys.exit(1)
 
     async def perform_scan(self, session: None | int = None) -> tuple[dict[int, Any], bool]:
+        session_desc = "current session" if session is None else f"session {session:{HEX_U8}}"
         result: dict[int, Any] = {}
         clean_returns = True
 
@@ -216,14 +216,14 @@ class ServicesScanner(UDSScanner):
                     )
                     continue
 
-                logger.result(f"{sid:{HEX_U8}}: available in session {g_repr(session)}: {resp}")
+                logger.result(f"{sid:{HEX_U8}}: available in {session_desc}: {resp}")
                 result[sid] = resp
                 break
 
             else:
                 if at_least_one_valid_response is not None:
                     logger.result(
-                        f"{sid:{HEX_U8}}: probably available in session {g_repr(session)}: {at_least_one_valid_response}"
+                        f"{sid:{HEX_U8}}: probably available in {session_desc}: {at_least_one_valid_response}"
                     )
                     result[sid] = at_least_one_valid_response
 

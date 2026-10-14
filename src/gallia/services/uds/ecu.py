@@ -23,7 +23,7 @@ from gallia.services.uds.core.exception import (
     UDSException,
     UnexpectedNegativeResponse,
 )
-from gallia.services.uds.core.utils import from_bytes, g_repr
+from gallia.services.uds.core.utils import from_bytes
 from gallia.services.uds.helpers import (
     as_exception,
     raise_for_error,
@@ -55,7 +55,12 @@ class ECUState:
         return GalliaJSONEncoder
 
     def __repr__(self) -> str:
-        return f"{type(self).__name__}({', '.join(f'{key}={g_repr(value)}' for key, value in self.__dict__.items())})"
+        def fmt(value: Any) -> str:
+            if isinstance(value, int) and not isinstance(value, bool):
+                return f"{value:{HEX_U8}}"
+            return repr(value)
+
+        return f"{type(self).__name__}({', '.join(f'{key}={fmt(value)}' for key, value in self.__dict__.items())})"
 
 
 @dataclass
