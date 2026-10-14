@@ -8,6 +8,10 @@ inputs:
   python-version:
     description: Python version that should be installed.
     required: false
+  dev:
+    description: Whether the dev extra should be installed.
+    required: false
+    default: 'true'
 
 runs:
   using: composite
@@ -32,5 +36,11 @@ runs:
 
     - name: Install the project
       shell: bash
+      env:
+        INSTALL_DEV: ${{ inputs.dev }}
       run: |
-        uv sync --locked --all-extras --dev
+        if [[ "$INSTALL_DEV" == "true" ]]; then
+          uv sync --locked --all-extras --dev
+        else
+          uv sync --locked --no-dev
+        fi
