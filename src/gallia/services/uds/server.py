@@ -27,7 +27,7 @@ from gallia.services.uds.core.constants import (
     UDSErrorCodes,
     UDSIsoServices,
 )
-from gallia.services.uds.core.utils import bytes_repr, int_repr, service_repr, to_bytes
+from gallia.services.uds.core.utils import bytes_repr, int_repr, to_bytes
 from gallia.services.uds.ecu import ECUState
 from gallia.transports import TargetURI
 
@@ -389,9 +389,7 @@ class RandomUDSServer(UDSServer):
             json.dumps(
                 {
                     int_repr(session): {
-                        f"{int_repr(s.value)} ({service_repr(s)})": str(
-                            [int_repr(sf) for sf in sfs]
-                        )
+                        f"{int_repr(s.value)} ({s.name})": str([int_repr(sf) for sf in sfs])
                         if sfs is not None
                         else None
                         for s, sfs in services.items()

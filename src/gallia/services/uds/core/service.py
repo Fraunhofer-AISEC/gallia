@@ -31,13 +31,14 @@ from gallia.services.uds.core.utils import (
     check_sub_function,
     from_bytes,
     int_repr,
-    service_repr,
     sub_function_split,
     to_bytes,
     uds_memory_parameters,
 )
+from gallia.utils import HEX_U8
 
 logger = get_logger(__name__)
+
 
 # ****************
 # * Base classes *
@@ -323,10 +324,11 @@ class NegativeResponse(
         return str(self.response_code.name)
 
     def __repr__(self) -> str:
-        return (
-            f"{type(self).__name__}(response_code={self.response_code.name}, "
-            f"request_service={service_repr(self.request_service_id)})"
+        sid = self.request_service_id
+        service = (
+            UDSIsoServices(sid).name if sid in UDSIsoServices else f"Unknown service {sid:{HEX_U8}}"
         )
+        return f"{type(self).__name__}(response_code={self.response_code.name}, request_service={service})"
 
 
 class PositiveResponse(UDSResponse, ABC, service_id=None, minimal_length=0, maximal_length=None):
