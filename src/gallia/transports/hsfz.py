@@ -343,12 +343,15 @@ class HSFZTransport(BaseTransport, scheme="hsfz"):
         if self.target.hostname is None:
             raise ValueError("no hostname specified")
 
-        conn = await HSFZConnection.connect(
-            self.target.hostname,
-            self.target.port if self.target.port is not None else 6801,
-            self.config.src_addr,
-            self.config.dst_addr,
-            self.config.ack_timeout / 1000,
+        conn = await asyncio.wait_for(
+            HSFZConnection.connect(
+                self.target.hostname,
+                self.target.port if self.target.port is not None else 6801,
+                self.config.src_addr,
+                self.config.dst_addr,
+                self.config.ack_timeout / 1000,
+            ),
+            timeout,
         )
         self._conn = conn
 

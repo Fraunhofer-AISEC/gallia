@@ -320,3 +320,16 @@ async def test_unread_messages(dummy_server: TCPServer) -> None:
     assert isinstance(frame, tuple)
     assert frame[2] == bytes([0xCA, 0xFF, 0xEE])
     await hsfz_conn.close()
+
+
+@pytest.mark.asyncio
+async def test_connect_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
+    async def hanging_connect(*args: object, **kwargs: object) -> HSFZConnection:
+        await asyncio.sleep(10)
+        raise AssertionError("not reached")
+
+    monkeypatch.setattr(HSFZConnection, "connect", hanging_connect)
+
+    hsfz_transport = HSFZTransport(target)
+    with pytest.raises(TimeoutError):
+        await hsfz_transport.connect(timeout=0.1)
