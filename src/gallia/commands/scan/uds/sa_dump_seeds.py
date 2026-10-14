@@ -13,7 +13,6 @@ from gallia.command.uds import UDSScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse, UDSErrorCodes, UDSRequestConfig
 from gallia.services.uds.core.exception import MissingResponse
-from gallia.services.uds.core.utils import g_repr
 from gallia.utils import HEX_U8
 
 logger = get_logger(__name__)
@@ -230,7 +229,7 @@ class SASeedsDumper(UDSScanner):
                 logger.error("Timeout while requesting seed")
                 continue
             except Exception as e:
-                logger.critical(f"Error while requesting seed: {g_repr(e)}")
+                logger.critical(f"Error while requesting seed: {e!r}")
                 sys.exit(1)
             finally:
                 requests_since_last_reset += 1
@@ -257,7 +256,7 @@ class SASeedsDumper(UDSScanner):
                     logger.warning("Timeout while sending key")
                     continue
                 except Exception as e:
-                    logger.critical(f"Error while sending key: {g_repr(e)}")
+                    logger.critical(f"Error while sending key: {e!r}")
                     sys.exit(1)
 
         file.close()

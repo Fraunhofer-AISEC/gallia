@@ -109,7 +109,7 @@ class SessionsScanner(UDSScanner):
 
             except Exception as e:
                 logger.error(
-                    f"Could not change to session {session:{HEX_U8}} as part of stack: {g_repr(e)}. Try with --reset to reset between each iteration."
+                    f"Could not change to session {session:{HEX_U8}} as part of stack: {e!r}. Try with --reset to reset between each iteration."
                 )
                 return False
 

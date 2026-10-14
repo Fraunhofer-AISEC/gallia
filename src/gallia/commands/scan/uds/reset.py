@@ -117,7 +117,7 @@ class ResetScanner(UDSScanner):
                             logger.result(msg)
                         continue
                 except IllegalResponse as e:
-                    logger.warning(f"{g_repr(e)}")
+                    logger.warning(repr(e))
 
                 logger.result(f"{sub_func:{HEX_U8}}: reset level found!")
                 l_ok.append(sub_func)
@@ -145,7 +145,7 @@ class ResetScanner(UDSScanner):
                 try:
                     await self.ecu.power_cycle(self.config.power_cycle_sleep)
                 except (TimeoutError, ConnectionError) as e:
-                    logger.error(f"Failed to recover ECU: {g_repr(e)}; exit")
+                    logger.error(f"Failed to recover ECU: {e!r}; exit")
                     sys.exit(1)
             except ConnectionError:
                 msg = f"{sub_func:{HEX_U8}}: lost connection to ECU (post), current session: {g_repr(session)}"

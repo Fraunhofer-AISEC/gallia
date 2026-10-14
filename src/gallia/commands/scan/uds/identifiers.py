@@ -179,7 +179,7 @@ class ScanIdentifiers(UDSScanner):
                 timeout_DIDs += 1
                 continue
             except IllegalResponse as e:
-                logger.warning(g_repr(e))
+                logger.warning(repr(e))
                 continue
 
             if isinstance(resp, NegativeResponse):

@@ -522,7 +522,7 @@ class ECU(UDSClient):
                         mode,
                     )
             except Exception as e:
-                logger.warning(f"Could not log messages to database: {g_repr(e)}")
+                logger.warning(f"Could not log messages to database: {e!r}")
 
             if response is not None:
                 await self.update_state(request, response)

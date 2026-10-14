@@ -104,7 +104,7 @@ class ServicesScanner(UDSScanner):
                     )
                 except (UDSException, RuntimeError) as e:  # FIXME: why catch RuntimeError?
                     logger.warning(
-                        f"Could not complete session change to {session:{HEX_U8}}: {g_repr(e)}; skipping session"
+                        f"Could not complete session change to {session:{HEX_U8}}: {e!r}; skipping session"
                     )
                     clean_returns = False
                     continue
