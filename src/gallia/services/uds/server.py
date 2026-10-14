@@ -17,6 +17,7 @@ from typing import Any
 import aiosqlite
 
 from gallia.command.config import AutoInt, EnumArg, GalliaBaseModel
+from gallia.db.handler import bytes_to_db
 from gallia.log import get_logger
 from gallia.services.uds.core import service
 from gallia.services.uds.core.constants import (
@@ -27,7 +28,7 @@ from gallia.services.uds.core.constants import (
     UDSErrorCodes,
     UDSIsoServices,
 )
-from gallia.services.uds.core.utils import bytes_repr, to_bytes
+from gallia.services.uds.core.utils import to_bytes
 from gallia.services.uds.ecu import ECUState
 from gallia.transports import TargetURI
 from gallia.utils import HEX_U8
@@ -761,7 +762,7 @@ class DBUDSServer(UDSServer):
 
         final_query = f"{query} AND r.id > ? ORDER BY r.id LIMIT 1 "
 
-        parameters += [bytes_repr(request.pdu, False, None), self.last_response]
+        parameters += [bytes_to_db(request.pdu), self.last_response]
         cursor: aiosqlite.Cursor = await self.connection.execute(final_query, parameters)
         result = await cursor.fetchone()
 
