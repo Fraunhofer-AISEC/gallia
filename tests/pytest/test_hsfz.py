@@ -10,9 +10,8 @@ import pytest
 from gallia.services.uds.core.client import UDSClient
 from gallia.services.uds.core.exception import MissingResponse
 from gallia.services.uds.core.service import ReadDataByIdentifierResponse
-from gallia.transports.base import BaseTransport, TargetURI
-from gallia.transports.hsfz import HSFZConnection, HSFZTransport
-from gallia.transports.tcp import TCPTransport
+from gallia.transports import BaseTransport, HSFZTransport, TargetURI, TCPTransport
+from gallia.transports.hsfz import HSFZConnection
 
 target = TargetURI("hsfz://localhost:6801?dst_addr=0x10&src_addr=0xf4")
 listen_target = TargetURI("tcp://127.0.0.1:6801")
