@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from binascii import hexlify
-from enum import Enum
 from math import ceil
 from typing import Any
 
@@ -70,33 +69,6 @@ def any_repr(x: Any) -> str:
             return f"[{', '.join(any_repr(y) for y in x)}]"
 
     return str(x)
-
-
-def g_repr(x: Any) -> str:
-    """
-    Object string representation with default gallia output settings.
-    """
-    match x:
-        case Enum():
-            return str(x.name)
-        case bool():
-            return repr(x)
-        case int():
-            return int_repr(x)
-        case str():
-            return x
-        case bytes() | bytearray():
-            return bytes_repr(x)
-        case list():
-            return f"[{', '.join(g_repr(y) for y in x)}]"
-        case dict():
-            return f"{{{', '.join(f'{g_repr(k)}: {g_repr(v)}' for k, v in x.items())}}}"
-
-    # XXX: Avoid the import which causes cyclic imports.
-    # TODO: Find out how to replace this helper.
-    if type(x).__name__ == "NegativeResponse":
-        return str(x)
-    return repr(x)
 
 
 def bytes_repr(b: bytes | bytearray, prefix: bool = False, max_length: int | None = 20) -> str:
