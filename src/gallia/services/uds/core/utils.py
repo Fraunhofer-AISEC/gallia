@@ -2,11 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from binascii import hexlify
 from math import ceil
-from typing import Any
 
-from gallia.services.uds.core.constants import UDSIsoServices
 from gallia.utils import HEX, HEX_U8, HEX_U16
 
 
@@ -44,51 +41,6 @@ def check_length(pdu: bytes, minimal_length: int = 0, maximal_length: int | None
 
     if maximal_length is not None and len(pdu) > maximal_length:
         raise ValueError("The PDU contains more data than expected")
-
-
-def int_repr(n: int, prefix: bool = True) -> str:
-    s = f"{n:x}"
-
-    if len(s) % 2 == 1:
-        s = f"0{s}"
-
-    if prefix:
-        s = f"0x{s}"
-
-    return s
-
-
-def any_repr(x: Any) -> str:
-    match x:
-        case bool():
-            return repr(x)
-        case int():
-            return int_repr(x)
-        case bytes() | bytearray():
-            return bytes_repr(x)
-        case list():
-            return f"[{', '.join(any_repr(y) for y in x)}]"
-
-    return str(x)
-
-
-def bytes_repr(b: bytes | bytearray, prefix: bool = False, max_length: int | None = 20) -> str:
-    if len(b) == 0:
-        return "''"
-
-    s = hexlify(b).decode()
-
-    if max_length is not None and len(s) > max_length:
-        s = s[: max_length - 3] + "..."
-
-    return s
-
-
-def service_repr(service_id: int) -> str:
-    try:
-        return str(UDSIsoServices(service_id).name)
-    except Exception:
-        return f"Unknown service {int_repr(service_id)}"
 
 
 def uds_memory_parameters(
