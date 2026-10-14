@@ -7,6 +7,7 @@ from math import ceil
 from typing import Any
 
 from gallia.services.uds.core.constants import UDSIsoServices
+from gallia.utils import HEX, HEX_U8, HEX_U16
 
 
 def from_bytes(x: bytes) -> int:
@@ -20,18 +21,18 @@ def to_bytes(x: int, length: int) -> bytes:
 def check_range(data: int, name: str, min_value: int, max_value: int) -> None:
     if not min_value <= data <= max_value:
         raise ValueError(
-            f"The {name} parameter must be between {int_repr(min_value)} and {int_repr(max_value)}"
+            f"The {name} parameter must be between {min_value:{HEX}} and {max_value:{HEX}}"
         )
 
 
 def check_data_identifier(data_identifier: int) -> None:
     if not 0 <= data_identifier <= 0xFFFF:
-        raise ValueError(f"Not a valid dataIdentifier: {int_repr(data_identifier)}")
+        raise ValueError(f"Not a valid dataIdentifier: {data_identifier:{HEX_U16}}")
 
 
 def check_sub_function(sub_function: int) -> None:
     if not 0 <= sub_function <= 0x7F:
-        raise ValueError(f"Not a valid subFunction: {int_repr(sub_function)}")
+        raise ValueError(f"Not a valid subFunction: {sub_function:{HEX_U8}}")
 
 
 def check_length(pdu: bytes, minimal_length: int = 0, maximal_length: int | None = None) -> None:

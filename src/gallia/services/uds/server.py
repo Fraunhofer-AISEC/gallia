@@ -27,9 +27,10 @@ from gallia.services.uds.core.constants import (
     UDSErrorCodes,
     UDSIsoServices,
 )
-from gallia.services.uds.core.utils import bytes_repr, int_repr, to_bytes
+from gallia.services.uds.core.utils import bytes_repr, to_bytes
 from gallia.services.uds.ecu import ECUState
 from gallia.transports import TargetURI
+from gallia.utils import HEX_U8
 
 logger = get_logger(__name__)
 
@@ -388,8 +389,8 @@ class RandomUDSServer(UDSServer):
         logger.notice(
             json.dumps(
                 {
-                    int_repr(session): {
-                        f"{int_repr(s.value)} ({s.name})": str([int_repr(sf) for sf in sfs])
+                    f"{session:{HEX_U8}}": {
+                        f"{s.value:{HEX_U8}} ({s.name})": str([f"{sf:{HEX_U8}}" for sf in sfs])
                         if sfs is not None
                         else None
                         for s, sfs in services.items()

@@ -30,7 +30,6 @@ from gallia.services.uds.core.utils import (
     check_range,
     check_sub_function,
     from_bytes,
-    int_repr,
     sub_function_split,
     to_bytes,
     uds_memory_parameters,
@@ -402,7 +401,7 @@ class SpecializedSubFunctionService(UDSService, ABC, service_id=None):
             if sub_function.SUB_FUNCTION_ID == sub_function_id:
                 return sub_function
 
-        raise ValueError(f"SubFunction not supported: {int_repr(sub_function_id)}")
+        raise ValueError(f"SubFunction not supported: {sub_function_id:{HEX_U8}}")
 
     @classmethod
     def _response_type(cls, pdu: bytes) -> type[PositiveResponse] | None:
