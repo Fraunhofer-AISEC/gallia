@@ -4,9 +4,8 @@
 
 import asyncio
 from pathlib import Path
-from typing import Any
 
-from gallia.power_supply.base import BasePowerSupplyDriver
+from gallia.power_supply.base import BasePowerSupplyDriver, PowerSupplyStatus
 from gallia.power_supply.exceptions import OperationNotSupportedError
 
 
@@ -45,13 +44,22 @@ class RND320(BasePowerSupplyDriver):
     async def set_voltage(self, channel: int, value: float) -> None:
         raise OperationNotSupportedError
 
+    async def measure_voltage(self, channel: int) -> float:
+        raise OperationNotSupportedError
+
+    async def measure_current(self, channel: int) -> float:
+        raise OperationNotSupportedError
+
+    async def measure_power(self, channel: int) -> float:
+        raise OperationNotSupportedError
+
     async def get_output(self, channel: int) -> bool:
         raise OperationNotSupportedError
 
     async def set_output(self, channel: int, enabled: bool) -> None:
         await self.set_master(enabled)
 
-    async def status(self) -> dict[str, Any]:
+    async def status(self) -> PowerSupplyStatus:
         raise OperationNotSupportedError
 
     async def get_ocp(self, channel: int) -> bool:
