@@ -29,11 +29,9 @@ from gallia.services.uds.core.utils import (
     check_length,
     check_range,
     check_sub_function,
-    from_bytes,
     int_repr,
     service_repr,
     sub_function_split,
-    to_bytes,
     uds_memory_parameters,
 )
 
@@ -607,7 +605,7 @@ class DiagnosticSessionControlResponse(
 
     @classmethod
     def _from_pdu(cls, pdu: bytes) -> Self:
-        diagnostic_session_type = from_bytes(pdu[1:2])
+        diagnostic_session_type = int.from_bytes(pdu[1:2])
         session_parameter_record = pdu[2:]
         return cls(diagnostic_session_type, session_parameter_record)
 
@@ -768,7 +766,7 @@ class SecurityAccessResponse(
 
     @classmethod
     def _from_pdu(cls, pdu: bytes) -> Self:
-        security_access_type = from_bytes(pdu[1:2])
+        security_access_type = int.from_bytes(pdu[1:2])
         security_seed = pdu[2:]
         return cls(security_access_type, security_seed)
 
@@ -1226,7 +1224,7 @@ class ReadDataByIdentifierResponse(
         for data_identifier, data_record in zip(
             self.data_identifiers, self.data_records, strict=True
         ):
-            pdu = pdu + to_bytes(data_identifier, 2) + data_record
+            pdu = pdu + data_identifier.to_bytes(2) + data_record
 
         return pdu
 
@@ -1236,7 +1234,7 @@ class ReadDataByIdentifierResponse(
         # and dataRecords it's not possible to recover all ids.
         # Therefore, only the first identifier is used and the rest is simply attributed to the
         # first dataRecord
-        data_identifier = from_bytes(pdu[1:3])
+        data_identifier = int.from_bytes(pdu[1:3])
         data_record = pdu[3:]
 
         return cls(data_identifier, data_record)
@@ -1308,7 +1306,7 @@ class ReadDataByIdentifierRequest(
         identifiers: list[int] = []
 
         for i in range(1, len(pdu), 2):
-            identifiers.append(from_bytes(pdu[i : i + 2]))
+            identifiers.append(int.from_bytes(pdu[i : i + 2]))
 
         return cls(identifiers)
 
@@ -1415,8 +1413,8 @@ class ReadMemoryByAddressRequest(
             raise ValueError("The addressAndLengthIdentifier is incompatible with the PDU size")
 
         return cls(
-            from_bytes(pdu[2 : 2 + address_length]),
-            from_bytes(pdu[2 + address_length : 2 + address_length + size_length]),
+            int.from_bytes(pdu[2 : 2 + address_length]),
+            int.from_bytes(pdu[2 + address_length : 2 + address_length + size_length]),
             address_and_length_format_identifier,
         )
 
@@ -1474,7 +1472,7 @@ class _DynamicallyDefineDataIdentifierResponse(
         dynamically_defined_data_identifier: int | None = None
 
         if len(pdu) > 2:
-            dynamically_defined_data_identifier = from_bytes(pdu[2:])
+            dynamically_defined_data_identifier = int.from_bytes(pdu[2:])
 
         return cls(dynamically_defined_data_identifier)
 
@@ -1618,16 +1616,16 @@ class DefineByIdentifierRequest(
         ):
             pdu = (
                 pdu
-                + to_bytes(source_data_identifier, 2)
-                + to_bytes(position_in_source_data_record, 1)
-                + to_bytes(memory_size, 1)
+                + source_data_identifier.to_bytes(2)
+                + position_in_source_data_record.to_bytes(1)
+                + memory_size.to_bytes(1)
             )
 
         return pdu
 
     @classmethod
     def _from_pdu(cls, pdu: bytes) -> Self:
-        dynamically_defined_data_identifier = from_bytes(pdu[2:4])
+        dynamically_defined_data_identifier = int.from_bytes(pdu[2:4])
         source_data_identifiers: list[int] = []
         positions_in_source_data_record: list[int] = []
         memory_sizes: list[int] = []
@@ -1636,7 +1634,7 @@ class DefineByIdentifierRequest(
             raise ValueError("The format of the PDU does not comply to the standard")
 
         for i in range(4, len(pdu), 4):
-            source_data_identifiers.append(from_bytes(pdu[i : i + 2]))
+            source_data_identifiers.append(int.from_bytes(pdu[i : i + 2]))
             positions_in_source_data_record.append(pdu[i + 2])
             memory_sizes.append(pdu[i + 3])
 
@@ -1772,7 +1770,7 @@ class DefineByMemoryAddressRequest(
 
     @classmethod
     def _from_pdu(cls, pdu: bytes) -> Self:
-        dynamically_defined_data_identifier = from_bytes(pdu[2:4])
+        dynamically_defined_data_identifier = int.from_bytes(pdu[2:4])
         address_and_length_format_identifier = pdu[4]
         address_length, size_length = address_and_size_length(address_and_length_format_identifier)
         memory_addresses: list[int] = []
@@ -1782,9 +1780,9 @@ class DefineByMemoryAddressRequest(
             raise ValueError("The format of the PDU does not comply to the standard")
 
         for i in range(5, len(pdu), address_length + size_length):
-            memory_addresses.append(from_bytes(pdu[i : i + address_length]))
+            memory_addresses.append(int.from_bytes(pdu[i : i + address_length]))
             memory_sizes.append(
-                from_bytes(pdu[i + address_length : i + address_length + size_length])
+                int.from_bytes(pdu[i + address_length : i + address_length + size_length])
             )
 
         return cls(
@@ -1848,7 +1846,7 @@ class ClearDynamicallyDefinedDataIdentifierRequest(
         dynamically_defined_data_identifier: int | None = None
 
         if len(pdu) > 2:
-            dynamically_defined_data_identifier = from_bytes(pdu[2:])
+            dynamically_defined_data_identifier = int.from_bytes(pdu[2:])
 
         return cls(dynamically_defined_data_identifier)
 
@@ -1900,7 +1898,7 @@ class WriteDataByIdentifierResponse(
 
     @classmethod
     def _from_pdu(cls, pdu: bytes) -> Self:
-        data_identifier = from_bytes(pdu[1:3])
+        data_identifier = int.from_bytes(pdu[1:3])
         return cls(data_identifier)
 
     def matches(self, request: UDSRequest) -> bool:
@@ -1938,7 +1936,7 @@ class WriteDataByIdentifierRequest(
 
     @classmethod
     def _from_pdu(cls, pdu: bytes) -> Self:
-        data_identifier = from_bytes(pdu[1:3])
+        data_identifier = int.from_bytes(pdu[1:3])
         data_record = pdu[3:]
         return cls(data_identifier, data_record)
 
@@ -1981,8 +1979,8 @@ class WriteMemoryByAddressResponse(
                 "The PDU is smaller as specified by the addressAndLengthFormatIdentifier"
             )
 
-        memory_address = from_bytes(pdu[2 : 2 + addr_len])
-        memory_size = from_bytes(pdu[2 + addr_len : 2 + addr_len + size_len])
+        memory_address = int.from_bytes(pdu[2 : 2 + addr_len])
+        memory_size = int.from_bytes(pdu[2 + addr_len : 2 + addr_len + size_len])
 
         return cls(memory_address, memory_size, address_and_length_format_identifier)
 
@@ -2080,9 +2078,9 @@ class WriteMemoryByAddressRequest(
             raise ValueError("The addressAndLengthIdentifier is incompatible with the PDU size")
 
         return cls(
-            from_bytes(pdu[2 : 2 + address_length]),
+            int.from_bytes(pdu[2 : 2 + address_length]),
             pdu[2 + address_length + size_length :],
-            from_bytes(pdu[2 + address_length : 2 + address_length + size_length]),
+            int.from_bytes(pdu[2 + address_length : 2 + address_length + size_length]),
             address_and_length_format_identifier,
         )
 
@@ -2136,11 +2134,11 @@ class ClearDiagnosticInformationRequest(
     @property
     def pdu(self) -> bytes:
         assert self.SERVICE_ID is not None
-        return bytes([self.SERVICE_ID]) + to_bytes(self.group_of_dtc, 3)
+        return bytes([self.SERVICE_ID]) + self.group_of_dtc.to_bytes(3)
 
     @classmethod
     def _from_pdu(cls, pdu: bytes) -> Self:
-        group_of_dtc = from_bytes(pdu[1:])
+        group_of_dtc = int.from_bytes(pdu[1:])
         return cls(group_of_dtc)
 
 
@@ -2216,7 +2214,7 @@ class _ReadDTCType0Response(
     def _from_pdu(cls, pdu: bytes) -> Self:
         dtc_status_availability_mask = pdu[2]
         dtc_format_identifier = DTCFormatIdentifier(pdu[3])
-        dtc_count = from_bytes(pdu[4:])
+        dtc_count = int.from_bytes(pdu[4:])
         return cls(dtc_status_availability_mask, dtc_format_identifier, dtc_count)
 
 
@@ -2242,7 +2240,7 @@ class _ReadDTCType1Response(
                 raise ValueError("Not a valid dtc_and_status_record")
 
             self.dtc_and_status_record = {
-                from_bytes(dtc_and_status_record[i : i + 3]): dtc_and_status_record[i + 3]
+                int.from_bytes(dtc_and_status_record[i : i + 3]): dtc_and_status_record[i + 3]
                 for i in range(0, len(dtc_and_status_record), 4)
             }
         else:
@@ -2257,7 +2255,7 @@ class _ReadDTCType1Response(
     def dtc_and_status_record_bytes(self) -> bytes:
         return bytes(
             bytearray().join(
-                bytearray(to_bytes(dtc, 3)) + to_bytes(status, 1)
+                bytearray(dtc.to_bytes(3)) + status.to_bytes(1)
                 for dtc, status in self.dtc_and_status_record.items()
             )
         )
@@ -2707,7 +2705,7 @@ class ReportDTCExtDataRecordByDTCNumberResponse(
                 raise ValueError("Not a valid dtc_and_status_record")
 
             self.dtc_and_status_record = (
-                from_bytes(dtc_and_status_record[0:3]),
+                int.from_bytes(dtc_and_status_record[0:3]),
                 dtc_and_status_record[3],
             )
         else:
@@ -2723,9 +2721,7 @@ class ReportDTCExtDataRecordByDTCNumberResponse(
         self.dtc_ext_data_records = dtc_ext_data_records
 
     def dtc_and_status_record_bytes(self) -> bytes:
-        return to_bytes(self.dtc_and_status_record[0], 1) + to_bytes(
-            self.dtc_and_status_record[1], 3
-        )
+        return self.dtc_and_status_record[0].to_bytes(1) + self.dtc_and_status_record[1].to_bytes(3)
 
     @property
     def pdu(self) -> bytes:
@@ -2735,7 +2731,7 @@ class ReportDTCExtDataRecordByDTCNumberResponse(
         )
 
         for dtc_ext_data_record_number, dtc_ext_data_record in self.dtc_ext_data_records.items():
-            result += to_bytes(dtc_ext_data_record_number, 1) + dtc_ext_data_record
+            result += dtc_ext_data_record_number.to_bytes(1) + dtc_ext_data_record
 
         return result
 
@@ -2779,7 +2775,7 @@ class ReportDTCExtDataRecordByDTCNumberRequest(
             if len(dtc_mask_record) != 3:
                 raise ValueError("Not a valid dtc_mask_record")
 
-            self.dtc_mask_record = from_bytes(dtc_mask_record)
+            self.dtc_mask_record = int.from_bytes(dtc_mask_record)
         else:
             check_range(dtc_mask_record, "dtc_mask_record", 0, 0xFFFFFF)
             self.dtc_mask_record = dtc_mask_record
@@ -2795,8 +2791,8 @@ class ReportDTCExtDataRecordByDTCNumberRequest(
                 self.SERVICE_ID,
                 self.sub_function_with_suppress_response_bit,
             )
-            + to_bytes(self.dtc_mask_record, 3)
-            + to_bytes(self.dtc_ext_data_record_number, 1)
+            + self.dtc_mask_record.to_bytes(3)
+            + self.dtc_ext_data_record_number.to_bytes(1)
         )
 
     @classmethod
@@ -2926,7 +2922,7 @@ class InputOutputControlByIdentifierResponse(
 
     @classmethod
     def _from_pdu(cls, pdu: bytes) -> Self:
-        data_identifier = from_bytes(pdu[1:3])
+        data_identifier = int.from_bytes(pdu[1:3])
         control_status_record = pdu[3:]
         return cls(data_identifier, control_status_record)
 
@@ -2994,7 +2990,7 @@ class InputOutputControlByIdentifierRequest(
         # specific knowledge.
         # Therefore, similar to the implementation for ReadDataByIdentifier,
         # the first variable parameter consumes all remaining data.
-        data_identifier = from_bytes(pdu[1:3])
+        data_identifier = int.from_bytes(pdu[1:3])
         control_option_record = pdu[3:]
         control_enable_mask_record = b""
         return cls(data_identifier, control_option_record, control_enable_mask_record)
@@ -3043,7 +3039,7 @@ class ReturnControlToECURequest(
 
     @classmethod
     def _from_pdu(cls, pdu: bytes) -> Self:
-        data_identifier = from_bytes(pdu[1:3])
+        data_identifier = int.from_bytes(pdu[1:3])
         control_enable_mask_record = pdu[4:]
         return cls(data_identifier, control_enable_mask_record)
 
@@ -3091,7 +3087,7 @@ class ResetToDefaultRequest(
 
     @classmethod
     def _from_pdu(cls, pdu: bytes) -> Self:
-        data_identifier = from_bytes(pdu[1:3])
+        data_identifier = int.from_bytes(pdu[1:3])
         control_enable_mask_record = pdu[4:]
         return cls(data_identifier, control_enable_mask_record)
 
@@ -3138,7 +3134,7 @@ class FreezeCurrentStateRequest(
 
     @classmethod
     def _from_pdu(cls, pdu: bytes) -> Self:
-        data_identifier = from_bytes(pdu[1:3])
+        data_identifier = int.from_bytes(pdu[1:3])
         control_enable_mask_record = pdu[4:]
         return cls(data_identifier, control_enable_mask_record)
 
@@ -3237,7 +3233,7 @@ class RoutineControlResponse(
 
     @classmethod
     def _from_pdu(cls, pdu: bytes) -> Self:
-        routine_identifier = from_bytes(pdu[2:4])
+        routine_identifier = int.from_bytes(pdu[2:4])
         routine_status_record = pdu[4:]
 
         return cls(routine_identifier, routine_status_record)
@@ -3295,7 +3291,7 @@ class RoutineControlRequest(
 
     @classmethod
     def _from_pdu(cls, pdu: bytes) -> Self:
-        routine_identifier = from_bytes(pdu[2:4])
+        routine_identifier = int.from_bytes(pdu[2:4])
         routine_control_option_record = pdu[4:]
 
         return cls(
@@ -3459,8 +3455,8 @@ class _RequestUpOrDownloadResponse(
 
     @property
     def pdu(self) -> bytes:
-        max_number_of_block_length = to_bytes(
-            self.max_number_of_block_length, self.length_format_identifier // 2**4
+        max_number_of_block_length = self.max_number_of_block_length.to_bytes(
+            self.length_format_identifier // 2**4
         )
         return (
             pack("BB", self.RESPONSE_SERVICE_ID, self.length_format_identifier)
@@ -3470,7 +3466,7 @@ class _RequestUpOrDownloadResponse(
     @classmethod
     def _from_pdu(cls, pdu: bytes) -> Self:
         length_format_identifier = pdu[1]
-        max_number_of_block_length = from_bytes(pdu[2:])
+        max_number_of_block_length = int.from_bytes(pdu[2:])
         return cls(max_number_of_block_length, length_format_identifier)
 
     def matches(self, request: UDSRequest) -> bool:
@@ -3538,8 +3534,8 @@ class _RequestUpOrDownloadRequest(
             raise ValueError("The addressAndLengthIdentifier is incompatible with the PDU size")
 
         return cls(
-            from_bytes(pdu[3 : 3 + address_length]),
-            from_bytes(pdu[3 + address_length : 3 + address_length + size_length]),
+            int.from_bytes(pdu[3 : 3 + address_length]),
+            int.from_bytes(pdu[3 + address_length : 3 + address_length + size_length]),
             data_format_identifier // 2**4,
             data_format_identifier % 2**4,
             address_and_length_format_identifier,

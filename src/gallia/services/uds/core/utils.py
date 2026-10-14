@@ -10,14 +10,6 @@ from typing import Any
 from gallia.services.uds.core.constants import UDSIsoServices
 
 
-def from_bytes(x: bytes) -> int:
-    return int.from_bytes(x, "big")
-
-
-def to_bytes(x: int, length: int) -> bytes:
-    return x.to_bytes(length, "big")
-
-
 def check_range(data: int, name: str, min_value: int, max_value: int) -> None:
     if not min_value <= data <= max_value:
         raise ValueError(
