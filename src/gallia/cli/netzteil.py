@@ -7,10 +7,8 @@ from typing import Any, Literal, Self
 from pydantic import field_serializer, model_validator
 
 from gallia.cli.gallia import parse_and_run
-from gallia.command import AsyncScript
-from gallia.command.base import AsyncScriptConfig
+from gallia.command import AsyncScript, AsyncScriptConfig, UDSScannerConfig
 from gallia.command.config import Field, InitializeIdempotent
-from gallia.command.uds import UDSScannerConfig
 from gallia.power_supply import power_supply_drivers
 from gallia.power_supply.base import BasePowerSupplyDriver
 from gallia.power_supply.uri import PowerSupplyURI
