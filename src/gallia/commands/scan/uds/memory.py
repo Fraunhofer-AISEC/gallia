@@ -12,6 +12,7 @@ from gallia.services.uds import NegativeResponse, UDSErrorCodes, UDSRequestConfi
 from gallia.services.uds import UDSIsoServices as Services
 from gallia.services.uds.core.exception import MissingResponse
 from gallia.services.uds.core.utils import g_repr, uds_memory_parameters
+from gallia.utils import HEX
 
 logger = get_logger(__name__)
 
@@ -102,20 +103,20 @@ class MemoryFunctionsScanner(UDSScanner):
                 if not await self.ecu.check_and_set_session(self.config.session):
                     logger.error(
                         f"Aborting scan on session {g_repr(self.config.session)}; "
-                        + f"current memory address was {g_repr(addr)}"
+                        + f"current memory address was {addr:{HEX}}"
                     )
                     sys.exit(1)
 
             try:
                 resp = await self.ecu.send_raw(pdu, config=UDSRequestConfig(tags=["ANALYZE"]))
             except TimeoutError:
-                logger.result(f"Address {g_repr(addr)}: timeout")
+                logger.result(f"Address {addr:{HEX}}: timeout")
                 continue
 
             if isinstance(resp, NegativeResponse):
                 if resp.response_code is UDSErrorCodes.requestOutOfRange:
-                    logger.info(f"Address {g_repr(addr)}: {resp}")
+                    logger.info(f"Address {addr:{HEX}}: {resp}")
                 else:
-                    logger.result(f"Address {g_repr(addr)}: {resp}")
+                    logger.result(f"Address {addr:{HEX}}: {resp}")
             else:
-                logger.result(f"Address {g_repr(addr)}: {resp}")
+                logger.result(f"Address {addr:{HEX}}: {resp}")
