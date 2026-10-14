@@ -27,7 +27,7 @@ from gallia.services.uds.core.constants import (
     UDSErrorCodes,
     UDSIsoServices,
 )
-from gallia.services.uds.core.utils import bytes_repr, int_repr, service_repr, to_bytes
+from gallia.services.uds.core.utils import bytes_repr, int_repr, service_repr
 from gallia.services.uds.ecu import ECUState
 from gallia.transports import TargetURI
 
@@ -174,7 +174,7 @@ class UDSServer(ABC):
             if request.data_identifier == DataIdentifier.ActiveDiagnosticSessionDataIdentifier:
                 return service.ReadDataByIdentifierResponse(
                     request.data_identifier,
-                    to_bytes(self.state.session if self.state.session is not None else 1, 1),
+                    (self.state.session if self.state.session is not None else 1).to_bytes(1),
                 )
 
         return None
