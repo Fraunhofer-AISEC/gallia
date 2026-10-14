@@ -6,13 +6,19 @@ import asyncio
 import contextvars
 import re
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from functools import wraps
 from typing import Any
 
 from gallia.log import get_logger
 
 logger = get_logger(__name__)
+
+# Format specs for hex output, e.g. f"{session:{HEX_U8}}".
+HEX = "#x"
+HEX_U8 = "#04x"
+HEX_U16 = "#06x"
+HEX_U24 = "#08x"
 
 
 def auto_int(arg: str) -> int:
@@ -28,6 +34,11 @@ def strtobool(val: str) -> bool:
             return False
         case _:
             raise ValueError(f"invalid truth value {val!r}")
+
+
+def hex_join(values: Iterable[int], spec: str, sep: str = ", ") -> str:
+    """Join integers as hex strings, e.g. ``hex_join([1, 3], "#04x")`` -> ``"0x01, 0x03"``."""
+    return sep.join(f"{v:{spec}}" for v in values)
 
 
 def camel_to_snake(s: str) -> str:

@@ -2,12 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from binascii import hexlify
-from enum import Enum
 from math import ceil
-from typing import Any
 
-from gallia.services.uds.core.constants import UDSIsoServices
+from gallia.utils import HEX, HEX_U8, HEX_U16
 
 
 def from_bytes(x: bytes) -> int:
@@ -21,18 +18,18 @@ def to_bytes(x: int, length: int) -> bytes:
 def check_range(data: int, name: str, min_value: int, max_value: int) -> None:
     if not min_value <= data <= max_value:
         raise ValueError(
-            f"The {name} parameter must be between {int_repr(min_value)} and {int_repr(max_value)}"
+            f"The {name} parameter must be between {min_value:{HEX}} and {max_value:{HEX}}"
         )
 
 
 def check_data_identifier(data_identifier: int) -> None:
     if not 0 <= data_identifier <= 0xFFFF:
-        raise ValueError(f"Not a valid dataIdentifier: {int_repr(data_identifier)}")
+        raise ValueError(f"Not a valid dataIdentifier: {data_identifier:{HEX_U16}}")
 
 
 def check_sub_function(sub_function: int) -> None:
     if not 0 <= sub_function <= 0x7F:
-        raise ValueError(f"Not a valid subFunction: {int_repr(sub_function)}")
+        raise ValueError(f"Not a valid subFunction: {sub_function:{HEX_U8}}")
 
 
 def check_length(pdu: bytes, minimal_length: int = 0, maximal_length: int | None = None) -> None:
@@ -44,78 +41,6 @@ def check_length(pdu: bytes, minimal_length: int = 0, maximal_length: int | None
 
     if maximal_length is not None and len(pdu) > maximal_length:
         raise ValueError("The PDU contains more data than expected")
-
-
-def int_repr(n: int, prefix: bool = True) -> str:
-    s = f"{n:x}"
-
-    if len(s) % 2 == 1:
-        s = f"0{s}"
-
-    if prefix:
-        s = f"0x{s}"
-
-    return s
-
-
-def any_repr(x: Any) -> str:
-    match x:
-        case bool():
-            return repr(x)
-        case int():
-            return int_repr(x)
-        case bytes() | bytearray():
-            return bytes_repr(x)
-        case list():
-            return f"[{', '.join(any_repr(y) for y in x)}]"
-
-    return str(x)
-
-
-def g_repr(x: Any) -> str:
-    """
-    Object string representation with default gallia output settings.
-    """
-    match x:
-        case Enum():
-            return str(x.name)
-        case bool():
-            return repr(x)
-        case int():
-            return int_repr(x)
-        case str():
-            return x
-        case bytes() | bytearray():
-            return bytes_repr(x)
-        case list():
-            return f"[{', '.join(g_repr(y) for y in x)}]"
-        case dict():
-            return f"{{{', '.join(f'{g_repr(k)}: {g_repr(v)}' for k, v in x.items())}}}"
-
-    # XXX: Avoid the import which causes cyclic imports.
-    # TODO: Find out how to replace this helper.
-    if type(x).__name__ == "NegativeResponse":
-        return str(x)
-    return repr(x)
-
-
-def bytes_repr(b: bytes | bytearray, prefix: bool = False, max_length: int | None = 20) -> str:
-    if len(b) == 0:
-        return "''"
-
-    s = hexlify(b).decode()
-
-    if max_length is not None and len(s) > max_length:
-        s = s[: max_length - 3] + "..."
-
-    return s
-
-
-def service_repr(service_id: int) -> str:
-    try:
-        return str(UDSIsoServices(service_id).name)
-    except Exception:
-        return f"Unknown service {int_repr(service_id)}"
 
 
 def uds_memory_parameters(
