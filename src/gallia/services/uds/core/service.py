@@ -23,8 +23,6 @@ from gallia.services.uds.core.constants import (
 from gallia.services.uds.core.utils import (
     address_and_length_fmt,
     address_and_size_length,
-    any_repr,
-    bytes_repr,
     check_data_identifier,
     check_length,
     check_range,
@@ -37,6 +35,31 @@ from gallia.services.uds.core.utils import (
 from gallia.utils import HEX_U8
 
 logger = get_logger(__name__)
+
+# Hex payloads in __repr__ are truncated to keep log lines short.
+MAX_REPR_HEX_LENGTH = 20
+
+
+def _fmt_bytes(data: bytes | bytearray) -> str:
+    if len(data) == 0:
+        return "''"
+    s = data.hex()
+    if len(s) > MAX_REPR_HEX_LENGTH:
+        s = s[: MAX_REPR_HEX_LENGTH - 3] + "..."
+    return s
+
+
+def _fmt_attribute(value: Any) -> str:
+    match value:
+        case bool():
+            return repr(value)
+        case int():
+            return f"{value:{HEX_U8}}"
+        case bytes() | bytearray():
+            return _fmt_bytes(value)
+        case list():
+            return f"[{', '.join(_fmt_attribute(v) for v in value)}]"
+    return str(value)
 
 
 # ****************
@@ -106,7 +129,7 @@ class UDSRequest(ABC):
 
         for attr, value in self.__dict__.items():
             if not attr.startswith("_"):
-                relevant_attributes[attr] = any_repr(value)
+                relevant_attributes[attr] = _fmt_attribute(value)
 
         attributes = ", ".join(f"{attr}={value}" for attr, value in relevant_attributes.items())
         return f"{title}({attributes})"
@@ -263,7 +286,7 @@ class RawResponse(UDSResponse, ABC, service_id=None, minimal_length=1, maximal_l
         self._pdu = pdu
 
     def __repr__(self) -> str:
-        return f"{type(self).__name__}(pdu={bytes_repr(self.pdu)})"
+        return f"{type(self).__name__}(pdu={_fmt_bytes(self.pdu)})"
 
 
 class NegativeResponseBase(
@@ -341,7 +364,7 @@ class PositiveResponse(UDSResponse, ABC, service_id=None, minimal_length=0, maxi
 
         for attr, value in self.__dict__.items():
             if not attr.startswith("_") and attr != "trigger_request":
-                relevant_attributes[attr] = any_repr(value)
+                relevant_attributes[attr] = _fmt_attribute(value)
 
         attributes = ", ".join(f"{attr}={value}" for attr, value in relevant_attributes.items())
         return f"{title}({attributes})"
@@ -580,7 +603,7 @@ class RawRequest(
         self._pdu = pdu
 
     def __repr__(self) -> str:
-        return f"{type(self).__name__}(pdu={bytes_repr(self.pdu)})"
+        return f"{type(self).__name__}(pdu={_fmt_bytes(self.pdu)})"
 
 
 class Raw(UDSService, service_id=None):
