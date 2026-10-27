@@ -20,13 +20,13 @@ from gallia.services.uds.core.service import (
     UDSRequest,
     UDSResponse,
 )
-from gallia.services.uds.core.utils import bytes_repr as bytes_repr_
 from gallia.services.uds.ecu import ECUProperties
 from gallia.utils import handle_task_error, set_task_handler_ctx_variable
 
 
-def bytes_repr(data: bytes | bytearray) -> str:
-    return bytes_repr_(data, False, None)
+def bytes_to_db(data: bytes | bytearray) -> str:
+    # Empty data is stored as '' to stay compatible with existing databases.
+    return data.hex() if len(data) > 0 else "''"
 
 
 schema_version = "4.0"
@@ -359,7 +359,7 @@ class DBHandler:
 
         request_attributes: dict[str, Any] = {
             "service_id": request.service_id,
-            "data": bytes_repr(request.data),
+            "data": bytes_to_db(request.data),
         }
         response_attributes: dict[str, Any] = {}
 
@@ -371,19 +371,19 @@ class DBHandler:
                 request_attributes[attr] = value
 
                 if isinstance(value, bytes | bytearray):
-                    request_attributes[attr] = bytes_repr(value)
+                    request_attributes[attr] = bytes_to_db(value)
                 elif (
                     isinstance(value, list)
                     and len(value) > 0
                     and isinstance(value[0], bytes | bytearray)
                 ):
-                    request_attributes[attr] = [bytes_repr(v) for v in value]
+                    request_attributes[attr] = [bytes_to_db(v) for v in value]
 
         if response is not None:
             response_attributes = {"service_id": response.service_id}
 
             if isinstance(response, PositiveResponse):
-                response_attributes["data"] = bytes_repr(response.data)
+                response_attributes["data"] = bytes_to_db(response.data)
 
             if isinstance(response, SubFunctionResponse):
                 response_attributes["sub_function"] = response.sub_function
@@ -393,13 +393,13 @@ class DBHandler:
                     response_attributes[attr] = value
 
                     if isinstance(value, bytes | bytearray):
-                        response_attributes[attr] = bytes_repr(value)
+                        response_attributes[attr] = bytes_to_db(value)
                     elif (
                         isinstance(value, list)
                         and len(value) > 0
                         and isinstance(value[0], bytes | bytearray)
                     ):
-                        response_attributes[attr] = [bytes_repr(v) for v in value]
+                        response_attributes[attr] = [bytes_to_db(v) for v in value]
 
         query = (
             "INSERT INTO scan_result(run, state, request_pdu, request_time, request_timezone, request_data, "
@@ -411,11 +411,11 @@ class DBHandler:
         query_parameter = (
             self.scan_run,
             state,
-            bytes_repr(request.pdu),
+            bytes_to_db(request.pdu),
             send_time.timestamp(),
             send_time.tzname(),
             json.dumps(request_attributes),
-            bytes_repr(response.pdu) if response is not None else None,
+            bytes_to_db(response.pdu) if response is not None else None,
             receive_time.timestamp() if response is not None and receive_time is not None else None,
             receive_time.tzname() if response is not None and receive_time is not None else None,
             json.dumps(response_attributes) if response is not None else None,

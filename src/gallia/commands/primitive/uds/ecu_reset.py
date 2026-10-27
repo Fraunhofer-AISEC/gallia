@@ -9,7 +9,7 @@ from gallia.command.config import AutoInt, Field
 from gallia.command.uds import UDSScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse, UDSResponse
-from gallia.services.uds.core.utils import g_repr
+from gallia.utils import HEX_U8
 
 logger = get_logger(__name__)
 
@@ -38,21 +38,21 @@ class ECUResetPrimitive(UDSScanner):
     async def main(self) -> None:
         resp: UDSResponse = await self.ecu.set_session(self.config.session)
         if isinstance(resp, NegativeResponse):
-            logger.error(f"could not change to session: {g_repr(self.config.session)}")
+            logger.error(f"could not change to session: {self.config.session:{HEX_U8}}")
             return
 
         try:
-            logger.info(f"try sub-func: {g_repr(self.config.subfunc)}")
+            logger.info(f"try sub-func: {self.config.subfunc:{HEX_U8}}")
             resp = await self.ecu.ecu_reset(self.config.subfunc)
             if isinstance(resp, NegativeResponse):
-                msg = f"ECU Reset {g_repr(self.config.subfunc)} failed in session: {g_repr(self.config.session)}: {resp}"
+                msg = f"ECU Reset {self.config.subfunc:{HEX_U8}} failed in session: {self.config.session:{HEX_U8}}: {resp}"
                 logger.error(msg)
             else:
-                logger.result(f"ECU Reset {g_repr(self.config.subfunc)} succeeded")
+                logger.result(f"ECU Reset {self.config.subfunc:{HEX_U8}} succeeded")
         except TimeoutError:
             logger.error("Timeout")
             await asyncio.sleep(10)
         except ConnectionError:
-            msg = f"Lost connection to ECU, session: {g_repr(self.config.session)} subFunc: {g_repr(self.config.subfunc)}"
+            msg = f"Lost connection to ECU, session: {self.config.session:{HEX_U8}} subFunc: {self.config.subfunc:{HEX_U8}}"
             logger.error(msg)
             return

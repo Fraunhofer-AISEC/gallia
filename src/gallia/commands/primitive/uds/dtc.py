@@ -14,7 +14,7 @@ from gallia.services.uds.core.constants import (
     UDSErrorCodes,
 )
 from gallia.services.uds.core.service import NegativeResponse
-from gallia.services.uds.core.utils import g_repr
+from gallia.utils import HEX_U8, HEX_U24
 
 logger = get_logger(__name__)
 
@@ -88,7 +88,7 @@ class ReadDTCPrimitive(UDSScanner):
                         sub_mask = mask & 2**i
 
                         if sub_mask > 0:
-                            logger.info(f"Trying to fetch with mask {g_repr(sub_mask)}")
+                            logger.info(f"Trying to fetch with mask {sub_mask:{HEX_U8}}")
                             dtcs.update(await self.fetch_error_codes(sub_mask, False))
             else:
                 logger.critical(f"Could not fetch error codes: {ecu_response}; exiting…")
@@ -180,7 +180,7 @@ class ClearDTCPrimitive(UDSScanner):
 
         if not min_group_of_dtc <= group_of_dtc <= max_group_of_dtc:
             logger.error(
-                f"The parameter group_of_dtc must be in the range {g_repr(min_group_of_dtc)}-{g_repr(max_group_of_dtc)}"
+                f"The parameter group_of_dtc must be in the range {min_group_of_dtc:{HEX_U24}}-{max_group_of_dtc:{HEX_U24}}"
             )
 
         resp = await self.ecu.clear_diagnostic_information(group_of_dtc)

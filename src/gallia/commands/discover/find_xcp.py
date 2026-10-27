@@ -10,7 +10,6 @@ from gallia.command import AsyncScript
 from gallia.command.base import AsyncScriptConfig
 from gallia.command.config import AutoInt, Field
 from gallia.log import get_logger
-from gallia.services.uds.core.utils import bytes_repr
 from gallia.transports import RawCANTransport, TargetURI
 
 logger = get_logger(__name__)
@@ -83,15 +82,15 @@ class CanFindXCP(AsyncScript):
                     # 0xFF = positive reply, 0xFE = negative reply
                     if data[0] == 0xFF:
                         logger.notice(
-                            f"XCP_CONNECT triggered positive reply for {hex(tx_id)}:{hex(rx_id)} [tx_id:rx_id]:{bytes_repr(data)}"
+                            f"XCP_CONNECT triggered positive reply for {hex(tx_id)}:{hex(rx_id)} [tx_id:rx_id]:{data.hex()}"
                         )
                     elif data[0] == 0xFE:
                         logger.notice(
-                            f"XCP_CONNECT triggered negative reply for {hex(tx_id)}:{hex(rx_id)} [tx_id:rx_id]:{bytes_repr(data)}"
+                            f"XCP_CONNECT triggered negative reply for {hex(tx_id)}:{hex(rx_id)} [tx_id:rx_id]:{data.hex()}"
                         )
                     else:
                         logger.notice(
-                            f"XCP_CONNECT triggered non-XCP reply for {hex(tx_id)}:{hex(rx_id)} [tx_id:rx_id]:{bytes_repr(data)}"
+                            f"XCP_CONNECT triggered non-XCP reply for {hex(tx_id)}:{hex(rx_id)} [tx_id:rx_id]:{data.hex()}"
                         )
                         continue
 
@@ -109,15 +108,15 @@ class CanFindXCP(AsyncScript):
                     # 0xFF = positive reply, 0xFE = negative reply
                     if data[0] == 0xFF:
                         logger.notice(
-                            f"XCP_DISCONNECT triggered positive reply for {hex(tx_id)}:{hex(rx_id)} [tx_id:rx_id]:{bytes_repr(data)}"
+                            f"XCP_DISCONNECT triggered positive reply for {hex(tx_id)}:{hex(rx_id)} [tx_id:rx_id]:{data.hex()}"
                         )
                     elif data[0] == 0xFE:
                         logger.notice(
-                            f"XCP_DISCONNECT triggered negative reply for {hex(tx_id)}:{hex(rx_id)} [tx_id:rx_id]:{bytes_repr(data)}"
+                            f"XCP_DISCONNECT triggered negative reply for {hex(tx_id)}:{hex(rx_id)} [tx_id:rx_id]:{data.hex()}"
                         )
                     else:
                         logger.notice(
-                            f"XCP_DISCONNECT triggered non-XCP reply for {hex(tx_id)}:{hex(rx_id)} [tx_id:rx_id]:{bytes_repr(data)}"
+                            f"XCP_DISCONNECT triggered non-XCP reply for {hex(tx_id)}:{hex(rx_id)} [tx_id:rx_id]:{data.hex()}"
                         )
                         continue
 

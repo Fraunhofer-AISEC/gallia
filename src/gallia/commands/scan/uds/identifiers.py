@@ -14,8 +14,8 @@ from gallia.services.uds.core.client import UDSRequestConfig
 from gallia.services.uds.core.constants import RoutineControlSubFuncs, UDSErrorCodes, UDSIsoServices
 from gallia.services.uds.core.exception import IllegalResponse, MissingResponse
 from gallia.services.uds.core.service import NegativeResponse, UDSResponse
-from gallia.services.uds.core.utils import g_repr, service_repr
 from gallia.services.uds.helpers import suggests_service_not_supported
+from gallia.utils import HEX_U8, HEX_U16, hex_join
 
 logger = get_logger(__name__)
 
@@ -83,25 +83,25 @@ class ScanIdentifiers(UDSScanner):
                 for s in self.config.sessions
                 if s not in self.config.skip or self.config.skip[s] is not None
             ]
-            logger.info(f"testing sessions {g_repr(sessions)}")
+            logger.info(f"testing sessions [{hex_join(sessions, HEX_U8)}]")
             clean_returns = True
 
             # TODO: Unified shortened output necessary here
             logger.info(f"skipping identifiers {reprlib.repr(self.config.skip)}")
 
             for session in sessions:
-                logger.notice(f"Switching to session {g_repr(session)}")
+                logger.notice(f"Switching to session {session:{HEX_U8}}")
                 resp: UDSResponse = await self.ecu.set_session(session)
                 if isinstance(resp, NegativeResponse):
-                    logger.warning(f"Switching to session {g_repr(session)} failed: {resp}")
+                    logger.warning(f"Switching to session {session:{HEX_U8}} failed: {resp}")
                     continue
 
-                logger.result(f"Starting scan in session: {g_repr(session)}")
+                logger.result(f"Starting scan in session: {session:{HEX_U8}}")
 
                 clean_returns = clean_returns and await self.perform_scan(session)
 
-                logger.result(f"Scan in session {g_repr(session)} is complete!")
-                logger.info(f"Leaving session {g_repr(session)} via hook")
+                logger.result(f"Scan in session {session:{HEX_U8}} is complete!")
+                logger.info(f"Leaving session {session:{HEX_U8}} via hook")
 
                 try:
                     await self.ecu.leave_session(session, sleep=self.config.power_cycle_sleep)
@@ -112,6 +112,7 @@ class ScanIdentifiers(UDSScanner):
                 sys.exit(1)
 
     async def perform_scan(self, session: None | int = None) -> bool:
+        session_desc = "current session" if session is None else f"session {session:{HEX_U8}}"
         positive_DIDs = 0
         abnormal_DIDs = 0
         timeout_DIDs = 0
@@ -130,7 +131,7 @@ class ScanIdentifiers(UDSScanner):
         if self.config.service == UDSIsoServices.SecurityAccess and self.config.end > 0x7F:
             logger.warning(
                 "Service 0x27 SecurityAccess only accepts subFunctions (7-bit identifiers); "
-                + f"limiting END to {g_repr(0x7F)} instead of {g_repr(self.config.end)}"
+                + f"limiting END to 0x7f instead of {self.config.end:{HEX_U16}}"
             )
             self.config.end = 0x7F
 
@@ -140,7 +141,7 @@ class ScanIdentifiers(UDSScanner):
             if session in self.config.skip and (
                 (session_skip := self.config.skip[session]) is None or DID in session_skip
             ):
-                logger.info(f"{g_repr(DID)}: skipped")
+                logger.info(f"{DID:{HEX_U16}}: skipped")
                 continue
 
             if (
@@ -151,7 +152,7 @@ class ScanIdentifiers(UDSScanner):
                 # Check session and try to recover from wrong session (max 3 times), else skip session
                 if not await self.ecu.check_and_set_session(session):
                     logger.error(
-                        f"Aborting scan on session {g_repr(session)}; current DID was {g_repr(DID)}"
+                        f"Aborting scan on session {session:{HEX_U8}}; current DID was {DID:{HEX_U16}}"
                     )
                     return False
 
@@ -174,17 +175,17 @@ class ScanIdentifiers(UDSScanner):
                     pdu, config=UDSRequestConfig(tags=["ANALYZE"], max_retry=3)
                 )
             except TimeoutError:
-                logger.result(f"{g_repr(DID)}: Retries exceeded")
+                logger.result(f"{DID:{HEX_U16}}: Retries exceeded")
                 timeout_DIDs += 1
                 continue
             except IllegalResponse as e:
-                logger.warning(g_repr(e))
+                logger.warning(repr(e))
                 continue
 
             if isinstance(resp, NegativeResponse):
                 if suggests_service_not_supported(resp):
                     logger.info(
-                        f"{g_repr(DID)}: {resp}; does session {g_repr(session)} support service {service_repr(self.config.service)}?"
+                        f"{DID:{HEX_U16}}: {resp}; does {session_desc} support service {self.config.service.name}?"
                     )
 
                     if self.config.skip_not_supported:
@@ -196,12 +197,12 @@ class ScanIdentifiers(UDSScanner):
                     UDSErrorCodes.requestOutOfRange,
                     UDSErrorCodes.subFunctionNotSupported,
                 ):
-                    logger.info(f"{g_repr(DID)}: {resp}")
+                    logger.info(f"{DID:{HEX_U16}}: {resp}")
                 else:
-                    logger.result(f"{g_repr(DID)}: {resp}")
+                    logger.result(f"{DID:{HEX_U16}}: {resp}")
                     abnormal_DIDs += 1
             else:
-                logger.result(f"{g_repr(DID)}: {resp}")
+                logger.result(f"{DID:{HEX_U16}}: {resp}")
                 positive_DIDs += 1
 
         logger.result(f"Positive replies: {positive_DIDs}")
