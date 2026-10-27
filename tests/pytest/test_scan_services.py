@@ -7,7 +7,7 @@ from collections.abc import AsyncIterator
 
 import pytest
 
-from gallia.commands.scan.uds.services import ServicesScanner, ServicesScannerConfig
+from gallia.commands import ServicesScanner, ServicesScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds import UDSIsoServices, UDSRequest, UDSResponse
 from gallia.services.uds.core.service import (
