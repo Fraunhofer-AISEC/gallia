@@ -23,7 +23,7 @@ from gallia.services.uds.core.exception import (
     UDSException,
     UnexpectedNegativeResponse,
 )
-from gallia.services.uds.core.utils import from_bytes, g_repr
+from gallia.services.uds.core.utils import g_repr
 from gallia.services.uds.helpers import (
     as_exception,
     raise_for_error,
@@ -117,7 +117,7 @@ class ECU(UDSClient):
         )
         if isinstance(resp, service.NegativeResponse):
             raise as_exception(resp)
-        return from_bytes(resp.data_record)
+        return int.from_bytes(resp.data_record)
 
     async def set_session_pre(self, session: int, config: UDSRequestConfig | None = None) -> None:
         """set_session_pre() is called before the diagnostic session control
