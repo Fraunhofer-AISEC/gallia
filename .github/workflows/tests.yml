@@ -46,11 +46,12 @@ jobs:
 
     - name: Install Debian Dependencies
       run: |
-        apt-get update -y && apt-get install -y build-essential bats python3 jq zstd curl
+        apt-get update -y && apt-get install -y build-essential bats just python3 jq zstd curl
 
     - uses: ./.github/actions/setup
       with:
         python-version: ${{ matrix.python-version }}
+        dev: 'false'
 
     - name: Run bats
       run: |
