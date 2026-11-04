@@ -15,8 +15,7 @@ import argcomplete
 from pydantic import Field, create_model
 
 from gallia import exitcodes
-from gallia.command import AsyncScript
-from gallia.command.base import AsyncScriptConfig
+from gallia.command import AsyncScript, AsyncScriptConfig
 from gallia.command.config import GalliaBaseModel
 from gallia.config import Config, load_config_file
 from gallia.log import Loglevel, setup_logging

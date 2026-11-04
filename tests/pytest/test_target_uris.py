@@ -9,10 +9,7 @@ assert sys.platform.startswith("linux"), "unsupported platform"
 import pytest
 from pydantic import ValidationError
 
-from gallia.transports import TargetURI
-from gallia.transports.doip import DoIPConfig
-from gallia.transports.isotp import ISOTPConfig
-from gallia.transports.schemes import TransportScheme
+from gallia.transports import DoIPConfig, ISOTPConfig, TargetURI, TransportScheme
 
 uris = [
     "doip://127.0.0.1:13400?src_addr=1&target_addr=1",
