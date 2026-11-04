@@ -12,8 +12,8 @@ from gallia.command.base import AsyncScriptConfig
 from gallia.command.config import AutoInt, Field, HexBytes
 from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse, UDSClient, UDSRequest
-from gallia.services.uds.core.utils import g_repr
 from gallia.transports import ISOTPTransport, RawCANTransport, TargetURI
+from gallia.utils import HEX_U16
 
 logger = get_logger(__name__)
 
@@ -78,7 +78,7 @@ class IsotpDiscoverer(AsyncScript):
             transport = ISOTPTransport(target)
             await transport.connect()
             uds_client = UDSClient(transport, timeout=2)
-            logger.result(f"reading device description at {g_repr(did)}")
+            logger.result(f"reading device description at {did:{HEX_U16}}")
             try:
                 resp = await uds_client.read_data_by_identifier(did)
                 if isinstance(resp, NegativeResponse):

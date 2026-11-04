@@ -14,7 +14,7 @@ from gallia.command.uds import UDSScannerConfig
 from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse
 from gallia.services.uds.core.service import RoutineControlResponse
-from gallia.services.uds.core.utils import g_repr
+from gallia.utils import HEX_U8
 
 logger = get_logger(__name__)
 
@@ -90,7 +90,7 @@ class RTCLPrimitive(UDSScanner):
                 await self.ecu.check_and_set_session(self.config.session)
             except Exception as e:
                 logger.critical(
-                    f"Could not change to session: {g_repr(self.config.session)}: {e!r}"
+                    f"Could not change to session: {self.config.session:{HEX_U8}}: {e!r}"
                 )
                 sys.exit(1)
 

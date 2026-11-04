@@ -16,8 +16,8 @@ from gallia.services.uds.core.exception import (
     MissingResponse,
     UnexpectedNegativeResponse,
 )
-from gallia.services.uds.core.utils import g_repr
 from gallia.services.uds.helpers import suggests_sub_function_not_supported
+from gallia.utils import HEX_U8, hex_join
 
 logger = get_logger(__name__)
 
@@ -54,20 +54,20 @@ class ResetScanner(UDSScanner):
                 sys.exit(1)
         else:
             sessions = self.config.sessions
-            logger.info(f"testing sessions {g_repr(sessions)}")
+            logger.info(f"testing sessions [{hex_join(sessions, HEX_U8)}]")
             clean_returns = True
 
             # TODO: Unified shortened output necessary here
             logger.info(f"skipping identifiers {reprlib.repr(self.config.skip)}")
 
             for session in sessions:
-                logger.notice(f"Switching to session {g_repr(session)}")
+                logger.notice(f"Switching to session {session:{HEX_U8}}")
                 resp: UDSResponse = await self.ecu.set_session(session)
                 if isinstance(resp, NegativeResponse):
-                    logger.warning(f"Switching to session {g_repr(session)} failed: {resp}")
+                    logger.warning(f"Switching to session {session:{HEX_U8}} failed: {resp}")
                     continue
 
-                logger.result(f"Scanning in session: {g_repr(session)}")
+                logger.result(f"Scanning in session: {session:{HEX_U8}}")
                 clean_returns = clean_returns and await self.perform_scan(session)
 
                 try:
@@ -79,6 +79,7 @@ class ResetScanner(UDSScanner):
                 sys.exit(1)
 
     async def perform_scan(self, session: None | int = None) -> bool:
+        session_desc = "current session" if session is None else f"session {session:{HEX_U8}}"
         l_ok: list[int] = []
         l_timeout: list[int] = []
         l_error: list[Any] = []
@@ -87,7 +88,7 @@ class ResetScanner(UDSScanner):
             if session in self.config.skip and (
                 (session_skip := self.config.skip[session]) is None or sub_func in session_skip
             ):
-                logger.notice(f"skipping subFunc: {g_repr(sub_func)} because of --skip")
+                logger.notice(f"skipping subFunc: {sub_func:{HEX_U8}} because of --skip")
                 continue
 
             if (
@@ -98,7 +99,7 @@ class ResetScanner(UDSScanner):
                 # Check session and try to recover from wrong session (max 3 times), else skip session
                 if not await self.ecu.check_and_set_session(session):
                     logger.error(
-                        f"Aborting scan on session {g_repr(session)}; current sub-func was {g_repr(sub_func)}"
+                        f"Aborting scan on session {session:{HEX_U8}}; current sub-func was {sub_func:{HEX_U8}}"
                     )
                     return False
 
@@ -109,16 +110,16 @@ class ResetScanner(UDSScanner):
                     )
                     if isinstance(resp, NegativeResponse):
                         if suggests_sub_function_not_supported(resp):
-                            logger.info(f"{g_repr(sub_func)}: {resp}")
+                            logger.info(f"{sub_func:{HEX_U8}}: {resp}")
                         else:
                             l_error.append({sub_func: resp.response_code})
-                            msg = f"{g_repr(sub_func)}: with error code: {resp}"
+                            msg = f"{sub_func:{HEX_U8}}: with error code: {resp}"
                             logger.result(msg)
                         continue
                 except IllegalResponse as e:
-                    logger.warning(f"{g_repr(e)}")
+                    logger.warning(repr(e))
 
-                logger.result(f"{g_repr(sub_func)}: reset level found!")
+                logger.result(f"{sub_func:{HEX_U8}}: reset level found!")
                 l_ok.append(sub_func)
                 logger.info("Waiting for the ECU to recover…")
                 await self.ecu.wait_for_ecu()
@@ -127,7 +128,7 @@ class ResetScanner(UDSScanner):
                 resp = await self.ecu.ecu_reset(0x01)
                 if isinstance(resp, NegativeResponse):
                     logger.warning(
-                        f"Could not reboot ECU after testing reset level {g_repr(sub_func)}"
+                        f"Could not reboot ECU after testing reset level {sub_func:{HEX_U8}}"
                     )
                 else:
                     await self.ecu.wait_for_ecu()
@@ -135,19 +136,19 @@ class ResetScanner(UDSScanner):
             except TimeoutError:
                 l_timeout.append(sub_func)
                 if not self.config.power_cycle:
-                    logger.error(f"ECU did not respond after reset level {g_repr(sub_func)}; exit")
+                    logger.error(f"ECU did not respond after reset level {sub_func:{HEX_U8}}; exit")
                     sys.exit(1)
 
                 logger.warning(
-                    f"ECU did not respond after reset level {g_repr(sub_func)}; try power cycle…"
+                    f"ECU did not respond after reset level {sub_func:{HEX_U8}}; try power cycle…"
                 )
                 try:
                     await self.ecu.power_cycle(self.config.power_cycle_sleep)
                 except (TimeoutError, ConnectionError) as e:
-                    logger.error(f"Failed to recover ECU: {g_repr(e)}; exit")
+                    logger.error(f"Failed to recover ECU: {e!r}; exit")
                     sys.exit(1)
             except ConnectionError:
-                msg = f"{g_repr(sub_func)}: lost connection to ECU (post), current session: {g_repr(session)}"
+                msg = f"{sub_func:{HEX_U8}}: lost connection to ECU (post) in {session_desc}"
                 logger.warning(msg)
                 await self.ecu.reconnect()
                 continue
@@ -158,14 +159,14 @@ class ResetScanner(UDSScanner):
                 try:
                     current_session = await self.ecu.read_session()
                     logger.info(
-                        f"{g_repr(sub_func)}: Currently in session {g_repr(current_session)}, "
-                        f"should be {g_repr(session)}"
+                        f"{sub_func:{HEX_U8}}: Currently in session {current_session:{HEX_U8}}, "
+                        f"should be {session:{HEX_U8}}"
                     )
                 except UnexpectedNegativeResponse as e:
                     logger.warning(f"Could not read current session: {e.RESPONSE_CODE.name}")
 
             if session is not None:
-                logger.info(f"Setting session {g_repr(session)}")
+                logger.info(f"Setting session {session:{HEX_U8}}")
                 await self.ecu.set_session(session)
 
         logger.result(f"ok: {l_ok}")

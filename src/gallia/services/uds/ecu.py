@@ -23,14 +23,14 @@ from gallia.services.uds.core.exception import (
     UDSException,
     UnexpectedNegativeResponse,
 )
-from gallia.services.uds.core.utils import from_bytes, g_repr
+from gallia.services.uds.core.utils import from_bytes
 from gallia.services.uds.helpers import (
     as_exception,
     raise_for_error,
     suggests_identifier_not_supported,
 )
 from gallia.transports.base import BaseTransport
-from gallia.utils import handle_task_error, set_task_handler_ctx_variable
+from gallia.utils import HEX, HEX_U8, handle_task_error, set_task_handler_ctx_variable
 
 if TYPE_CHECKING:
     from gallia.db.handler import DBHandler
@@ -55,7 +55,12 @@ class ECUState:
         return GalliaJSONEncoder
 
     def __repr__(self) -> str:
-        return f"{type(self).__name__}({', '.join(f'{key}={g_repr(value)}' for key, value in self.__dict__.items())})"
+        def fmt(value: Any) -> str:
+            if isinstance(value, int) and not isinstance(value, bool):
+                return f"{value:{HEX_U8}}"
+            return repr(value)
+
+        return f"{type(self).__name__}({', '.join(f'{key}={fmt(value)}' for key, value in self.__dict__.items())})"
 
 
 @dataclass
@@ -161,7 +166,7 @@ class ECU(UDSClient):
         Returns True if the current session matches the expected session,
         or if read_session is not supported by the ECU or in the current session."""
 
-        logger.debug(f"Checking current session, expecting {g_repr(expected_session)}")
+        logger.debug(f"Checking current session, expecting {expected_session:{HEX_U8}}")
 
         try:
             current_session = await self.read_session(config=UDSRequestConfig(max_retry=retries))
@@ -176,28 +181,28 @@ class ECU(UDSClient):
             logger.warning("Reading current session timed out, skipping check_session")
             return True
 
-        logger.debug(f"Current session is {g_repr(current_session)}")
+        logger.debug(f"Current session is {current_session:{HEX_U8}}")
         if current_session == expected_session:
             return True
 
         for i in range(retries + 1):
             logger.warning(
-                f"Not in session {g_repr(expected_session)}, ECU replied with {g_repr(current_session)}"
+                f"Not in session {expected_session:{HEX_U8}}, ECU replied with {current_session:{HEX_U8}}"
             )
 
             logger.info(
-                f"Switching to session {g_repr(expected_session)}; attempt {i + 1} of {1 + retries}"
+                f"Switching to session {expected_session:{HEX_U8}}; attempt {i + 1} of {1 + retries}"
             )
             resp = await self.set_session(expected_session)
 
             if isinstance(resp, service.NegativeResponse):
-                logger.warning(f"Switching to session {g_repr(expected_session)} failed: {resp}")
+                logger.warning(f"Switching to session {expected_session:{HEX_U8}} failed: {resp}")
 
             try:
                 current_session = await self.read_session(
                     config=UDSRequestConfig(max_retry=retries)
                 )
-                logger.debug(f"Current session is {g_repr(current_session)}")
+                logger.debug(f"Current session is {current_session:{HEX_U8}}")
                 if current_session == expected_session:
                     return True
             except UnexpectedNegativeResponse as e:
@@ -212,7 +217,7 @@ class ECU(UDSClient):
                 return True
 
         logger.warning(
-            f"Failed to switch to session {g_repr(expected_session)} after {1 + retries} attempts"
+            f"Failed to switch to session {expected_session:{HEX_U8}} after {1 + retries} attempts"
         )
         return False
 
@@ -319,19 +324,19 @@ class ECU(UDSClient):
         """transmit_data splits the data to be sent in several blocks of size block_length,
         transfers all of them and concludes the transmission with RequestTransferExit"""
         if block_length > max_block_length:
-            logger.warning(f"Limiting block size to {g_repr(max_block_length)}")
+            logger.warning(f"Limiting block size to {max_block_length:{HEX}}")
             block_length = max_block_length
         # block_length includes the service identifier and block counter; payload must be smaller
         payload_size = block_length - 2
         for counter, i in enumerate(range(0, len(data), payload_size), start=1):
             payload = data[i : i + payload_size]
             logger.debug(
-                f"Transferring block {g_repr(counter)} with payload size {g_repr(len(payload))}"
+                f"Transferring block {counter:{HEX}} with payload size {len(payload):{HEX}}"
             )
             resp: service.UDSResponse = await self.transfer_data(
                 counter & 0xFF, payload, config=config
             )
-            raise_for_error(resp, f"Transmitting data failed at index {g_repr(i)}")
+            raise_for_error(resp, f"Transmitting data failed at index {i:{HEX}}")
         resp = await self.request_transfer_exit(config=config)
         raise_for_error(resp)
 
@@ -522,7 +527,7 @@ class ECU(UDSClient):
                         mode,
                     )
             except Exception as e:
-                logger.warning(f"Could not log messages to database: {g_repr(e)}")
+                logger.warning(f"Could not log messages to database: {e!r}")
 
             if response is not None:
                 await self.update_state(request, response)

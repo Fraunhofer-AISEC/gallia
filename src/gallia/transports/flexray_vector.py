@@ -194,7 +194,7 @@ class FlexRayTPSingleFrame(BaseModel):
     def parse(cls, data: bytes) -> Self:
         type_ = parse_frame_type(data)
         if type_ != cls.type_:
-            raise ValueError(f"wrong frame type: {type:x}")
+            raise ValueError(f"wrong frame type: {type_:x}")
         size = data[0] & 0xF
         return cls(data=data[1 : size + 1], size=size)
 
@@ -218,7 +218,7 @@ class FlexRayTPFirstFrame(BaseModel):
     def parse(cls, data: bytes) -> Self:
         type_ = parse_frame_type(data)
         if type_ != cls.type_:
-            raise ValueError(f"wrong frame type_: {type:x}")
+            raise ValueError(f"wrong frame type_: {type_:x}")
 
         size = ((data[0] & 0x0F) << 8) | data[1]
         return cls(data=data[2 : size + 1], size=size)
@@ -243,7 +243,7 @@ class FlexRayTPConsecutiveFrame(BaseModel):
     def parse(cls, data: bytes) -> Self:
         type_ = parse_frame_type(data)
         if type_ != cls.type_:
-            raise ValueError(f"wrong frame type_: {type:x}")
+            raise ValueError(f"wrong frame type_: {type_:x}")
         counter = data[0] & 0xF
         return cls(counter=counter, data=data[1:])
 
@@ -270,7 +270,7 @@ class FlexRayTPFlowControlFrame(BaseModel):
     def parse(cls, data: bytes) -> Self:
         type_ = FlexRayTPFrameType(data[0] >> 4)
         if type_ != cls.type_:
-            raise ValueError(f"wrong frame type_: {type:x}")
+            raise ValueError(f"wrong frame type_: {type_:x}")
         flag = FlexRayTPFlowControlFlag(data[0] & 0x0F)
         block_size = data[1]
         separation_time = data[2]
