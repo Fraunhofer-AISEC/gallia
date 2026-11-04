@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 from abc import ABC
+from dataclasses import asdict
 from typing import Any, Literal, Self
 
 from pydantic import field_serializer, model_validator
@@ -25,10 +26,6 @@ class CLIConfig(AsyncScriptConfig):
         short="t",
         config_section=UDSScannerConfig._config_section,
     )
-    channel: int = Field(description="the channel number to control", short="c")
-    attr: Literal["voltage", "current", "output"] = Field(
-        description="the attribute to control", short="a"
-    )
 
     @field_serializer("power_supply")
     def serialize_target_uri(self, target_uri: TargetURI | None) -> Any:
@@ -46,11 +43,30 @@ class CLIConfig(AsyncScriptConfig):
 
 
 class GetCLIConfig(CLIConfig):
-    pass
+    channel: int = Field(description="the channel number to control", short="c")
+    attr: Literal[
+        "voltage",
+        "current",
+        "output",
+        "ocp",
+        "ovp",
+        "measured-voltage",
+        "measured-current",
+        "measured-power",
+    ] = Field(description="the attribute to read", short="a")
 
 
 class SetCLIConfig(CLIConfig):
+    channel: int = Field(description="the channel number to control", short="c")
+    attr: Literal["voltage", "current", "output", "ocp", "ovp"] = Field(
+        description="the attribute to control", short="a"
+    )
     value: str = Field(positional=True)
+
+
+class StatusCLIConfig(CLIConfig):
+    cursed: bool = Field(False, description="show the status in an interactive curses based view")
+    interval: float = Field(0.5, description="refresh interval in seconds for --cursed", short="i")
 
 
 class CLI(AsyncScript, ABC):
@@ -73,17 +89,28 @@ class GetCLI(CLI):
 
     async def main(self) -> None:
         client = await self._client()
+        channel = self.config.channel
 
         match self.config.attr:
             case "voltage":
-                print(await client.get_voltage(self.config.channel))
+                print(await client.get_voltage(channel))
             case "current":
-                print(await client.get_current(self.config.channel))
+                print(await client.get_current(channel))
             case "output":
-                if self.config.channel == 0:
+                if channel == 0:
                     print(await client.get_master())
                 else:
-                    print(await client.get_output(self.config.channel))
+                    print(await client.get_output(channel))
+            case "ocp":
+                print(await client.get_ocp(channel))
+            case "ovp":
+                print(await client.get_ovp(channel))
+            case "measured-voltage":
+                print(await client.measure_voltage(channel))
+            case "measured-current":
+                print(await client.measure_current(channel))
+            case "measured-power":
+                print(await client.measure_power(channel))
 
 
 class SetCLI(CLI):
@@ -96,21 +123,54 @@ class SetCLI(CLI):
 
     async def main(self) -> None:
         client = await self._client()
+        channel = self.config.channel
 
         match self.config.attr:
             case "voltage":
-                await client.set_voltage(self.config.channel, float(self.config.value))
+                await client.set_voltage(channel, float(self.config.value))
             case "current":
-                await client.set_current(self.config.channel, float(self.config.value))
+                await client.set_current(channel, float(self.config.value))
             case "output":
-                if self.config.channel == 0:
+                if channel == 0:
                     await client.set_master(strtobool(self.config.value))
                 else:
-                    await client.set_output(self.config.channel, strtobool(self.config.value))
+                    await client.set_output(channel, strtobool(self.config.value))
+            case "ocp":
+                await client.set_ocp(channel, strtobool(self.config.value))
+            case "ovp":
+                await client.set_ovp(channel, strtobool(self.config.value))
+
+
+class StatusCLI(CLI):
+    CONFIG_TYPE = StatusCLIConfig
+    SHORT_HELP = "Show settings and measurements of all channels"
+
+    def __init__(self, config: StatusCLIConfig):
+        super().__init__(config)
+        self.config: StatusCLIConfig = config
+
+    async def main(self) -> None:
+        client = await self._client()
+
+        if self.config.cursed:
+            # curses is not available on Windows; keep the other subcommands usable there.
+            from gallia.cli.cursed_netzteil import CursedNetzteil
+
+            await CursedNetzteil(client, self.config.interval).run()
+            return
+
+        status = await client.status()
+
+        print(status.ident)
+        print(f"master: {status.master}")
+        for channel, channel_status in status.channels.items():
+            print(f"channel {channel}:")
+            for key, value in asdict(channel_status).items():
+                print(f"  {key}: {value}")
 
 
 def main() -> None:
-    parse_and_run({"get": GetCLI, "set": SetCLI})
+    parse_and_run({"get": GetCLI, "set": SetCLI, "status": StatusCLI})
 
 
 if __name__ == "__main__":

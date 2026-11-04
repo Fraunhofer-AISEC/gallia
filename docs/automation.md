@@ -17,6 +17,16 @@ Further, there is `--power-cycle` to automatically power-cycle the device under 
 There is an experimental cli tool `netzteil` included in `gallia`.
 This cli tool can be used to control all supported power supplies via the cli.
 
+``` shell-session
+$ netzteil get -t "tcp://192.0.2.5:5025?product_id=hmc804" -c 1 -a measured-current
+$ netzteil set -t "tcp://192.0.2.5:5025?product_id=hmc804" -c 1 -a voltage 12
+$ netzteil status -t "tcp://192.0.2.5:5025?product_id=hmc804"
+$ netzteil status --cursed -t "tcp://192.0.2.5:5025?product_id=hmc804"
+```
+
+`netzteil status --cursed` is an interactive terminal view which shows the settings and measurements of all channels.
+It allows to toggle outputs and protections and to set voltage and current of the selected channel.
+
 The argument for `--power-supply` is a URI of the following form:
 
 ``` text
@@ -65,3 +75,4 @@ Example:
 tcp://192.0.2.5:5025?product_id=hmc804
 ```
 
+All models of the series (HMC8041, HMC8042, HMC8043) are supported; the model and its limits are detected automatically.
