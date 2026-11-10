@@ -77,7 +77,7 @@ class MemoryFunctionsScanner(UDSScanner):
         data = self.config.data if sid == 0x3D else None  # Only service 0x3d has a data field
         memory_size = len(data) if data else 0x1000
 
-        for i in range(0x100):
+        for i in range(0 if addr_offset == 0 else 1, 0x100):
             addr = i << addr_offset * 8
 
             addr_and_length_identifier, addr_bytes, mem_size_bytes = uds_memory_parameters(
@@ -118,4 +118,4 @@ class MemoryFunctionsScanner(UDSScanner):
                 else:
                     logger.result(f"Address {g_repr(addr)}: {resp}")
             else:
-                logger.result(f"Address {g_repr(addr)}: {resp}")
+                logger.result(f"Address {g_repr(addr)}: {hex(len(resp.data))} | {resp.data.hex()}")
