@@ -115,7 +115,7 @@ class UDSScannerConfig(AsyncScriptConfig, cli_group="uds", config_section="galli
         return v
 
 
-class UDSScanner(AsyncScript, ABC):
+class UDSScanner[ConfigT: UDSScannerConfig](AsyncScript[ConfigT], ABC):
     """UDSScanner is a baseclass, particularly for scanning tasks
     related to the UDS protocol. It has the following properties:
 
@@ -139,9 +139,8 @@ class UDSScanner(AsyncScript, ABC):
     #: By default, it is `None`.
     result: Any = None
 
-    def __init__(self, config: UDSScannerConfig):
+    def __init__(self, config: ConfigT):
         super().__init__(config)
-        self.config: UDSScannerConfig = config
         self.power_supply: PowerSupply | None = None
         self._ecu: ECU | None = None
         self._implicit_logging = True

@@ -37,7 +37,7 @@ class MemoryFunctionsScannerConfig(UDSScannerConfig):
     )
 
 
-class MemoryFunctionsScanner(UDSScanner):
+class MemoryFunctionsScanner(UDSScanner[MemoryFunctionsScannerConfig]):
     """This scanner scans functions with direct access to memory.
     Specifically, these are service 0x3d WriteMemoryByAddress, 0x34 RequestDownload
     and 0x35 RequestUpload, which all share the same packet structure, except for
@@ -46,10 +46,6 @@ class MemoryFunctionsScanner(UDSScanner):
 
     CONFIG_TYPE = MemoryFunctionsScannerConfig
     SHORT_HELP = "scan services with direct memory access"
-
-    def __init__(self, config: MemoryFunctionsScannerConfig):
-        super().__init__(config)
-        self.config: MemoryFunctionsScannerConfig = config
 
     async def main(self) -> None:
         if self.config.session is not None:

@@ -80,15 +80,11 @@ class ClearDynamicallyDefinedDataIdentifierDDDIPrimitiveConfig(DDDIPrimitiveConf
     )
 
 
-class DDDIPrimitive(UDSScanner):
+class DDDIPrimitive[ConfigT: DDDIPrimitiveConfig](UDSScanner[ConfigT]):
     """dynamically define data identifiers"""
 
     CONFIG_TYPE = DDDIPrimitiveConfig
     SHORT_HELP = "DynamicallyDefineDataIdentifiers"
-
-    def __init__(self, config: DDDIPrimitiveConfig):
-        super().__init__(config)
-        self.config: DDDIPrimitiveConfig = config
 
     async def main(self) -> None:
         try:
@@ -98,13 +94,9 @@ class DDDIPrimitive(UDSScanner):
             sys.exit(1)
 
 
-class DefineByIdentifierDDDIPrimitive(DDDIPrimitive):
+class DefineByIdentifierDDDIPrimitive(DDDIPrimitive[DefineByIdentifierDDDIPrimitiveConfig]):
     CONFIG_TYPE = DefineByIdentifierDDDIPrimitiveConfig
     SHORT_HELP = "DefineByIdentifier"
-
-    def __init__(self, config: DefineByIdentifierDDDIPrimitiveConfig):
-        super().__init__(config)
-        self.config: DefineByIdentifierDDDIPrimitiveConfig = config
 
     async def main(self) -> None:
         await super().main()
@@ -129,13 +121,9 @@ class DefineByIdentifierDDDIPrimitive(DDDIPrimitive):
             logger.result("Success")
 
 
-class DefineByMemoryAddressDDDIPrimitive(DDDIPrimitive):
+class DefineByMemoryAddressDDDIPrimitive(DDDIPrimitive[DefineByMemoryAddressDDDIPrimitiveConfig]):
     CONFIG_TYPE = DefineByMemoryAddressDDDIPrimitiveConfig
     SHORT_HELP = "DefineByMemoryAddress"
-
-    def __init__(self, config: DefineByMemoryAddressDDDIPrimitiveConfig):
-        super().__init__(config)
-        self.config: DefineByMemoryAddressDDDIPrimitiveConfig = config
 
     async def main(self) -> None:
         await super().main()
@@ -158,13 +146,11 @@ class DefineByMemoryAddressDDDIPrimitive(DDDIPrimitive):
             logger.result("Success")
 
 
-class ClearDynamicallyDefinedDataIdentifierDDDIPrimitive(DDDIPrimitive):
+class ClearDynamicallyDefinedDataIdentifierDDDIPrimitive(
+    DDDIPrimitive[ClearDynamicallyDefinedDataIdentifierDDDIPrimitiveConfig]
+):
     CONFIG_TYPE = ClearDynamicallyDefinedDataIdentifierDDDIPrimitiveConfig
     SHORT_HELP = "ClearDynamicallyDefinedDataIdentifier"
-
-    def __init__(self, config: ClearDynamicallyDefinedDataIdentifierDDDIPrimitiveConfig):
-        super().__init__(config)
-        self.config: ClearDynamicallyDefinedDataIdentifierDDDIPrimitiveConfig = config
 
     async def main(self) -> None:
         await super().main()

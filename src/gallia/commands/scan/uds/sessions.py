@@ -40,7 +40,7 @@ class SessionsScannerConfig(UDSScannerConfig):
     )
 
 
-class SessionsScanner(UDSScanner):
+class SessionsScanner(UDSScanner[SessionsScannerConfig]):
     """Iterate Sessions"""
 
     CONFIG_TYPE = SessionsScannerConfig
@@ -48,7 +48,6 @@ class SessionsScanner(UDSScanner):
 
     def __init__(self, config: SessionsScannerConfig):
         super().__init__(config)
-        self.config: SessionsScannerConfig = config
 
         self.result: list[int] = []
 

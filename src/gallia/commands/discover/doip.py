@@ -57,7 +57,7 @@ class DoIPDiscovererConfig(AsyncScriptConfig):
     )
 
 
-class DoIPDiscoverer(AsyncScript):
+class DoIPDiscoverer(AsyncScript[DoIPDiscovererConfig]):
     """This script scans for active DoIP endpoints and automatically enumerates allowed
     RoutingActivationTypes and known SourceAddresses. Once valid endpoints are acquired,
     the script continues to discover valid TargetAddresses that are accepted and respond
@@ -67,10 +67,6 @@ class DoIPDiscoverer(AsyncScript):
     SHORT_HELP = "zero-knowledge DoIP enumeration scanner"
 
     protocol_version = ProtocolVersions.ISO_13400_2_2019.value
-
-    def __init__(self, config: DoIPDiscovererConfig):
-        super().__init__(config)
-        self.config: DoIPDiscovererConfig = config
 
     async def main(self) -> None:
         logger.notice("[👋] Welcome to @realDoIP-Discovery powered by MoarMemes…")

@@ -29,7 +29,10 @@ _CLASS_ATTR = "_dynamic_gallia_command_class_reference"
 
 
 def _create_parser_from_command(
-    command: type[AsyncScript], config: Config, extra_defaults: defaults, model_counter: int = 0
+    command: type[AsyncScript[Any]],
+    config: Config,
+    extra_defaults: defaults,
+    model_counter: int = 0,
 ) -> tuple[type[PydanticBaseCommand], defaults, int]:
     config_attributes = command.CONFIG_TYPE.attributes_from_config(config)
 
@@ -77,7 +80,7 @@ def _create_parser_from_tree(
 
 # TODO: Move this function into some CLI library package.
 def create_parser(
-    commands: type[AsyncScript] | MutableMapping[str, CommandTree | type[AsyncScript]],
+    commands: type[AsyncScript[Any]] | MutableMapping[str, CommandTree | type[AsyncScript[Any]]],
 ) -> ArgumentParser[PydanticBaseCommand]:
     """
     Creates an argument parser out of the given command hierarchy.
@@ -100,14 +103,14 @@ def create_parser(
     return ArgumentParser(model=model, extra_defaults=extra_defaults)
 
 
-def get_command(config: AsyncScriptConfig) -> AsyncScript:
+def get_command(config: AsyncScriptConfig) -> AsyncScript[Any]:
     """
     Retrieve the command out of the config returned by an argument parser as created by create_parser().
 
     :param config:
     :return: The command initiated with the given config.
     """
-    cmd: type[AsyncScript] = getattr(config, _CLASS_ATTR)
+    cmd: type[AsyncScript[Any]] = getattr(config, _CLASS_ATTR)
 
     return cmd(config)
 
@@ -123,7 +126,7 @@ def _get_log_level(cli_level: int) -> Loglevel:
 
 # TODO: Move this function into some CLI library package.
 def parse_and_run(
-    commands: type[AsyncScript] | MutableMapping[str, CommandTree | type[AsyncScript]],
+    commands: type[AsyncScript[Any]] | MutableMapping[str, CommandTree | type[AsyncScript[Any]]],
     auto_complete: bool = True,
     setup_log: bool = True,
     top_level_options: Mapping[str, tuple[Callable[[], None], str]] | None = None,
@@ -203,7 +206,7 @@ def version() -> None:
 
 
 def _walk_commands(
-    commands: Mapping[str, CommandTree | type[AsyncScript]], level: int = 0
+    commands: Mapping[str, CommandTree | type[AsyncScript[Any]]], level: int = 0
 ) -> tuple[str, int]:
     command_str = ""
     command_ctr = 0
