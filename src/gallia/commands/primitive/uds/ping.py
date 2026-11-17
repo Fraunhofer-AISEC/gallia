@@ -26,15 +26,11 @@ class PingPrimitiveConfig(UDSScannerConfig):
     interval: float = Field(0.5, description="time interval between two pings", metavar="SECONDS")
 
 
-class PingPrimitive(UDSScanner):
+class PingPrimitive(UDSScanner[PingPrimitiveConfig]):
     """Ping ECU via TesterPresent"""
 
     CONFIG_TYPE = PingPrimitiveConfig
     SHORT_HELP = "ping ECU via TesterPresent"
-
-    def __init__(self, config: PingPrimitiveConfig):
-        super().__init__(config)
-        self.config: PingPrimitiveConfig = config
 
     async def main(self) -> None:
         if self.config.session is not None:

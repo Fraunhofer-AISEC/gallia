@@ -4,6 +4,7 @@
 
 import sys
 from collections.abc import Mapping
+from typing import Any
 
 from gallia.command import AsyncScript
 from gallia.commands import HSFZDiscoverer
@@ -64,7 +65,7 @@ class UDSPlugin(Plugin):
         return [ECU]
 
     @classmethod
-    def commands(cls) -> Mapping[str, CommandTree | type[AsyncScript]]:
+    def commands(cls) -> Mapping[str, CommandTree | type[AsyncScript[Any]]]:
         tree = {
             "discover": CommandTree(
                 description="discover scanners for hosts and endpoints",

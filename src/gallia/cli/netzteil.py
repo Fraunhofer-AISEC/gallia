@@ -53,23 +53,15 @@ class SetCLIConfig(CLIConfig):
     value: str = Field(positional=True)
 
 
-class CLI(AsyncScript, ABC):
-    def __init__(self, config: CLIConfig):
-        super().__init__(config)
-        self.config: CLIConfig = config
-
+class CLI[ConfigT: CLIConfig](AsyncScript[ConfigT], ABC):
     async def _client(self) -> BasePowerSupplyDriver:
         driver = power_supply_drivers[self.config.power_supply.product_id]
         return await driver.connect(self.config.power_supply, timeout=1.0)
 
 
-class GetCLI(CLI):
+class GetCLI(CLI[GetCLIConfig]):
     CONFIG_TYPE = GetCLIConfig
     SHORT_HELP = "Get properties of the power supply"
-
-    def __init__(self, config: GetCLIConfig):
-        super().__init__(config)
-        self.config: GetCLIConfig = config
 
     async def main(self) -> None:
         client = await self._client()
@@ -86,13 +78,9 @@ class GetCLI(CLI):
                     print(await client.get_output(self.config.channel))
 
 
-class SetCLI(CLI):
+class SetCLI(CLI[SetCLIConfig]):
     CONFIG_TYPE = SetCLIConfig
     SHORT_HELP = "Set properties of the power supply"
-
-    def __init__(self, config: SetCLIConfig):
-        super().__init__(config)
-        self.config: SetCLIConfig = config
 
     async def main(self) -> None:
         client = await self._client()

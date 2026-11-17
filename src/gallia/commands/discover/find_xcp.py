@@ -27,13 +27,9 @@ class CanFindXCPConfig(AsyncScriptConfig):
     stop: AutoInt = Field(description="Last CAN id to test")
 
 
-class CanFindXCP(AsyncScript):
+class CanFindXCP(AsyncScript[CanFindXCPConfig]):
     CONFIG_TYPE = CanFindXCPConfig
     SHORT_HELP = "XCP enumeration scanner for CAN"
-
-    def __init__(self, config: CanFindXCPConfig):
-        super().__init__(config)
-        self.config: CanFindXCPConfig = config
 
     async def main(self) -> None:
         target = TargetURI(

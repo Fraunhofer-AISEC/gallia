@@ -24,7 +24,7 @@ class ReadByIdentifierPrimitiveConfig(UDSScannerConfig):
     session: AutoInt = Field(0x01, description="set session perform test in")
 
 
-class ReadByIdentifierPrimitive(UDSScanner):
+class ReadByIdentifierPrimitive(UDSScanner[ReadByIdentifierPrimitiveConfig]):
     """Read data via the ReadDataByIdentifier service"""
 
     CONFIG_TYPE = ReadByIdentifierPrimitiveConfig
@@ -32,7 +32,6 @@ class ReadByIdentifierPrimitive(UDSScanner):
 
     def __init__(self, config: ReadByIdentifierPrimitiveConfig):
         super().__init__(config)
-        self.config: ReadByIdentifierPrimitiveConfig = config
         self.result: bytes | None = None
 
     async def main(self) -> None:

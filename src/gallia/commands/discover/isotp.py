@@ -55,7 +55,7 @@ class IsotpDiscovererConfig(AsyncScriptConfig):
     )
 
 
-class IsotpDiscoverer(AsyncScript):
+class IsotpDiscoverer(AsyncScript[IsotpDiscovererConfig]):
     """Discovers all UDS endpoints on an ECU using ISO-TP normal addressing.
     This is the default protocol used by OBD.
     When using normal addressing, the ISO-TP header does not include an address and there is no generic tester address.
@@ -64,10 +64,6 @@ class IsotpDiscoverer(AsyncScript):
 
     CONFIG_TYPE = IsotpDiscovererConfig
     SHORT_HELP = "ISO-TP enumeration scanner"
-
-    def __init__(self, config: IsotpDiscovererConfig):
-        super().__init__(config)
-        self.config: IsotpDiscovererConfig = config
 
     async def query_description(self, target_list: list[TargetURI], did: int) -> None:
         logger.info("reading info DID from all discovered endpoints")

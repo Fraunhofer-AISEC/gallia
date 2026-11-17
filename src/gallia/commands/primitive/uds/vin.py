@@ -21,15 +21,11 @@ class VINPrimitiveConfig(UDSScannerConfig):
     )
 
 
-class VINPrimitive(UDSScanner):
+class VINPrimitive(UDSScanner[VINPrimitiveConfig]):
     """Request VIN"""
 
     CONFIG_TYPE = VINPrimitiveConfig
     SHORT_HELP = "request VIN"
-
-    def __init__(self, config: VINPrimitiveConfig):
-        super().__init__(config)
-        self.config: VINPrimitiveConfig = config
 
     async def main(self) -> None:
         resp = await self.ecu.read_vin()

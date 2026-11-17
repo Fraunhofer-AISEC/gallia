@@ -48,7 +48,7 @@ class ServicesScannerConfig(UDSScannerConfig):
     )
 
 
-class ServicesScanner(UDSScanner):
+class ServicesScanner(UDSScanner[ServicesScannerConfig]):
     """Iterate sessions and services and find endpoints"""
 
     CONFIG_TYPE = ServicesScannerConfig
@@ -59,7 +59,6 @@ class ServicesScanner(UDSScanner):
 
     def __init__(self, config: ServicesScannerConfig):
         super().__init__(config)
-        self.config: ServicesScannerConfig = config
 
         self.result: list[tuple[int, int]] = []
 

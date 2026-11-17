@@ -38,13 +38,9 @@ class RerunnerConfig(AsyncScriptConfig):
         return self
 
 
-class Rerunner(AsyncScript):
+class Rerunner(AsyncScript[RerunnerConfig]):
     CONFIG_TYPE = RerunnerConfig
     SHORT_HELP = "Rerun a previous gallia command based on its run_meta in the database"
-
-    def __init__(self, config: RerunnerConfig):
-        super().__init__(config)
-        self.config: RerunnerConfig = config
 
     async def main(self) -> None:
         if self.config.id is not None:
@@ -59,7 +55,7 @@ class Rerunner(AsyncScript):
 
         logger.info(f"Rerunning run {self.config.id} ({class_name}) with: {config}")
 
-        gallia_class: type[AsyncScript] = getattr(importlib.import_module(module), class_name)
+        gallia_class: type[AsyncScript[Any]] = getattr(importlib.import_module(module), class_name)
         command = gallia_class(gallia_class.CONFIG_TYPE(**config))
 
         sys.exit(await command.entry_point())

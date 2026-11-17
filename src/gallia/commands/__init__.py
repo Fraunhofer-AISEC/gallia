@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import sys
+from typing import Any
 
 from gallia.command.base import AsyncScript
 from gallia.commands.discover.doip import DoIPDiscoverer
@@ -30,7 +31,7 @@ from gallia.commands.scan.uds.sa_dump_seeds import SASeedsDumper
 from gallia.commands.scan.uds.services import ServicesScanner
 from gallia.commands.scan.uds.sessions import SessionsScanner
 
-registry: list[type[AsyncScript]] = [
+registry: list[type[AsyncScript[Any]]] = [
     DoIPDiscoverer,
     ECUResetPrimitive,
     GenericPDUPrimitive,
