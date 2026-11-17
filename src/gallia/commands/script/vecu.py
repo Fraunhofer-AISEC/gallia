@@ -112,7 +112,6 @@ class VirtualECU[ConfigT: VirtualECUConfig](AsyncScript[ConfigT], ABC):
 
 
 class RngVirtualECU(VirtualECU[RngVirtualECUConfig]):
-    CONFIG_TYPE = RngVirtualECUConfig
     SHORT_HELP = "Virtual ECU with randomized behavior"
 
     def _server(self) -> RandomUDSServer:
@@ -120,7 +119,6 @@ class RngVirtualECU(VirtualECU[RngVirtualECUConfig]):
 
 
 class DbVirtualECU(VirtualECU[DbVirtualECUConfig]):
-    CONFIG_TYPE = DbVirtualECUConfig
     SHORT_HELP = "Virtual ECU which mimics the behavior of an ECU according to logs in the database"
 
     def _server(self) -> DBUDSServer:

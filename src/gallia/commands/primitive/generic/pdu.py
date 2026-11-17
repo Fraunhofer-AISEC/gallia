@@ -38,7 +38,6 @@ class GenericPDUPrimitiveConfig(AsyncScriptConfig):
 class GenericPDUPrimitive(AsyncScript[GenericPDUPrimitiveConfig]):
     """A raw scanner to send a plain pdu"""
 
-    CONFIG_TYPE = GenericPDUPrimitiveConfig
     SHORT_HELP = "send a plain PDU"
 
     async def main(self) -> None:

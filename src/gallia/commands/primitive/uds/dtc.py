@@ -65,7 +65,6 @@ class ControlDTCPrimitiveConfig(DTCPrimitiveConfig):
 class ReadDTCPrimitive(UDSScanner[ReadDTCPrimitiveConfig]):
     """Read out the Diagnostic Trouble Codes (DTC)"""
 
-    CONFIG_TYPE = ReadDTCPrimitiveConfig
     SHORT_HELP = "Read the DTCs using the ReadDTCInformation service"
 
     async def fetch_error_codes(self, mask: int, split: bool = True) -> dict[int, int]:
@@ -161,7 +160,6 @@ class ReadDTCPrimitive(UDSScanner[ReadDTCPrimitiveConfig]):
 
 
 class ClearDTCPrimitive(UDSScanner[ClearDTCPrimitiveConfig]):
-    CONFIG_TYPE = ClearDTCPrimitiveConfig
     SHORT_HELP = "Clear the DTCs using the ClearDiagnosticInformation service"
 
     async def main(self) -> None:
@@ -184,7 +182,6 @@ class ClearDTCPrimitive(UDSScanner[ClearDTCPrimitiveConfig]):
 
 
 class ControlDTCPrimitive(UDSScanner[ControlDTCPrimitiveConfig]):
-    CONFIG_TYPE = ControlDTCPrimitiveConfig
     SHORT_HELP = "Stop or resume the setting of DTCs using the ControlDTCSetting service"
 
     async def main(self) -> None:

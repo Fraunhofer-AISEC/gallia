@@ -83,7 +83,6 @@ class ClearDynamicallyDefinedDataIdentifierDDDIPrimitiveConfig(DDDIPrimitiveConf
 class DDDIPrimitive[ConfigT: DDDIPrimitiveConfig](UDSScanner[ConfigT]):
     """dynamically define data identifiers"""
 
-    CONFIG_TYPE = DDDIPrimitiveConfig
     SHORT_HELP = "DynamicallyDefineDataIdentifiers"
 
     async def main(self) -> None:
@@ -95,7 +94,6 @@ class DDDIPrimitive[ConfigT: DDDIPrimitiveConfig](UDSScanner[ConfigT]):
 
 
 class DefineByIdentifierDDDIPrimitive(DDDIPrimitive[DefineByIdentifierDDDIPrimitiveConfig]):
-    CONFIG_TYPE = DefineByIdentifierDDDIPrimitiveConfig
     SHORT_HELP = "DefineByIdentifier"
 
     async def main(self) -> None:
@@ -122,7 +120,6 @@ class DefineByIdentifierDDDIPrimitive(DDDIPrimitive[DefineByIdentifierDDDIPrimit
 
 
 class DefineByMemoryAddressDDDIPrimitive(DDDIPrimitive[DefineByMemoryAddressDDDIPrimitiveConfig]):
-    CONFIG_TYPE = DefineByMemoryAddressDDDIPrimitiveConfig
     SHORT_HELP = "DefineByMemoryAddress"
 
     async def main(self) -> None:
@@ -149,7 +146,6 @@ class DefineByMemoryAddressDDDIPrimitive(DDDIPrimitive[DefineByMemoryAddressDDDI
 class ClearDynamicallyDefinedDataIdentifierDDDIPrimitive(
     DDDIPrimitive[ClearDynamicallyDefinedDataIdentifierDDDIPrimitiveConfig]
 ):
-    CONFIG_TYPE = ClearDynamicallyDefinedDataIdentifierDDDIPrimitiveConfig
     SHORT_HELP = "ClearDynamicallyDefinedDataIdentifier"
 
     async def main(self) -> None:

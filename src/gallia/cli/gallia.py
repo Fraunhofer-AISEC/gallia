@@ -16,7 +16,7 @@ from pydantic import Field, create_model
 
 from gallia import exitcodes
 from gallia.command import AsyncScript
-from gallia.command.base import AsyncScriptConfig
+from gallia.command.base import AsyncScriptConfig, config_type_of
 from gallia.command.config import GalliaBaseModel
 from gallia.config import Config, load_config_file
 from gallia.log import Loglevel, setup_logging
@@ -34,14 +34,13 @@ def _create_parser_from_command(
     extra_defaults: defaults,
     model_counter: int = 0,
 ) -> tuple[type[PydanticBaseCommand], defaults, int]:
-    config_attributes = command.CONFIG_TYPE.attributes_from_config(config)
+    config_type = config_type_of(command)
+    config_attributes = config_type.attributes_from_config(config)
 
     # it is necessary to create a submodel, because several commands can use the same config
     # (e.g. of their base class if no additional arguments are required)
-    model_type = create_model(
-        f"_dynamic_{command.CONFIG_TYPE}_{model_counter}", __base__=command.CONFIG_TYPE
-    )
-    model_type._original_field_infos = command.CONFIG_TYPE._original_field_infos  # type: ignore[attr-defined]
+    model_type = create_model(f"_dynamic_{config_type}_{model_counter}", __base__=config_type)
+    model_type._original_field_infos = config_type._original_field_infos  # type: ignore[attr-defined]
     extra_defaults[model_type] = config_attributes
 
     setattr(model_type, _CLASS_ATTR, command)

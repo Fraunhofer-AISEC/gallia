@@ -60,7 +60,6 @@ class CLI[ConfigT: CLIConfig](AsyncScript[ConfigT], ABC):
 
 
 class GetCLI(CLI[GetCLIConfig]):
-    CONFIG_TYPE = GetCLIConfig
     SHORT_HELP = "Get properties of the power supply"
 
     async def main(self) -> None:
@@ -79,7 +78,6 @@ class GetCLI(CLI[GetCLIConfig]):
 
 
 class SetCLI(CLI[SetCLIConfig]):
-    CONFIG_TYPE = SetCLIConfig
     SHORT_HELP = "Set properties of the power supply"
 
     async def main(self) -> None:

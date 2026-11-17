@@ -24,7 +24,6 @@ class VINPrimitiveConfig(UDSScannerConfig):
 class VINPrimitive(UDSScanner[VINPrimitiveConfig]):
     """Request VIN"""
 
-    CONFIG_TYPE = VINPrimitiveConfig
     SHORT_HELP = "request VIN"
 
     async def main(self) -> None:

@@ -63,7 +63,6 @@ class DoIPDiscoverer(AsyncScript[DoIPDiscovererConfig]):
     the script continues to discover valid TargetAddresses that are accepted and respond
     to UDS TesterPresent requests."""
 
-    CONFIG_TYPE = DoIPDiscovererConfig
     SHORT_HELP = "zero-knowledge DoIP enumeration scanner"
 
     protocol_version = ProtocolVersions.ISO_13400_2_2019.value

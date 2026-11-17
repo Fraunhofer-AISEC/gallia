@@ -28,7 +28,6 @@ class CanFindXCPConfig(AsyncScriptConfig):
 
 
 class CanFindXCP(AsyncScript[CanFindXCPConfig]):
-    CONFIG_TYPE = CanFindXCPConfig
     SHORT_HELP = "XCP enumeration scanner for CAN"
 
     async def main(self) -> None:

@@ -44,7 +44,6 @@ class PDUFuzzerConfig(UDSScannerConfig):
 class PDUFuzzer(UDSScanner[PDUFuzzerConfig]):
     """Payload fuzzer"""
 
-    CONFIG_TYPE = PDUFuzzerConfig
     SHORT_HELP = "fuzz the UDS pdu of selected services"
 
     def generate_payload(self) -> bytes:

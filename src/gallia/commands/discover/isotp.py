@@ -62,7 +62,6 @@ class IsotpDiscoverer(AsyncScript[IsotpDiscovererConfig]):
     Addressing is only done via CAN IDs. Every endpoint has a source and destination CAN ID.
     Typically, there is also a broadcast destination ID to address all endpoints."""
 
-    CONFIG_TYPE = IsotpDiscovererConfig
     SHORT_HELP = "ISO-TP enumeration scanner"
 
     async def query_description(self, target_list: list[TargetURI], did: int) -> None:
