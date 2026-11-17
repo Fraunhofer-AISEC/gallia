@@ -39,7 +39,6 @@ class WMBAPrimitiveConfig(UDSScannerConfig):
 class WMBAPrimitive(UDSScanner[WMBAPrimitiveConfig]):
     """Write memory by address"""
 
-    CONFIG_TYPE = WMBAPrimitiveConfig
     SHORT_HELP = "WriteMemoryByAddress"
 
     async def main(self) -> None:

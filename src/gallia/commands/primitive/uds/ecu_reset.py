@@ -28,7 +28,6 @@ class ECUResetPrimitiveConfig(UDSScannerConfig):
 class ECUResetPrimitive(UDSScanner[ECUResetPrimitiveConfig]):
     """Use the ECUReset UDS service to reset the ECU"""
 
-    CONFIG_TYPE = ECUResetPrimitiveConfig
     SHORT_HELP = "ECUReset"
 
     async def main(self) -> None:

@@ -35,8 +35,6 @@ class HSFZDiscoverer(AsyncScript[HSFZDiscovererConfig]):
 
     SHORT_HELP = ""
 
-    CONFIG_TYPE = HSFZDiscovererConfig
-
     async def _probe(self, conn: HSFZConnection, req: UDSRequest, timeout: float) -> bool:
         data = req.pdu
         result = False

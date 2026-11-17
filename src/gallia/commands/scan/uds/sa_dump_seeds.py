@@ -60,7 +60,6 @@ class SASeedsDumperConfig(UDSScannerConfig):
 class SASeedsDumper(UDSScanner[SASeedsDumperConfig]):
     """This scanner tries to dump SecurityAccess seeds."""
 
-    CONFIG_TYPE = SASeedsDumperConfig
     SHORT_HELP = "dump SecurityAccess seeds"
 
     attempt_reset: bool = False

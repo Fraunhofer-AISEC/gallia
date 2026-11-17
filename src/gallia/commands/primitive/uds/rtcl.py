@@ -77,7 +77,6 @@ class RTCLPrimitiveConfig(UDSScannerConfig):
 class RTCLPrimitive(UDSScanner[RTCLPrimitiveConfig]):
     """Start or stop a provided routine or request its results"""
 
-    CONFIG_TYPE = RTCLPrimitiveConfig
     SHORT_HELP = "RoutineControl"
 
     async def main(self) -> None:

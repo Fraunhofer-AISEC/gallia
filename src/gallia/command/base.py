@@ -13,7 +13,7 @@ from datetime import UTC, datetime
 from enum import Enum, unique
 from logging import WARNING
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, cast, get_args
 
 from pydantic import ConfigDict
 
@@ -100,10 +100,6 @@ class AsyncScript[ConfigT: AsyncScriptConfig](ABC):
 
     The main entry_point is :meth:`entry_point()`.
     """
-
-    # The config type which is accepted by this class
-    # This is used for automatically creating the CLI
-    CONFIG_TYPE: type[AsyncScriptConfig] = AsyncScriptConfig
 
     #: The string which is shown on the cli with --help.
     SHORT_HELP: str | None = None
@@ -287,3 +283,23 @@ class AsyncScript[ConfigT: AsyncScriptConfig](ABC):
                     )
 
         return exit_code
+
+
+def config_type_of(cls: type[AsyncScript[Any]]) -> type[AsyncScriptConfig]:
+    """Return the concrete config class a command was parameterized with.
+
+    Walks the MRO, e.g. `FooScannerConfig` for
+    `class FooScanner(UDSScanner[FooScannerConfig])`. Unparameterized
+    hierarchies fall back to `AsyncScriptConfig`.
+    """
+    for c in cls.__mro__:
+        for base in c.__dict__.get("__orig_bases__", ()):
+            args = get_args(base)
+            if not args:
+                continue
+            arg = args[0]
+            # Bare TypeVars of intermediate generics (e.g. `UDSScanner[ConfigT]`)
+            # are not types; only a concrete config class matches.
+            if isinstance(arg, type) and issubclass(arg, AsyncScriptConfig):
+                return arg
+    return AsyncScriptConfig

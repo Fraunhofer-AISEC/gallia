@@ -12,7 +12,7 @@ from typing import Any, Self
 import aiosqlite
 from pydantic import model_validator
 
-from gallia.command.base import AsyncScript, AsyncScriptConfig
+from gallia.command.base import AsyncScript, AsyncScriptConfig, config_type_of
 from gallia.command.config import Field
 from gallia.log import get_logger
 
@@ -39,7 +39,6 @@ class RerunnerConfig(AsyncScriptConfig):
 
 
 class Rerunner(AsyncScript[RerunnerConfig]):
-    CONFIG_TYPE = RerunnerConfig
     SHORT_HELP = "Rerun a previous gallia command based on its run_meta in the database"
 
     async def main(self) -> None:
@@ -56,7 +55,7 @@ class Rerunner(AsyncScript[RerunnerConfig]):
         logger.info(f"Rerunning run {self.config.id} ({class_name}) with: {config}")
 
         gallia_class: type[AsyncScript[Any]] = getattr(importlib.import_module(module), class_name)
-        command = gallia_class(gallia_class.CONFIG_TYPE(**config))
+        command = gallia_class(config_type_of(gallia_class)(**config))
 
         sys.exit(await command.entry_point())
 

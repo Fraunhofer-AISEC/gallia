@@ -49,7 +49,6 @@ class IOCBIPrimitiveConfig(UDSScannerConfig):
 class IOCBIPrimitive(UDSScanner[IOCBIPrimitiveConfig]):
     """Input output control"""
 
-    CONFIG_TYPE = IOCBIPrimitiveConfig
     SHORT_HELP = "InputOutputControl"
 
     async def main(self) -> None:
