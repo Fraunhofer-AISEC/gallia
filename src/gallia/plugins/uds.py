@@ -4,45 +4,7 @@
 
 import sys
 from collections.abc import Mapping
-from typing import Any
-
-from gallia.command import AsyncScript
-from gallia.commands import HSFZDiscoverer
-from gallia.commands.discover.doip import DoIPDiscoverer
-from gallia.commands.primitive.generic.pdu import GenericPDUPrimitive
-from gallia.commands.primitive.uds.dddi import (
-    ClearDynamicallyDefinedDataIdentifierDDDIPrimitive,
-    DefineByIdentifierDDDIPrimitive,
-    DefineByMemoryAddressDDDIPrimitive,
-)
-from gallia.commands.primitive.uds.dtc import (
-    ClearDTCPrimitive,
-    ControlDTCPrimitive,
-    ReadDTCPrimitive,
-)
-from gallia.commands.primitive.uds.ecu_reset import ECUResetPrimitive
-from gallia.commands.primitive.uds.iocbi import IOCBIPrimitive
-from gallia.commands.primitive.uds.pdu import SendPDUPrimitive
-from gallia.commands.primitive.uds.ping import PingPrimitive
-from gallia.commands.primitive.uds.rdbi import (
-    ReadByIdentifierPrimitive,
-)
-from gallia.commands.primitive.uds.rmba import RMBAPrimitive
-from gallia.commands.primitive.uds.rtcl import RTCLPrimitive
-from gallia.commands.primitive.uds.vin import VINPrimitive
-from gallia.commands.primitive.uds.wdbi import (
-    WriteByIdentifierPrimitive,
-)
-from gallia.commands.primitive.uds.wmba import WMBAPrimitive
-from gallia.commands.scan.uds.identifiers import ScanIdentifiers
-from gallia.commands.scan.uds.memory import MemoryFunctionsScanner
-from gallia.commands.scan.uds.reset import ResetScanner
-from gallia.commands.scan.uds.sa_dump_seeds import SASeedsDumper
-from gallia.commands.scan.uds.services import ServicesScanner
-from gallia.commands.scan.uds.sessions import SessionsScanner
-from gallia.commands.script.rerun import Rerunner
-from gallia.commands.script.vecu import DbVirtualECU, RngVirtualECU
-from gallia.plugins.plugin import CommandTree, Plugin
+from gallia.plugins.plugin import Command, CommandTree, Plugin
 from gallia.services.uds import ECU
 from gallia.transports import BaseTransport, registry
 
@@ -62,14 +24,19 @@ class UDSPlugin(Plugin):
 
     @classmethod
     def ecus(cls) -> list[type[ECU]]:
+        from gallia.services.uds import ECU
+
         return [ECU]
 
     @classmethod
-    def commands(cls) -> Mapping[str, CommandTree | type[AsyncScript[Any]]]:
+    def commands(cls) -> Mapping[str, CommandTree | Command]:
         tree = {
             "discover": CommandTree(
                 description="discover scanners for hosts and endpoints",
-                subtree={"doip": DoIPDiscoverer, "hsfz": HSFZDiscoverer},
+                subtree={
+                    "doip": "gallia.commands.discover.doip:DoIPDiscoverer",
+                    "hsfz": "gallia.commands.discover.hsfz:HSFZDiscoverer",
+                },
             ),
             "primitive": CommandTree(
                 description="protocol specific primitives",
@@ -77,37 +44,39 @@ class UDSPlugin(Plugin):
                     "uds": CommandTree(
                         description="Universal Diagnostic Services",
                         subtree={
-                            "rdbi": ReadByIdentifierPrimitive,
+                            "rdbi": "gallia.commands.primitive.uds.rdbi:ReadByIdentifierPrimitive",
                             "dddi": CommandTree(
                                 description="DynamicallyDefineDataIdentifiers",
                                 subtree={
-                                    "identifier": DefineByIdentifierDDDIPrimitive,
-                                    "memory": DefineByMemoryAddressDDDIPrimitive,
-                                    "clear": ClearDynamicallyDefinedDataIdentifierDDDIPrimitive,
+                                    "identifier": "gallia.commands.primitive.uds.dddi:DefineByIdentifierDDDIPrimitive",
+                                    "memory": "gallia.commands.primitive.uds.dddi:DefineByMemoryAddressDDDIPrimitive",
+                                    "clear": "gallia.commands.primitive.uds.dddi:ClearDynamicallyDefinedDataIdentifierDDDIPrimitive",
                                 },
                             ),
                             "dtc": CommandTree(
                                 description="DiagnosticTroubleCodes",
                                 subtree={
-                                    "clear": ClearDTCPrimitive,
-                                    "control": ControlDTCPrimitive,
-                                    "read": ReadDTCPrimitive,
+                                    "clear": "gallia.commands.primitive.uds.dtc:ClearDTCPrimitive",
+                                    "control": "gallia.commands.primitive.uds.dtc:ControlDTCPrimitive",
+                                    "read": "gallia.commands.primitive.uds.dtc:ReadDTCPrimitive",
                                 },
                             ),
-                            "ecu-reset": ECUResetPrimitive,
-                            "vin": VINPrimitive,
-                            "iocbi": IOCBIPrimitive,
-                            "ping": PingPrimitive,
-                            "rmba": RMBAPrimitive,
-                            "rtcl": RTCLPrimitive,
-                            "pdu": SendPDUPrimitive,
-                            "wmba": WMBAPrimitive,
-                            "wdbi": WriteByIdentifierPrimitive,
+                            "ecu-reset": "gallia.commands.primitive.uds.ecu_reset:ECUResetPrimitive",
+                            "vin": "gallia.commands.primitive.uds.vin:VINPrimitive",
+                            "iocbi": "gallia.commands.primitive.uds.iocbi:IOCBIPrimitive",
+                            "ping": "gallia.commands.primitive.uds.ping:PingPrimitive",
+                            "rmba": "gallia.commands.primitive.uds.rmba:RMBAPrimitive",
+                            "rtcl": "gallia.commands.primitive.uds.rtcl:RTCLPrimitive",
+                            "pdu": "gallia.commands.primitive.uds.pdu:SendPDUPrimitive",
+                            "wmba": "gallia.commands.primitive.uds.wmba:WMBAPrimitive",
+                            "wdbi": "gallia.commands.primitive.uds.wdbi:WriteByIdentifierPrimitive",
                         },
                     ),
                     "generic": CommandTree(
                         description="generic networks primitives",
-                        subtree={"pdu": GenericPDUPrimitive},
+                        subtree={
+                            "pdu": "gallia.commands.primitive.generic.pdu:GenericPDUPrimitive"
+                        },
                     ),
                 },
             ),
@@ -117,29 +86,26 @@ class UDSPlugin(Plugin):
                     "uds": CommandTree(
                         description="Universal Diagnostic Services",
                         subtree={
-                            "memory": MemoryFunctionsScanner,
-                            "reset": ResetScanner,
-                            "dump-seeds": SASeedsDumper,
-                            "identifiers": ScanIdentifiers,
-                            "sessions": SessionsScanner,
-                            "services": ServicesScanner,
+                            "memory": "gallia.commands.scan.uds.memory:MemoryFunctionsScanner",
+                            "reset": "gallia.commands.scan.uds.reset:ResetScanner",
+                            "dump-seeds": "gallia.commands.scan.uds.sa_dump_seeds:SASeedsDumper",
+                            "identifiers": "gallia.commands.scan.uds.identifiers:ScanIdentifiers",
+                            "sessions": "gallia.commands.scan.uds.sessions:SessionsScanner",
+                            "services": "gallia.commands.scan.uds.services:ServicesScanner",
                         },
                     )
                 },
             ),
             "script": CommandTree(
                 description="miscellaneous helper scripts",
-                subtree={"rerun": Rerunner},
+                subtree={"rerun": "gallia.commands.script.rerun:Rerunner"},
             ),
         }
 
         if sys.platform.startswith("linux"):
-            from gallia.commands.discover.isotp import IsotpDiscoverer
-            from gallia.commands.fuzz.uds.pdu import PDUFuzzer
-
             tree["discover"].subtree.update(
                 {
-                    "isotp": IsotpDiscoverer,
+                    "isotp": "gallia.commands.discover.isotp:IsotpDiscoverer",
                 }
             )
 
@@ -150,7 +116,7 @@ class UDSPlugin(Plugin):
                         subtree={
                             "uds": CommandTree(
                                 description="Universal Diagnostic Services",
-                                subtree={"pdu": PDUFuzzer},
+                                subtree={"pdu": "gallia.commands.fuzz.uds.pdu:PDUFuzzer"},
                             )
                         },
                     ),
@@ -161,21 +127,19 @@ class UDSPlugin(Plugin):
                 {
                     "vecu": CommandTree(
                         description="spawn a virtual UDS ECU",
-                        subtree={"db": DbVirtualECU, "rng": RngVirtualECU},
+                        subtree={
+                            "db": "gallia.commands.script.vecu:DbVirtualECU",
+                            "rng": "gallia.commands.script.vecu:RngVirtualECU",
+                        },
                     ),
                 }
             )
 
         if sys.platform == "win32":
-            from gallia.commands.script.flexray import (
-                FRConfigDump,
-                FRDump,
-            )
-
             tree["script"].subtree.update(
                 {
-                    "fr-dump": FRDump,
-                    "fr-dump-config": FRConfigDump,
+                    "fr-dump": "gallia.commands.script.flexray:FRDump",
+                    "fr-dump-config": "gallia.commands.script.flexray:FRConfigDump",
                 }
             )
 
