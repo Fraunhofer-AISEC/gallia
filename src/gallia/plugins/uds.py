@@ -2,11 +2,18 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import sys
 from collections.abc import Mapping
+from typing import TYPE_CHECKING
+
 from gallia.plugins.plugin import Command, CommandTree, Plugin
-from gallia.services.uds import ECU
-from gallia.transports import BaseTransport, registry
+from gallia.transports import registry
+
+if TYPE_CHECKING:
+    from gallia.services.uds import ECU
+    from gallia.transports import BaseTransport
 
 
 class UDSPlugin(Plugin):

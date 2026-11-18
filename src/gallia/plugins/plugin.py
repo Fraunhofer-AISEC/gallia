@@ -2,17 +2,21 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, Mapping, MutableMapping
 from dataclasses import dataclass
 from functools import lru_cache
 from importlib import import_module
 from importlib.metadata import entry_points
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from gallia.command import AsyncScript
-from gallia.services.uds import ECU
-from gallia.transports import BaseTransport, TargetURI
+
+if TYPE_CHECKING:
+    from gallia.services.uds import ECU
+    from gallia.transports import BaseTransport, TargetURI
 
 #: A command is either an ``AsyncScript`` subclass or a specification string
 #: of the form ``"module:QualName"``. Specification strings are resolved
