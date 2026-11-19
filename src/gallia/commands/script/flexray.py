@@ -24,15 +24,10 @@ class FRDumpConfig(AsyncScriptConfig):
     slot: Ranges = Field([], description="filter on flexray slot")
 
 
-class FRDump(AsyncScript):
+class FRDump(AsyncScript[FRDumpConfig]):
     """Dump the content of the flexray bus"""
 
-    CONFIG_TYPE = FRDumpConfig
     SHORT_HELP = "runs a helper tool that dumps flexray bus traffic to stdout"
-
-    def __init__(self, config: FRDumpConfig):
-        super().__init__(config)
-        self.config: FRDumpConfig = config
 
     @staticmethod
     def poor_mans_dissect(frame: FlexRayFrame) -> str:
@@ -78,15 +73,10 @@ class FRConfigDumpConfig(AsyncScriptConfig):
     pretty: bool = Field(False, description="pretty print the configuration", short="p")
 
 
-class FRConfigDump(AsyncScript):
+class FRConfigDump(AsyncScript[FRConfigDumpConfig]):
     """Dump the flexray configuration as base64"""
 
-    CONFIG_TYPE = FRConfigDumpConfig
     SHORT_HELP = "Dump the flexray configuration as base64"
-
-    def __init__(self, config: FRConfigDumpConfig):
-        super().__init__(config)
-        self.config: FRConfigDumpConfig = config
 
     async def main(self) -> None:
         backend = FlexRayCtypesBackend.create(self.config.channel)

@@ -30,16 +30,10 @@ class HSFZDiscovererConfig(AsyncScriptConfig):
     timeout: float = Field(0.5, description="timeout value for request")
 
 
-class HSFZDiscoverer(AsyncScript):
+class HSFZDiscoverer(AsyncScript[HSFZDiscovererConfig]):
     """ECU and routing discovery scanner for HSFZ"""
 
     SHORT_HELP = ""
-
-    CONFIG_TYPE = HSFZDiscovererConfig
-
-    def __init__(self, config: HSFZDiscovererConfig):
-        super().__init__(config)
-        self.config: HSFZDiscovererConfig = config
 
     async def _probe(self, conn: HSFZConnection, req: UDSRequest, timeout: float) -> bool:
         data = req.pdu

@@ -35,15 +35,10 @@ class GenericPDUPrimitiveConfig(AsyncScriptConfig):
         return target_uri.raw
 
 
-class GenericPDUPrimitive(AsyncScript):
+class GenericPDUPrimitive(AsyncScript[GenericPDUPrimitiveConfig]):
     """A raw scanner to send a plain pdu"""
 
-    CONFIG_TYPE = GenericPDUPrimitiveConfig
     SHORT_HELP = "send a plain PDU"
-
-    def __init__(self, config: GenericPDUPrimitiveConfig):
-        super().__init__(config)
-        self.config: GenericPDUPrimitiveConfig = config
 
     async def main(self) -> None:
         transport = load_transport(self.config.target)

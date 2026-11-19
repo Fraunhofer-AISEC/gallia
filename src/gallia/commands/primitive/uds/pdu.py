@@ -27,15 +27,10 @@ class SendPDUPrimitiveConfig(UDSScannerConfig):
     )
 
 
-class SendPDUPrimitive(UDSScanner):
+class SendPDUPrimitive(UDSScanner[SendPDUPrimitiveConfig]):
     """A raw scanner to send plain PDU(s)"""
 
-    CONFIG_TYPE = SendPDUPrimitiveConfig
     SHORT_HELP = "send plain PDU(s)"
-
-    def __init__(self, config: SendPDUPrimitiveConfig):
-        super().__init__(config)
-        self.config: SendPDUPrimitiveConfig = config
 
     async def _send_pdu(self, pdu: HexBytes) -> None:
         parsed_request = UDSRequest.parse_dynamic(pdu)

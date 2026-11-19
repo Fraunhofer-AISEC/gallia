@@ -57,10 +57,9 @@ class SASeedsDumperConfig(UDSScannerConfig):
     )
 
 
-class SASeedsDumper(UDSScanner):
+class SASeedsDumper(UDSScanner[SASeedsDumperConfig]):
     """This scanner tries to dump SecurityAccess seeds."""
 
-    CONFIG_TYPE = SASeedsDumperConfig
     SHORT_HELP = "dump SecurityAccess seeds"
 
     attempt_reset: bool = False
@@ -69,7 +68,6 @@ class SASeedsDumper(UDSScanner):
 
     def __init__(self, config: SASeedsDumperConfig):
         super().__init__(config)
-        self.config: SASeedsDumperConfig = config
         self.implicit_logging = False
 
     async def request_seed(self, level: int, data: bytes) -> bytes | None:

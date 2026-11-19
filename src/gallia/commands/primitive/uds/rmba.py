@@ -28,15 +28,10 @@ class RMBAPrimitiveConfig(UDSScannerConfig):
     length: AutoInt = Field(description="The number of bytes which should be read", positional=True)
 
 
-class RMBAPrimitive(UDSScanner):
+class RMBAPrimitive(UDSScanner[RMBAPrimitiveConfig]):
     """Read memory by address"""
 
-    CONFIG_TYPE = RMBAPrimitiveConfig
     SHORT_HELP = "ReadMemoryByAddress"
-
-    def __init__(self, config: RMBAPrimitiveConfig):
-        super().__init__(config)
-        self.config: RMBAPrimitiveConfig = config
 
     async def main(self) -> None:
         try:

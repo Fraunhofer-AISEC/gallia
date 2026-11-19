@@ -48,10 +48,9 @@ class ServicesScannerConfig(UDSScannerConfig):
     )
 
 
-class ServicesScanner(UDSScanner):
+class ServicesScanner(UDSScanner[ServicesScannerConfig]):
     """Iterate sessions and services and find endpoints"""
 
-    CONFIG_TYPE = ServicesScannerConfig
     SHORT_HELP = "service scan on an ECU"
     EPILOG = (
         "https://github.com/Fraunhofer-AISEC/gallia/blob/master/docs/uds/scan_modes.md#service-scan"
@@ -59,7 +58,6 @@ class ServicesScanner(UDSScanner):
 
     def __init__(self, config: ServicesScannerConfig):
         super().__init__(config)
-        self.config: ServicesScannerConfig = config
 
         self.result: list[tuple[int, int]] = []
 

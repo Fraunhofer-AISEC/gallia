@@ -67,14 +67,10 @@ class RngVirtualECUConfig(
     )
 
 
-class VirtualECU(AsyncScript, ABC):
+class VirtualECU[ConfigT: VirtualECUConfig](AsyncScript[ConfigT], ABC):
     """Spawn a virtual ECU for testing purposes"""
 
     EPILOG = "https://github.com/Fraunhofer-AISEC/gallia/blob/master/docs/uds/virtual_ecu.md"
-
-    def __init__(self, config: VirtualECUConfig):
-        super().__init__(config)
-        self.config: VirtualECUConfig = config
 
     @abstractmethod
     def _server(self) -> UDSServer: ...
@@ -115,25 +111,15 @@ class VirtualECU(AsyncScript, ABC):
             await server.teardown()
 
 
-class RngVirtualECU(VirtualECU):
-    CONFIG_TYPE = RngVirtualECUConfig
+class RngVirtualECU(VirtualECU[RngVirtualECUConfig]):
     SHORT_HELP = "Virtual ECU with randomized behavior"
-
-    def __init__(self, config: RngVirtualECUConfig):
-        super().__init__(config)
-        self.config: RngVirtualECUConfig = config
 
     def _server(self) -> RandomUDSServer:
         return RandomUDSServer(self.config.seed, self.config, self.config)
 
 
-class DbVirtualECU(VirtualECU):
-    CONFIG_TYPE = DbVirtualECUConfig
+class DbVirtualECU(VirtualECU[DbVirtualECUConfig]):
     SHORT_HELP = "Virtual ECU which mimics the behavior of an ECU according to logs in the database"
-
-    def __init__(self, config: DbVirtualECUConfig):
-        super().__init__(config)
-        self.config: DbVirtualECUConfig = config
 
     def _server(self) -> DBUDSServer:
         return DBUDSServer(self.config.path, self.config.ecu, self.config.properties, self.config)

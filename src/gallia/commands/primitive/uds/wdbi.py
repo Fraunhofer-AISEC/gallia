@@ -39,15 +39,10 @@ class WriteByIdentifierPrimitiveConfig(UDSScannerConfig):
         return self
 
 
-class WriteByIdentifierPrimitive(UDSScanner):
+class WriteByIdentifierPrimitive(UDSScanner[WriteByIdentifierPrimitiveConfig]):
     """A simple scanner to talk to the write by identifier service"""
 
-    CONFIG_TYPE = WriteByIdentifierPrimitiveConfig
     SHORT_HELP = "WriteDataByIdentifier"
-
-    def __init__(self, config: WriteByIdentifierPrimitiveConfig):
-        super().__init__(config)
-        self.config: WriteByIdentifierPrimitiveConfig = config
 
     async def main(self) -> None:
         try:

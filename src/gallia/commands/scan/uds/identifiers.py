@@ -48,18 +48,13 @@ class ScanIdentifiersConfig(UDSScannerConfig):
     )
 
 
-class ScanIdentifiers(UDSScanner):
+class ScanIdentifiers(UDSScanner[ScanIdentifiersConfig]):
     """This scanner scans DataIdentifiers of various
     services. Specific requirements such as for RoutineControl or SecurityAccess
     are considered and implemented in the script.
     """
 
-    CONFIG_TYPE = ScanIdentifiersConfig
     SHORT_HELP = "identifier scan of a UDS service"
-
-    def __init__(self, config: ScanIdentifiersConfig):
-        super().__init__(config)
-        self.config: ScanIdentifiersConfig = config
 
     async def main(self) -> None:
         if self.config.sessions is None:

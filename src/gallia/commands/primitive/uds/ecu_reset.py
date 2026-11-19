@@ -25,15 +25,10 @@ class ECUResetPrimitiveConfig(UDSScannerConfig):
     subfunc: AutoInt = Field(0x01, description="subfunc", short="f")
 
 
-class ECUResetPrimitive(UDSScanner):
+class ECUResetPrimitive(UDSScanner[ECUResetPrimitiveConfig]):
     """Use the ECUReset UDS service to reset the ECU"""
 
-    CONFIG_TYPE = ECUResetPrimitiveConfig
     SHORT_HELP = "ECUReset"
-
-    def __init__(self, config: ECUResetPrimitiveConfig):
-        super().__init__(config)
-        self.config: ECUResetPrimitiveConfig = config
 
     async def main(self) -> None:
         resp: UDSResponse = await self.ecu.set_session(self.config.session)

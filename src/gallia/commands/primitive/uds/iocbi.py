@@ -46,15 +46,10 @@ class IOCBIPrimitiveConfig(UDSScannerConfig):
     )
 
 
-class IOCBIPrimitive(UDSScanner):
+class IOCBIPrimitive(UDSScanner[IOCBIPrimitiveConfig]):
     """Input output control"""
 
-    CONFIG_TYPE = IOCBIPrimitiveConfig
     SHORT_HELP = "InputOutputControl"
-
-    def __init__(self, config: IOCBIPrimitiveConfig):
-        super().__init__(config)
-        self.config: IOCBIPrimitiveConfig = config
 
     async def main(self) -> None:
         try:

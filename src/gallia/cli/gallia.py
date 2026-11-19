@@ -16,7 +16,7 @@ from pydantic import Field, create_model
 
 from gallia import exitcodes
 from gallia.command import AsyncScript
-from gallia.command.base import AsyncScriptConfig
+from gallia.command.base import AsyncScriptConfig, config_type_of
 from gallia.command.config import GalliaBaseModel
 from gallia.config import Config, load_config_file
 from gallia.log import Loglevel, setup_logging
@@ -29,16 +29,18 @@ _CLASS_ATTR = "_dynamic_gallia_command_class_reference"
 
 
 def _create_parser_from_command(
-    command: type[AsyncScript], config: Config, extra_defaults: defaults, model_counter: int = 0
+    command: type[AsyncScript[Any]],
+    config: Config,
+    extra_defaults: defaults,
+    model_counter: int = 0,
 ) -> tuple[type[PydanticBaseCommand], defaults, int]:
-    config_attributes = command.CONFIG_TYPE.attributes_from_config(config)
+    config_type = config_type_of(command)
+    config_attributes = config_type.attributes_from_config(config)
 
     # it is necessary to create a submodel, because several commands can use the same config
     # (e.g. of their base class if no additional arguments are required)
-    model_type = create_model(
-        f"_dynamic_{command.CONFIG_TYPE}_{model_counter}", __base__=command.CONFIG_TYPE
-    )
-    model_type._original_field_infos = command.CONFIG_TYPE._original_field_infos  # type: ignore[attr-defined]
+    model_type = create_model(f"_dynamic_{config_type}_{model_counter}", __base__=config_type)
+    model_type._original_field_infos = config_type._original_field_infos  # type: ignore[attr-defined]
     extra_defaults[model_type] = config_attributes
 
     setattr(model_type, _CLASS_ATTR, command)
@@ -77,7 +79,7 @@ def _create_parser_from_tree(
 
 # TODO: Move this function into some CLI library package.
 def create_parser(
-    commands: type[AsyncScript] | MutableMapping[str, CommandTree | type[AsyncScript]],
+    commands: type[AsyncScript[Any]] | MutableMapping[str, CommandTree | type[AsyncScript[Any]]],
 ) -> ArgumentParser[PydanticBaseCommand]:
     """
     Creates an argument parser out of the given command hierarchy.
@@ -100,14 +102,14 @@ def create_parser(
     return ArgumentParser(model=model, extra_defaults=extra_defaults)
 
 
-def get_command(config: AsyncScriptConfig) -> AsyncScript:
+def get_command(config: AsyncScriptConfig) -> AsyncScript[Any]:
     """
     Retrieve the command out of the config returned by an argument parser as created by create_parser().
 
     :param config:
     :return: The command initiated with the given config.
     """
-    cmd: type[AsyncScript] = getattr(config, _CLASS_ATTR)
+    cmd: type[AsyncScript[Any]] = getattr(config, _CLASS_ATTR)
 
     return cmd(config)
 
@@ -123,7 +125,7 @@ def _get_log_level(cli_level: int) -> Loglevel:
 
 # TODO: Move this function into some CLI library package.
 def parse_and_run(
-    commands: type[AsyncScript] | MutableMapping[str, CommandTree | type[AsyncScript]],
+    commands: type[AsyncScript[Any]] | MutableMapping[str, CommandTree | type[AsyncScript[Any]]],
     auto_complete: bool = True,
     setup_log: bool = True,
     top_level_options: Mapping[str, tuple[Callable[[], None], str]] | None = None,
@@ -203,7 +205,7 @@ def version() -> None:
 
 
 def _walk_commands(
-    commands: Mapping[str, CommandTree | type[AsyncScript]], level: int = 0
+    commands: Mapping[str, CommandTree | type[AsyncScript[Any]]], level: int = 0
 ) -> tuple[str, int]:
     command_str = ""
     command_ctr = 0

@@ -41,15 +41,10 @@ class PDUFuzzerConfig(UDSScannerConfig):
     observe_can_ids: Ranges = Field([], description="can ids to observe while fuzzing")
 
 
-class PDUFuzzer(UDSScanner):
+class PDUFuzzer(UDSScanner[PDUFuzzerConfig]):
     """Payload fuzzer"""
 
-    CONFIG_TYPE = PDUFuzzerConfig
     SHORT_HELP = "fuzz the UDS pdu of selected services"
-
-    def __init__(self, config: PDUFuzzerConfig):
-        super().__init__(config)
-        self.config: PDUFuzzerConfig = config
 
     def generate_payload(self) -> bytes:
         return random.randbytes(random.randint(self.config.min_length, self.config.max_length))

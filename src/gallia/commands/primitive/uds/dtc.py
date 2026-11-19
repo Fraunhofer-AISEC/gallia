@@ -62,15 +62,10 @@ class ControlDTCPrimitiveConfig(DTCPrimitiveConfig):
     )
 
 
-class ReadDTCPrimitive(UDSScanner):
+class ReadDTCPrimitive(UDSScanner[ReadDTCPrimitiveConfig]):
     """Read out the Diagnostic Trouble Codes (DTC)"""
 
-    CONFIG_TYPE = ReadDTCPrimitiveConfig
     SHORT_HELP = "Read the DTCs using the ReadDTCInformation service"
-
-    def __init__(self, config: ReadDTCPrimitiveConfig):
-        super().__init__(config)
-        self.config: ReadDTCPrimitiveConfig = config
 
     async def fetch_error_codes(self, mask: int, split: bool = True) -> dict[int, int]:
         ecu_response = await self.ecu.read_dtc_information_report_dtc_by_status_mask(mask)
@@ -164,13 +159,8 @@ class ReadDTCPrimitive(UDSScanner):
             )
 
 
-class ClearDTCPrimitive(UDSScanner):
-    CONFIG_TYPE = ClearDTCPrimitiveConfig
+class ClearDTCPrimitive(UDSScanner[ClearDTCPrimitiveConfig]):
     SHORT_HELP = "Clear the DTCs using the ClearDiagnosticInformation service"
-
-    def __init__(self, config: ClearDTCPrimitiveConfig):
-        super().__init__(config)
-        self.config: ClearDTCPrimitiveConfig = config
 
     async def main(self) -> None:
         group_of_dtc: int = self.config.group_of_dtc
@@ -191,17 +181,10 @@ class ClearDTCPrimitive(UDSScanner):
             logger.result("Success")
 
 
-class ControlDTCPrimitive(UDSScanner):
-    CONFIG_TYPE = ControlDTCPrimitiveConfig
+class ControlDTCPrimitive(UDSScanner[ControlDTCPrimitiveConfig]):
     SHORT_HELP = "Stop or resume the setting of DTCs using the ControlDTCSetting service"
 
-    def __init__(self, config: ControlDTCPrimitiveConfig):
-        super().__init__(config)
-        self.config: ControlDTCPrimitiveConfig = config
-
     async def main(self) -> None:
-        assert isinstance(self.config, ControlDTCPrimitiveConfig)
-
         if self.config.stop:
             await self.ecu.control_dtc_setting(CDTCSSubFuncs.OFF)
         else:
