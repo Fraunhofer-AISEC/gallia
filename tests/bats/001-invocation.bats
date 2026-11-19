@@ -21,6 +21,10 @@ load "helpers"
 	rm_gallia_toml
 }
 
+@test "invoke gallia --check-plugins" {
+	run -0 gallia --check-plugins
+}
+
 @test "invoke gallia -h" {
 	gallia -h
 }

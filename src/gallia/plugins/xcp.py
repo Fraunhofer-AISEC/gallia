@@ -4,10 +4,8 @@
 
 import sys
 from collections.abc import Mapping
-from typing import Any
 
-from gallia.command import AsyncScript
-from gallia.plugins.plugin import CommandTree, Plugin
+from gallia.plugins.plugin import Command, CommandTree, Plugin
 
 
 class XCPPlugin(Plugin):
@@ -20,12 +18,15 @@ class XCPPlugin(Plugin):
         return "Default Gallia plugin for Universal Measurement and Calibration Protocol (XCP) functionality"
 
     @classmethod
-    def commands(cls) -> Mapping[str, CommandTree | type[AsyncScript[Any]]]:
-        tree: dict[str, CommandTree | type[AsyncScript[Any]]] = {}
+    def commands(cls) -> Mapping[str, CommandTree | Command]:
+        tree: dict[str, CommandTree | Command] = {}
 
         if sys.platform.startswith("linux"):
-            from gallia.commands.discover.find_xcp import CanFindXCP
-
-            tree = {"discover": CommandTree(description=None, subtree={"xcp": CanFindXCP})}
+            tree = {
+                "discover": CommandTree(
+                    description=None,
+                    subtree={"xcp": "gallia.commands.discover.find_xcp:CanFindXCP"},
+                )
+            }
 
         return tree
