@@ -430,8 +430,6 @@ class DiagnosticMessageAcknowledgement:
 
 
 class DiagnosticMessagePositiveAcknowledgement(DiagnosticMessageAcknowledgement):
-    ACKCode: DiagnosticMessagePositiveAckCodes
-
     @classmethod
     def unpack(cls, data: bytes) -> Self:
         source_address, target_address, ack_code = struct.unpack("!HHB", data[:5])
@@ -446,8 +444,6 @@ class DiagnosticMessagePositiveAcknowledgement(DiagnosticMessageAcknowledgement)
 
 
 class DiagnosticMessageNegativeAcknowledgement(DiagnosticMessageAcknowledgement):
-    ACKCode: DiagnosticMessageNegativeAckCodes
-
     @classmethod
     def unpack(cls, data: bytes) -> Self:
         source_address, target_address, ack_code = struct.unpack("!HHB", data[:5])
