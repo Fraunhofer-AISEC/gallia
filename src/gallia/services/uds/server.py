@@ -679,7 +679,7 @@ class RandomUDSServer(UDSServer):
 
 class DBUDSServer(UDSServer):
     # The subclass only changes the defaults; UDSServer instantiates it via self.Behavior().
-    class Behavior(UDSServer.Behavior):
+    class Behavior(UDSServer.Behavior):  # ty: ignore[invalid-attribute-override]
         default_response_if_service_not_supported: bool = False
         default_response_if_missing_sub_function: bool = False
         default_response_if_sub_function_not_supported: bool = False

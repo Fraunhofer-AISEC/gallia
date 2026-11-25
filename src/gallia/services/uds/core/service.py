@@ -2944,7 +2944,7 @@ class InputOutputControlByIdentifierRequest(
     minimal_length=4,
     maximal_length=None,
 ):
-    RESPONSE_TYPE: type[InputOutputControlByIdentifierResponse]  # ty: ignore[incompatible-mutable-override]
+    RESPONSE_TYPE: type[InputOutputControlByIdentifierResponse]
 
     def __init__(
         self,
@@ -3266,7 +3266,7 @@ class RoutineControlRequest(
     minimal_length=4,
     maximal_length=None,
 ):
-    RESPONSE_TYPE: type[RoutineControlResponse]  # ty: ignore[incompatible-mutable-override]
+    RESPONSE_TYPE: type[RoutineControlResponse]
 
     def __init__(
         self,
