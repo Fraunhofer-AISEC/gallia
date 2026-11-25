@@ -12,8 +12,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Install uv and Python ${{ inputs.python-version }}
-      if: ${{ inputs.python-version != '' }}
+    - name: Install uv and Python ${{ inputs.python-version || 'default' }}
       uses: astral-sh/setup-uv@v7
       with:
         enable-cache: true
@@ -23,12 +22,6 @@ runs:
     # uv builds it automatically with the rust toolchain.
     - name: Install rust toolchain
       uses: actions-rust-lang/setup-rust-toolchain@v2
-
-    - name: Install uv and Python default
-      if: ${{ inputs.python-version == '' }}
-      uses: astral-sh/setup-uv@v7
-      with:
-        enable-cache: true
 
     - name: Install the project
       shell: bash
