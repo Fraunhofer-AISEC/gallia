@@ -9,6 +9,7 @@ from gallia.services.uds.core.utils import (
     address_and_size_length,
     uds_memory_parameters,
 )
+from gallia.utils import hex_join
 
 
 @pytest.mark.parametrize("hostport", ["[fec2::10]:4509823409582350", "hallo:3575983275498230"])
@@ -129,3 +130,17 @@ def test_address_and_size_length(
 def test_invalid_address_and_size_length(input_: int) -> None:
     with pytest.raises(ValueError):
         address_and_size_length(input_)
+
+
+@pytest.mark.parametrize(
+    "values,spec,sep,expected",
+    [
+        ([], "#04x", ", ", ""),
+        ([0x01, 0x03, 0x60], "#04x", ", ", "0x01, 0x03, 0x60"),
+        ([0x01, 0x10], "#04x", "->", "0x01->0x10"),
+        ([0xE00, 0x10], "#06x", ", ", "0x0e00, 0x0010"),
+        (range(3), "#x", ", ", "0x0, 0x1, 0x2"),
+    ],
+)
+def test_hex_join(values: list[int] | range, spec: str, sep: str, expected: str) -> None:
+    assert hex_join(values, spec, sep) == expected

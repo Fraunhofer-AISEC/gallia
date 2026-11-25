@@ -13,7 +13,7 @@ from gallia.log import get_logger
 from gallia.services.uds import NegativeResponse, UDSErrorCodes, UDSRequestConfig
 from gallia.services.uds.core.constants import DiagnosticSessionControlSubFuncs, EcuResetSubFuncs
 from gallia.services.uds.core.service import DiagnosticSessionControlResponse
-from gallia.services.uds.core.utils import g_repr
+from gallia.utils import HEX_U8, hex_join
 
 logger = get_logger(__name__)
 
@@ -63,24 +63,24 @@ class SessionsScanner(UDSScanner[SessionsScannerConfig]):
             isinstance(resp, NegativeResponse)
             and resp.response_code == UDSErrorCodes.conditionsNotCorrect
         ):
-            logger.notice(f"Received conditionsNotCorrect for session {g_repr(session)}")
+            logger.notice(f"Received conditionsNotCorrect for session {session:{HEX_U8}}")
             if not use_hooks:
                 logger.warning(
-                    f"Session {g_repr(session)} is potentially available but could not be entered. Use --with-hooks to try to enter the session using hooks to scan for transitions available from that session."
+                    f"Session {session:{HEX_U8}} is potentially available but could not be entered. Use --with-hooks to try to enter the session using hooks to scan for transitions available from that session."
                 )
                 return resp
 
-            logger.debug(f"Attempting to change to session {g_repr(session)} with hooks")
+            logger.debug(f"Attempting to change to session {session:{HEX_U8}} with hooks")
             resp_ = await self.ecu.set_session(
                 session, config=UDSRequestConfig(skip_hooks=False), use_db=False
             )
 
             if not isinstance(resp_, NegativeResponse):
-                logger.notice(f"Successfully changed to session {g_repr(session)} with hooks")
+                logger.notice(f"Successfully changed to session {session:{HEX_U8}} with hooks")
                 resp = resp_
             else:
                 logger.notice(
-                    f"Could not successfully change to session {g_repr(session)} even with hooks"
+                    f"Could not successfully change to session {session:{HEX_U8}} even with hooks"
                 )
 
         return resp
@@ -94,7 +94,7 @@ class SessionsScanner(UDSScanner[SessionsScannerConfig]):
 
                 if isinstance(resp, NegativeResponse):
                     logger.error(
-                        f"Could not change to session {g_repr(session)} as part of stack: {resp}. Try with --reset to reset between each iteration."
+                        f"Could not change to session {session:{HEX_U8}} as part of stack: {resp}. Try with --reset to reset between each iteration."
                     )
                     return False
 
@@ -106,7 +106,7 @@ class SessionsScanner(UDSScanner[SessionsScannerConfig]):
 
             except Exception as e:
                 logger.error(
-                    f"Could not change to session {g_repr(session)} as part of stack: {g_repr(e)}. Try with --reset to reset between each iteration."
+                    f"Could not change to session {session:{HEX_U8}} as part of stack: {e!r}. Try with --reset to reset between each iteration."
                 )
                 return False
 
@@ -137,14 +137,14 @@ class SessionsScanner(UDSScanner[SessionsScannerConfig]):
                 searched_sessions.append(stack[-1])
 
                 if stack:
-                    logger.info(f"Starting from session: {g_repr(stack[-1])}")
+                    logger.info(f"Starting from session: {stack[-1]:{HEX_U8}}")
 
                 # Recover stack in first loop iteration and afterwards only if needed
                 recover_stack = True
 
                 for session in sessions:
                     if session in self.config.skip:
-                        logger.info(f"Skipping testing for session {g_repr(session)} as requested")
+                        logger.info(f"Skipping testing for session {session:{HEX_U8}} as requested")
                         continue
 
                     if self.config.reset:
@@ -183,12 +183,12 @@ class SessionsScanner(UDSScanner[SessionsScannerConfig]):
                             isinstance(resp, NegativeResponse)
                             and resp.response_code == UDSErrorCodes.subFunctionNotSupported
                         ):
-                            logger.info(f"Could not change to session {g_repr(session)}: {resp}")
+                            logger.info(f"Could not change to session {session:{HEX_U8}}: {resp}")
                             # For this NRC, continue without recovering the stack
                             continue
 
                         logger.notice(
-                            f"Found session: {g_repr(session)} via stack: {g_repr(stack)}; {resp}"
+                            f"Found session: {session:{HEX_U8}} via stack: [{hex_join(stack, HEX_U8)}]; {resp}"
                         )
 
                         if isinstance(resp, NegativeResponse):
@@ -206,7 +206,7 @@ class SessionsScanner(UDSScanner[SessionsScannerConfig]):
                         activated_sessions.add(session)
                         positive_results.append({"session": session, "stack": stack, "error": None})
                     except TimeoutError:
-                        logger.warning(f"Could not change to session {g_repr(session)}: Timeout")
+                        logger.warning(f"Could not change to session {session:{HEX_U8}}: Timeout")
                         # TODO: Is there a need to recover stack in this case?
                         continue
                     except Exception as e:
@@ -227,12 +227,12 @@ class SessionsScanner(UDSScanner[SessionsScannerConfig]):
                 if session != previous_session:
                     previous_session = session
                     self.result.append(int(session))
-                    logger.result(f"* Session {g_repr(session)} ")
+                    logger.result(f"* Session {session:{HEX_U8}} ")
 
                     if self.db_handler is not None:
                         await self.db_handler.insert_session_transition(session, res["stack"])
 
-                logger.result(f"\tvia stack: {'->'.join([f'{g_repr(i)}' for i in res['stack']])}")
+                logger.result(f"\tvia stack: {hex_join(res['stack'], HEX_U8, '->')}")
         else:
             logger.result("Could not successfully change to any session!")
 
@@ -246,11 +246,11 @@ class SessionsScanner(UDSScanner[SessionsScannerConfig]):
                 if session not in activated_sessions:
                     if session != previous_session:
                         previous_session = session
-                        logger.result(f"* Session {g_repr(session)} ")
+                        logger.result(f"* Session {session:{HEX_U8}} ")
 
                         if self.db_handler is not None:
                             await self.db_handler.insert_session_transition(session, res["stack"])
 
                     logger.result(
-                        f"\tvia stack: {'->'.join([f'{g_repr(i)}' for i in res['stack']])} (NRC: {res['error'].name})"
+                        f"\tvia stack: {hex_join(res['stack'], HEX_U8, '->')} (NRC: {res['error'].name})"
                     )
