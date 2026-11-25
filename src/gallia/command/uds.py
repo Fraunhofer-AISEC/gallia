@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+__lazy_modules__ = {"gallia.plugins"}
+
 import asyncio
 import sys
 from abc import ABC
@@ -12,7 +14,7 @@ from pydantic import field_serializer, field_validator, model_validator
 from gallia.command.base import AsyncScript, AsyncScriptConfig, FileNames
 from gallia.command.config import Field, InitializeIdempotent
 from gallia.log import get_logger
-from gallia.plugins.plugin import load_ecu, load_ecus, load_transport
+from gallia.plugins import plugin
 from gallia.power_supply import PowerSupply
 from gallia.power_supply.uri import PowerSupplyURI
 from gallia.services.uds.core.exception import UDSException
@@ -107,7 +109,7 @@ class UDSScannerConfig(AsyncScriptConfig, cli_group="uds", config_section="galli
     @field_validator("oem")
     @classmethod
     def check_oem(cls, v: str) -> str:
-        ecu_names = [ecu.OEM for ecu in load_ecus()]
+        ecu_names = [ecu.OEM for ecu in plugin.load_ecus()]
 
         if v not in ecu_names:
             raise ValueError(f"Not a valid OEM. Use any of {ecu_names}.")
@@ -191,7 +193,7 @@ class UDSScanner[ConfigT: UDSScannerConfig](AsyncScript[ConfigT], ABC):
         # Check whether `transport` was provided and use it over `target`
         if self.config.transport is None:
             logger.debug(f"No transport given, loading from target string: '{self.config.target}'")
-            transport = load_transport(self.config.target)
+            transport = plugin.load_transport(self.config.target)
         else:
             logger.debug("Transport given, ignoring target string")
             transport = self.config.transport
@@ -202,7 +204,7 @@ class UDSScanner[ConfigT: UDSScannerConfig](AsyncScript[ConfigT], ABC):
 
         await transport.connect()
 
-        self.ecu = load_ecu(self.config.oem)(
+        self.ecu = plugin.load_ecu(self.config.oem)(
             transport,
             timeout=self.config.timeout,
             max_retry=self.config.max_retries,

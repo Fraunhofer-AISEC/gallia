@@ -2,14 +2,31 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+# Python 3.15+ can defer parser and runtime dependencies for top-level actions.
+__lazy_modules__ = {
+    "argcomplete",
+    "argparse",
+    "asyncio",
+    "gallia.command",
+    "gallia.command.base",
+    "gallia.command.config",
+    "gallia.config",
+    "gallia.log",
+    "gallia.pydantic_argparse",
+    "pprint",
+    "pydantic",
+}
+
 import argparse
 import asyncio
+import io
 import os
 import sys
 from collections.abc import Callable, Mapping, MutableMapping, Sequence
+from contextlib import redirect_stderr, redirect_stdout
 from importlib.metadata import version as meta_version
 from pprint import pprint
-from typing import Any, Never
+from typing import Any, NamedTuple, Never
 
 import argcomplete
 from pydantic import Field, create_model
@@ -20,7 +37,15 @@ from gallia.command.base import AsyncScriptConfig, config_type_of
 from gallia.command.config import GalliaBaseModel
 from gallia.config import Config, load_config_file
 from gallia.log import Loglevel, setup_logging
-from gallia.plugins.plugin import CommandTree, load_commands, load_plugins
+from gallia.plugins.plugin import (
+    Command,
+    CommandTree,
+    iter_command_leaves,
+    load_commands,
+    load_plugins,
+    resolve_command,
+    validate_plugins,
+)
 from gallia.pydantic_argparse import ArgumentParser
 from gallia.pydantic_argparse import BaseCommand as PydanticBaseCommand
 
@@ -63,10 +88,11 @@ def _create_parser_from_tree(
             )
             description = value.description
         else:
+            command = resolve_command(value)
             model_type, extra_defaults, model_counter = _create_parser_from_command(
-                value, config, extra_defaults, model_counter
+                command, config, extra_defaults, model_counter
             )
-            description = value.SHORT_HELP
+            description = command.SHORT_HELP
 
         args[key] = (model_type | None, Field(None, description=description))
 
@@ -79,10 +105,13 @@ def _create_parser_from_tree(
 
 # TODO: Move this function into some CLI library package.
 def create_parser(
-    commands: type[AsyncScript[Any]] | MutableMapping[str, CommandTree | type[AsyncScript[Any]]],
+    commands: type[AsyncScript[Any]] | MutableMapping[str, CommandTree | Command],
 ) -> ArgumentParser[PydanticBaseCommand]:
     """
     Creates an argument parser out of the given command hierarchy.
+
+    This function calls the factories for all commands in the tree.
+    For lazy resolution of only the selected command, see parse_and_run().
 
     For accessing the command after parsing, see get_command().
     See parse_and_run() for an easy-to-use one call alternative.
@@ -114,6 +143,157 @@ def get_command(config: AsyncScriptConfig) -> AsyncScript[Any]:
     return cmd(config)
 
 
+def _select_command_path(
+    commands: Mapping[str, CommandTree | Command],
+    path: Sequence[str],
+) -> MutableMapping[str, CommandTree | Command]:
+    """Keep only the selected command or the entries needed for a subtree's help."""
+    name, rest = path[0], path[1:]
+    value = commands[name]
+    if isinstance(value, CommandTree):
+        subtree = (
+            _select_command_path(value.subtree, rest) if rest else _shallow_top_level(value.subtree)
+        )
+        value = CommandTree(value.description, subtree)
+    return {name: value}
+
+
+def _shallow_top_level(
+    commands: Mapping[str, CommandTree | Command],
+) -> MutableMapping[str, CommandTree | Command]:
+    """Keep the top level of the given command hierarchy.
+
+    ``CommandTree`` branches are represented by empty placeholders: the
+    resulting parser spans all command names with their descriptions,
+    which is sufficient to display the top-level help.
+    """
+    shallow: MutableMapping[str, CommandTree | Command] = {}
+
+    for name, value in commands.items():
+        if isinstance(value, CommandTree):
+            shallow[name] = CommandTree(value.description, subtree={})
+        else:
+            shallow[name] = value
+
+    return shallow
+
+
+class _Selection(NamedTuple):
+    """The command selected by ``argv``.
+
+    ``path`` holds the matched command names. ``leaf`` states whether the
+    selection is a leaf command; otherwise it is a command tree, whose
+    children are addressed by the remaining tokens (``rest``).
+    """
+
+    path: list[str]
+    leaf: bool
+    rest: Sequence[str]
+
+
+def _find_command_path(
+    commands: Mapping[str, CommandTree | Command],
+    argv: Sequence[str],
+    top_level_actions: Mapping[str, Callable[[], None]] | None = None,
+) -> _Selection | None:
+    """Walks ``argv`` and returns the deepest command selection.
+
+    ``None`` is returned if the selection cannot be narrowed without the
+    full command tree, i.e. for options or garbage tokens before any
+    command name, signaling the caller to fall back to a parser spanning
+    all commands.
+
+    Top-level actions (e.g. ``--version``) are executed here, before any
+    command module is imported.
+    """
+    path: list[str] = []
+    level: Mapping[str, CommandTree | Command] = commands
+
+    for index, token in enumerate(argv):
+        if token.startswith("-"):
+            if not path:
+                if (
+                    top_level_actions is not None
+                    and (action := top_level_actions.get(token)) is not None
+                ):
+                    action()
+                    sys.exit(exitcodes.OK)
+                return None
+            return _Selection(path, False, argv[index:])
+
+        if (value := level.get(token)) is None:
+            if not path:
+                return None
+            return _Selection(path, False, argv[index:])
+
+        path.append(token)
+
+        if isinstance(value, CommandTree):
+            level = value.subtree
+        else:
+            return _Selection(path, True, argv[index + 1 :])
+
+    return _Selection(path, False, [])
+
+
+def _add_top_level_options(
+    parser: ArgumentParser[PydanticBaseCommand],
+    top_level_options: Mapping[str, tuple[Callable[[], None], str]] | None,
+) -> None:
+    if top_level_options is None:
+        return
+
+    for name, (func, help_) in top_level_options.items():
+
+        class Action(argparse.Action):
+            cmd = staticmethod(func)
+
+            def __call__(
+                self,
+                parser: argparse.ArgumentParser,
+                namespace: argparse.Namespace,
+                values: str | Sequence[Any] | None,
+                option_string: str | None = None,
+            ) -> None:
+                self.cmd()
+                sys.exit(exitcodes.OK)
+
+        parser.add_argument(
+            name,
+            nargs=0,
+            action=Action,
+            help=help_,
+        )
+
+
+def _parse_selected(
+    parser: ArgumentParser[PydanticBaseCommand],
+    commands: MutableMapping[str, CommandTree | Command],
+    top_level_options: Mapping[str, tuple[Callable[[], None], str]] | None,
+) -> tuple[PydanticBaseCommand, Any]:
+    """Parses ``sys.argv`` with a parser spanning only the selected subtree.
+
+    Help and error messages of the pruned parser can differ from the full
+    parser, because the usage line omits unselected commands. Therefore,
+    parse errors (exit code 2) are re-created with the full parser, and
+    other exits (e.g. ``--help``) replay the captured output.
+    """
+    out, err = io.StringIO(), io.StringIO()
+
+    try:
+        with redirect_stdout(out), redirect_stderr(err):
+            return parser.parse_typed_args()
+    except SystemExit as exc:
+        if exc.code == 2:
+            full_parser = create_parser(commands)
+            _add_top_level_options(full_parser, top_level_options)
+            return full_parser.parse_typed_args()
+
+        sys.stdout.write(out.getvalue())
+        sys.stderr.write(err.getvalue())
+        raise
+
+
 def _get_log_level(cli_level: int) -> Loglevel:
     level = Loglevel.INFO
     if cli_level == 1:
@@ -125,7 +305,7 @@ def _get_log_level(cli_level: int) -> Loglevel:
 
 # TODO: Move this function into some CLI library package.
 def parse_and_run(
-    commands: type[AsyncScript[Any]] | MutableMapping[str, CommandTree | type[AsyncScript[Any]]],
+    commands: type[AsyncScript[Any]] | MutableMapping[str, CommandTree | Command],
     auto_complete: bool = True,
     setup_log: bool = True,
     top_level_options: Mapping[str, tuple[Callable[[], None], str]] | None = None,
@@ -137,6 +317,8 @@ def parse_and_run(
     This function never returns.
     A set of commands is simply generated by a dict with command name as key and a Command object as value.
     For a full hierarchy of commands CommandTrees can be used.
+    Commands may be given as factories. Only the factories needed for the
+    selected command or help page are called on the normal parsing path.
 
     :param commands: A hierarchy of commands.
     :param auto_complete: Turns auto-complete functionality on.
@@ -146,39 +328,69 @@ def parse_and_run(
                               called with the corresponding argument and terminates after it returns.
     :param show_help_on_zero_args: Show the help message instead of an error in case no arguments are submitted at all.
     """
-    parser = create_parser(commands)
+    if not isinstance(commands, MutableMapping):
+        # A single command: nothing to discover or defer.
+        parser = create_parser(commands)
+        _add_top_level_options(parser, top_level_options)
 
-    if top_level_options is not None:
-        for name, (func, help_) in top_level_options.items():
+        if auto_complete:
+            argcomplete.autocomplete(parser)
 
-            class Action(argparse.Action):
-                cmd = staticmethod(func)
+        if show_help_on_zero_args and len(sys.argv) == 1:
+            parser.print_help(sys.stderr)
+            sys.exit(exitcodes.USAGE)
 
-                def __call__(
-                    self,
-                    parser: argparse.ArgumentParser,
-                    namespace: argparse.Namespace,
-                    values: str | Sequence[Any] | None,
-                    option_string: str | None = None,
-                ) -> None:
-                    self.cmd()
-                    sys.exit(exitcodes.OK)
-
-            parser.add_argument(
-                name,
-                nargs=0,
-                action=Action,
-                help=help_,
-            )
-
-    if auto_complete:
+        _, config = parser.parse_typed_args()
+    elif auto_complete and "_ARGCOMPLETE" in os.environ:
+        # Shell completion needs to consider all commands, so the full
+        # parser (with all command modules imported) is required here.
+        parser = create_parser(commands)
+        _add_top_level_options(parser, top_level_options)
         argcomplete.autocomplete(parser)
 
-    if show_help_on_zero_args and len(sys.argv) == 1:
-        parser.print_help(sys.stderr)
-        sys.exit(exitcodes.USAGE)
+        _, config = parser.parse_typed_args()
+    else:
+        if show_help_on_zero_args and len(sys.argv) == 1:
+            # The top-level help lists command names and descriptions only;
+            # no command module needs to be imported for that.
+            parser = create_parser(_shallow_top_level(commands))
+            _add_top_level_options(parser, top_level_options)
+            parser.print_help(sys.stderr)
+            sys.exit(exitcodes.USAGE)
 
-    _, config = parser.parse_typed_args()
+        top_level_actions = (
+            {name: func for name, (func, _) in top_level_options.items()}
+            if top_level_options is not None
+            else None
+        )
+
+        # Root-level help: only the top-level descriptions are needed.
+        if len(sys.argv) > 1 and sys.argv[1] in ("-h", "--help"):
+            parser = create_parser(_shallow_top_level(commands))
+            _add_top_level_options(parser, top_level_options)
+            _, config = _parse_selected(parser, commands, top_level_options)
+        else:
+            selection = _find_command_path(commands, sys.argv[1:], top_level_actions)
+
+            is_tree_help = (
+                selection is not None
+                and not selection.leaf
+                and bool(selection.rest)
+                and selection.rest[0] in ("-h", "--help")
+            )
+
+            if selection is None or not (selection.leaf or is_tree_help):
+                # Options or garbage before any command name, or an
+                # incomplete/invalid command selection: the resulting
+                # messages reference all commands, so the full parser is
+                # required to reproduce them.
+                parser = create_parser(commands)
+                _add_top_level_options(parser, top_level_options)
+                _, config = parser.parse_typed_args()
+            else:
+                parser = create_parser(_select_command_path(commands, selection.path))
+                _add_top_level_options(parser, top_level_options)
+                _, config = _parse_selected(parser, commands, top_level_options)
 
     assert isinstance(config, AsyncScriptConfig)
 
@@ -205,7 +417,7 @@ def version() -> None:
 
 
 def _walk_commands(
-    commands: Mapping[str, CommandTree | type[AsyncScript[Any]]], level: int = 0
+    commands: Mapping[str, CommandTree | Command], level: int = 0
 ) -> tuple[str, int]:
     command_str = ""
     command_ctr = 0
@@ -221,7 +433,9 @@ def _walk_commands(
             command_str += sub_command_str
         else:
             command_ctr += 1
-            command_str += f": {command.__module__}.{command.__name__}\n"
+
+            command_class = resolve_command(command)
+            command_str += f": {command_class.__module__}.{command_class.__name__}\n"
 
     return command_str, command_ctr
 
@@ -281,6 +495,30 @@ def template() -> None:
     print(GalliaBaseModel.create_template() + "\n")
 
 
+def check_plugins() -> None:
+    """
+    Resolves all commands of all plugins and reports import or factory errors.
+    """
+    plugins = load_plugins()
+
+    if len(plugins) == 0:
+        print("no plugins registered", file=sys.stderr)
+        sys.exit(exitcodes.SOFTWARE)
+
+    failures = validate_plugins()
+
+    if failures:
+        print(f"Found {len(failures)} broken plugin entries:", file=sys.stderr)
+
+        for failure in failures:
+            print(f"  {failure}", file=sys.stderr)
+
+        sys.exit(exitcodes.SOFTWARE)
+
+    n_commands = sum(len(list(iter_command_leaves(p.commands()))) for p in plugins)
+    print(f"All {len(plugins)} plugins valid ({n_commands} commands resolved).")
+
+
 def main() -> None:
     gallia_commands = load_commands()
     parse_and_run(
@@ -288,6 +526,10 @@ def main() -> None:
         top_level_options={
             "--version": (version, "show version and exit"),
             "--show-plugins": (show_plugins, "show registered plugins"),
+            "--check-plugins": (
+                check_plugins,
+                "resolve all plugin commands and report broken specifications",
+            ),
             "--show-config": (show_config, "show loaded config"),
             "--template": (template, "generate an annotated config template"),
         },

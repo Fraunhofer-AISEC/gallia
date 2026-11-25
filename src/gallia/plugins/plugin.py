@@ -2,21 +2,29 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
+__lazy_modules__ = {"gallia.command", "gallia.services.uds", "gallia.transports"}
+
 from abc import ABC, abstractmethod
-from collections.abc import Mapping, MutableMapping
+from collections.abc import Callable, Iterator, Mapping, MutableMapping
 from dataclasses import dataclass
+from functools import lru_cache
 from importlib.metadata import entry_points
-from typing import Any, Union
+from typing import Any
 
 from gallia.command import AsyncScript
 from gallia.services.uds import ECU
 from gallia.transports import BaseTransport, TargetURI
 
+# A factory can refer to a lazy import without loading it when building the tree.
+type Command = type[AsyncScript[Any]] | Callable[[], type[AsyncScript[Any]]]
+
 
 @dataclass
 class CommandTree:
     description: str | None
-    subtree: MutableMapping[str, Union["CommandTree", type[AsyncScript[Any]]]]
+    subtree: MutableMapping[str, CommandTree | Command]
 
 
 class Plugin(ABC):
@@ -37,12 +45,74 @@ class Plugin(ABC):
         return []
 
     @classmethod
-    def commands(cls) -> Mapping[str, CommandTree | type[AsyncScript[Any]]]:
+    def commands(cls) -> Mapping[str, CommandTree | Command]:
         return {}
 
 
-def load_plugins() -> list[type[Plugin]]:
-    """Loads the ``gallia_transports`` entry_point."""
+def resolve_command(command: Command) -> type[AsyncScript[Any]]:
+    """Return the command class, calling its factory if needed."""
+    command_class = command if isinstance(command, type) else command()
+    if not (isinstance(command_class, type) and issubclass(command_class, AsyncScript)):
+        raise TypeError(f"{command!r} does not provide an AsyncScript subclass")
+    return command_class
+
+
+def iter_command_leaves(
+    commands: Mapping[str, CommandTree | Command],
+    prefix: tuple[str, ...] = (),
+) -> Iterator[tuple[tuple[str, ...], Command]]:
+    """Iterates over the leaves of a command hierarchy.
+
+    Yields tuples of a command's path (the names along the hierarchy,
+    e.g. ``("discover", "doip")``) and the corresponding, possibly unresolved,
+    command.
+    """
+    for name, value in commands.items():
+        if isinstance(value, CommandTree):
+            yield from iter_command_leaves(value.subtree, (*prefix, name))
+        else:
+            yield (*prefix, name), value
+
+
+def validate_plugins() -> list[str]:
+    """Validates all plugins registered via the ``gallia_plugins`` entry_points.
+
+    For each plugin, the ``transports()`` and ``ecus()`` factories are called
+    and all command classes are resolved. This forces the imports which
+    are deferred at CLI startup by the lazy resolution (see
+    :func:`resolve_command`) and is therefore suited for a self-check, e.g.
+    triggered by ``gallia --check-plugins`` or from a test suite.
+
+    Returns the error messages of all encountered failures; the list is empty
+    if the plugin registry is consistent.
+    """
+    failures: list[str] = []
+
+    for plugin in load_plugins():
+        name = plugin.name()
+
+        try:
+            plugin.transports()
+        except Exception as e:
+            failures.append(f"{name}: transports(): {e!r}")
+
+        try:
+            plugin.ecus()
+        except Exception as e:
+            failures.append(f"{name}: ecus(): {e!r}")
+
+        for path, command in iter_command_leaves(plugin.commands()):
+            try:
+                resolve_command(command)
+            except Exception as e:
+                failures.append(f"{name}: command '{' '.join(path)}': {e!r}")
+
+    return failures
+
+
+@lru_cache
+def _load_plugins() -> tuple[type[Plugin], ...]:
+    """Loads the classes behind the ``gallia_plugins`` entry_points."""
     plugins: list[type[Plugin]] = []
 
     for plugin_ep in entry_points(group="gallia_plugins"):
@@ -55,7 +125,15 @@ def load_plugins() -> list[type[Plugin]]:
 
         plugins.append(plugin)
 
-    return plugins
+    return tuple(plugins)
+
+
+def load_plugins() -> tuple[type[Plugin], ...]:
+    """Loads all plugin classes registered via the ``gallia_plugins`` entry_points.
+
+    The result is cached; plugin modules are imported once per process.
+    """
+    return _load_plugins()
 
 
 def load_transports() -> list[type[BaseTransport]]:
@@ -104,8 +182,8 @@ def load_ecu(vendor: str) -> type[ECU]:
 
 
 def _merge_commands(
-    c1: MutableMapping[str, CommandTree | type[AsyncScript[Any]]],
-    c2: Mapping[str, CommandTree | type[AsyncScript[Any]]],
+    c1: MutableMapping[str, CommandTree | Command],
+    c2: Mapping[str, CommandTree | Command],
 ) -> None:
     for key, value in c2.items():
         if key not in c1:
@@ -130,9 +208,9 @@ def _merge_command_trees(tree1: CommandTree, tree2: CommandTree) -> None:
     _merge_commands(tree1.subtree, tree2.subtree)
 
 
-def load_commands() -> MutableMapping[str, CommandTree | type[AsyncScript[Any]]]:
+def load_commands() -> MutableMapping[str, CommandTree | Command]:
     plugins = load_plugins()
-    commands: MutableMapping[str, CommandTree | type[AsyncScript[Any]]] = {}
+    commands: MutableMapping[str, CommandTree | Command] = {}
 
     for plugin in plugins:
         try:

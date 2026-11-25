@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+__lazy_modules__ = {"gallia.db"}
+
 import asyncio
 import dataclasses
 import json
@@ -19,7 +21,7 @@ from pydantic import ConfigDict
 
 from gallia import exitcodes
 from gallia.command.config import Field, GalliaBaseModel
-from gallia.db.handler import DBHandler
+from gallia.db import handler
 from gallia.log import (
     Loglevel,
     _ZstdFileHandler,
@@ -124,7 +126,7 @@ class AsyncScript[ConfigT: AsyncScriptConfig](ABC):
             end_time="",
             config=json.loads(config.model_dump_json()),
         )
-        self.db_handler: DBHandler | None = None
+        self.db_handler: handler.DBHandler | None = None
         self.log_file_handlers = []
 
     async def setup(self) -> None:
@@ -147,7 +149,7 @@ class AsyncScript[ConfigT: AsyncScriptConfig](ABC):
         return exitcodes.OK
 
     async def _db_connect_and_insert_run_meta(self, db_path: Path) -> None:
-        self.db_handler = DBHandler(db_path)
+        self.db_handler = handler.DBHandler(db_path)
         await self.db_handler.connect()
 
         await self.db_handler.insert_run_meta(
