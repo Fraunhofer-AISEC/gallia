@@ -4,25 +4,21 @@
 
 from __future__ import annotations
 
+__lazy_modules__ = {"gallia.command", "gallia.services.uds", "gallia.transports"}
+
 from abc import ABC, abstractmethod
-from collections.abc import Iterator, Mapping, MutableMapping
+from collections.abc import Callable, Iterator, Mapping, MutableMapping
 from dataclasses import dataclass
 from functools import lru_cache
-from importlib import import_module
 from importlib.metadata import entry_points
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from gallia.command import AsyncScript
+from gallia.services.uds import ECU
+from gallia.transports import BaseTransport, TargetURI
 
-if TYPE_CHECKING:
-    from gallia.services.uds import ECU
-    from gallia.transports import BaseTransport, TargetURI
-
-#: A command is either an ``AsyncScript`` subclass or a specification string
-#: of the form ``"module:QualName"``. Specification strings are resolved
-#: lazily (see :func:`resolve_command`), which keeps the imports of heavy
-#: dependencies out of the CLI startup path.
-type Command = type[AsyncScript[Any]] | str
+# A factory can refer to a lazy import without loading it when building the tree.
+type Command = type[AsyncScript[Any]] | Callable[[], type[AsyncScript[Any]]]
 
 
 @dataclass
@@ -54,29 +50,11 @@ class Plugin(ABC):
 
 
 def resolve_command(command: Command) -> type[AsyncScript[Any]]:
-    """Resolve a command to the corresponding ``AsyncScript`` subclass.
-
-    ``AsyncScript`` subclasses are returned unchanged. Specification strings
-    of the form ``"module:QualName"`` are resolved by importing the module
-    and looking up the (dotted) attribute path.
-    """
-    if not isinstance(command, str):
-        return command
-
-    module_name, sep, qualname = command.partition(":")
-    if not sep or not module_name or not qualname:
-        raise ValueError(
-            f"invalid command specification: {command!r}, expected format 'module:QualName'"
-        )
-
-    obj: Any = import_module(module_name)
-    for attribute in qualname.split("."):
-        obj = getattr(obj, attribute)
-
-    if not (isinstance(obj, type) and issubclass(obj, AsyncScript)):
-        raise TypeError(f"{command!r} does not refer to an AsyncScript subclass")
-
-    return obj
+    """Return the command class, calling its factory if needed."""
+    command_class = command if isinstance(command, type) else command()
+    if not (isinstance(command_class, type) and issubclass(command_class, AsyncScript)):
+        raise TypeError(f"{command!r} does not provide an AsyncScript subclass")
+    return command_class
 
 
 def iter_command_leaves(
@@ -100,7 +78,7 @@ def validate_plugins() -> list[str]:
     """Validates all plugins registered via the ``gallia_plugins`` entry_points.
 
     For each plugin, the ``transports()`` and ``ecus()`` factories are called
-    and all command specifications are resolved. This forces the imports which
+    and all command classes are resolved. This forces the imports which
     are deferred at CLI startup by the lazy resolution (see
     :func:`resolve_command`) and is therefore suited for a self-check, e.g.
     triggered by ``gallia --check-plugins`` or from a test suite.
@@ -127,7 +105,7 @@ def validate_plugins() -> list[str]:
             try:
                 resolve_command(command)
             except Exception as e:
-                failures.append(f"{name}: command '{' '.join(path)}' ({command!r}): {e!r}")
+                failures.append(f"{name}: command '{' '.join(path)}': {e!r}")
 
     return failures
 

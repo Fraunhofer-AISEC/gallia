@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
+__lazy_modules__ = {"gallia.db"}
 
 import asyncio
 import dataclasses
@@ -15,12 +15,13 @@ from datetime import UTC, datetime
 from enum import Enum, unique
 from logging import WARNING
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast, get_args
+from typing import Any, cast, get_args
 
 from pydantic import ConfigDict
 
 from gallia import exitcodes
 from gallia.command.config import Field, GalliaBaseModel
+from gallia.db import handler
 from gallia.log import (
     Loglevel,
     _ZstdFileHandler,
@@ -30,9 +31,6 @@ from gallia.log import (
     tz,
 )
 from gallia.utils import camel_to_snake
-
-if TYPE_CHECKING:
-    from gallia.db.handler import DBHandler
 
 
 @unique
@@ -128,7 +126,7 @@ class AsyncScript[ConfigT: AsyncScriptConfig](ABC):
             end_time="",
             config=json.loads(config.model_dump_json()),
         )
-        self.db_handler: DBHandler | None = None
+        self.db_handler: handler.DBHandler | None = None
         self.log_file_handlers = []
 
     async def setup(self) -> None:
@@ -151,11 +149,7 @@ class AsyncScript[ConfigT: AsyncScriptConfig](ABC):
         return exitcodes.OK
 
     async def _db_connect_and_insert_run_meta(self, db_path: Path) -> None:
-        # Imported lazily: gallia.db.handler pulls in gallia.services.uds,
-        # which is not needed to start a command.
-        from gallia.db.handler import DBHandler
-
-        self.db_handler = DBHandler(db_path)
+        self.db_handler = handler.DBHandler(db_path)
         await self.db_handler.connect()
 
         await self.db_handler.insert_run_meta(

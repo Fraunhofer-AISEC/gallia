@@ -2,10 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+__lazy_modules__ = {"gallia.commands"}
+
 import sys
 from collections.abc import Mapping
 
 from gallia.plugins.plugin import Command, CommandTree, Plugin
+
+if sys.platform.startswith("linux"):
+    from gallia.commands import CanFindXCP
 
 
 class XCPPlugin(Plugin):
@@ -25,7 +30,7 @@ class XCPPlugin(Plugin):
             tree = {
                 "discover": CommandTree(
                     description=None,
-                    subtree={"xcp": "gallia.commands.discover.find_xcp:CanFindXCP"},
+                    subtree={"xcp": lambda: CanFindXCP},
                 )
             }
 
